@@ -121,7 +121,7 @@ PhenixRebirth/
 
 Franck Fornasari (Kraran)
 
-Music: *Phenix — Eternal Dawn*, *Eternal Dawn (Game Over)*, *Last Coin (Credits)* — created with [Suno](https://suno.com).
+Music: *Phenix — Eternal Dawn*, *Eternal Dawn (Game Over)*, *Last Coin (Credits)* — created with [Suno](https://suno.com/@ffc059).
 
 Tech: Python, Pygame, delta-time action loop.
 
