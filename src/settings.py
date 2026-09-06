@@ -73,26 +73,29 @@ STAR_NEAR_COUNT = 20
 
 
 def detect_refresh_rate():
-    """
-    Pick 60 or 120 based on the desktop refresh rate.
-    Returns the chosen FPS target.
-    """
+    """Hz of the *current* window. Do not take max() of other monitors."""
     import pygame
-    rate = 60
+    rate = 0
     try:
-        # pygame 2.0.2+ : desktop refresh rate
-        if hasattr(pygame.display, "get_desktop_refresh_rates"):
-            rates = pygame.display.get_desktop_refresh_rates()
+        if hasattr(pygame.display, "get_current_refresh_rate"):
+            cur = int(pygame.display.get_current_refresh_rate() or 0)
+            if cur >= 50:
+                rate = cur
+        if rate < 50 and hasattr(pygame.display, "get_desktop_refresh_rates"):
+            rates = [int(r) for r in (pygame.display.get_desktop_refresh_rates() or []) if r]
             if rates:
-                rate = max(rates)
-        elif hasattr(pygame.display, "get_current_refresh_rate"):
-            rate = pygame.display.get_current_refresh_rate() or 60
-    except Exception:
+                # First desktop is the primary — not max (other screens may be 120).
+                rate = rates[0]
+        print("refresh probe:", rate)
+    except Exception as e:
+        print("refresh probe failed:", e)
         rate = 60
-
-    # Map to supported targets only (60 / 120 for now)
+    if rate >= 130:
+        return 144
     if rate >= 100:
         return 120
+    if rate >= 70:
+        return 75
     return 60
 
 

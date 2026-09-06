@@ -323,6 +323,7 @@ class Player:
         
         # Update shots
         for shot in self.shots[:]:
+            shot["prev_y"] = shot["y"]
             shot["y"] -= BULLET_SPEED * dt
             if shot["y"] < -30:
                 if not shot.get("resolved"):
@@ -803,10 +804,11 @@ class Player:
         out = []
         for i, shot in enumerate(self.shots):
             bx, by = shot["x"], shot["y"]
-            if shot.get("flame"):
-                out.append((i, pygame.Rect(int(bx) - 4, int(by), 8, 16)))
-            else:
-                out.append((i, pygame.Rect(int(bx) - 3, int(by), 6, 16)))
+            prev = shot.get("prev_y", by)
+            top = min(float(prev), float(by))
+            h = max(16.0, abs(float(prev) - float(by)) + 16.0)
+            pad = 5 if shot.get("flame") else 4
+            out.append((i, pygame.Rect(int(bx) - pad, int(top), pad * 2, int(h))))
         return out
 
     def get_bullet_rect(self):

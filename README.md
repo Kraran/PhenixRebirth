@@ -1,6 +1,6 @@
 # Phenix Rebirth
 
-**Version 1.1.0**
+**Version 1.2.0**
 
 A modern, ultra-responsive PC remake of the classic arcade shooter **Phoenix** (1978 / 1980).
 
@@ -29,7 +29,8 @@ Free to play · Open source · MIT License
 - Faithful stage cycle inspired by the arcade original (birds → gargoyles → boss saucer)
 - **PHENIX mode** — charge a gauge with accurate shots, transform into a firebird (invulnerable, faster, dual flame shots)
 - Infinite progression: stages loop with rising speed after each boss
-- Smooth 60 / 120 Hz play with delta-time movement
+- Smooth 60 / 75 / 120 Hz play (delta-time); VSync On / Adaptive / Off
+- GPU upscale (`pygame.SCALED`) with arcade bezels on ultrawide
 - Keyboard & gamepad (hot-plug while in menus; AZERTY Z + fire keys in menus)
 - 1 player, 2-player **hot seat**, 2-player **coop** (separate scores & Phenix gauges, shared lives)
 - Optional autofire (hold to shoot when the previous shot has left the screen)
@@ -93,12 +94,13 @@ python main.py
 Persisted in `settings.json` (created at runtime, **not** shipped in the repo):
 
 - Input mode, display (window / fullscreen / borderless)
-- SFX & music volume
+- SFX & music volume, rumble, autofire
 - Language (13 locales)
-- FPS counter
-- Scanlines OFF / 1 / 2 / 3
+- FPS counter, scanlines OFF / 1 / 2 / 3
+- GPU render, VSync, refresh cap (60 / 75 / 120)
 - Bezel style (fullscreen ultrawide)
 - Reset high scores
+- Focused-option help panel on the Options screen
 
 Manual advanced key (edit `settings.json` when the game is closed): `monitor_index` for multi-monitor fullscreen.
 
@@ -123,7 +125,7 @@ Franck Fornasari (Kraran)
 
 Music: *Phenix — Eternal Dawn*, *Eternal Dawn (Game Over)*, *Last Coin (Credits)* — created with [Suno](https://suno.com/@ffc059).
 
-Tech: Python, Pygame, delta-time action loop.
+Tech: Python 3, Pygame 2 (SCALED GPU present), delta-time action loop.
 
 ## License
 

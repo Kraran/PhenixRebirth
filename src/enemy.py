@@ -23,6 +23,8 @@ class EnemyBullet:
         self.owner_id = None
 
     def update(self, dt):
+        self.prev_y = getattr(self, "prev_y", self.y)
+        self.prev_y = self.y
         self.y += ENEMY_BULLET_SPEED * dt
         if self.y > BASE_HEIGHT + 20:
             self.alive = False
@@ -35,7 +37,10 @@ class EnemyBullet:
         pygame.draw.rect(surface, (255, 180, 255), (int(self.x) - 1, int(self.y), 2, 12))
 
     def get_hitbox(self):
-        return pygame.Rect(int(self.x) - 3, int(self.y), 6, 12)
+        prev = getattr(self, "prev_y", self.y)
+        top = min(float(prev), float(self.y))
+        h = max(12.0, abs(float(prev) - float(self.y)) + 12.0)
+        return pygame.Rect(int(self.x) - 4, int(top), 8, int(h))
 
 
 class Enemy:
@@ -78,8 +83,8 @@ class Enemy:
             self.image = self.frames[0]
             self.width = self.image.get_width()
             self.height = self.image.get_height()
-            self.hitbox_w = max(16, int(self.width * 0.55))
-            self.hitbox_h = max(16, int(self.height * 0.55))
+            self.hitbox_w = max(22, int(self.width * 0.78))
+            self.hitbox_h = max(20, int(self.height * 0.78))
         else:
             self.image = self._create_bird_sprite(stage=stage)
             self.hitbox_w = 26
