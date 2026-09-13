@@ -5,9 +5,10 @@ Owns the window, delta-time loop, menus, combat, stage progression,
 pause/options, high scores, attract-mode help, and credits.
 
 Play modes: solo, hot-seat (alternating), coop (simultaneous). Options cover
-controls, autofire, volumes, rumble, display, GPU present, VSync, refresh cap,
-bezels, FPS counter, CRT scanlines and language. Cheats on the high-score
-menu: LVL2–LVL5, LIVE, PHEN.
+controls, autofire, volumes, session audio mix, rumble, display, GPU present,
+VSync, refresh cap, bezels, FPS counter, CRT scanlines and language.
+Cheats on the high-score menu: LVL2–LVL5, LIVE, PHEN.
+v1.2.1 — looping music, animated help/boss, difficulty HUD, input swallows.
 
 Architecture notes:
 - Logical resolution BASE_WIDTH x BASE_HEIGHT (see settings.py).
@@ -217,11 +218,16 @@ class Game:
         self.help_page = 0  # 0 = scenario/points, 1 = PHENIX
         self.help_scroll = 0.0  # transition offset in pixels
         self.help_transitioning = False
-        self.HELP_PAGE_SEC = 10.0
+        self.HELP_PAGE_SEC = 13.0
         self.HELP_SCROLL_SEC = 0.42
         self.help_first_shown = False  # first attract uses longer delay
         self.attract_mode = False
         self.attract_timer = 0.0
+        # Session-only in-game audio mix (not saved). Default: SFX, no music.
+        if not hasattr(self, "audio_mix"):
+            self.audio_mix = "sfx"
+        self.AUDIO_MIXES = ["sfx", "sfx_music", "music", "off"]
+        self._apply_audio_mix()
         # Hot-seat 2P: each player has a fully independent run (stage/score/lives/world)
         self.hotseat = False
         self.play_mode = getattr(self, "play_mode", "solo")  # solo | hotseat | coop
@@ -385,11 +391,17 @@ class Game:
         self.input_grace = 0.0
         self._joy_axis_latch_x = 0
         self._joy_axis_latch_y = 0
+        self._hat_latch = (0, 0)
+        try:
+            pygame.key.set_repeat(220, 45)
+        except Exception:
+            pass
         
         if not soft or not getattr(self, "sounds", None):
             self.sounds = SoundManager()
         self.sounds.set_master_volume(self.sfx_volume)
         self.sounds.set_music_volume(self.music_volume)
+        self._apply_audio_mix()
         if not soft or not getattr(self, "help_icons", None):
             self._build_help_icons()
         if not soft or not getattr(self, "bezel_left_img", None):
@@ -407,8 +419,20 @@ class Game:
                 print("post-boot layout failed:", e)
 
     # --- Audio state machine (menu / game-over / in-game silence) ---
+    def _apply_audio_mix(self):
+        """Mute SFX when mix is music-only or off. Does not persist."""
+        mix = getattr(self, "audio_mix", "sfx")
+        if getattr(self, "sounds", None):
+            self.sounds.sfx_muted = mix in ("music", "off")
+            if mix in ("music", "off"):
+                self.sounds.play_electric(False)
+
     def _update_music(self):
-        """Menu theme, high-score/game-over theme, silence in-game. Fades handled by SoundManager."""
+        """Menu / attract / optional in-game menu theme. Off silences everything."""
+        mix = getattr(self, "audio_mix", "sfx")
+        if mix == "off":
+            self.sounds.stop_music()
+            return
         if self.game_over and self.hs_phase in ("enter", "table"):
             self.sounds.play_music("gameover")
         elif not self.started:
@@ -418,6 +442,10 @@ class Game:
                 self.sounds.play_music("credits")
             else:
                 self.sounds.play_music("menu")
+        elif getattr(self, "attract_mode", False):
+            self.sounds.play_music("menu")
+        elif mix in ("sfx_music", "music"):
+            self.sounds.play_music("menu")
         else:
             self.sounds.stop_music()
 
@@ -1929,7 +1957,7 @@ class Game:
     def _draw_option_help(self, key, box=(700, 148, 520, 420)):
         """Right-hand hint panel for the focused option."""
         if not key or key not in (
-            "control", "autofire", "sfx", "music", "rumble", "display",
+            "control", "autofire", "sfx", "music", "audio_mix", "rumble", "display",
             "bezel", "fps", "scanlines", "gpu", "vsync", "hz",
             "language", "reset_hs", "back",
         ):
@@ -1940,7 +1968,7 @@ class Game:
         pygame.draw.rect(panel, (180, 140, 255), panel.get_rect(), 2, border_radius=10)
         title = t({
             "control": "opt_control", "autofire": "opt_autofire", "sfx": "opt_sfx",
-            "music": "opt_music", "rumble": "opt_rumble", "display": "opt_display",
+            "music": "opt_music", "audio_mix": "opt_audio", "rumble": "opt_rumble", "display": "opt_display",
             "bezel": "opt_bezel", "fps": "opt_fps", "scanlines": "opt_scanlines",
             "gpu": "opt_gpu", "vsync": "opt_vsync", "hz": "opt_hz",
             "language": "opt_language", "reset_hs": "opt_reset_hs", "back": "opt_back",
@@ -1977,6 +2005,7 @@ class Game:
             "autofire": f"{t('opt_autofire')} :  <  {t('yes') if getattr(self, 'autofire', True) else t('no')}  >",
             "sfx": f"{t('opt_sfx')} :  <  {vol_pct}%  >",
             "music": f"{t('opt_music')} :  <  {mus_pct}%  >",
+            "audio_mix": f"{t('opt_audio')} :  <  {t('audio_' + getattr(self, 'audio_mix', 'sfx'))}  >",
             "rumble": f"{t('opt_rumble')} :  <  {int(getattr(self, 'rumble_level', 3))} / 5  >",
             "display": f"{t('opt_display')} :  <  {disp}  >",
             "bezel": f"{t('opt_bezel')} :  <  {bezel_label}  >",
@@ -1993,7 +2022,7 @@ class Game:
 
     def _options_spec(self):
         """Ordered option ids (bezel / monitor only when relevant)."""
-        items = ["control", "autofire", "sfx", "music", "rumble", "display"]
+        items = ["control", "autofire", "sfx", "music", "audio_mix", "rumble", "display"]
         mode = getattr(self, "display_mode", "fullscreen")
         if mode == "fullscreen":
             items.append("bezel")
@@ -2035,6 +2064,12 @@ class Game:
             self.music_volume = max(0.0, min(1.0, self.music_volume + direction * 0.1))
             self.sounds.set_music_volume(self.music_volume)
             self.save_settings()
+        elif key == "audio_mix":
+            modes = getattr(self, "AUDIO_MIXES", ["sfx", "sfx_music", "music", "off"])
+            cur = getattr(self, "audio_mix", "sfx")
+            i = modes.index(cur) if cur in modes else 0
+            self.audio_mix = modes[(i + direction) % len(modes)]
+            self._apply_audio_mix()
         elif key == "rumble":
             self.rumble_level = max(0, min(5, int(getattr(self, "rumble_level", 3)) + direction))
             if self.player:
@@ -2142,21 +2177,36 @@ class Game:
         g3 = BigBird(0, 0, stage=3)
         g4 = BigBird(0, 0, stage=4)
         self.help_icons = {
-            "bird1": e1.image,
-            "bird2": e2.image,
+            "bird1": e1,
+            "bird2": e2,
             "garg3": g3,
             "garg4": g4,
         }
-        try:
-            core_img = pygame.image.load(asset_path("sprites", "boss_core.png")).convert_alpha()
-            ch = 36
-            scale = ch / max(1, core_img.get_height())
-            cw = max(1, int(core_img.get_width() * scale))
-            self.help_icons["boss"] = pygame.transform.smoothscale(core_img, (cw, ch))
-        except Exception:
-            core = pygame.Surface((36, 40), pygame.SRCALPHA)
-            pygame.draw.ellipse(core, (40, 90, 70), (4, 4, 28, 32))
-            self.help_icons["boss"] = core
+        boss_frames = []
+        ch = 36
+        for i in range(4):
+            path = asset_path("sprites", f"boss_core_{i:02d}.png")
+            if not os.path.isfile(path):
+                continue
+            try:
+                core_img = pygame.image.load(path).convert_alpha()
+                scale = ch / max(1, core_img.get_height())
+                cw = max(1, int(core_img.get_width() * scale))
+                boss_frames.append(pygame.transform.smoothscale(core_img, (cw, ch)))
+            except Exception:
+                pass
+        if not boss_frames:
+            try:
+                core_img = pygame.image.load(asset_path("sprites", "boss_core.png")).convert_alpha()
+                scale = ch / max(1, core_img.get_height())
+                cw = max(1, int(core_img.get_width() * scale))
+                boss_frames.append(pygame.transform.smoothscale(core_img, (cw, ch)))
+            except Exception:
+                core = pygame.Surface((36, 40), pygame.SRCALPHA)
+                pygame.draw.ellipse(core, (40, 90, 70), (4, 4, 28, 32))
+                boss_frames.append(core)
+        self.help_icons["boss_frames"] = boss_frames
+        self.help_icons["boss"] = boss_frames[0]
         # Ship + Phenix form for help page 2
         try:
             ship = pygame.image.load(asset_path("sprites", "player_ship.png")).convert_alpha()
@@ -2166,24 +2216,35 @@ class Game:
             self.help_icons["ship"] = pygame.transform.smoothscale(ship, (sw, sh))
         except Exception:
             self.help_icons["ship"] = None
-        phenix_img = None
         phenix_dir = asset_path("sprites", "phenix")
-        # Prefer a mid morph / flight frame
-        for name in ("phenix_04.png", "phenix_03.png", "morph_03.png", "phenix_00.png"):
-            path = os.path.join(phenix_dir, name)
-            if os.path.isfile(path):
-                try:
-                    phenix_img = pygame.image.load(path).convert_alpha()
-                    break
-                except Exception:
-                    pass
-        if phenix_img is not None:
+        frames = []
+        for i in range(8):
+            path = os.path.join(phenix_dir, f"phenix_{i:02d}.png")
+            if not os.path.isfile(path):
+                continue
+            try:
+                img = pygame.image.load(path).convert_alpha()
+            except Exception:
+                continue
             ph = 80
-            scale = ph / max(1, phenix_img.get_height())
-            pw = max(1, int(phenix_img.get_width() * scale))
-            self.help_icons["phenix"] = pygame.transform.smoothscale(phenix_img, (pw, ph))
-        else:
-            self.help_icons["phenix"] = None
+            scale = ph / max(1, img.get_height())
+            pw = max(1, int(img.get_width() * scale))
+            frames.append(pygame.transform.smoothscale(img, (pw, ph)))
+        if not frames:
+            for name in ("phenix_04.png", "morph_03.png", "phenix_00.png"):
+                path = os.path.join(phenix_dir, name)
+                if os.path.isfile(path):
+                    try:
+                        img = pygame.image.load(path).convert_alpha()
+                        ph = 80
+                        scale = ph / max(1, img.get_height())
+                        pw = max(1, int(img.get_width() * scale))
+                        frames.append(pygame.transform.smoothscale(img, (pw, ph)))
+                        break
+                    except Exception:
+                        pass
+        self.help_icons["phenix_frames"] = frames
+        self.help_icons["phenix"] = frames[0] if frames else None
 
 
     def _draw_help_page(self, surface, page, y_off):
@@ -2237,18 +2298,23 @@ class Game:
             for key, label, pts in score_rows:
                 ix, iy = col_r + 28, yy(y + 14)
                 if key == "bird1" and "bird1" in self.help_icons:
-                    img = self.help_icons["bird1"]
-                    surface.blit(img, (ix - img.get_width() // 2, iy - img.get_height() // 2))
+                    self._draw_help_bird(surface, self.help_icons["bird1"], ix, iy, phase=0.0)
                 elif key == "bird2" and "bird2" in self.help_icons:
-                    img = self.help_icons["bird2"]
-                    surface.blit(img, (ix - img.get_width() // 2, iy - img.get_height() // 2))
+                    self._draw_help_bird(surface, self.help_icons["bird2"], ix, iy, phase=1.7)
                 elif key == "garg3" and "garg3" in self.help_icons:
                     self._draw_help_gargoyle(surface, self.help_icons["garg3"], ix, iy, 0.5)
                 elif key == "garg4" and "garg4" in self.help_icons:
                     self._draw_help_gargoyle(surface, self.help_icons["garg4"], ix, iy, 0.5)
-                elif key == "boss" and "boss" in self.help_icons:
-                    img = self.help_icons["boss"]
-                    surface.blit(img, (ix - img.get_width() // 2, iy - img.get_height() // 2))
+                elif key == "boss":
+                    bframes = self.help_icons.get("boss_frames") or []
+                    img = None
+                    if bframes:
+                        idx = int(getattr(self, "help_anim_t", 0.0) * 8.0) % len(bframes)
+                        img = bframes[idx]
+                    else:
+                        img = self.help_icons.get("boss")
+                    if img is not None:
+                        surface.blit(img, (ix - img.get_width() // 2, iy - img.get_height() // 2))
                 ls = self.font.render(label, True, (200, 200, 230))
                 surface.blit(ls, (col_r + 60, yy(y + 4)))
                 ps = self.font.render(pts + " " + t_help("pts"), True, (110, 255, 150))
@@ -2275,7 +2341,13 @@ class Game:
             y += 40
             # Illustrations: normal ship | arrow | phenix form
             ship = self.help_icons.get("ship")
-            phenix = self.help_icons.get("phenix")
+            pframes = self.help_icons.get("phenix_frames") or []
+            phenix = None
+            if pframes:
+                idx = int(getattr(self, "help_anim_t", 0.0) * 10.0) % len(pframes)
+                phenix = pframes[idx]
+            else:
+                phenix = self.help_icons.get("phenix")
             gap = 48
             total_w = 0
             if ship is not None:
@@ -2292,6 +2364,21 @@ class Game:
             x0 += arrow.get_width() + gap // 2
             if phenix is not None:
                 surface.blit(phenix, (x0, yy(y)))
+
+    def _draw_help_bird(self, surface, bird, x, y, phase=0.0):
+        """Stage 1–2 bird: flap + eye glow, desynced by phase."""
+        frames = getattr(bird, "frames", None) or [getattr(bird, "image", None)]
+        frames = [f for f in frames if f is not None]
+        if not frames:
+            return
+        t = float(getattr(self, "help_anim_t", 0.0)) + phase
+        flap = int(t * 5.2) % 2
+        glow = (t % 2.2) < 0.38
+        idx = flap
+        if glow and len(frames) >= 4:
+            idx = flap + 2
+        img = frames[idx % len(frames)]
+        surface.blit(img, (int(x - img.get_width() // 2), int(y - img.get_height() // 2)))
 
     def _draw_help_gargoyle(self, surface, bird, x, y, scale=0.55):
         """Draw animated gargoyle icon centered at (x, y)."""
@@ -2503,7 +2590,6 @@ class Game:
         self.input_grace = 0.25
         self.shake_amount = 0.0
         self._setup_stage(self.stage)
-        self.sounds.stop_music()
         self.cheat_msg = ""
         self.cheat_msg_timer = 0.0
         self.ai_move_smooth = 0.0
@@ -2530,6 +2616,7 @@ class Game:
         self.attract_mode = False
         self.started = False
         self.menu_idle = 0.0
+        self.input_grace = 0.45  # swallow the key/button that cancelled the demo
         self._paint_menu_frame()
 
     def _reset_menu_idle(self):
@@ -2724,18 +2811,30 @@ class Game:
                             self._activate_phenix_from_input(self.player)
                 if event.key == pygame.K_ESCAPE:
                     if self.started and not self.game_over:
-                        if self.quit_confirm:
-                            self.quit_confirm = False
+                        if self.pause_options:
+                            if self.menu_screen == "reset_confirm":
+                                self.menu_screen = "options"
+                                self._focus_option("reset_hs")
+                            else:
+                                self.pause_options = False
+                                self.menu_index = 0
+                        elif self.paused:
+                            self.paused = False
+                            self.pause_options = False
                         else:
                             self._toggle_pause()
+                        continue
                     elif not self.started:
                         if self.menu_screen == "help":
                             self._reset_menu_idle()
                         elif self.quit_confirm:
                             self.quit_confirm = False
+                        elif self.menu_screen in ("options", "credits", "reset_confirm"):
+                            self._menu_back()
                         else:
                             self.quit_confirm = True
                             self.quit_index = 1
+                        continue
                 # Pause menu (in-game)
                 if self.paused and self.started and not self.game_over:
                     if self.pause_options:
@@ -2799,9 +2898,16 @@ class Game:
                             self.running = False
                         else:
                             self.quit_confirm = False
+                            self.input_grace = 0.30
+                        continue
 
                 
-                if not self.started and not self.game_over and not self.quit_confirm and getattr(self, "input_grace", 0) <= 0:
+                if not self.started and not self.game_over and not self.quit_confirm:
+                    arrow = self._is_menu_up(event.key) or self._is_menu_down(event.key) or event.key in (
+                        pygame.K_LEFT, pygame.K_RIGHT, pygame.K_a, pygame.K_q, pygame.K_d,
+                    )
+                    if not arrow and getattr(self, "input_grace", 0) > 0:
+                        continue
                     if self.menu_screen == "help":
                         self._reset_menu_idle()
                     elif self.menu_screen == "credits":
@@ -2907,6 +3013,8 @@ class Game:
                             self._reset_menu_idle()
                         elif self.quit_confirm:
                             self.quit_confirm = False
+                        elif self.menu_screen in ("options", "credits", "reset_confirm"):
+                            self._menu_back()
                         else:
                             self.quit_confirm = True
                             self.quit_index = 1
@@ -2955,8 +3063,12 @@ class Game:
                             self.running = False
                         else:
                             self.quit_confirm = False
+                            self.input_grace = 0.30
+                        continue
                     elif event.button == 1:
                         self.quit_confirm = False
+                        self.input_grace = 0.30
+                        continue
                 elif not self.started and not self.game_over and not self.quit_confirm and getattr(self, "input_grace", 0) <= 0:
                     if self.menu_screen == "help":
                         self._reset_menu_idle()
@@ -2983,21 +3095,30 @@ class Game:
                         self._paint_menu_frame()
             elif event.type == pygame.JOYHATMOTION:
                 hx, hy = event.value
-                if not self.started and not self.game_over:
-                    if self.menu_screen == "help":
-                        self._reset_menu_idle()
-                    elif self.menu_screen == "highscores":
-                        self._menu_back()
-                    elif self.menu_screen == "credits":
-                        pass  # hat steers the roll, see update()
-                    else:
-                        self._reset_menu_idle()
+                if hx == 0 and hy == 0:
+                    self._hat_latch = (0, 0)
+                elif getattr(self, "_hat_latch", (0, 0)) != (hx, hy):
+                    self._hat_latch = (hx, hy)
+                    if self.paused and self.started and not self.game_over and not self.pause_options:
                         if hy > 0:
-                            self._menu_nav(-1)
+                            self.pause_index = (self.pause_index - 1) % 3
                         elif hy < 0:
-                            self._menu_nav(1)
-                        if hx != 0:
-                            self._menu_adjust(1 if hx > 0 else -1)
+                            self.pause_index = (self.pause_index + 1) % 3
+                    elif not self.started and not self.game_over:
+                        if self.menu_screen == "help":
+                            self._reset_menu_idle()
+                        elif self.menu_screen == "credits":
+                            pass
+                        elif self.menu_screen == "highscores":
+                            pass
+                        else:
+                            self._reset_menu_idle()
+                            if hy > 0:
+                                self._menu_nav(-1)
+                            elif hy < 0:
+                                self._menu_nav(1)
+                            if hx != 0:
+                                self._menu_adjust(1 if hx > 0 else -1)
                 elif self.game_over and self.hs_phase == "enter":
                     if hx < 0:
                         self.hs_char_index = (self.hs_char_index - 1) % 3
@@ -3751,6 +3872,17 @@ class Game:
             stage_surf = tc.get(self.font, f"{t('stage')} {self.stage}", (180, 180, 220))
             stage_x = BASE_WIDTH // 2 - stage_surf.get_width() // 2 if self.play_mode == "coop" else 16
             self.game_surface.blit(stage_surf, (stage_x, 16))
+            if self.difficulty in ("novice", "veteran") and not self.attract_mode:
+                dkey = "diff_novice" if self.difficulty == "novice" else "diff_veteran"
+                dcol = (120, 210, 255) if self.difficulty == "novice" else (255, 150, 80)
+                dsurf = tc.get(self.font, t(dkey), dcol)
+                if self.play_mode in ("coop", "hotseat") or getattr(self, "hotseat", False):
+                    dx = BASE_WIDTH // 2 - dsurf.get_width() // 2
+                    dy = 70
+                else:
+                    dx = BASE_WIDTH - 16 - dsurf.get_width()
+                    dy = 16
+                self.game_surface.blit(dsurf, (dx, dy))
             # Flags for each boss defeated — at 10+, one big flag only
             if self.bosses_defeated >= 10:
                 fx = stage_x + stage_surf.get_width() + 12
@@ -4147,7 +4279,7 @@ class Game:
             fps_surf = self.text_cache.get(
                 self.font, f"{getattr(self, '_fps_display', 0)} FPS", (120, 220, 120)
             )
-            self.game_surface.blit(fps_surf, (BASE_WIDTH - fps_surf.get_width() - 16, 12))
+            self.game_surface.blit(fps_surf, (BASE_WIDTH - fps_surf.get_width() - 130, 12))
 
         # CRT scanlines — multiply, same format as game_surface (no alpha blit)
         if int(getattr(self, "scanlines", 0) or 0) > 0:

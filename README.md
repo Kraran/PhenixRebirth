@@ -1,6 +1,6 @@
 # Phenix Rebirth
 
-**Version 1.2.0**
+**Version 1.2.1**
 
 A modern, ultra-responsive PC remake of the classic arcade shooter **Phoenix** (1978 / 1980).
 
@@ -36,8 +36,9 @@ Free to play · Open source · MIT License
 - Optional autofire (hold to shoot when the previous shot has left the screen)
 - Local high scores (top 15, coop entries marked)
 - 13 languages
-- Attract mode (AI demo) + two-page help screen
-- Difficulty: Novice / Normal / Veteran
+- Attract mode (AI demo, menu theme keeps playing) + two-page animated help
+- Difficulty: Novice / Normal / Veteran (shown in-game on Novice / Veteran)
+- Session audio mix: SFX / SFX+music / music / off (defaults to SFX each launch)
 - Optional CRT **scanlines** (3 intensity levels)
 - Arcade bezels on ultrawide fullscreen (Phenix, Tesla, Blue, Flame)
 
@@ -123,7 +124,7 @@ PhenixRebirth/
 
 Franck Fornasari (Kraran)
 
-Music: *Phenix — Eternal Dawn*, *Eternal Dawn (Game Over)*, *Last Coin (Credits)* — created with [Suno](https://suno.com/@ffc059).
+Music: *Phenix — Eternal Dawn*, *Eternal Dawn (Game Over)*, *Last Coin (Credits)* — created with [Suno](https://suno.com).
 
 Tech: Python 3, Pygame 2 (SCALED GPU present), delta-time action loop.
 

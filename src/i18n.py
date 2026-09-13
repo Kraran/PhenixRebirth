@@ -5,6 +5,7 @@ Supported languages: fr, en, es, de, it, pt, nl, pl, tr, sv, no, da, ru.
 Use set_lang(code), then t("key") / t_help(...) / t_list(...) / get_credits_lines().
 UI, help (2 pages including Phenix) and credits are fully localized.
 Language choice is persisted in settings.json.
+Session-only strings (in-game audio mix) are localized but not saved.
 """
 LANGS = [
     ("fr", "Français"),
@@ -207,6 +208,37 @@ T = {
         "tr": "Muzik Sesi", "sv": "Musikvolym", "no": "Musikkvolum", "da": "Musiklydstyrke",
         "ru": "Громкость музыки",
     },
+    "opt_audio": {
+        "fr": "Audio en jeu", "en": "In-game audio", "es": "Audio en partida", "de": "Audio im Spiel",
+        "it": "Audio in gioco", "pt": "Audio no jogo", "nl": "Audio in-game", "pl": "Audio w grze",
+        "tr": "Oyun ici ses", "sv": "Ljud i spelet", "no": "Lyd i spillet", "da": "Lyd i spillet",
+        "ru": "Звук в игре",
+    },
+    "audio_sfx": {
+        "fr": "Bruitages", "en": "SFX", "es": "Efectos", "de": "Effekte",
+        "it": "Effetti", "pt": "Efeitos", "nl": "Effecten", "pl": "Efekty",
+        "tr": "Efekt", "sv": "Effekter", "no": "Effekter", "da": "Effekter",
+        "ru": "Эффекты",
+    },
+    "audio_sfx_music": {
+        "fr": "Bruitages + musique", "en": "SFX + music", "es": "Efectos + musica",
+        "de": "Effekte + Musik", "it": "Effetti + musica", "pt": "Efeitos + musica",
+        "nl": "Effecten + muziek", "pl": "Efekty + muzyka", "tr": "Efekt + muzik",
+        "sv": "Effekter + musik", "no": "Effekter + musikk", "da": "Effekter + musik",
+        "ru": "Эффекты + музыка",
+    },
+    "audio_music": {
+        "fr": "Musique", "en": "Music", "es": "Musica", "de": "Musik",
+        "it": "Musica", "pt": "Musica", "nl": "Muziek", "pl": "Muzyka",
+        "tr": "Muzik", "sv": "Musik", "no": "Musikk", "da": "Musik",
+        "ru": "Музыка",
+    },
+    "audio_off": {
+        "fr": "Off", "en": "Off", "es": "Off", "de": "Aus",
+        "it": "Off", "pt": "Off", "nl": "Uit", "pl": "Wyl.",
+        "tr": "Kapali", "sv": "Av", "no": "Av", "da": "Fra",
+        "ru": "Выкл",
+    },
     "opt_rumble": {
         "fr": "Vibrations", "en": "Rumble", "es": "Vibracion", "de": "Vibration",
         "it": "Vibrazione", "pt": "Vibracao", "nl": "Trilling", "pl": "Wibracje",
@@ -373,6 +405,21 @@ T = {
         "no": "Musikkvolum (menyer, game over, rulletekst).",
         "da": "Musiklydstyrke (menuer, game over, rulletekster).",
         "ru": "Громкость музыки (меню, game over, титры).",
+    },
+    "opt_help_audio_mix": {
+        "fr": "En partie : bruitages seuls (defaut), bruitages + theme, musique seule, ou silence. Non sauvegarde.",
+        "en": "In play: SFX only (default), SFX + theme, music only, or mute. Not saved.",
+        "es": "En partida: solo efectos (defecto), efectos + tema, solo musica, o silencio. No se guarda.",
+        "de": "Im Spiel: nur SFX (Standard), SFX + Theme, nur Musik, oder still. Nicht gespeichert.",
+        "it": "In partita: solo SFX (default), SFX + tema, solo musica, o muto. Non salvato.",
+        "pt": "Em jogo: so SFX (padrao), SFX + tema, so musica, ou mudo. Nao grava.",
+        "nl": "In-game: alleen SFX (standaard), SFX + theme, alleen muziek, of stil. Niet opgeslagen.",
+        "pl": "W grze: tylko SFX (domyslnie), SFX + motyw, tylko muzyka, cisza. Nie zapisuje.",
+        "tr": "Oyunda: sadece SFX (varsayilan), SFX + tema, sadece muzik, sessiz. Kaydedilmez.",
+        "sv": "I spel: bara SFX (standard), SFX + tema, bara musik, tyst. Sparas inte.",
+        "no": "I spill: bare SFX (standard), SFX + tema, bare musikk, stille. Lagres ikke.",
+        "da": "I spil: kun SFX (standard), SFX + tema, kun musik, stille. Gemmes ikke.",
+        "ru": "В игре: только SFX (по умолчанию), SFX + тема, только музыка, тишина. Не сохраняется.",
     },
     "opt_help_rumble": {
         "fr": "Intensite de la vibration manette. 0 = off, 3 = normal, 5 = max.",
@@ -1264,19 +1311,19 @@ CREDITS = {
         "ru": "БЕТА-ТЕСТЕРЫ",
     },
     "beta_names": {
-        "fr": "Cécile, Wallems et Luca",
-        "en": "Cécile, Wallems and Luca",
-        "es": "Cécile, Wallems y Luca",
-        "de": "Cécile, Wallems und Luca",
-        "it": "Cécile, Wallems e Luca",
-        "pt": "Cécile, Wallems e Luca",
-        "nl": "Cécile, Wallems en Luca",
-        "pl": "Cécile, Wallems i Luca",
-        "tr": "Cécile, Wallems ve Luca",
-        "sv": "Cécile, Wallems och Luca",
-        "no": "Cécile, Wallems og Luca",
-        "da": "Cécile, Wallems og Luca",
-        "ru": "Cécile, Wallems и Luca",
+        "fr": "Cécile, Wallems, Luca et Sacha",
+        "en": "Cécile, Wallems, Luca and Sacha",
+        "es": "Cécile, Wallems, Luca y Sacha",
+        "de": "Cécile, Wallems, Luca und Sacha",
+        "it": "Cécile, Wallems, Luca e Sacha",
+        "pt": "Cécile, Wallems, Luca e Sacha",
+        "nl": "Cécile, Wallems, Luca en Sacha",
+        "pl": "Cécile, Wallems, Luca i Sacha",
+        "tr": "Cécile, Wallems, Luca ve Sacha",
+        "sv": "Cécile, Wallems, Luca och Sacha",
+        "no": "Cécile, Wallems, Luca og Sacha",
+        "da": "Cécile, Wallems, Luca og Sacha",
+        "ru": "Cécile, Wallems, Luca и Sacha",
     },
     "music_h": {
         "fr": "MUSIQUE", "en": "MUSIC", "es": "MUSICA", "de": "MUSIK", "it": "MUSICA",

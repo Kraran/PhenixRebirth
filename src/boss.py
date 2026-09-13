@@ -115,27 +115,47 @@ class BossCore:
     """Cthulhu-esque alien core in the saucer center — 200 / 300 pts."""
     _image = None
     _image_white = None
+    _frames = None
+    _frames_white = None
+    ANIM_FPS = 8.0
 
     @classmethod
-    def _load_images(cls):
-        if cls._image is not None:
-            return
-        path = asset_path("sprites", "boss_core.png")
-        try:
-            cls._image = pygame.image.load(path).convert_alpha()
-        except Exception as e:
-            print("boss_core load failed:", e)
-            cls._image = None
-            return
-        # White flash version
-        w, h = cls._image.get_size()
+    def _whiten(cls, src):
+        w, h = src.get_size()
         white = pygame.Surface((w, h), pygame.SRCALPHA)
         for yy in range(h):
             for xx in range(w):
-                r, g, b, a = cls._image.get_at((xx, yy))
+                r, g, b, a = src.get_at((xx, yy))
                 if a > 20:
                     white.set_at((xx, yy), (255, 255, 255, a))
-        cls._image_white = white
+        return white
+
+    @classmethod
+    def _load_images(cls):
+        if cls._frames:
+            return
+        frames = []
+        for i in range(8):
+            path = asset_path("sprites", f"boss_core_{i:02d}.png")
+            try:
+                if not os.path.isfile(path):
+                    continue
+                frames.append(pygame.image.load(path).convert_alpha())
+            except Exception:
+                pass
+        if not frames:
+            path = asset_path("sprites", "boss_core.png")
+            try:
+                frames = [pygame.image.load(path).convert_alpha()]
+            except Exception as e:
+                print("boss_core load failed:", e)
+                cls._image = None
+                cls._frames = []
+                return
+        cls._frames = frames
+        cls._image = frames[0]
+        cls._frames_white = [cls._whiten(f) for f in frames]
+        cls._image_white = cls._frames_white[0] if cls._frames_white else None
 
     def __init__(self, x, y):
         BossCore._load_images()
@@ -149,9 +169,14 @@ class BossCore:
         self.DEATH_DURATION = 1.2
         self.time = 0.0
         self.hit_flash = 0.0
-        if BossCore._image is not None:
-            self.w = BossCore._image.get_width()
-            self.h = BossCore._image.get_height()
+        src = None
+        if BossCore._frames:
+            src = BossCore._frames[0]
+        elif BossCore._image is not None:
+            src = BossCore._image
+        if src is not None:
+            self.w = src.get_width()
+            self.h = src.get_height()
         else:
             self.w, self.h = 28, 32
 
@@ -191,16 +216,20 @@ class BossCore:
             return
 
         flash = self.hit_flash > 0 and int(self.hit_flash * 20) % 2 == 0
-        img = BossCore._image
+        frames = BossCore._frames or ([BossCore._image] if BossCore._image else [])
+        img = None
+        if frames:
+            idx = int(self.time * BossCore.ANIM_FPS) % len(frames)
+            img = frames[idx]
+            if flash and BossCore._frames_white:
+                img = BossCore._frames_white[idx % len(BossCore._frames_white)]
         if img is None:
             # Fallback procedural
             cx, cy = int(self.x), int(bob)
             col = (255, 255, 255) if flash else (40, 90, 70)
             pygame.draw.ellipse(surface, col, (cx - 14, cy - 16, 28, 32))
             return
-        if flash and BossCore._image_white is not None:
-            img = BossCore._image_white
-        surface.blit(img, (int(self.x - self.w // 2), int(bob - self.h // 2)))
+        surface.blit(img, (int(self.x - img.get_width() // 2), int(bob - img.get_height() // 2)))
 
 
 class BossSaucer:
@@ -330,8 +359,6 @@ class BossSaucer:
             y = brick_top - deco_h / 2  # flush: deco bottom == brick top
             self.decorations.append(SaucerDecoration(top.base_x, y, kind))
 
-        BossCore._image = None
-        BossCore._image_white = None
         self.boss = BossCore(cx, top_y + 18)
         self.base_cx = cx
         self.top_y = top_y

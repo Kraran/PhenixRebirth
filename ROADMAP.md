@@ -1,6 +1,16 @@
 # Roadmap — Phenix Rebirth
 
-Current release: **v1.2.0**
+Current release: **v1.2.1**
+
+## Done in 1.2.1
+
+- Attract keeps the menu theme; session-only in-game audio mix (SFX / SFX+music / music / off)
+- Music loops natively (no MP3 reload hitch)
+- Help: animated stage-1/2 birds, looping Phenix, looping boss core
+- Boss core tentacle cycle in the saucer (preloaded frames, centered blit)
+- HUD: Novice / Veteran label (solo top-right, coop & hot seat centered under lives)
+- Input swallows: quit-confirm No, attract Exit, Options/Credits Esc = back
+- Help pages 13 s each; FPS counter shifted off the difficulty label
 
 ## Done in 1.2.0
 
@@ -36,7 +46,7 @@ Current release: **v1.2.0**
 - **0.2.0-rc.1** — feature-complete release candidate
 - **0.1.0** — stages 1–5, boss, difficulties, high scores, 13 languages, attract mode
 
-## Planned (post-1.2)
+## Planned (post-1.2.1)
 
 ### Play & feel
 - [ ] Native **144 Hz** path (cap already easy; exclusive modes still report 60 on some GPUs)

@@ -14,6 +14,7 @@ if errorlevel 1 (
 )
 
 python -m PyInstaller --noconfirm --clean --windowed --name "PhenixRebirth" ^
+  --icon "assets\icon.ico" ^
   --paths src ^
   --add-data "src;src" ^
   --add-data "assets;assets" ^

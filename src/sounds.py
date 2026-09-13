@@ -6,8 +6,9 @@ Music tracks are MP3 under assets/music/ with short cross-fades between
 menu theme, game-over theme, credits theme, and in-game silence.
 
 Loop behaviour:
-- Tracks play once; near the end volume fades out (long fade on credits).
-- After the track ends, wait LOOP_GAP_SEC then restart (all tracks).
+- Tracks loop natively (play(-1)) so we never reload an MP3 mid-session.
+- Theme changes still cross-fade. Credits keeps a long end-fade only when
+  leaving that screen, not a disk reload every loop.
 """
 import pygame
 import os
@@ -26,6 +27,7 @@ class SoundManager:
 
     def __init__(self):
         self.enabled = False
+        self.sfx_muted = False
         self.sounds = {}
         self._electric_channel = None
         self.master_volume = 0.8
@@ -39,11 +41,14 @@ class SoundManager:
         self._music_elapsed = 0.0
         self._music_duration = None  # seconds or None
         self._end_fading = False
-        self._loop_wait = 0.0  # >0 while waiting gap before re-loop
-        self._loop_key = None  # key to restart after gap
+        self._loop_wait = 0.0
+        self._loop_key = None
+        self._busy_cache = False
+        self._busy_age = 1.0
         try:
             if not pygame.mixer.get_init():
-                pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=1024)
+                # 2048 samples ≈ 46 ms — fewer underruns than 1024, still tight for SFX
+                pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=2048)
             for name, vol in [
                 ("shoot", 0.45),
                 ("explosion", 0.65),
@@ -142,7 +147,7 @@ class SoundManager:
 
     def play(self, name, volume=None):
         """Play SFX. Optional volume (0..1) overrides the sample base * master for this shot."""
-        if not self.enabled:
+        if not self.enabled or getattr(self, "sfx_muted", False):
             return
         snd = self.sounds.get(name)
         if not snd:
@@ -159,7 +164,13 @@ class SoundManager:
 
     def play_electric(self, active):
         """Loop electric crackle while edge shock is active."""
-        if not self.enabled:
+        if not self.enabled or getattr(self, "sfx_muted", False):
+            if not active and self._electric_channel is not None:
+                try:
+                    self._electric_channel.stop()
+                except Exception:
+                    pass
+                self._electric_channel = None
             return
         snd = self.sounds.get("electric")
         if not snd:
@@ -177,16 +188,14 @@ class SoundManager:
         if key not in self._music_paths:
             return
         path = self._music_paths.get(key)
-        if not path or not os.path.exists(path):
+        if not path:
             return
-        # Already on this track (playing or waiting to re-loop)
+        # Already on this track — never touch the stream (avoids MP3 reload hitch)
         if self._current_music == key and not self._fading_out:
-            if self._loop_key == key or pygame.mixer.music.get_busy() or self._loop_wait > 0:
-                return
+            return
         if self._pending_music == key and self._fading_out:
             return
 
-        # Cancel loop-wait for a different theme
         self._loop_wait = 0.0
         self._loop_key = None
 
@@ -226,10 +235,9 @@ class SoundManager:
     def _start_track(self, path, key):
         try:
             pygame.mixer.music.load(path)
-            pygame.mixer.music.set_volume(0.0)
-            # Play once — we handle re-loop + gap ourselves
-            pygame.mixer.music.play(0, fade_ms=self.FADE_MS)
             pygame.mixer.music.set_volume(self.music_volume)
+            # Native loop: no mid-track reload (that was the rare hitch)
+            pygame.mixer.music.play(-1, fade_ms=self.FADE_MS)
             self._current_music = key
             self._fading_out = False
             self._pending_music = None
@@ -261,77 +269,14 @@ class SoundManager:
         return self.END_FADE_DEFAULT
 
     def update(self, dt):
-        """Call each frame: crossfades, end-of-track fade, loop gap."""
-        # Waiting between loops
-        if self._loop_wait > 0:
-            self._loop_wait -= dt
-            if self._loop_wait <= 0:
-                key = self._loop_key
-                self._loop_key = None
-                self._loop_wait = 0.0
-                if key:
-                    path = self._music_paths.get(key)
-                    if path and os.path.exists(path):
-                        self._start_track(path, key)
+        """Call each frame: finish a theme crossfade. Loops are native (no reload)."""
+        if not self._fading_out:
             return
-
-        # Crossfade between different themes
-        if self._fading_out and not self._end_fading:
-            self._fade_timer -= dt
-            if self._fade_timer <= 0:
-                try:
-                    if not pygame.mixer.music.get_busy():
-                        self._finish_fade()
-                    else:
-                        pygame.mixer.music.stop()
-                        self._finish_fade()
-                except Exception:
-                    self._finish_fade()
+        self._fade_timer -= dt
+        if self._fade_timer > 0:
             return
-
-        # Active track: soft end-fade + detect end
-        if self._current_music is None:
-            return
-
         try:
-            busy = pygame.mixer.music.get_busy()
+            pygame.mixer.music.stop()
         except Exception:
-            busy = False
-
-        if busy:
-            self._music_elapsed += dt
-            try:
-                pos_ms = pygame.mixer.music.get_pos()
-                if pos_ms >= 0:
-                    # get_pos is the authoritative playhead when valid
-                    self._music_elapsed = pos_ms / 1000.0
-            except Exception:
-                pass
-
-            dur = self._music_duration
-            if dur and dur > 3.0:
-                fade_len = self._end_fade_seconds(self._current_music)
-                # Start a bit early so the fade is always audible before cut-off
-                remaining = dur - self._music_elapsed
-                if remaining <= fade_len + 0.15:
-                    self._end_fading = True
-                    t = max(0.0, min(1.0, remaining / fade_len))
-                    try:
-                        pygame.mixer.music.set_volume(self.music_volume * t)
-                    except Exception:
-                        pass
-            return
-
-        # Track finished naturally
-        if self._current_music is not None and not self._fading_out:
-            key = self._current_music
-            self._current_music = None
-            self._end_fading = False
-            self._music_elapsed = 0.0
-            # Gap then re-loop same theme
-            self._loop_key = key
-            self._loop_wait = self.LOOP_GAP_SEC
-            try:
-                pygame.mixer.music.set_volume(self.music_volume)
-            except Exception:
-                pass
+            pass
+        self._finish_fade()
