@@ -4,4 +4,6 @@ settings.json
 highscores.json
 achievements.json
 boot.log
+dist/
+build/
 *.zip
