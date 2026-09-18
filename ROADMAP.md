@@ -1,7 +1,7 @@
 # Roadmap — Phenix Rebirth
-Current release: **v1.3.0-beta**
+Current release: **v1.3.0**
 
-## Done in 1.3.0-beta
+## Done in 1.3.0
 
 - Shield ship + select screen (solo / hot-seat / coop combos)
 - Achievements page
@@ -9,6 +9,9 @@ Current release: **v1.3.0-beta**
 - In-game music track option
 - Stereo SFX, extra OST tracks
 - Help page 2: Phenix and Shield
+- Starfield: two extra asteroids (Dinkinesh pair + Pallas)
+- Credits OST list uses the five ID3 titles
+- i18n: jukebox hints and locked achievements in all 13 languages
 
 ## Done in 1.2.1
 

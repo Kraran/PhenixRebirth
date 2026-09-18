@@ -1,6 +1,6 @@
 # Phenix Rebirth
 
-**Version 1.3.0-beta**
+**Version 1.3.0**
 
 A modern, ultra-responsive PC remake of the classic arcade shooter **Phoenix** (1978 / 1980).
 
@@ -26,7 +26,7 @@ Free to play · Open source · MIT License
 
 ## Features
 
-- - **Shield ship** — second craft: freeze + explosive barrier (2 s, 5 s cooldown)
+- **Shield ship** — second craft: freeze + explosive barrier (2 s, 5 s cooldown)
 - Ship select at start (and P2 in hot-seat); blue tint only when both pick the same hull
 - Achievements (scrollable, dated)
 - Jukebox (ID3 titles, PHEQ1 equalizer, intro video)

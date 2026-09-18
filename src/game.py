@@ -8,7 +8,7 @@ Play modes: solo, hot-seat (alternating), coop (simultaneous). Options cover
 controls, autofire, volumes, session audio mix, rumble, display, GPU present,
 VSync, refresh cap, bezels, FPS counter, CRT scanlines and language.
 Cheats on the high-score menu: LVL2–LVL5, LIVE, PHEN.
-v1.2.1 — looping music, animated help/boss, difficulty HUD, input swallows.
+v1.3.0 — Shield ship, achievements, jukebox (PHEQ1 + ID3), in-game OST picker, stereo SFX.
 
 Architecture notes:
 - Logical resolution BASE_WIDTH x BASE_HEIGHT (see settings.py).
@@ -2174,32 +2174,6 @@ class Game:
             and gx >= 40
         )
 
-    def _init_bezel_stars(self):
-        """Starfield particles for left/right bezel panels."""
-        import random as _r
-        self._bezel_stars = []
-        if not getattr(self, "screen", None):
-            return
-        sw, sh = self.screen.get_size()
-        for _ in range(120):
-            self._bezel_stars.append({
-                "x": _r.uniform(0, sw),
-                "y": _r.uniform(0, sh),
-                "s": _r.uniform(0.4, 2.2),
-                "v": _r.uniform(12, 55),
-                "a": _r.randint(80, 220),
-            })
-
-    def _update_bezel_stars(self, dt):
-        if not self._bezel_stars:
-            return
-        sh = self.screen.get_height()
-        for st in self._bezel_stars:
-            st["y"] += st["v"] * dt
-            if st["y"] > sh:
-                st["y"] = -2
-                st["x"] = __import__("random").uniform(0, self.screen.get_width())
-
     def _invalidate_present_cache(self):
         """Call when display mode / bezel style / window size changes."""
         self._bezel_blit_left = None
@@ -2256,17 +2230,6 @@ class Game:
         self._bezel_blit_right = cover(
             getattr(self, "bezel_right_img", None), right_w, sh, False
         )
-
-    def _draw_arcade_bezels(self):
-        """Blit cached left/right bezel panels (no per-frame scaling)."""
-        if not self.bezel_active:
-            return
-        self._ensure_bezel_cache()
-        vr = self.view_rect
-        if self._bezel_blit_left is not None:
-            self.screen.blit(self._bezel_blit_left, (0, 0))
-        if self._bezel_blit_right is not None:
-            self.screen.blit(self._bezel_blit_right, (vr.right, 0))
 
     def _flip_frame(self, shake_x=0, shake_y=0):
         """Present game_surface: SCALED 1:1, or CPU blit + cached bezels."""
@@ -3012,7 +2975,7 @@ class Game:
             "sfx": f"{t('opt_sfx')} :  <  {vol_pct}%  >",
             "music": f"{t('opt_music')} :  <  {mus_pct}%  >",
             "audio_mix": f"{t('opt_audio')} :  <  {t('audio_' + getattr(self, 'audio_mix', 'sfx'))}  >",
-            "ingame_music": f"{t('opt_ingame_music') if False else 'Musique en jeu'} :  <  {ingame_label(getattr(self, 'ingame_music', 'none'), t, asset_path)}  >",
+            "ingame_music": f"{t('opt_ingame')} :  <  {ingame_label(getattr(self, 'ingame_music', 'none'), t, asset_path)}  >",
             "rumble": f"{t('opt_rumble')} :  <  {int(getattr(self, 'rumble_level', 3))} / 5  >",
             "display": f"{t('opt_display')} :  <  {disp}  >",
             "bezel": f"{t('opt_bezel')} :  <  {bezel_label}  >",
