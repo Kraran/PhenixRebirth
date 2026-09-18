@@ -1,40 +1,7 @@
-# Python
 __pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-*.egg-info/
-.eggs/
-dist/
-build/
-*.egg
-
-# Virtual environments
-.venv/
-venv/
-ENV/
-env/
-
-# Local player data (do not commit)
+*.pyc
 settings.json
 highscores.json
-
-# OS / editor
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
-.idea/
-.vscode/
-*.code-workspace
-
-# Local builds / packaging artifacts
-builds/
-*.exe
-*.app
-*.msi
-
-# Logs
-*.log
-*.spec
+achievements.json
+boot.log
+*.zip

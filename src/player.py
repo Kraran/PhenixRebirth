@@ -14,12 +14,13 @@ from settings import *
 
 from settings import asset_path
 SHIP_PATH = asset_path("sprites", "player_ship.png")
+SHIP_SHIELD_PATH = asset_path("sprites", "player_ship_shield.png")
 
 class Player:
-    def __init__(self, x, y):
+    def __init__(self, x, y, ship_id="phoenix"):
         self.x = float(x)
         self.y = float(y)
-        
+        self.ship_id = "phoenix"
         self.image = pygame.image.load(SHIP_PATH).convert_alpha()
         self.width = self.image.get_width()
         self.height = self.image.get_height()
@@ -91,6 +92,9 @@ class Player:
         self.hitbox_h = max(32, int(self.height * 0.52))
         # Twin engines spacing (px from center each side)
         self.engine_offset = 8
+        self.engine_offsets = (-8, 8)
+        self.engine_ys = (0, 0)
+        self.engine_width_scale = 1.0
         
         # Engine animation
         self.moving = False
@@ -115,22 +119,97 @@ class Player:
         self.DEATH_DURATION = 0.70
         self.death_flash = False
         self._white_image = None
+        # Apply hull last so engine count / shield frames are not overwritten
+        # by the defaults above (coop / hot-seat construct with ship_id).
+        if ship_id and ship_id != "phoenix":
+            self.set_ship(ship_id)
 
     def apply_blue_palette(self):
-        """Dark-blue ship + icy Phenix (P2 coop)."""
+        """Dark-blue ship + icy Phenix / Shield (P2 coop / hot-seat)."""
         self.palette = "blue"
         def _tint(surf, rgb):
+            if surf is None:
+                return surf
             out = surf.copy()
             overlay = pygame.Surface(out.get_size(), pygame.SRCALPHA)
             overlay.fill((*rgb, 255))
             out.blit(overlay, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
             return out
-        self.image = _tint(self.image, (70, 120, 255))
+        shield = getattr(self, "uses_shield", False)
+        hull = (150, 200, 255) if shield else (70, 120, 255)
+        ice = (210, 240, 255) if shield else (170, 220, 255)
+        self.image = _tint(self.image, hull)
         self._white_image = None
-        # Pale gas-flame blue (keep luminosity)
-        self.phenix_frames = [_tint(fr, (170, 220, 255)) for fr in self.phenix_frames]
-        self.morph_frames = [_tint(fr, (160, 210, 255)) for fr in self.morph_frames]
+        self.phenix_frames = [_tint(fr, ice) for fr in (self.phenix_frames or [])]
+        self.morph_frames = [_tint(fr, ice) for fr in (self.morph_frames or [])]
+        if getattr(self, "uses_shield", False):
+            self.shield_on_frames = [_tint(fr, ice) for fr in (getattr(self, "shield_on_frames", None) or [])]
+            self.shield_loop_frames = [_tint(fr, ice) for fr in (getattr(self, "shield_loop_frames", None) or [])]
+            self.shield_off_frames = [_tint(fr, ice) for fr in (getattr(self, "shield_off_frames", None) or [])]
+            self.morph_frames = list(self.shield_on_frames)
+            self.phenix_frames = list(self.shield_loop_frames)
         self.rect = self.image.get_rect(center=(self.x, self.y))
+
+    def set_ship(self, ship_id):
+        """Swap hull art. Combat rules (Phenix vs Shield) hook here later."""
+        sid = "shield" if ship_id == "shield" else "phoenix"
+        self.ship_id = sid
+        self.palette = "red"
+        path = SHIP_SHIELD_PATH if sid == "shield" else SHIP_PATH
+        try:
+            self.image = pygame.image.load(path).convert_alpha()
+        except Exception as e:
+            print("set_ship load failed:", e)
+            return
+        self.width = self.image.get_width()
+        self.height = self.image.get_height()
+        self._white_image = None
+        self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
+        self._load_shield_frames()
+        if sid == "shield":
+            self.engine_offsets = (-12, 0, 12)
+            self.engine_ys = (0, 6, 0)
+            self.engine_width_scale = 0.58
+            self.engine_offset = 12
+            self.phenix_gauge = 10.0
+            self.phenix_min_gauge = 0
+            self.phenix_cooldown = 0.0
+            self.SHIELD_DURATION = 2.0
+            self.SHIELD_COOLDOWN = 5.0
+            self.MORPH_IN_SEC = 0.22
+            self.MORPH_OUT_SEC = 0.26
+        else:
+            self.engine_offsets = (-8, 8)
+            self.engine_ys = (0, 0)
+            self.engine_width_scale = 1.0
+            self.engine_offset = 8
+
+    @property
+    def uses_shield(self):
+        return getattr(self, "ship_id", "phoenix") == "shield"
+
+    def _load_shield_frames(self):
+        self.shield_on_frames = []
+        self.shield_loop_frames = []
+        self.shield_off_frames = []
+        sdir = asset_path("sprites", "shield")
+        if not os.path.isdir(sdir):
+            return
+        for name in sorted(os.listdir(sdir)):
+            path = os.path.join(sdir, name)
+            try:
+                fr = pygame.image.load(path).convert_alpha()
+            except Exception:
+                continue
+            if name.startswith("morph_"):
+                self.shield_on_frames.append(fr)
+            elif name.startswith("loop_"):
+                self.shield_loop_frames.append(fr)
+            elif name.startswith("off_"):
+                self.shield_off_frames.append(fr)
+        if self.uses_shield:
+            self.morph_frames = list(self.shield_on_frames)
+            self.phenix_frames = list(self.shield_loop_frames)
 
     def update(self, dt, keys, input_mode="keyboard", joystick=None, allow_shoot=True, ai_move=None, ai_shoot=None):
         if not self.alive:
@@ -150,6 +229,8 @@ class Player:
             self.invulnerable = max(0.0, self.invulnerable - dt)
         if getattr(self, "phenix_cooldown", 0) > 0:
             self.phenix_cooldown = max(0.0, self.phenix_cooldown - dt)
+        if getattr(self, "_special_lock", 0) > 0:
+            self._special_lock = max(0.0, self._special_lock - dt)
 
         # Morph ship ↔ Phenix (must advance every frame)
         if getattr(self, "morph_dir", 0) != 0:
@@ -170,13 +251,17 @@ class Player:
                         self.phenix_saved_gauge = None
                     else:
                         self.phenix_gauge = float(self.phenix_min_gauge)
-                    self.phenix_cooldown = float(getattr(self, "PHENIX_COOLDOWN_SEC", 1.25))
+                    if self.uses_shield:
+                        self.phenix_cooldown = float(getattr(self, "SHIELD_COOLDOWN", 5.0))
+                        self.phenix_gauge = 0.0
+                    else:
+                        self.phenix_cooldown = float(getattr(self, "PHENIX_COOLDOWN_SEC", 1.25))
                 else:
                     # Morph-in done → full Phenix flight loop
                     self.morph_dir = 0
                     self.morph_timer = 0.0
 
-        # Phenix form countdown — only while fully transformed (not during morph)
+        # Phenix / Shield form countdown — only while fully transformed (not during morph)
         if self.phenix_timer > 0 and getattr(self, "morph_dir", 0) == 0:
             self.phenix_timer = max(0.0, self.phenix_timer - dt)
             if not hasattr(self, "phenix_anim_time"):
@@ -186,12 +271,18 @@ class Player:
                 self.phenix_gauge = self.phenix_start_level * (self.phenix_timer / self.phenix_duration)
             if self.phenix_timer <= 0:
                 self.end_phenix(grant_invuln=True)
-            else:
-                # Soft purr while in Phenix form
+            elif not self.uses_shield:
                 self._purr_cd = getattr(self, "_purr_cd", 0.0) - dt
                 if self._purr_cd <= 0:
                     self._purr_cd = 0.32
                     self.rumble(0.16, 0.28, 300)
+        elif self.uses_shield and getattr(self, "morph_dir", 0) == 0:
+            cd = float(getattr(self, "phenix_cooldown", 0) or 0)
+            total = float(getattr(self, "SHIELD_COOLDOWN", 5.0))
+            if cd > 0:
+                self.phenix_gauge = 10.0 * (1.0 - min(1.0, cd / max(0.05, total)))
+            else:
+                self.phenix_gauge = 10.0
         elif self.phenix_auto_refill and self.alive and not self.dying and getattr(self, "morph_dir", 0) == 0:
             rate = 10.0 / max(0.1, self.PHENIX_REFILL_TIME)
             if self.phenix_gauge < 10.0:
@@ -255,6 +346,8 @@ class Player:
                     dx += 1.0
                 shoot_pressed = keys[pygame.K_SPACE] or keys[pygame.K_RCTRL]
         
+        if self.uses_shield and self.is_phenix:
+            dx = 0.0
         self.moving = dx != 0.0
         
         if self.slowdown_timer > 0:
@@ -262,7 +355,7 @@ class Player:
             speed_mult = self.SLOWDOWN_FACTOR
         else:
             speed_mult = 1.0
-        if self.is_phenix:
+        if self.is_phenix and not self.uses_shield:
             speed_mult *= self.PHENIX_SPEED_MULT
             
         self.x += dx * self.speed * speed_mult * dt
@@ -289,11 +382,14 @@ class Player:
         
         if self.edge_contact and self.invulnerable <= 0:
             # Any edge spark empties Phenix gauge (and ends form if active)
-            if self.is_phenix:
+            if self.is_phenix and not self.uses_shield:
                 self.end_phenix(grant_invuln=True)
                 self.edge_timer = 0.0
                 self.edge_flash = 0.35
                 self.slowdown_timer = max(self.slowdown_timer, 0.5)
+            elif self.is_phenix and self.uses_shield:
+                self.edge_contact = False
+                self.edge_timer = 0.0
             else:
                 if self.phenix_gauge > self.phenix_min_gauge or self.combo_streak > 0:
                     self.phenix_gauge = float(self.phenix_min_gauge)
@@ -320,6 +416,8 @@ class Player:
         self.engine_time += dt
         target = 1.0 if self.moving else 0.25
         self.engine_intensity += (target - self.engine_intensity) * min(1.0, 8.0 * dt)
+        if self.uses_shield and self.is_phenix:
+            self.engine_intensity = 0.0
         
         # Update shots
         for shot in self.shots[:]:
@@ -359,7 +457,7 @@ class Player:
         if self.dying or self.shots:
             return
         by = self.y - self.height // 2 - 4
-        if self.is_phenix:
+        if self.is_phenix and not self.uses_shield:
             # Dual fire from rear wings
             wing = max(12, int(self.width * 0.28))
             self.shots = [
@@ -371,7 +469,7 @@ class Player:
                 {"x": self.x, "y": by, "resolved": False, "flame": False},
             ]
         if getattr(self, "sounds", None):
-            self.sounds.play("shoot", volume=0.45)
+            self.sounds.play("shoot", volume=0.45, x=self.x)
 
     def rumble(self, low, high, duration_ms):
         """Gamepad vibration if a pad is present. Silent no-op otherwise.
@@ -431,7 +529,7 @@ class Player:
 
     def register_miss(self):
         """Shot left the screen with no valid/neutral contact — -1 gauge."""
-        if self.is_phenix:
+        if self.is_phenix or self.uses_shield:
             return  # no gauge change during form
         self.combo_streak = 0
         self.phenix_gauge = max(float(self.phenix_min_gauge), float(self.phenix_gauge) - 1.0)
@@ -445,17 +543,38 @@ class Player:
         return self.phenix_timer > 0
 
     def can_activate_phenix(self):
-        return (
-            self.alive and not self.dying
-            and not self.is_phenix
-            and self.phenix_gauge >= 3
-            and getattr(self, "phenix_cooldown", 0) <= 0
-        )
+        if not self.alive or self.dying or self.is_phenix:
+            return False
+        if getattr(self, "phenix_cooldown", 0) > 0:
+            return False
+        if self.uses_shield:
+            return True
+        return self.phenix_gauge >= 3
 
     def try_activate_phenix(self):
-        """Spend gauge for 0.6s * level; bar drains over the duration as timer."""
+        """Phenix: spend gauge. Shield: 2s bubble, then 5s cooldown."""
         if not self.can_activate_phenix():
             return False
+        if self.uses_shield:
+            self.phenix_start_level = 10
+            self.phenix_duration = 2.0
+            self.phenix_timer = 2.0
+            self.SHIELD_DURATION = 2.0
+            self.phenix_gauge = 10.0
+            self.combo_streak = 0
+            self.phenix_anim_time = 0.0
+            self.morph_frames = list(getattr(self, "shield_on_frames", None) or [])
+            self.phenix_frames = list(getattr(self, "shield_loop_frames", None) or [])
+            self.morph_dir = 1 if self.morph_frames else 0
+            self.morph_timer = 0.0
+            self.morph_duration = 0.22 if self.morph_frames else 0.0
+            self._special_lock = 0.40
+            if getattr(self, "sounds", None):
+                try:
+                    self.sounds.play("phenix_activate", x=self.x)
+                except Exception:
+                    pass
+            return True
         level = int(self.phenix_gauge)
         self.phenix_start_level = level
         self.phenix_duration = self.phenix_sec_per_point * level
@@ -467,8 +586,9 @@ class Player:
         self.morph_dir = 1
         self.morph_timer = 0.0
         self.morph_duration = self.MORPH_IN_SEC if self.morph_frames else 0.0
+        self._special_lock = 0.40
         if getattr(self, "sounds", None):
-            self.sounds.play("phenix_activate")
+            self.sounds.play("phenix_activate", x=self.x)
         return True
 
     def end_phenix(self, grant_invuln=False, keep_gauge=False):
@@ -499,13 +619,15 @@ class Player:
         else:
             self.phenix_saved_gauge = None
 
+        if self.uses_shield and getattr(self, "shield_off_frames", None):
+            self.morph_frames = list(self.shield_off_frames)
         if getattr(self, "morph_frames", None):
             self.morph_dir = -1
             self.morph_timer = 0.0
-            self.morph_duration = self.MORPH_OUT_SEC
+            self.morph_duration = 0.26 if self.uses_shield else self.MORPH_OUT_SEC
             self.phenix_timer = 0.0
             if getattr(self, "sounds", None):
-                self.sounds.play("phenix_end")
+                self.sounds.play("phenix_end", x=self.x)
             if grant_invuln and self.alive and not self.dying:
                 self.invulnerable = max(self.invulnerable, self.PHENIX_END_INVULN)
             return
@@ -521,9 +643,13 @@ class Player:
             self.phenix_saved_gauge = None
         else:
             self.phenix_gauge = float(self.phenix_min_gauge)
-        self.phenix_cooldown = float(getattr(self, "PHENIX_COOLDOWN_SEC", 1.25))
+        if self.uses_shield:
+            self.phenix_cooldown = float(getattr(self, "SHIELD_COOLDOWN", 5.0))
+            self.phenix_gauge = 0.0
+        else:
+            self.phenix_cooldown = float(getattr(self, "PHENIX_COOLDOWN_SEC", 1.25))
         if getattr(self, "sounds", None):
-            self.sounds.play("phenix_end")
+            self.sounds.play("phenix_end", x=self.x)
         if grant_invuln and self.alive and not self.dying:
             self.invulnerable = max(self.invulnerable, self.PHENIX_END_INVULN)
 
@@ -531,6 +657,8 @@ class Player:
         """Manual early exit (B again) — keep remaining gauge."""
         if not self.is_phenix:
             return False
+        if getattr(self, "_special_lock", 0) > 0:
+            return False  # same key hold / key-repeat must not cut the form
         if getattr(self, "morph_dir", 0) < 0:
             return False  # already exiting
         self.end_phenix(grant_invuln=True, keep_gauge=True)
@@ -539,10 +667,13 @@ class Player:
 
     def register_valid_hit(self):
         """Body/core kill — +1 gauge (capped at 10). No combo required."""
-        if self.is_phenix:
+        if self.is_phenix or self.uses_shield:
             return  # no refill during form
-        self.phenix_gauge = min(10.0, float(self.phenix_gauge) + 1.0)
+        before = float(self.phenix_gauge)
+        self.phenix_gauge = min(10.0, before + 1.0)
         self.combo_streak = 0
+        if before < 10.0 and self.phenix_gauge >= 10.0 and not self.uses_shield:
+            self.flag_gauge_max = True
 
     def hit(self):
         """Apply damage. Returns True if this hit started the death sequence."""
@@ -601,7 +732,7 @@ class Player:
         
         flicker = 0.85 + 0.15 * math.sin(self.engine_time * 28.0 + cx * 0.1)
         length = intensity * flicker * (18.0 + 4.0 * math.sin(self.engine_time * 19.0 + cx))
-        width = 5 + intensity * 3
+        width = (5 + intensity * 3) * float(getattr(self, "engine_width_scale", 1.0))
         if phenix:
             length *= 1.35
             width *= 1.45
@@ -733,9 +864,13 @@ class Player:
             # Dying engine sputter
             if t < 0.5:
                 ship_bottom = self.y + h // 2 - 4
-                off = getattr(self, "engine_offset", 8)
-                self._draw_engine_flame(surface, self.x - off, ship_bottom, 0.6 * (1.0 - t))
-                self._draw_engine_flame(surface, self.x + off, ship_bottom, 0.6 * (1.0 - t))
+                offs = getattr(self, "engine_offsets", (-8, 8))
+                yos = getattr(self, "engine_ys", (0,) * len(offs))
+                for i, off in enumerate(offs):
+                    self._draw_engine_flame(
+                        surface, self.x + off, ship_bottom + yos[i] if i < len(yos) else ship_bottom,
+                        0.6 * (1.0 - t),
+                    )
             if self.edge_death:
                 self._draw_edge_lightning(surface)
             return
@@ -773,9 +908,15 @@ class Player:
             surface.blit(self.image, (draw_x, draw_y))
             ship_bottom = self.y + self.height // 2 - 2
 
-        offset = getattr(self, "engine_offset", 8)
-        self._draw_engine_flame(surface, self.x - offset, ship_bottom, self.engine_intensity)
-        self._draw_engine_flame(surface, self.x + offset, ship_bottom, self.engine_intensity)
+        if not (self.uses_shield and self.is_phenix):
+            offs = getattr(self, "engine_offsets", (-8, 8))
+            yos = getattr(self, "engine_ys", (0,) * len(offs))
+            for i, off in enumerate(offs):
+                self._draw_engine_flame(
+                    surface, self.x + off,
+                    ship_bottom + (yos[i] if i < len(yos) else 0),
+                    self.engine_intensity,
+                )
         
         self._draw_edge_lightning(surface)
         

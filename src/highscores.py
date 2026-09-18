@@ -31,10 +31,22 @@ def load_highscores():
             cleaned = []
             for e in data:
                 if isinstance(e, dict) and "name" in e and "score" in e:
+                    sid = str(e.get("ship") or "phoenix").lower()
+                    if sid not in ("phoenix", "shield"):
+                        sid = "phoenix"
+                    sid2 = e.get("ship2")
+                    if sid2:
+                        sid2 = str(sid2).lower()
+                        if sid2 not in ("phoenix", "shield"):
+                            sid2 = None
+                    else:
+                        sid2 = None
                     cleaned.append({
                         "name": str(e["name"])[:3].upper().ljust(3, "A"),
                         "score": int(e["score"]),
                         "coop": bool(e.get("coop", False)),
+                        "ship": sid,
+                        "ship2": sid2,
                     })
             if cleaned:
                 cleaned.sort(key=lambda x: x["score"], reverse=True)
@@ -67,12 +79,18 @@ def is_highscore(score, entries=None):
         return True
     return score > entries[-1]["score"]
 
-def insert_score(name, score, entries=None, coop=False):
+def insert_score(name, score, entries=None, coop=False, ship="phoenix", ship2=None):
     if entries is None:
         entries = load_highscores()
+    sid = "shield" if ship == "shield" else "phoenix"
+    sid2 = None
+    if ship2 in ("phoenix", "shield") and ship2 != sid:
+        sid2 = ship2
     entries.append({
         "name": name[:3].upper().ljust(3, "A"),
         "score": int(score),
         "coop": bool(coop),
+        "ship": sid,
+        "ship2": sid2,
     })
     return save_highscores(entries)

@@ -1,6 +1,6 @@
 # Phenix Rebirth
 
-**Version 1.2.1**
+**Version 1.3.0-beta**
 
 A modern, ultra-responsive PC remake of the classic arcade shooter **Phoenix** (1978 / 1980).
 
@@ -26,21 +26,12 @@ Free to play · Open source · MIT License
 
 ## Features
 
-- Faithful stage cycle inspired by the arcade original (birds → gargoyles → boss saucer)
-- **PHENIX mode** — charge a gauge with accurate shots, transform into a firebird (invulnerable, faster, dual flame shots)
-- Infinite progression: stages loop with rising speed after each boss
-- Smooth 60 / 75 / 120 Hz play (delta-time); VSync On / Adaptive / Off
-- GPU upscale (`pygame.SCALED`) with arcade bezels on ultrawide
-- Keyboard & gamepad (hot-plug while in menus; AZERTY Z + fire keys in menus)
-- 1 player, 2-player **hot seat**, 2-player **coop** (separate scores & Phenix gauges, shared lives)
-- Optional autofire (hold to shoot when the previous shot has left the screen)
-- Local high scores (top 15, coop entries marked)
-- 13 languages
-- Attract mode (AI demo, menu theme keeps playing) + two-page animated help
-- Difficulty: Novice / Normal / Veteran (shown in-game on Novice / Veteran)
-- Session audio mix: SFX / SFX+music / music / off (defaults to SFX each launch)
-- Optional CRT **scanlines** (3 intensity levels)
-- Arcade bezels on ultrawide fullscreen (Phenix, Tesla, Blue, Flame)
+- - **Shield ship** — second craft: freeze + explosive barrier (2 s, 5 s cooldown)
+- Ship select at start (and P2 in hot-seat); blue tint only when both pick the same hull
+- Achievements (scrollable, dated)
+- Jukebox (ID3 titles, PHEQ1 equalizer, intro video)
+- In-game music picker (Off + the 5 soundtrack themes)
+- Stereo SFX panned to the event
 
 ## Requirements
 

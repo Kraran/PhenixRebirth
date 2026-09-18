@@ -419,7 +419,7 @@ class EnemyFormation:
                     self.bullets.append(bullet)
                     enemy.did_shoot()
                     if self.sounds:
-                        self.sounds.play("enemy_shoot")
+                        self.sounds.play("enemy_shoot", x=enemy.x)
         
         for bullet in self.bullets[:]:
             bullet.update(dt)

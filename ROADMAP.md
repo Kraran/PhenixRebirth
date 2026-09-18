@@ -1,6 +1,14 @@
 # Roadmap — Phenix Rebirth
+Current release: **v1.3.0-beta**
 
-Current release: **v1.2.1**
+## Done in 1.3.0-beta
+
+- Shield ship + select screen (solo / hot-seat / coop combos)
+- Achievements page
+- Jukebox + PHEQ1 visualizer + ID3 titles
+- In-game music track option
+- Stereo SFX, extra OST tracks
+- Help page 2: Phenix and Shield
 
 ## Done in 1.2.1
 
