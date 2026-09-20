@@ -1,6 +1,6 @@
 # Phenix Rebirth
 
-**Version 1.3.0**
+**Version 1.4.0**
 
 A modern, ultra-responsive PC remake of the classic arcade shooter **Phoenix** (1978 / 1980).
 

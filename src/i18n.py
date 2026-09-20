@@ -6,6 +6,7 @@ Use set_lang(code), then t("key") / t_help(...) / t_list(...) / get_credits_line
 UI, help (2 pages including Phenix) and credits are fully localized.
 Language choice is persisted in settings.json.
 Session-only strings (in-game audio mix) are localized but not saved.
+Announcer samples (level 1–15, ship welcome) are English-only audio, not i18n keys.
 """
 LANGS = [
     ("fr", "Français"),
@@ -1681,19 +1682,19 @@ HELP = {
         "nl": "pnt", "pl": "pkt", "tr": "pn", "sv": "p", "no": "p", "da": "p", "ru": "очк.",
     },
     "vet_note": {
-        "fr": "Veteran : oiseaux +10  /  boss 300",
-        "en": "Veteran : birds +10  /  boss 300",
-        "es": "Veterano : pajaros +10  /  jefe 300",
-        "de": "Veteran : Vogel +10  /  Boss 300",
-        "it": "Veterano : uccelli +10  /  boss 300",
-        "pt": "Veterano : passaros +10  /  chefe 300",
-        "nl": "Veteran : vogels +10  /  baas 300",
-        "pl": "Weteran : ptaki +10  /  boss 300",
-        "tr": "Veteran : kuslar +10  /  boss 300",
-        "sv": "Veteran : faglar +10  /  boss 300",
-        "no": "Veteran : fugler +10  /  boss 300",
-        "da": "Veteran : fugle +10  /  boss 300",
-        "ru": "Ветеран : птицы +10  /  босс 300",
+        "fr": "Veteran : oiseaux +10  /  boss 1000",
+        "en": "Veteran : birds +10  /  boss 1000",
+        "es": "Veterano : pajaros +10  /  jefe 1000",
+        "de": "Veteran : Vogel +10  /  Boss 1000",
+        "it": "Veterano : uccelli +10  /  boss 1000",
+        "pt": "Veterano : passaros +10  /  chefe 1000",
+        "nl": "Veteran : vogels +10  /  baas 1000",
+        "pl": "Weteran : ptaki +10  /  boss 1000",
+        "tr": "Veteran : kuslar +10  /  boss 1000",
+        "sv": "Veteran : faglar +10  /  boss 1000",
+        "no": "Veteran : fugler +10  /  boss 1000",
+        "da": "Veteran : fugle +10  /  boss 1000",
+        "ru": "Ветеран : птицы +10  /  босс 1000",
     },
     "bonus_lives": {
         "fr": "Vies bonus a 1337 et 8086 pts",

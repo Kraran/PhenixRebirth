@@ -201,6 +201,8 @@ class Game:
         self.transition_timer = 0.0
         self.boss_saucer = None
         self.boss_bird_timer = 0.0
+        self._boss_angry_queue = []
+        self._boss_cry_quiet = 0.0
         self.bosses_defeated = 0
         self.life_flash_timer = 0.0
         self.life_flash_index = -1
@@ -239,6 +241,7 @@ class Game:
         self.cheat_kind = ""
         self.used_cheat = False
         self.phenix_cheat = False
+        self.cheat_live = False
         self.paused = False
         self.pause_index = 0  # Reprendre
         self.pause_options = False  # options opened from pause
@@ -832,7 +835,8 @@ class Game:
         # Dark plate behind for readability
         pad_x, pad_y = 28, 16
         plate = pygame.Surface((cm.get_width() + pad_x * 2, cm.get_height() + pad_y * 2), pygame.SRCALPHA)
-        pygame.draw.rect(plate, (0, 0, 0, 160), plate.get_rect(), border_radius=8)
+        plate_a = 70 if kind == "stage" else 160
+        pygame.draw.rect(plate, (0, 0, 0, plate_a), plate.get_rect(), border_radius=8)
         self.game_surface.blit(plate, (cx - plate.get_width() // 2, cy - plate.get_height() // 2))
         # Glow
         for ox, oy in ((-2, 0), (2, 0), (0, -2), (0, 2), (-1, -1), (1, 1)):
@@ -1401,7 +1405,7 @@ class Game:
         return base
 
     def _boss_points(self):
-        return 300 if self.difficulty == "veteran" else 200
+        return 1000 if self.difficulty == "veteran" else 500
 
     def _apply_difficulty_start(self):
         """Lives and stage 1 setup when pressing JOUER."""
@@ -1420,6 +1424,8 @@ class Game:
         if self.phenix_cheat:
             self.player.phenix_auto_refill = True
             self.player.phenix_gauge = 10
+        if getattr(self, "cheat_live", False):
+            self.player.infinite_lives = True
         if self.player.infinite_lives:
             self.player.lives = 99
         elif self.difficulty == "novice":
@@ -1491,11 +1497,22 @@ class Game:
         """P2 is tinted blue only when both players fly the same hull."""
         return self._ship_for_pid(1) == self._ship_for_pid(2)
 
+    def _play_ship_welcome(self):
+        """English announcer VO for the highlighted hull (reserved mixer channel)."""
+        idx = int(getattr(self, "ship_select_index", 0) or 0) % 2
+        key = "welcome_shield" if idx == 1 else "welcome_phoenix"
+        if hasattr(self, "sounds"):
+            try:
+                self.sounds.play_vo(key, volume=0.90)
+            except Exception:
+                pass
+
     def _open_ship_select(self, slot=1):
         self.menu_screen = "ship_select"
         self.ship_select_slot = 1 if int(slot) != 2 else 2
         sid = self._ship_for_pid(self.ship_select_slot)
         self.ship_select_index = 0 if sid != "shield" else 1
+        self._play_ship_welcome()
         self.ship_anim_t = 0.0
         self.input_grace = 0.20
 
@@ -1559,6 +1576,32 @@ class Game:
                 ship.apply_blue_palette()
         self._rebuild_life_icon()
 
+
+    def _play_level_vo(self, stage):
+        """English stage callout (level1.wav … level15.wav). Stages >15 stay silent."""
+        n = int(stage or 0)
+        if n < 1 or n > 15 or not hasattr(self, "sounds"):
+            return
+        try:
+            self.sounds.play_vo(f"level{n}", volume=0.88)
+        except Exception:
+            pass
+
+    def _start_arrive_intro(self):
+        """New run: fly in from below (same speed as stage transitions) and play stage VO."""
+        xs = [BASE_WIDTH // 2 - 70, BASE_WIDTH // 2 + 70] if getattr(self, "play_mode", "solo") == "coop" else [BASE_WIDTH // 2]
+        ships = self._ships()
+        for i, ship in enumerate(ships):
+            if not ship:
+                continue
+            ship.y = BASE_HEIGHT + 60
+            ship.x = xs[min(i, len(xs) - 1)]
+            ship.engine_intensity = 1.0
+        self.stage_transition = "arrive"
+        self.transition_timer = 0.0
+        self.input_grace = 0.5
+        self._play_level_vo(int(getattr(self, "stage", 1) or 1))
+
     def _begin_run(self):
         """Start the chosen play mode after ship select."""
         mode = getattr(self, "play_mode", "solo")
@@ -1580,6 +1623,7 @@ class Game:
             self._apply_difficulty_start()
             self.started = True
             self.input_grace = 0.35
+            self._start_arrive_intro()
         self._rebuild_life_icon()
         self.menu_screen = "main"
 
@@ -1725,6 +1769,8 @@ class Game:
         self._apply_slot(self.slots[self.current_p])
         self.input_grace = 0.35
         self.game_over = False
+        if int(getattr(self, "stage", 1) or 1) == 1:
+            self._start_arrive_intro()
 
     def _hotseat_arm_hold(self, pending, duration):
         """Wait so the ship explosion is visible before overlay / game over."""
@@ -1850,6 +1896,7 @@ class Game:
         self._sync_special_gauges()
         self.started = True
         self.input_grace = 0.35
+        self._start_arrive_intro()
         try:
             pygame.key.set_repeat(0)
         except Exception:
@@ -1928,6 +1975,11 @@ class Game:
                         self._unlock_ach("elite_8086")
 
     # --- Stage setup (content cycle + speed tier) ---
+    def _play_boss_cry(self, name, volume=0.9, x=None):
+        """Play a boss vocal and reset the idle-yell quiet timer."""
+        self.sounds.play(name, volume=volume, x=x)
+        self._boss_cry_quiet = 0.0
+
     def _setup_stage(self, stage):
         """Load content for stage (1-5 cycle) with speed scaling + difficulty."""
         self.stage_life_lost = False
@@ -1943,6 +1995,7 @@ class Game:
             self.boss_saucer.descend_speed *= mult
             self.boss_saucer.speed *= mult
             self.boss_bird_timer = 1.2
+            self._play_boss_cry("boss_ready", volume=0.92, x=BASE_WIDTH / 2)
         else:
             self.formation.spawn_stage(content, speed_mult=mult)
             self.formation.sounds = self.sounds
@@ -1962,6 +2015,7 @@ class Game:
             self._start_at_stage(2)
         elif "LIVE" in buf:
             self.used_cheat = True
+            self.cheat_live = True
             self.player.infinite_lives = True
             self.player.lives = 99
             self.cheat_buffer = ""
@@ -1989,6 +2043,12 @@ class Game:
         self.stage_transition = None
         self.player = Player(BASE_WIDTH // 2, BASE_HEIGHT - 95)
         self.player.sounds = self.sounds
+        if getattr(self, "cheat_live", False):
+            self.player.infinite_lives = True
+            self.player.lives = 99
+        if getattr(self, "phenix_cheat", False):
+            self.player.phenix_auto_refill = True
+            self.player.phenix_gauge = 10
         self.score = 0
         self.explosions = []
         self.life_thresholds = [(1337, False), (8086, False)]
@@ -2821,6 +2881,7 @@ class Game:
         """direction: -1 up, +1 down"""
         if self.menu_screen == "ship_select":
             self.ship_select_index = (int(getattr(self, "ship_select_index", 0)) + direction) % 2
+            self._play_ship_welcome()
             return
         if self.menu_screen == "jukebox":
             n = len(self._juke_catalog())
@@ -3003,6 +3064,7 @@ class Game:
         """direction: -1 left, +1 right — change current option value"""
         if self.menu_screen == "ship_select":
             self.ship_select_index = (int(getattr(self, "ship_select_index", 0)) + direction) % 2
+            self._play_ship_welcome()
             return
         if self.menu_screen == "main":
             if self.menu_index == 1:
@@ -3339,7 +3401,7 @@ class Game:
                 ("bird2", t_help("enemy_s2"), "20"),
                 ("garg3", t_help("enemy_s3"), "30"),
                 ("garg4", t_help("enemy_s4"), "40"),
-                ("boss", t_help("enemy_boss"), "200"),
+                ("boss", t_help("enemy_boss"), "500"),
             ]
             for key, label, pts in score_rows:
                 ix, iy = col_r + 28, yy(y + 14)
@@ -3767,6 +3829,9 @@ class Game:
         self.menu_index = 0
         self.input_grace = 0.35  # absorb the confirm key/button that quit the run
         self.player.infinite_lives = False
+        self.cheat_live = False
+        self.phenix_cheat = False
+        self.used_cheat = False
         self._paint_menu_frame()
 
     def _return_from_gameover(self):
@@ -4766,10 +4831,25 @@ class Game:
         # --- Stage 5 boss ---
         if self.boss_saucer is not None and self.boss_saucer.alive:
             self.boss_saucer.update(self.dt, self.player.x)
+            self._boss_cry_quiet = getattr(self, "_boss_cry_quiet", 0.0) + self.dt
+            # Idle yell only after a long silence (ready / angry / yell all reset the clock)
+            if self._boss_cry_quiet > 8.0 and random.random() < 0.045 * self.dt:
+                self._play_boss_cry("boss_yell", volume=0.88, x=self.boss_saucer.boss.x)
+            q = getattr(self, "_boss_angry_queue", None)
+            if q:
+                nxt = []
+                for wait in q:
+                    wait -= self.dt
+                    if wait <= 0:
+                        self._play_boss_cry("boss_angry", volume=0.9, x=self.boss_saucer.boss.x)
+                    else:
+                        nxt.append(wait)
+                self._boss_angry_queue = nxt
             # Spawn birds more often — stage1 2x more likely than stage2, max 10
             self.boss_bird_timer -= self.dt
             if self.boss_bird_timer <= 0:
-                self.boss_bird_timer = random.uniform(0.9, 1.8)
+                rate = float(getattr(self.boss_saucer, "bird_rate", 1.0) or 1.0)
+                self.boss_bird_timer = random.uniform(0.9, 1.8) / max(0.15, rate)
                 alive_birds = len(self.formation.get_alive_enemies())
                 if alive_birds < 6:
                     x = random.uniform(60, BASE_WIDTH - 60)
@@ -4788,9 +4868,11 @@ class Game:
                 and self.boss_saucer is None):
             self._clear_enemy_fire()
             self._on_stage_cleared()
+            self._play_level_vo(int(getattr(self, "stage", 1) or 1) + 1)
             self.stage_transition = "fly_up"
             for ship in self._ships():
                 ship.destroy_bullet()
+            return
         
         # Boss killed → cataclysmic saucer explosion, kill all birds, then fly up
         if (self.boss_saucer is not None and not self.boss_saucer.alive
@@ -4840,6 +4922,7 @@ class Game:
             if self.transition_timer > 1.8:
                 self._clear_enemy_fire()
                 self._on_stage_cleared()
+                self._play_level_vo(int(getattr(self, "stage", 1) or 1) + 1)
                 self.stage_transition = "fly_up"
                 for ship in self._ships():
                     ship.destroy_bullet()
@@ -4856,16 +4939,23 @@ class Game:
                     kind, target = result
                     if kind == "cell":
                         ship.destroy_bullet("neutral", index=shot_i)
-                        self.explosions.append(Explosion(target.x, target.y, kind="enemy"))
-                        self.shake_amount = 3.5
-                        self.sounds.play("enemy_explosion", volume=0.4, x=target.x)
+                        if getattr(target, "is_purple", False):
+                            self.explosions.append(Explosion(target.x, target.y, kind="electric"))
+                            self.shake_amount = 4.5
+                            self.sounds.play("shield_zap", volume=0.75, x=target.x)
+                        else:
+                            self.explosions.append(Explosion(target.x, target.y, kind="enemy"))
+                            self.shake_amount = 3.5
+                            self.sounds.play("enemy_explosion", volume=0.4, x=target.x)
                         self._add_score(ship, 1)
                     elif kind == "deco":
                         ship.destroy_bullet("neutral", index=shot_i)
-                        self.explosions.append(Explosion(target.x, target.y, kind="enemy"))
+                        self.explosions.append(Explosion(target.x, target.y, kind="flame"))
                         self.shake_amount = 5.0
-                        self.sounds.play("enemy_explosion", x=enemy.x)
+                        self.sounds.play("enemy_explosion", volume=0.45, x=target.x)
                         self._add_score(ship, 50)
+                        delay = 0.72 + random.uniform(0.18, 0.65)
+                        self._boss_angry_queue.append(delay)
                     elif kind == "boss":
                         ship.destroy_bullet("valid", index=shot_i)
                         target.kill()

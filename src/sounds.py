@@ -2,6 +2,7 @@
 SFX and music manager (SDL_mixer via pygame).
 
 SFX are WAV samples under assets/sounds/.
+Announcer VO (level1–15, welcome_phoenix / welcome_shield) uses reserved mixer channel 0.
 Music tracks are MP3 under assets/music/ with short cross-fades between
 menu theme, game-over theme, credits theme, and in-game silence.
 
@@ -31,6 +32,7 @@ class SoundManager:
         self.sfx_muted = False
         self.sounds = {}
         self._electric_channel = None
+        self._vo_channel = None
         self.master_volume = 0.8
         self.music_volume = 0.4
         self._base_volumes = {}
@@ -52,6 +54,7 @@ class SoundManager:
                 pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=2048)
             try:
                 pygame.mixer.set_num_channels(24)
+                pygame.mixer.set_reserved(1)
             except Exception:
                 pass
             for name, vol in [
@@ -64,6 +67,27 @@ class SoundManager:
                 ("1up", 1.0),
                 ("phenix_activate", 0.75),
                 ("phenix_end", 0.65),
+                ("shield_zap", 0.70),
+                ("boss_ready", 0.90),
+                ("boss_angry", 0.88),
+                ("boss_yell", 0.86),
+                ("level1", 0.88),
+                ("level2", 0.88),
+                ("level3", 0.88),
+                ("level4", 0.88),
+                ("level5", 0.88),
+                ("level6", 0.88),
+                ("level7", 0.88),
+                ("level8", 0.88),
+                ("level9", 0.88),
+                ("level10", 0.88),
+                ("level11", 0.88),
+                ("level12", 0.88),
+                ("level13", 0.88),
+                ("level14", 0.88),
+                ("level15", 0.88),
+                ("welcome_phoenix", 0.90),
+                ("welcome_shield", 0.90),
             ]:
                 self._load(name, f"{name}.wav", vol)
             self.enabled = len(self.sounds) > 0
@@ -283,6 +307,23 @@ class SoundManager:
         else:
             gain = self._base_volumes.get(name, 0.5) * self.master_volume
         self._play_on_channel(snd, gain, x=x)
+
+    def play_vo(self, name, volume=None):
+        """Announcer: reserved channel, never stolen by SFX."""
+        if not self.enabled or getattr(self, "sfx_muted", False):
+            return
+        snd = self.sounds.get(name)
+        if not snd:
+            return
+        gain = (float(volume) if volume is not None else self._base_volumes.get(name, 0.88))
+        gain = max(0.0, min(1.0, gain)) * self.master_volume
+        try:
+            ch = pygame.mixer.Channel(0)
+            self._vo_channel = ch
+            ch.play(snd)
+            ch.set_volume(gain, gain)
+        except Exception:
+            self._play_on_channel(snd, gain)
 
     def play_electric(self, active, x=None):
         """Loop electric crackle while edge shock is active. x pans to the wall."""

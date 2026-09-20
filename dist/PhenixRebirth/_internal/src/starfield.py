@@ -36,6 +36,8 @@ PLANET_FILES = [
     "saturn.png",
     "uranus.png",
     "neptune.png",
+    "asteroid_dinkinesh.png",
+    "asteroid_pallas.png",
 ]
 
 
@@ -150,9 +152,11 @@ class Planet:
     def reset(self):
         filename = random.choice(PLANET_FILES)
         base = self._load_image(filename)
-        # Ringed fantasy planet reads better a bit larger
+        # Ringed worlds read larger; rocks stay a bit smaller than planets
         if "fantasy" in filename or "saturn" in filename:
             target_h = random.randint(48, 110)
+        elif "asteroid" in filename:
+            target_h = random.randint(28, 72)
         else:
             target_h = random.randint(36, 88)
         scale = target_h / max(1, base.get_height())

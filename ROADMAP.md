@@ -1,5 +1,15 @@
 # Roadmap — Phenix Rebirth
-Current release: **v1.3.0**
+Current release: **v1.4.0**
+
+## Done in 1.4.0
+
+- Stage-1 intro: ship arrives from the bottom (same as mid-run transitions)
+- English announcer VO for stages 1–15 (5 / 10 / 15 include warning)
+- Ship select: Welcome aboard Phenix / Shield
+- Boss saucer rebuilt from photo tiles (rotating 2-row shield, pair-deco systems)
+- Boss 500 / 1000 pts; ports glow; destructible keel beacon
+- LVL5 draw cache (band, glows, living hit-order)
+- i18n pass: UI still 13 languages; announcer remains English audio
 
 ## Done in 1.3.0
 
