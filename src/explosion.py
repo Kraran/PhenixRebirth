@@ -1,7 +1,7 @@
 """
 Particle explosions for combat feedback.
 
-Kinds: bullet hit, enemy death, collision, edge death, game-over blast.
+Kinds: enemy, bullet, collision, edge, gameover, electric, flame, shield ripple.
 Object lifetime is short; Game caps concurrent instances for performance.
 """
 import pygame
@@ -16,11 +16,16 @@ class Explosion:
       - "collision"  : player rammed by diving enemy
       - "edge"       : killed by screen edge
       - "gameover"   : final death — maximum spectacle
+      - "electric"   : rotating-shield brick
+      - "flame"      : saucer decoration
+      - "shield"     : shot absorbed by Shield form (ripple + sparks)
+      - "dust"       : landing puff when a ship arrives (8 frames)
     """
-    def __init__(self, x, y, kind="enemy"):
+    def __init__(self, x, y, kind="enemy", delay_frames=0):
         self.x = float(x)
         self.y = float(y)
         self.kind = kind
+        self.delay_frames = int(delay_frames)
         self.particles = []
         self.debris = []
         self.flashes = []
@@ -124,6 +129,44 @@ class Explosion:
                     ]),
                 })
             
+        elif kind == "dust":
+            self.life = 0.32
+            self.max_life = 0.32
+            cols = [(230, 210, 170), (200, 185, 150), (170, 160, 140), (255, 240, 210)]
+            for _ in range(22):
+                side = -1.0 if random.random() < 0.5 else 1.0
+                self.particles.append({
+                    "x": random.uniform(-6, 6),
+                    "y": random.uniform(-2, 6),
+                    "vx": side * random.uniform(90, 240),
+                    "vy": random.uniform(-80, -20),
+                    "size": random.uniform(5.0, 12.0),
+                    "color": random.choice(cols),
+                    "drag": random.uniform(0.86, 0.93),
+                })
+            for _ in range(8):
+                side = -1.0 if random.random() < 0.5 else 1.0
+                self.tongues.append({
+                    "x": side * random.uniform(8, 28),
+                    "y": random.uniform(-4, 8),
+                    "vx": side * random.uniform(40, 110),
+                    "vy": random.uniform(-35, -8),
+                    "w": random.uniform(14, 28),
+                    "h": random.uniform(8, 16),
+                    "kind": "smoke",
+                    "color": random.choice(cols),
+                })
+            self._spawn_flash(10, (210, 190, 150))
+
+        elif kind == "shield":
+            self.life = 0.38
+            self.max_life = 0.38
+            self._spawn_flash(20, (140, 210, 255))
+            self._spawn_flash(10, (220, 245, 255))
+            self._spawn_ring(20, (90, 190, 255))
+            self._spawn_ring(12, (180, 230, 255))
+            self._spawn_sparks(8, (160, 220, 255))
+
         elif kind == "electric":
             self.life = 0.42
             self.max_life = 0.42
@@ -236,6 +279,9 @@ class Explosion:
         })
 
     def update(self, dt):
+        if int(getattr(self, "delay_frames", 0) or 0) > 0:
+            self.delay_frames -= 1
+            return
         self.life -= dt
         
         for p in self.particles:
@@ -279,6 +325,8 @@ class Explosion:
         return self.life <= 0
 
     def draw(self, surface):
+        if int(getattr(self, "delay_frames", 0) or 0) > 0:
+            return
         if self.life <= 0:
             return
         

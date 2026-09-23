@@ -101,6 +101,30 @@ def play_intro(game):
             gs.blit(frame, (ox, oy))
         game._flip_frame(0, 0)
 
+    def _fade_to_black(frame, seconds):
+        """Last frame → black. Menu then fades in on the other side."""
+        seconds = max(0.05, float(seconds))
+        t0b = time.perf_counter()
+        black = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+        black.fill((0, 0, 0))
+        while game.running and time.perf_counter() - t0b < seconds:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    game.running = False
+                    return
+            k = min(1.0, (time.perf_counter() - t0b) / seconds)
+            gs = game.game_surface
+            gs.fill((0, 0, 0))
+            if frame is not None:
+                gs.blit(frame, (ox, oy))
+            black.set_alpha(int(255 * k))
+            gs.blit(black, (0, 0))
+            game._flip_frame(0, 0)
+            game.clock.tick(60)
+        gs = game.game_surface
+        gs.fill((0, 0, 0))
+        game._flip_frame(0, 0)
+
     def _fade_hold(frame, seconds):
         """Keep last picture while music volume goes to 0."""
         try:
@@ -157,10 +181,10 @@ def play_intro(game):
 
     if game.running:
         if skipped:
-            _fade_hold(last_frame, FADE_SEC)
+            _fade_hold(last_frame, 0.35)
         else:
-            # Natural end already faded over the last 0.8s — tiny tail to 0
-            _fade_hold(last_frame, 0.25)
+            _fade_hold(last_frame, 0.18)
+        _fade_to_black(last_frame, 0.45)
 
     try:
         pygame.mixer.music.stop()

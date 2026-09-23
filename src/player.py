@@ -1,23 +1,84 @@
 """
 Player ship: movement, single-shot (optional autofire), edge lightning /
-kill timer, thruster animation, Phenix transform, and death sequences.
+kill timer, thruster animation, Phenix transform or Shield dome, death.
 
 Input: keyboard (QWERTY + AZERTY ZQSD) and gamepad. Coop uses input_scheme
 kb1 / kb2 / pad. Wall slowdown and tesla FX are cleared on life loss so
 they never leak to the next life or the other hot-seat player.
+Shield hulls show edge sparks but never slow or die on the wall.
 """
 import pygame
 import os
 import math
 import random
+import colorsys
 from settings import *
 
 from settings import asset_path
 SHIP_PATH = asset_path("sprites", "player_ship.png")
-SHIP_SHIELD_PATH = asset_path("sprites", "player_ship_shield.png")
+SHIP_PHOENIX_PATHS = {
+    "argent": asset_path("sprites", "player_ship.png"),
+    "blue": asset_path("sprites", "player_ship_blue.png"),
+    "gold": asset_path("sprites", "player_ship_gold.png"),
+}
+SHIP_SHIELD_PATHS = {
+    "red": asset_path("sprites", "player_ship_shield.png"),
+    "green": asset_path("sprites", "player_ship_shield_green.png"),
+    "violet": asset_path("sprites", "player_ship_shield_violet.png"),
+}
+SHIP_SHIELD_PATH = SHIP_SHIELD_PATHS["red"]
+
+def shift_fire_hsv(surf, h_add, s_mul=1.0, v_mul=1.0):
+    """Hue-shift warm / fire pixels only. Leaves chrome and outlines."""
+    if surf is None:
+        return surf
+    out = surf.copy()
+    try:
+        rgb = pygame.surfarray.pixels3d(out)
+        alpha = pygame.surfarray.pixels_alpha(out)
+    except Exception:
+        return surf
+    w, h = rgb.shape[0], rgb.shape[1]
+    for x in range(w):
+        col = rgb[x]
+        ac = alpha[x]
+        for y in range(h):
+            if ac[y] < 16:
+                continue
+            r, g, b = int(col[y][0]), int(col[y][1]), int(col[y][2])
+            mx = max(r, g, b)
+            if mx < 60:
+                continue
+            hh, ss, vv = colorsys.rgb_to_hsv(r / 255.0, g / 255.0, b / 255.0)
+            if ss < 0.22 or vv < 0.30:
+                continue
+            if not (hh < 0.20 or hh > 0.90):
+                continue
+            hh = (hh + h_add) % 1.0
+            ss = min(1.0, ss * s_mul)
+            vv = min(1.0, vv * v_mul)
+            rr, gg, bb = colorsys.hsv_to_rgb(hh, ss, vv)
+            col[y][0] = int(rr * 255)
+            col[y][1] = int(gg * 255)
+            col[y][2] = int(bb * 255)
+    del rgb, alpha
+    return out
+
+
+def recolor_phenix_frames(frames, tint):
+    """Argent = original. Gold / blue = fire hue shift."""
+    if not frames:
+        return list(frames or [])
+    if tint == "gold":
+        return [shift_fire_hsv(fr, 0.055, 1.12, 1.06) for fr in frames]
+    if tint == "blue":
+        return [shift_fire_hsv(fr, 0.52, 0.90, 1.08) for fr in frames]
+    return list(frames)
+
+
 
 class Player:
-    def __init__(self, x, y, ship_id="phoenix"):
+    def __init__(self, x, y, ship_id="phoenix", tint="argent"):
         self.x = float(x)
         self.y = float(y)
         self.ship_id = "phoenix"
@@ -49,6 +110,8 @@ class Player:
                     self.phenix_frames.append(fr)
                 elif name.startswith("morph_") and name.endswith(".png"):
                     self.morph_frames.append(fr)
+        self._phenix_src = list(self.phenix_frames)
+        self._morph_src = list(self.morph_frames)
 
         # Active shots: list of {x, y, resolved, flame}
         # Normal: max 1. Phenix: max 2 (pair from rear wings), one volley on screen.
@@ -73,7 +136,7 @@ class Player:
         self.infinite_lives = False
         self.use_shared_lives = False
         self.input_scheme = "solo"  # solo | kb1 | kb2 | pad
-        self.palette = "red"  # red | blue
+        self.palette = "argent"  # argent|blue|gold or red|green|violet
         self.pid = 0
         self.score = 0
         self.life_flags = [False, False]
@@ -121,41 +184,25 @@ class Player:
         self._white_image = None
         # Apply hull last so engine count / shield frames are not overwritten
         # by the defaults above (coop / hot-seat construct with ship_id).
-        if ship_id and ship_id != "phoenix":
-            self.set_ship(ship_id)
+        self.shield_flash = 0
+        self.shield_punch = 0.0
+        self.set_ship(ship_id or "phoenix", tint=tint)
 
-    def apply_blue_palette(self):
-        """Dark-blue ship + icy Phenix / Shield (P2 coop / hot-seat)."""
-        self.palette = "blue"
-        def _tint(surf, rgb):
-            if surf is None:
-                return surf
-            out = surf.copy()
-            overlay = pygame.Surface(out.get_size(), pygame.SRCALPHA)
-            overlay.fill((*rgb, 255))
-            out.blit(overlay, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-            return out
-        shield = getattr(self, "uses_shield", False)
-        hull = (150, 200, 255) if shield else (70, 120, 255)
-        ice = (210, 240, 255) if shield else (170, 220, 255)
-        self.image = _tint(self.image, hull)
-        self._white_image = None
-        self.phenix_frames = [_tint(fr, ice) for fr in (self.phenix_frames or [])]
-        self.morph_frames = [_tint(fr, ice) for fr in (self.morph_frames or [])]
-        if getattr(self, "uses_shield", False):
-            self.shield_on_frames = [_tint(fr, ice) for fr in (getattr(self, "shield_on_frames", None) or [])]
-            self.shield_loop_frames = [_tint(fr, ice) for fr in (getattr(self, "shield_loop_frames", None) or [])]
-            self.shield_off_frames = [_tint(fr, ice) for fr in (getattr(self, "shield_off_frames", None) or [])]
-            self.morph_frames = list(self.shield_on_frames)
-            self.phenix_frames = list(self.shield_loop_frames)
-        self.rect = self.image.get_rect(center=(self.x, self.y))
-
-    def set_ship(self, ship_id):
-        """Swap hull art. Combat rules (Phenix vs Shield) hook here later."""
+    def set_ship(self, ship_id, tint="argent"):
+        """Load hull PNG. Phoenix: argent/blue/gold. Shield: red/green/violet."""
         sid = "shield" if ship_id == "shield" else "phoenix"
         self.ship_id = sid
-        self.palette = "red"
-        path = SHIP_SHIELD_PATH if sid == "shield" else SHIP_PATH
+        if sid == "shield":
+            tint = tint if tint in SHIP_SHIELD_PATHS else "red"
+            self.shield_tint = tint
+            self.phoenix_tint = "argent"
+            self.palette = tint
+            path = SHIP_SHIELD_PATHS[tint]
+        else:
+            tint = tint if tint in SHIP_PHOENIX_PATHS else "argent"
+            self.phoenix_tint = tint
+            self.palette = tint
+            path = SHIP_PHOENIX_PATHS[tint]
         try:
             self.image = pygame.image.load(path).convert_alpha()
         except Exception as e:
@@ -163,6 +210,8 @@ class Player:
             return
         self.width = self.image.get_width()
         self.height = self.image.get_height()
+        self.hitbox_w = max(28, int(self.width * 0.78))
+        self.hitbox_h = max(32, int(self.height * 0.52))
         self._white_image = None
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
         self._load_shield_frames()
@@ -183,6 +232,13 @@ class Player:
             self.engine_ys = (0, 0)
             self.engine_width_scale = 1.0
             self.engine_offset = 8
+            src_p = getattr(self, "_phenix_src", None) or list(self.phenix_frames or [])
+            src_m = getattr(self, "_morph_src", None) or list(self.morph_frames or [])
+            if not getattr(self, "_phenix_src", None):
+                self._phenix_src = list(src_p)
+                self._morph_src = list(src_m)
+            self.phenix_frames = recolor_phenix_frames(src_p, tint)
+            self.morph_frames = recolor_phenix_frames(src_m, tint)
 
     @property
     def uses_shield(self):
@@ -207,6 +263,10 @@ class Player:
                 self.shield_loop_frames.append(fr)
             elif name.startswith("off_"):
                 self.shield_off_frames.append(fr)
+        if self.shield_loop_frames:
+            fr0 = self.shield_loop_frames[0]
+            self.shield_dome_w = fr0.get_width()
+            self.shield_dome_h = fr0.get_height()
         if self.uses_shield:
             self.morph_frames = list(self.shield_on_frames)
             self.phenix_frames = list(self.shield_loop_frames)
@@ -214,6 +274,7 @@ class Player:
     def update(self, dt, keys, input_mode="keyboard", joystick=None, allow_shoot=True, ai_move=None, ai_shoot=None):
         if not self.alive:
             return False
+        self.shield_punch = max(0.0, float(getattr(self, "shield_punch", 0.0) or 0.0) - dt)
         
         # Death animation — no control
         if self.dying:
@@ -381,15 +442,15 @@ class Player:
                 self.last_edge_side = 1
         
         if self.edge_contact and self.invulnerable <= 0:
-            # Any edge spark empties Phenix gauge (and ends form if active)
-            if self.is_phenix and not self.uses_shield:
+            # Shield hull: sparks only — no slow, no wall death, no gauge dump.
+            if self.uses_shield:
+                self.edge_flash = 1.0
+                self.edge_timer = 0.0
+            elif self.is_phenix and not self.uses_shield:
                 self.end_phenix(grant_invuln=True)
                 self.edge_timer = 0.0
                 self.edge_flash = 0.35
                 self.slowdown_timer = max(self.slowdown_timer, 0.5)
-            elif self.is_phenix and self.uses_shield:
-                self.edge_contact = False
-                self.edge_timer = 0.0
             else:
                 if self.phenix_gauge > self.phenix_min_gauge or self.combo_streak > 0:
                     self.phenix_gauge = float(self.phenix_min_gauge)
@@ -438,7 +499,7 @@ class Player:
 
     def _check_edge_kill(self):
         if self.edge_timer >= self.EDGE_KILL_TIME and self.alive and not self.dying:
-            if self.invulnerable <= 0 and not self.is_phenix:
+            if self.invulnerable <= 0 and not self.is_phenix and not self.uses_shield:
                 self.hit()
                 self.edge_timer = 0.0
                 self.slowdown_timer = 0.0
@@ -666,12 +727,12 @@ class Player:
 
 
     def register_valid_hit(self):
-        """Body/core kill — +1 gauge (capped at 10). No combo required."""
+        """Body/core kill — +1 gauge (cap 10) and +1 combo_streak (Sans faute)."""
         if self.is_phenix or self.uses_shield:
             return  # no refill during form
         before = float(self.phenix_gauge)
         self.phenix_gauge = min(10.0, before + 1.0)
-        self.combo_streak = 0
+        self.combo_streak = int(getattr(self, "combo_streak", 0) or 0) + 1
         if before < 10.0 and self.phenix_gauge >= 10.0 and not self.uses_shield:
             self.flag_gauge_max = True
 
@@ -754,7 +815,33 @@ class Player:
                         (255, 110, 25),
                     )[min(2, 3 - i)]
             else:
-                if getattr(self, "palette", "red") == "blue":
+                if getattr(self, "uses_shield", False):
+                    pal = getattr(self, "palette", "red")
+                    if pal == "green":
+                        color = (
+                            (8, 70, 25),
+                            (30, 180, 50),
+                            (180, 255, 90),
+                        )[min(2, 3 - i)]
+                    elif pal == "violet":
+                        color = (
+                            (90, 20, 140),
+                            (180, 40, 200),
+                            (255, 160, 80),
+                        )[min(2, 3 - i)]
+                    else:
+                        color = (
+                            (160, 18, 4),
+                            (230, 70, 12),
+                            (255, 170, 40),
+                        )[min(2, 3 - i)]
+                elif getattr(self, "palette", "argent") == "gold":
+                    color = (
+                        (160, 80, 10),
+                        (230, 160, 30),
+                        (255, 230, 120),
+                    )[min(2, 3 - i)]
+                elif getattr(self, "palette", "argent") == "blue":
                     color = (20, 60 + i * 20, 200)
                 else:
                     color = (40, 160 + i * 30, 255)
@@ -786,7 +873,17 @@ class Player:
                 ])
                 pygame.draw.circle(surface, (255, 245, 180), (int(cx), int(cy + core_h * 0.85)), 3)
         else:
-            pygame.draw.polygon(surface, (180, 255, 255), [
+            if getattr(self, "uses_shield", False):
+                pal = getattr(self, "palette", "red")
+                if pal == "green":
+                    core_col = (220, 255, 140)
+                elif pal == "violet":
+                    core_col = (255, 190, 220)
+                else:
+                    core_col = (255, 230, 120)
+            else:
+                core_col = (180, 255, 255)
+            pygame.draw.polygon(surface, core_col, [
                 (cx - core_w, cy),
                 (cx + core_w, cy),
                 (cx + core_w * 0.2, cy + core_h),
@@ -879,29 +976,49 @@ class Player:
         if self.invulnerable > 0 and int(self.invulnerable * 12) % 2 == 0:
             return
         
+        punch = 3 if float(getattr(self, "shield_punch", 0.0) or 0.0) > 0 else 0
+        flash = int(getattr(self, "shield_flash", 0) or 0) > 0
+
+        def _blit_ship_layer(img, extra=0, do_flash=False):
+            if img is None:
+                return
+            iw, ih = img.get_width(), img.get_height()
+            if extra:
+                spr = pygame.transform.smoothscale(img, (iw + extra * 2, ih + extra * 2))
+            else:
+                spr = img
+            pos = (int(self.x - spr.get_width() // 2), int(self.y - spr.get_height() // 2))
+            surface.blit(spr, pos)
+            if do_flash:
+                glow = spr.copy()
+                glow.fill((255, 255, 255, 210), special_flags=pygame.BLEND_RGBA_MULT)
+                surface.blit(glow, pos, special_flags=pygame.BLEND_ADD)
+
         morph_frames = getattr(self, "morph_frames", None) or []
         morph_dir = getattr(self, "morph_dir", 0)
         if morph_dir != 0 and morph_frames:
             n = len(morph_frames)
             prog = 0.0 if self.morph_duration <= 0 else min(1.0, self.morph_timer / self.morph_duration)
             if morph_dir > 0:
-                # 1→4 (indices 0..n-1)
                 idx = int(prog * (n - 1) + 1e-6)
             else:
-                # 4→1
                 idx = int((1.0 - prog) * (n - 1) + 1e-6)
             idx = max(0, min(n - 1, idx))
             img = morph_frames[idx]
-            iw, ih = img.get_width(), img.get_height()
-            surface.blit(img, (int(self.x - iw // 2), int(self.y - ih // 2)))
-            ship_bottom = self.y + ih // 2 - 6
+            extra = punch if self.uses_shield else 0
+            if self.uses_shield:
+                _blit_ship_layer(self.image, extra, flash)
+            _blit_ship_layer(img, extra, flash and self.uses_shield)
+            ship_bottom = self.y + self.height // 2 - 2
         elif self.is_phenix and getattr(self, "phenix_frames", None):
             n = len(self.phenix_frames)
             idx = int(self.phenix_anim_time * self.PHENIX_ANIM_FPS) % n
             img = self.phenix_frames[idx]
-            iw, ih = img.get_width(), img.get_height()
-            surface.blit(img, (int(self.x - iw // 2), int(self.y - ih // 2)))
-            ship_bottom = self.y + ih // 2 - 6
+            extra = punch if self.uses_shield else 0
+            if self.uses_shield:
+                _blit_ship_layer(self.image, extra, flash)
+            _blit_ship_layer(img, extra, flash and self.uses_shield)
+            ship_bottom = self.y + self.height // 2 - 2
         else:
             draw_x = int(self.x - self.width // 2)
             draw_y = int(self.y - self.height // 2)
@@ -919,24 +1036,51 @@ class Player:
                 )
         
         self._draw_edge_lightning(surface)
+        self.shield_flash = 0
         
         for shot in self.shots:
             bx, by = int(shot["x"]), int(shot["y"])
             if shot.get("flame"):
-                # Orange-red flame bolt, bright yellow-orange core
-                pygame.draw.rect(surface, (180, 40, 10), (bx - 5, by, 10, 15))
-                pygame.draw.rect(surface, (255, 100, 20), (bx - 4, by, 8, 14))
-                pygame.draw.rect(surface, (255, 180, 50), (bx - 2, by, 4, 13))
-                pygame.draw.rect(surface, (255, 240, 160), (bx - 1, by, 2, 10))
-                pygame.draw.circle(surface, (255, 220, 120), (bx, by), 3)
+                pal = getattr(self, "palette", "argent")
+                # outer, mid, inner, core, tip
+                layers = {
+                    "blue": (
+                        (20, 50, 160), (40, 110, 255), (90, 190, 255),
+                        (180, 230, 255), (230, 245, 255),
+                    ),
+                    "gold": (
+                        (160, 70, 10), (255, 160, 30), (255, 210, 70),
+                        (255, 240, 160), (255, 250, 210),
+                    ),
+                }.get(pal, (
+                    (180, 40, 10), (255, 100, 20), (255, 180, 50),
+                    (255, 240, 160), (255, 220, 120),
+                ))
+                pygame.draw.rect(surface, layers[0], (bx - 5, by, 10, 15))
+                pygame.draw.rect(surface, layers[1], (bx - 4, by, 8, 14))
+                pygame.draw.rect(surface, layers[2], (bx - 2, by, 4, 13))
+                pygame.draw.rect(surface, layers[3], (bx - 1, by, 2, 10))
+                pygame.draw.circle(surface, layers[4], (bx, by), 3)
             else:
-                if getattr(self, "palette", "red") == "blue":
-                    # P2: cyan shifted toward violet
-                    pygame.draw.rect(surface, (170, 120, 255), (bx - 3, by, 6, 16))
-                    pygame.draw.rect(surface, (230, 210, 255), (bx - 1, by, 2, 16))
-                else:
-                    pygame.draw.rect(surface, (140, 255, 255), (bx - 3, by, 6, 16))
-                    pygame.draw.rect(surface, (255, 255, 255), (bx - 1, by, 2, 16))
+                pal = getattr(self, "palette", "argent")
+                tip = {
+                    "blue": (120, 170, 255),
+                    "gold": (255, 200, 90),
+                    "red": (255, 120, 110),
+                    "green": (120, 255, 150),
+                    "violet": (210, 130, 255),
+                    "argent": (210, 220, 235),
+                }.get(pal, (180, 220, 255))
+                # Tip (top, leading edge) = hull tint → white at the tail
+                mid = (
+                    min(255, (tip[0] + 255) // 2),
+                    min(255, (tip[1] + 255) // 2),
+                    min(255, (tip[2] + 255) // 2),
+                )
+                pygame.draw.rect(surface, tip, (bx - 3, by, 6, 5))
+                pygame.draw.rect(surface, mid, (bx - 3, by + 5, 6, 5))
+                pygame.draw.rect(surface, (255, 255, 255), (bx - 3, by + 10, 6, 6))
+                pygame.draw.rect(surface, (255, 255, 255), (bx - 1, by, 2, 16))
 
     def get_bullet_rects(self):
         """List of (index, rect) for active shots."""
@@ -965,9 +1109,20 @@ class Player:
     def get_hitbox(self):
         if self.dying or not self.alive:
             return pygame.Rect(0, 0, 0, 0)
+        if self.uses_shield and self.is_phenix:
+            # Dome matches loop FX (96x128), inset so the outer glow is not solid
+            dw = int(getattr(self, "shield_dome_w", 96) * 0.84)
+            dh = int(getattr(self, "shield_dome_h", 128) * 0.80)
+            dw = max(self.hitbox_w + 8, dw)
+            dh = max(self.hitbox_h + 8, dh)
+            return pygame.Rect(
+                int(self.x - dw // 2),
+                int(self.y - dh // 2),
+                dw, dh,
+            )
         return pygame.Rect(
-            self.x - self.hitbox_w // 2,
-            self.y - self.hitbox_h // 2,
+            int(self.x - self.hitbox_w // 2),
+            int(self.y - self.hitbox_h // 2),
             self.hitbox_w,
             self.hitbox_h
         )

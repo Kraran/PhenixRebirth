@@ -974,6 +974,16 @@ class BossSaucer:
         if not self.boss.alive:
             self.alive = False
 
+    def touches_floor(self, screen_h):
+        """True if any living armor brick reaches the bottom of the playfield."""
+        limit = float(screen_h) - 1.0
+        for c in self.cells:
+            if not c.alive:
+                continue
+            if c.y + c.h / 2.0 >= limit:
+                return True
+        return False
+
     def get_hull_hitbox(self):
         """Approximate bounding box of living armor for player collision."""
         living = [c for c in self.cells if c.alive]
@@ -1008,6 +1018,7 @@ class BossSaucer:
         if "port" not in done and self._pair_dead("port"):
             done.add("port")
             self.bird_rate = 0.28
+            self.flag_ports_pair = True
         if "cannon" not in done and self._pair_dead("cannon"):
             done.add("cannon")
             self.can_shoot = False

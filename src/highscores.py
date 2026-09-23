@@ -41,12 +41,19 @@ def load_highscores():
                             sid2 = None
                     else:
                         sid2 = None
+                    tint = str(e.get("tint") or "")
+                    if sid == "shield":
+                        tint = tint if tint in ("red", "green", "violet") else "red"
+                    else:
+                        tint = tint if tint in ("argent", "blue", "gold") else "argent"
                     cleaned.append({
                         "name": str(e["name"])[:3].upper().ljust(3, "A"),
                         "score": int(e["score"]),
                         "coop": bool(e.get("coop", False)),
+                        "veteran": bool(e.get("veteran", False)),
                         "ship": sid,
                         "ship2": sid2,
+                        "tint": tint,
                     })
             if cleaned:
                 cleaned.sort(key=lambda x: x["score"], reverse=True)
@@ -79,18 +86,24 @@ def is_highscore(score, entries=None):
         return True
     return score > entries[-1]["score"]
 
-def insert_score(name, score, entries=None, coop=False, ship="phoenix", ship2=None):
+def insert_score(name, score, entries=None, coop=False, ship="phoenix", ship2=None, veteran=False, tint=None):
     if entries is None:
         entries = load_highscores()
     sid = "shield" if ship == "shield" else "phoenix"
     sid2 = None
     if ship2 in ("phoenix", "shield") and ship2 != sid:
         sid2 = ship2
+    if sid == "shield":
+        tn = tint if tint in ("red", "green", "violet") else "red"
+    else:
+        tn = tint if tint in ("argent", "blue", "gold") else "argent"
     entries.append({
         "name": name[:3].upper().ljust(3, "A"),
         "score": int(score),
         "coop": bool(coop),
+        "veteran": bool(veteran),
         "ship": sid,
         "ship2": sid2,
+        "tint": tn,
     })
     return save_highscores(entries)

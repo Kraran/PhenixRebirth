@@ -8,7 +8,8 @@ Play modes: solo, hot-seat (alternating), coop (simultaneous). Options cover
 controls, autofire, volumes, session audio mix, rumble, display, GPU present,
 VSync, refresh cap, bezels, FPS counter, CRT scanlines and language.
 Cheats on the high-score menu: LVL2–LVL5, LIVE, PHEN.
-v1.3.0 — Shield ship, achievements, jukebox (PHEQ1 + ID3), in-game OST picker, stereo SFX.
+v1.4.2 — six hull tints, Shield absorb score + wall sparks-only,
+stage keep-X, landing dust, Welcome on confirm only.
 
 Architecture notes:
 - Logical resolution BASE_WIDTH x BASE_HEIGHT (see settings.py).
@@ -17,7 +18,8 @@ Architecture notes:
 - Display rebuild (GPU/bezel/mode) covers the desktop then refocuses the pad.
 - State flags: started, game_over, paused, stage_transition, menu_screen, hs_phase.
 - Stages cycle content 1–5 forever with rising speed (stage_speed_mult).
-- Cheats on the menu high-score screen: LVL2–LVL5, LIVE, PHEN.
+- Cheats on the menu high-score screen: LVL1–LVL5, LIVE, PHEN (stackable).
+- hs_phase "card" = GAME OVER hold (voice + fading rumble) before scores / hot-seat.
 
 This file is intentionally large; split only if a future refactor needs it.
 """
@@ -30,7 +32,7 @@ import json
 from datetime import datetime
 from settings import *
 from settings import stage_content, stage_speed_mult
-from player import Player
+from player import Player, recolor_phenix_frames
 from enemy import EnemyFormation, BigBird, Enemy
 from boss import BossSaucer
 from explosion import Explosion, TeslaCoilFx
@@ -43,6 +45,8 @@ from i18n import set_lang, get_lang, t, t_help, t_list, get_credits_lines, LANGS
 from highscores import load_highscores, is_highscore, insert_score, reset_highscores
 from achievements import (
     CATALOG, load_achievements, unlock_achievement, unlocked_count,
+    add_scalable, set_scalable_at_least, scalable_tier, scalable_progress,
+    scalable_thresholds,
 )
 from gpu_present import GpuPresenter
 from desktop_cover import show_cover, hide_cover
@@ -67,8 +71,8 @@ def load_user_settings():
         "gpu_present": True,  # SDL2 GPU upscale (falls back to CPU)
         "vsync_mode": "adaptive",  # on | adaptive | off
         "fps_cap": 120,  # 60 | 75 | 120
-        "ship_id": "phoenix",  # P1 / solo
-        "ship_id_p2": "phoenix",
+        "audio_mix": "sfx",
+        "ingame_music": "none",
     }
     try:
         with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
@@ -188,6 +192,7 @@ class Game:
         self.player = Player(BASE_WIDTH // 2, BASE_HEIGHT - 95)
         self.formation = EnemyFormation()
         self.explosions = []
+        # old explosion.py has no delay_frames — wrap once
         self.tesla_fx = None
         self.starfield = Starfield()
         
@@ -197,6 +202,7 @@ class Game:
         self.game_over = False
         self.started = False
         self.stage = 1
+        self.DEBUG_LIGHT_BG = False
         self.stage_transition = None  # None | "fly_up" | "arrive"
         self.transition_timer = 0.0
         self.boss_saucer = None
@@ -223,7 +229,7 @@ class Game:
         self.credits_from_start = False
         self.juke_index = 0
         self.juke_paused = False
-        self.ingame_music = getattr(self, "ingame_music", "none")
+        # ingame_music loaded from settings.json below
         self.juke_video = False
         self._eq_n = 40
         self._eq_bands = [0.04] * 40
@@ -234,6 +240,7 @@ class Game:
         self.hs_name = ["A", "A", "A"]
         self.hs_char_index = 0
         self.hs_submitted = False
+        self.hs_just_added = []
         self._hs_joy_cooldown = 0.0
         self.cheat_buffer = ""
         self.cheat_msg_timer = 0.0
@@ -257,11 +264,7 @@ class Game:
         self.help_first_shown = False  # first attract uses longer delay
         self.attract_mode = False
         self.attract_timer = 0.0
-        # Session-only in-game audio mix (not saved). Default: SFX, no music.
-        if not hasattr(self, "audio_mix"):
-            self.audio_mix = "sfx"
         self.AUDIO_MIXES = ["sfx", "sfx_music", "music", "off"]
-        self._apply_audio_mix()
         # Hot-seat 2P: each player has a fully independent run (stage/score/lives/world)
         self.hotseat = False
         self.play_mode = getattr(self, "play_mode", "solo")  # solo | hotseat | coop
@@ -329,6 +332,12 @@ class Game:
                         pass
 
         self.shake_amount = 0.0
+        self.hitstop = 0.0
+        self.phenix_flash = 0
+        self.fade_t = 0.0
+        self.fade_phase = None
+        self.fade_action = None
+        self.FADE_SEC = 5.0 / 60.0
         self.title_timer = 0.0
         
         self._load_ship_previews()
@@ -367,6 +376,11 @@ class Game:
             self.sfx_volume = float(user.get("sfx_volume", 0.8))
         if not hasattr(self, "music_volume"):
             self.music_volume = float(user.get("music_volume", 0.4))
+        if not hasattr(self, "audio_mix"):
+            mix = str(user.get("audio_mix", "sfx") or "sfx")
+            self.audio_mix = mix if mix in getattr(self, "AUDIO_MIXES", ["sfx"]) else "sfx"
+        if not hasattr(self, "ingame_music"):
+            self.ingame_music = ingame_normalize(user.get("ingame_music", "none"))
         if not hasattr(self, "rumble_level"):
             try:
                 self.rumble_level = int(user.get("rumble_level", 3))
@@ -376,13 +390,22 @@ class Game:
         if not hasattr(self, "autofire"):
             self.autofire = bool(user.get("autofire", True))
         if not hasattr(self, "ship_id"):
-            sid = user.get("ship_id", "phoenix")
-            self.ship_id = sid if sid in ("phoenix", "shield") else "phoenix"
+            self.ship_id = "phoenix"
         if not hasattr(self, "ship_id_p2"):
-            sid2 = user.get("ship_id_p2", user.get("ship_id", "phoenix"))
-            self.ship_id_p2 = sid2 if sid2 in ("phoenix", "shield") else "phoenix"
+            self.ship_id_p2 = "phoenix"
+        if not hasattr(self, "shield_tint"):
+            self.shield_tint = "red"
+        if not hasattr(self, "shield_tint_p2"):
+            self.shield_tint_p2 = "green"
+        if not hasattr(self, "phoenix_tint"):
+            self.phoenix_tint = "argent"
+        if not hasattr(self, "phoenix_tint_p2"):
+            self.phoenix_tint_p2 = "blue"
         self.ship_select_slot = 1
         self.ship_select_index = 0 if getattr(self, "ship_id", "phoenix") != "shield" else 1
+        self.shield_slide = 1.0
+        self.shield_slide_dir = -1
+        self.shield_slide_from = "red"
         self._rebuild_life_icon()
         if not hasattr(self, "language"):
             self.language = user.get("language", "fr")
@@ -493,7 +516,7 @@ class Game:
             return
         if getattr(self, "menu_screen", "") == "jukebox":
             return
-        if self.game_over and self.hs_phase in ("enter", "table"):
+        if self.game_over and self.hs_phase in ("card", "enter", "table"):
             self.sounds.play_music("gameover")
         elif not self.started:
             if self.menu_screen in ("highscores", "achievements"):
@@ -504,10 +527,15 @@ class Game:
                 self.sounds.play_music("menu")
         elif getattr(self, "attract_mode", False):
             self.sounds.play_music("menu")
-        elif mix in ("sfx_music", "music"):
-            self.sounds.play_music("menu")
         else:
-            self.sounds.stop_music()
+            # In-game picker wins (any of the 5 themes). Mix Off stays silent.
+            want = ingame_normalize(getattr(self, "ingame_music", "none"))
+            if want != "none":
+                self.sounds.play_music(want)
+            elif mix in ("sfx_music", "music"):
+                self.sounds.play_music("menu")
+            else:
+                self.sounds.stop_music()
 
     def _juke_catalog(self):
         return (
@@ -800,10 +828,12 @@ class Game:
                 return
             if s.try_activate_phenix():
                 self.shake_amount = max(self.shake_amount, 4.0)
+                if not getattr(s, "uses_shield", False):
+                    self.phenix_flash = 1
                 if getattr(s, "uses_shield", False):
-                    self._unlock_ach("iron_curtain")
+                    self._note_scalable("iron_curtain")
                 else:
-                    self._unlock_ach("phenix_wake")
+                    self._note_scalable("phenix_wake")
                 return
 
 
@@ -829,18 +859,19 @@ class Game:
         else:
             col = (255, 220, 100)
 
-        cm = self._txt(self.big_font, msg, col)
+        banner_font = self.font if kind == "ach" else self.big_font
+        cm = self._txt(banner_font, msg, col)
         cx = BASE_WIDTH // 2
         cy = BASE_HEIGHT // 2
         # Dark plate behind for readability
-        pad_x, pad_y = 28, 16
+        pad_x, pad_y = (18, 10) if kind == "ach" else (28, 16)
         plate = pygame.Surface((cm.get_width() + pad_x * 2, cm.get_height() + pad_y * 2), pygame.SRCALPHA)
-        plate_a = 70 if kind == "stage" else 160
+        plate_a = 70 if kind in ("stage", "ach") else 160
         pygame.draw.rect(plate, (0, 0, 0, plate_a), plate.get_rect(), border_radius=8)
         self.game_surface.blit(plate, (cx - plate.get_width() // 2, cy - plate.get_height() // 2))
         # Glow
         for ox, oy in ((-2, 0), (2, 0), (0, -2), (0, 2), (-1, -1), (1, 1)):
-            g = self._txt(self.big_font, msg, col)
+            g = self._txt(banner_font, msg, col)
             g.set_alpha(int(50 + 60 * pulse))
             self.game_surface.blit(g, (cx - cm.get_width() // 2 + ox, cy - cm.get_height() // 2 + oy))
         self.game_surface.blit(cm, (cx - cm.get_width() // 2, cy - cm.get_height() // 2))
@@ -853,15 +884,90 @@ class Game:
             self.score = sum(getattr(s, "score", 0) for s in self._ships())
         else:
             self.score += pts
-        if pts >= 10:
-            self._unlock_ach("first_blood")
+        if getattr(self, "difficulty", "normal") != "novice":
+            self._note_scalable("marathon", int(self.score), absolute=True)
+
+
+
+    def _shield_absorb(self, ship, ix=None, iy=None):
+        """One ripple + tick when a shot dies on an active Shield."""
+        if not ship or not getattr(ship, "uses_shield", False) or not getattr(ship, "is_phenix", False):
+            return
+        cd = float(getattr(ship, "shield_ripple_cd", 0.0) or 0.0)
+        if cd > 0:
+            return
+        ship.shield_ripple_cd = 0.08
+        px, py = float(ship.x), float(ship.y)
+        if ix is None:
+            ix, iy = px, py
+        else:
+            ix, iy = float(ix), float(iy if iy is not None else py)
+        # Snap spark onto the dome rim (ellipse) facing the shot
+        a = max(8.0, getattr(ship, "shield_dome_w", 96) * 0.42)
+        b = max(8.0, getattr(ship, "shield_dome_h", 128) * 0.40)
+        dx, dy = ix - px, iy - py
+        if abs(dx) + abs(dy) < 1.0:
+            dx, dy = 0.0, -b
+        tnorm = math.sqrt((dx / a) ** 2 + (dy / b) ** 2) or 1.0
+        ix = px + dx / tnorm
+        iy = py + dy / tnorm
+        self.explosions.append(self._boom(ix, iy, kind="shield"))
+        ship.shield_flash = 1
+        ship.shield_punch = 0.10
+        self.shake_amount = max(self.shake_amount, 2.0)
+        try:
+            self.sounds.play("shield_zap", volume=0.28, x=ship.x)
+        except Exception:
+            pass
+        try:
+            if getattr(ship, "_joy", None) is None and getattr(self, "joystick", None):
+                ship._joy = self.joystick
+            ship.rumble_level = int(getattr(self, "rumble_level", 3))
+            ship.rumble(0.40, 0.70, 140)
+        except Exception:
+            pass
+
+
+    def _hitstop(self, sec=0.032):
+        """Freeze sim ~2 frames @ 60 Hz on a body kill. Wings stay live."""
+        if getattr(self, "attract_mode", False):
+            return
+        self.hitstop = max(float(getattr(self, "hitstop", 0.0) or 0.0), float(sec))
+
+    def _note_scalable(self, aid, amount=1, absolute=False):
+        """Progress a scalable haut-fait. Toast only on unlock / tier up."""
+        if getattr(self, "attract_mode", False) or getattr(self, "used_cheat", False):
+            return
+        data = getattr(self, "ach_data", None)
+        if absolute:
+            changed, tier = set_scalable_at_least(aid, amount, data)
+        else:
+            changed, tier = add_scalable(aid, amount, data)
+        self.ach_data = load_achievements()
+        if not changed or not tier:
+            return
+        title = t("ach_" + aid)
+        extra = ""
+        if tier == "bronze":
+            extra = " — " + t("ach_tier_bronze")
+        elif tier == "silver":
+            extra = " — " + t("ach_tier_silver")
+        elif tier == "gold":
+            extra = " — " + t("ach_tier_gold")
+        self.cheat_msg = f"{t('ach_unlocked')} — {title}{extra}"
+        self.cheat_kind = "ach"
+        self.cheat_msg_timer = 3.2
+
+    def _note_bird_kill(self):
+        self._note_scalable("first_blood", 1)
 
     def _on_stage_cleared(self):
         """Hauts faits tied to finishing the current wave."""
         if not getattr(self, "stage_life_lost", False):
-            self._unlock_ach("survivor")
-        if int(getattr(self, "stage", 1) or 1) == 1 and not getattr(self, "stage_touched_edge", False):
-            self._unlock_ach("no_edge")
+            self._note_scalable("survivor")
+        st = int(getattr(self, "stage", 1) or 1)
+        if (st - 1) % 5 == 0 and not getattr(self, "stage_touched_edge", False):
+            self._note_scalable("no_edge")
         if getattr(self, "play_mode", "solo") == "coop":
             ships = [s for s in self._ships() if getattr(s, "ship_id", None)]
             ids = {getattr(s, "ship_id", "phoenix") for s in ships}
@@ -904,11 +1010,12 @@ class Game:
         Screen changes that keep the same track do not reset the counter.
         Only a real track change, volume off, or attract resets it.
         """
-        if getattr(self, "menu_screen", "") == "jukebox":
-            return
         listen = getattr(self, "_listen", None)
         if listen is None:
-            listen = self._listen = {"menu": 0.0, "gameover": 0.0, "credits": 0.0}
+            listen = self._listen = {
+                "menu": 0.0, "gameover": 0.0, "credits": 0.0,
+                "nostalgie_start": 0.0, "nostalgie_elise": 0.0,
+            }
         if getattr(self, "attract_mode", False):
             listen["menu"] = listen["gameover"] = listen["credits"] = 0.0
             self._listen_key = None
@@ -920,14 +1027,15 @@ class Game:
             listen["menu"] = listen["gameover"] = listen["credits"] = 0.0
             self._listen_key = None
             self._listen_pos = 0
+            self._try_music_collector()
             return
         key = None
         try:
             key = self.sounds.current_music_key()
         except Exception:
             key = None
-        if key not in ("menu", "gameover", "credits"):
-            # Fade / silence: keep counters, wait for the same track to resume.
+        if key not in ("menu", "gameover", "credits", "nostalgie_start", "nostalgie_elise"):
+            # Fade / silence / other theme: keep counters.
             return
         if self._listen_key != key:
             for k in list(listen.keys()):
@@ -960,7 +1068,11 @@ class Game:
             near_end = listen[key] >= (need - 0.45)
         if not (wrapped or near_end):
             return
-        aid = {"menu": "listen_menu", "gameover": "listen_hs", "credits": "listen_credits"}.get(key)
+        aid = {
+            "menu": "listen_menu", "gameover": "listen_hs", "credits": "listen_credits",
+            "nostalgie_start": "listen_nostalgie_start",
+            "nostalgie_elise": "listen_nostalgie_elise",
+        }.get(key)
         done = getattr(self, "_listen_done", None)
         if done is None:
             done = self._listen_done = set()
@@ -971,6 +1083,18 @@ class Game:
         self._unlock_ach_meta(aid)
         listen[key] = 0.0
         self._listen_pos = 0
+        self._try_music_collector()
+
+    def _try_music_collector(self):
+        """Third meta: all five listen hauts-faits."""
+        from achievements import is_unlocked
+        need = (
+            "listen_menu", "listen_hs", "listen_credits",
+            "listen_nostalgie_start", "listen_nostalgie_elise",
+        )
+        data = getattr(self, "ach_data", None)
+        if all(is_unlocked(a, data) for a in need):
+            self._unlock_ach_meta("listen_music_all")
 
     def _ach_icon(self, kind, unlocked):
         """32px catalog icon, color or grey."""
@@ -1143,10 +1267,10 @@ class Game:
         surface.blit(count, (BASE_WIDTH // 2 - count.get_width() // 2, 52))
 
         row_h, top, bottom, max_s = self._ach_view()
-        x = 90
+        x = 72
         col_w = BASE_WIDTH - 180
         body = getattr(self, "help_small", None) or self.font
-        n = len(CATALOG)
+        n_items = len(CATALOG)
         scroll = float(getattr(self, "ach_scroll", 0.0) or 0.0)
         scroll = max(0.0, min(max_s, scroll))
         self.ach_scroll = scroll
@@ -1158,15 +1282,38 @@ class Game:
                 continue
             on = aid in unlocked
             icon = self._ach_icon(kind, on)
-            iy = y + (row_h - icon.get_height()) // 2 - 6
-            if iy < bottom and iy + icon.get_height() > top:
-                surface.blit(icon, (x, iy))
-            tx = x + 52
+            box = 52  # same frame for every haut-fait
+            fy = y + (row_h - box) // 2 - 6
+            ix = x + (box - icon.get_width()) // 2
+            iy = fy + (box - icon.get_height()) // 2
+            if fy < bottom and fy + box > top:
+                surface.blit(icon, (ix, iy))
+                tier = scalable_tier(aid, data) if on else None
+                frame = {
+                    "bronze": (150, 88, 32),
+                    "silver": (196, 200, 210),
+                    "gold": (255, 210, 48),
+                }.get(tier)
+                if frame:
+                    pygame.draw.rect(surface, frame, pygame.Rect(x, fy, box, box), 3, border_radius=10)
+            tx = x + 68
             if on:
                 title = t("ach_" + aid)
                 desc = t("ach_" + aid + "_d")
                 tcol, dcol = (255, 230, 160), (190, 195, 220)
                 date_s = self._fmt_ach_date(unlocked.get(aid))
+                steps = scalable_thresholds(aid)
+                if steps:
+                    prog = scalable_progress(aid, data)
+                    nxt = None
+                    for th in steps:
+                        if prog < th:
+                            nxt = th
+                            break
+                    if nxt:
+                        desc = f"{desc}  ({prog}/{nxt})"
+                    else:
+                        desc = f"{desc}  ({prog})"
             else:
                 title = t("ach_locked")
                 desc = "—"
@@ -1193,13 +1340,21 @@ class Game:
             bar_y, bar_h = top + 8, bottom - top - 16
             pygame.draw.rect(surface, (40, 40, 55), (bar_x, bar_y, 6, bar_h), border_radius=3)
             view_h = float(bottom - top)
-            thumb_h = max(18, int(bar_h * view_h / max(view_h, n * row_h)))
+            content_h = float(n_items * row_h)
+            thumb_h = max(18, int(bar_h * view_h / max(view_h, content_h)))
             thumb_y = bar_y + int((bar_h - thumb_h) * scroll / max_s)
             pygame.draw.rect(surface, (200, 180, 120), (bar_x, thumb_y, 6, thumb_h), border_radius=3)
 
         hint = (tc.get(self.font, t("ach_hint_back"), (255, 220, 100))
                 if tc else self._txt(self.font, t("ach_hint_back"), (255, 220, 100)))
         surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 42))
+
+
+    def _boom(self, x, y, kind="enemy", delay_frames=0):
+        try:
+            return Explosion(x, y, kind=kind, delay_frames=delay_frames)
+        except TypeError:
+            return Explosion(x, y, kind=kind)
 
     def _draw_phenix_gauge(self, ship=None, gx=18, gy=100, align="left"):
         """HUD: 10-segment Phenix gauge + fire around label from level 3."""
@@ -1209,7 +1364,9 @@ class Game:
             return
         gauge = float(getattr(ship, "phenix_gauge", 0))
         level = int(gauge)  # for label threshold
-        blue = getattr(ship, "palette", "red") == "blue"
+        pal = getattr(ship, "palette", "argent")
+        blue = pal == "blue"
+        gold = pal == "gold"
         shield_ship = bool(getattr(ship, "uses_shield", False) or getattr(ship, "ship_id", "") == "shield")
         seg_w, seg_h, gap = 14, 10, 3
         total_h = 10 * (seg_h + gap)
@@ -1221,7 +1378,30 @@ class Game:
             seg_fill = max(0.0, min(1.0, gauge - i))
             if seg_fill > 0:
                 t = (i + 1) / 10.0
-                if blue or shield_ship:
+                if shield_ship:
+                    # Bottom = ship color, top ≈ white
+                    pal = getattr(ship, "palette", "red")
+                    if pal == "green":
+                        base = (40, 170, 55) if not active else (50, 210, 70)
+                    elif pal == "violet":
+                        base = (140, 50, 180) if not active else (190, 80, 230)
+                    else:
+                        base = (210, 70, 70) if not active else (255, 90, 90)
+                    col = (
+                        int(base[0] + (255 - base[0]) * t),
+                        int(base[1] + (255 - base[1]) * t),
+                        int(base[2] + (255 - base[2]) * t),
+                    )
+                elif gold:
+                    if active:
+                        col = (255, int(190 + 50 * t), int(40 + 80 * t))
+                    else:
+                        col = (
+                            int(180 + 75 * t),
+                            int(130 + 90 * t),
+                            int(30 + 40 * t),
+                        )
+                elif blue:
                     if active:
                         col = (int(40 + 20 * t), int(140 + 80 * t), 255)
                     else:
@@ -1256,7 +1436,22 @@ class Game:
             ticks = pygame.time.get_ticks() * 0.001
             pulse = 0.75 + 0.25 * abs(math.sin(ticks * 4.0))
             power = gauge / 10.0 if shield_ship else (level - 3) / 7.0
-            if blue or shield_ship:
+            if shield_ship:
+                pal = getattr(ship, "palette", "red")
+                if pal == "green":
+                    lab = tc.get(self.font, tag, (120, 200, 140))
+                    glow = tc.get(self.font, tag, (70, 160, 90))
+                elif pal == "violet":
+                    lab = tc.get(self.font, tag, (200, 150, 230))
+                    glow = tc.get(self.font, tag, (160, 80, 200))
+                else:
+                    lab = tc.get(self.font, tag, (230, 140, 140))
+                    glow = tc.get(self.font, tag, (200, 80, 80))
+            elif gold:
+                g_q = int((190 + 50 * power * pulse) // 8) * 8
+                lab = tc.get(self.font, tag, (255, g_q, 80))
+                glow = tc.get(self.font, tag, (220, 160, 40))
+            elif blue:
                 g_q = int((180 + 50 * power * pulse) // 8) * 8
                 lab = tc.get(self.font, tag, (140, g_q, 255))
                 glow = tc.get(self.font, tag, (80, 180, 255))
@@ -1273,11 +1468,37 @@ class Game:
                 self.game_surface.blit(glow, (lab_x + ox, lab_y + oy))
             self.game_surface.blit(lab, (lab_x, lab_y))
         else:
-            lab = tc.get(self.font, tag, (100, 140, 180) if blue else (120, 110, 100))
+            if shield_ship:
+                pal = getattr(ship, "palette", "red")
+                if pal == "green":
+                    idle = (90, 160, 110)
+                elif pal == "violet":
+                    idle = (150, 110, 180)
+                else:
+                    idle = (190, 120, 120)
+            elif gold:
+                idle = (160, 130, 70)
+            elif blue:
+                idle = (100, 140, 180)
+            else:
+                idle = (120, 110, 100)
+            lab = tc.get(self.font, tag, idle)
             lab_x = (gx + seg_w - lab.get_width()) if right else (gx - 2)
             self.game_surface.blit(lab, (lab_x, lab_y))
 
-        num_col = ((180, 230, 255) if blue else (255, 220, 160)) if level >= 3 or active else (140, 140, 150)
+        if shield_ship:
+            pal = getattr(ship, "palette", "red")
+            if pal == "green":
+                num_col = (130, 210, 150) if (level >= 3 or active) else (100, 150, 115)
+            elif pal == "violet":
+                num_col = (210, 170, 240) if (level >= 3 or active) else (150, 120, 180)
+            else:
+                num_col = (230, 150, 150) if (level >= 3 or active) else (180, 120, 120)
+        else:
+            if level >= 3 or active:
+                num_col = (255, 230, 140) if gold else ((180, 230, 255) if blue else (255, 220, 160))
+            else:
+                num_col = (140, 140, 150)
         num = tc.get(self.font, str(int(round(gauge))), num_col)
         self.game_surface.blit(num, (gx + seg_w // 2 - num.get_width() // 2, gy - 18))
 
@@ -1318,21 +1539,63 @@ class Game:
             self._coop_icon = icon
         return icon
 
+    def _vet_icon_surf(self):
+        icon = getattr(self, "_vet_icon", None)
+        if icon is None:
+            path = asset_path("sprites", "icon_veteran.png")
+            try:
+                raw = pygame.image.load(path).convert_alpha()
+            except Exception:
+                raw = pygame.Surface((14, 16), pygame.SRCALPHA)
+                pygame.draw.circle(raw, (220, 180, 50), (7, 10), 6)
+            try:
+                r = raw.get_bounding_rect(min_alpha=24)
+                if r.width > 1 and r.height > 1:
+                    raw = raw.subsurface(r).copy()
+            except Exception:
+                pass
+            th = 16
+            tw = max(10, int(raw.get_width() * th / max(1, raw.get_height())))
+            icon = pygame.transform.smoothscale(raw, (tw, th))
+            self._vet_icon = icon
+        return icon
+
+    def _draw_vet_mark(self, surface, x, y):
+        icon = self._vet_icon_surf()
+        iy = y + (self.font.get_height() - icon.get_height()) // 2
+        surface.blit(icon, (x, iy))
+        return icon.get_width()
+
     def _draw_coop_mark(self, surface, x, y, col=(170, 185, 210)):
         """Two-player mark. y is the top of the row text."""
         icon = self._coop_icon_surf()
         iy = y + (self.font.get_height() - icon.get_height()) // 2
         surface.blit(icon, (x, iy))
 
-    def _hs_ship_icon(self, sid):
+    def _hs_ship_icon(self, sid, tint=None):
         """Tiny hull for the high-score table — same visual height after crop."""
         cache = getattr(self, "_hs_ship_icons", None)
         if cache is None:
             cache = self._hs_ship_icons = {}
-        key = "shield" if sid == "shield" else "phoenix"
+        key_sid = "shield" if sid == "shield" else "phoenix"
+        if key_sid == "shield":
+            tn = tint if tint in ("red", "green", "violet") else "red"
+            files = {
+                "red": "player_ship_shield.png",
+                "green": "player_ship_shield_green.png",
+                "violet": "player_ship_shield_violet.png",
+            }
+        else:
+            tn = tint if tint in ("argent", "blue", "gold") else "argent"
+            files = {
+                "argent": "player_ship.png",
+                "blue": "player_ship_blue.png",
+                "gold": "player_ship_gold.png",
+            }
+        key = key_sid + "_" + tn
         if key in cache:
             return cache[key]
-        path = asset_path("sprites", "player_ship_shield.png" if key == "shield" else "player_ship.png")
+        path = asset_path("sprites", files[tn])
         try:
             raw = pygame.image.load(path).convert_alpha()
         except Exception:
@@ -1349,7 +1612,7 @@ class Game:
         cache[key] = pygame.transform.smoothscale(raw, (w, h))
         return cache[key]
 
-    def _draw_hs_row(self, surface, y, rank, name, score, col, score_right_x=None, coop=False, ship=None, ship2=None):
+    def _draw_hs_row(self, surface, y, rank, name, score, col, score_right_x=None, coop=False, ship=None, ship2=None, veteran=False, tint=None):
         """Draw one high-score line: rank aligned on '.', score right-aligned."""
         if score_right_x is None:
             score_right_x = BASE_WIDTH // 2 + 160
@@ -1382,12 +1645,15 @@ class Game:
                 ids = ["phoenix"]
             line_h = self.font.get_height()
             for sid in ids:
-                icon = self._hs_ship_icon(sid)
+                icon = self._hs_ship_icon(sid, tint)
                 iy = y + (line_h - icon.get_height()) // 2
                 surface.blit(icon, (ix, iy))
                 ix += icon.get_width() + 3
         if coop:
             self._draw_coop_mark(surface, ix + 4, y)
+            ix += 22
+        if veteran:
+            self._draw_vet_mark(surface, ix + 4, y)
 
     def difficulty_speed_mult(self):
 
@@ -1446,18 +1712,19 @@ class Game:
 
     def _rebuild_life_icon(self):
         sid = getattr(self, "ship_id", "phoenix")
+        tint = None
         pl = getattr(self, "player", None)
         if pl is not None:
             sid = getattr(pl, "ship_id", sid)
-        path = asset_path("sprites", "player_ship_shield.png") if sid == "shield" else asset_path("sprites", "player_ship.png")
+            tint = getattr(pl, "palette", None)
+        if tint is None:
+            tint = self._tint_of(sid, int(getattr(pl, "pid", 1) or 1)) if hasattr(self, "_tint_of") else None
         try:
-            ship_full = pygame.image.load(path).convert_alpha()
+            self.life_icon = self._hs_ship_icon(sid, tint)
         except Exception:
-            ship_full = pygame.image.load(asset_path("sprites", "player_ship.png")).convert_alpha()
-        mini_h = 22
-        scale = mini_h / max(1, ship_full.get_height())
-        mini_w = max(1, int(ship_full.get_width() * scale))
-        self.life_icon = pygame.transform.smoothscale(ship_full, (mini_w, mini_h)).convert_alpha()
+            path = asset_path("sprites", "player_ship.png")
+            ship_full = pygame.image.load(path).convert_alpha()
+            self.life_icon = pygame.transform.smoothscale(ship_full, (16, 22)).convert_alpha()
 
     def _load_ship_previews(self):
         """Menu portraits + focus animations (Phenix flap / Shield loop)."""
@@ -1476,26 +1743,143 @@ class Game:
                     fr = _load(os.path.join(pdir, name))
                     if fr is not None:
                         anim_p.append(fr)
-        self.preview_ships["phoenix"] = {"idle": idle_p, "anim": anim_p or ([idle_p] if idle_p else [])}
+        morph_p = []
+        if os.path.isdir(pdir):
+            for name in sorted(os.listdir(pdir)):
+                if name.startswith("morph_") and name.endswith(".png"):
+                    fr = _load(os.path.join(pdir, name))
+                    if fr is not None:
+                        morph_p.append(fr)
+        pack_p = {
+            "anim": anim_p or ([idle_p] if idle_p else []),
+            "on": morph_p or [],
+            "off": list(reversed(morph_p)) if morph_p else [],
+        }
+        for key, path in (
+            ("argent", asset_path("sprites", "player_ship.png")),
+            ("blue", asset_path("sprites", "player_ship_blue.png")),
+            ("gold", asset_path("sprites", "player_ship_gold.png")),
+        ):
+            idle_t = _load(path) or idle_p
+            self.preview_ships["phoenix_" + key] = {
+                "idle": idle_t,
+                "anim": recolor_phenix_frames(pack_p["anim"], key),
+                "on": recolor_phenix_frames(pack_p["on"], key),
+                "off": recolor_phenix_frames(pack_p["off"], key),
+            }
+        self.preview_ships["phoenix"] = self.preview_ships["phoenix_argent"]
         idle_s = _load(asset_path("sprites", "player_ship_shield.png"))
-        anim_s = []
+        anim_s, on_s, off_s = [], [], []
         sdir = asset_path("sprites", "shield")
         if os.path.isdir(sdir):
             for name in sorted(os.listdir(sdir)):
-                if name.startswith("loop_") and name.endswith(".png"):
-                    fr = _load(os.path.join(sdir, name))
-                    if fr is not None:
-                        anim_s.append(fr)
-        self.preview_ships["shield"] = {"idle": idle_s, "anim": anim_s or ([idle_s] if idle_s else [])}
+                if not name.endswith(".png"):
+                    continue
+                fr = _load(os.path.join(sdir, name))
+                if fr is None:
+                    continue
+                if name.startswith("loop_"):
+                    anim_s.append(fr)
+                elif name.startswith("morph_"):
+                    on_s.append(fr)
+                elif name.startswith("off_"):
+                    off_s.append(fr)
+        self.preview_ships["shield"] = {
+            "idle": idle_s,
+            "anim": anim_s or ([idle_s] if idle_s else []),
+            "on": on_s,
+            "off": off_s or list(reversed(on_s)),
+        }
+        pack_fx = {
+            "anim": anim_s or [],
+            "on": on_s,
+            "off": off_s or list(reversed(on_s)),
+        }
+        def _comp(hull, fx):
+            if hull is None:
+                return fx
+            if fx is None:
+                return hull
+            cw, ch = max(hull.get_width(), fx.get_width()), max(hull.get_height(), fx.get_height())
+            canvas = pygame.Surface((cw, ch), pygame.SRCALPHA)
+            canvas.blit(hull, ((cw - hull.get_width()) // 2, (ch - hull.get_height()) // 2))
+            canvas.blit(fx, ((cw - fx.get_width()) // 2, (ch - fx.get_height()) // 2))
+            return canvas
+        tint_files = {
+            "red": asset_path("sprites", "player_ship_shield.png"),
+            "green": asset_path("sprites", "player_ship_shield_green.png"),
+            "violet": asset_path("sprites", "player_ship_shield_violet.png"),
+        }
+        for tint, path in tint_files.items():
+            idle_t = _load(path) or idle_s
+            self.preview_ships["shield_" + tint] = {
+                "idle": idle_t,
+                "anim": [_comp(idle_t, fr) for fr in pack_fx["anim"]] or [idle_t],
+                "on": [_comp(idle_t, fr) for fr in pack_fx["on"]],
+                "off": [_comp(idle_t, fr) for fr in pack_fx["off"]],
+            }
+        self.preview_ships["shield"] = self.preview_ships["shield_red"]
 
     def _ship_for_pid(self, pid):
         if int(pid) == 2:
             return getattr(self, "ship_id_p2", "phoenix")
         return getattr(self, "ship_id", "phoenix")
 
-    def _p2_needs_blue(self):
-        """P2 is tinted blue only when both players fly the same hull."""
-        return self._ship_for_pid(1) == self._ship_for_pid(2)
+    def _tint_of(self, sid, pid=1):
+        """Tint for a hull type, independent of the last confirmed ship."""
+        two = int(pid) == 2
+        if sid == "shield":
+            t = getattr(self, "shield_tint_p2" if two else "shield_tint", "red")
+            return t if t in ("red", "green", "violet") else "red"
+        t = getattr(self, "phoenix_tint_p2" if two else "phoenix_tint", "argent")
+        return t if t in ("argent", "blue", "gold") else "argent"
+
+    def _tint_for_pid(self, pid):
+        return self._tint_of(self._ship_for_pid(pid), pid)
+
+    def _palette_score_color(self, pal, bright=True):
+        """HUD score tint matching hull palette."""
+        base = {
+            "blue": (120, 180, 255),
+            "gold": (255, 210, 90),
+            "red": (255, 130, 110),
+            "green": (110, 230, 140),
+            "violet": (210, 140, 255),
+            "argent": (210, 220, 235),
+        }.get(str(pal or "argent"), (210, 220, 235))
+        if bright:
+            return base
+        return tuple(max(50, c * 145 // 255) for c in base)
+
+    def _loadout(self, pid):
+        sid = self._ship_for_pid(pid)
+        return (sid, self._tint_of(sid, pid))
+
+    def _available_tints(self, sid, pid):
+        order = ("red", "green", "violet") if sid == "shield" else ("argent", "blue", "gold")
+        if int(pid) != 2 or getattr(self, "play_mode", "solo") == "solo":
+            return list(order)
+        taken = self._loadout(1)
+        return [t for t in order if (sid, t) != taken]
+
+    def _set_tint(self, sid, pid, tint):
+        two = int(pid) == 2
+        if sid == "shield":
+            setattr(self, "shield_tint_p2" if two else "shield_tint", tint)
+        else:
+            setattr(self, "phoenix_tint_p2" if two else "phoenix_tint", tint)
+
+    def _ensure_p2_free(self):
+        """Snap P2 tints off P1's exact loadout."""
+        if getattr(self, "play_mode", "solo") == "solo":
+            return
+        for sid in ("phoenix", "shield"):
+            av = self._available_tints(sid, 2)
+            if not av:
+                continue
+            cur = self._tint_of(sid, 2)
+            if cur not in av:
+                self._set_tint(sid, 2, av[0])
 
     def _play_ship_welcome(self):
         """English announcer VO for the highlighted hull (reserved mixer channel)."""
@@ -1507,14 +1891,154 @@ class Game:
             except Exception:
                 pass
 
+
+    def _quit_app(self):
+        """Fade to black + music, then leave the process."""
+        if getattr(self, "fade_action", None) == "exit":
+            self.running = False
+            return
+        try:
+            pygame.mixer.music.fadeout(400)
+        except Exception:
+            pass
+        self.FADE_SEC = 0.32
+        self._fade_to("exit")
+
+    def _fade_to(self, action):
+        """Black fade (~5 frames @ 60 Hz) then run action at full black."""
+        self.fade_action = action
+        self.fade_phase = "out"
+        # keep current fade_t if already mid-out
+
+    def _tick_fade(self):
+        ph = getattr(self, "fade_phase", None)
+        if not ph:
+            return
+        step = float(self.dt or 0.016) / max(0.016, float(getattr(self, "FADE_SEC", 5.0 / 60.0)))
+        if ph == "out":
+            self.fade_t = min(1.0, float(getattr(self, "fade_t", 0.0)) + step)
+            if self.fade_t >= 1.0:
+                self._apply_fade_action()
+                self.fade_phase = "in"
+        elif ph == "in":
+            self.fade_t = max(0.0, float(getattr(self, "fade_t", 1.0)) - step)
+            if self.fade_t <= 0.0:
+                self.fade_phase = None
+                self.fade_action = None
+                self.FADE_SEC = 5.0 / 60.0
+
+    def _apply_fade_action(self):
+        a = getattr(self, "fade_action", None)
+        self.fade_action = None
+        if a == "open_select":
+            self._open_ship_select(1)
+        elif a == "open_select_p2":
+            self._open_ship_select(2)
+        elif a == "begin":
+            self._begin_run()
+        elif a == "hotseat_p2":
+            self._apply_hotseat_p2_ship()
+        elif a == "exit":
+            self.running = False
+
+    def _draw_screen_fade(self):
+        t = float(getattr(self, "fade_t", 0.0) or 0.0)
+        if t <= 0.01:
+            return
+        surf = getattr(self, "_fade_surf", None)
+        if surf is None or surf.get_size() != (BASE_WIDTH, BASE_HEIGHT):
+            surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+            surf.fill((0, 0, 0))
+            self._fade_surf = surf
+        surf.set_alpha(int(255 * min(1.0, t)))
+        self.game_surface.blit(surf, (0, 0))
+
     def _open_ship_select(self, slot=1):
         self.menu_screen = "ship_select"
+        self.ship_select_locked = False
+        self._pending_after_welcome = None
         self.ship_select_slot = 1 if int(slot) != 2 else 2
-        sid = self._ship_for_pid(self.ship_select_slot)
-        self.ship_select_index = 0 if sid != "shield" else 1
-        self._play_ship_welcome()
+        self.ship_select_index = 0  # always start on Phenix
+        if self.ship_select_slot == 1:
+            self.phoenix_tint = "argent"
+            self.shield_tint = "red"
+        else:
+            ph = self._available_tints("phoenix", 2)
+            sh = self._available_tints("shield", 2)
+            self.phoenix_tint_p2 = "argent" if "argent" in ph else (ph[0] if ph else "blue")
+            self.shield_tint_p2 = "red" if "red" in sh else (sh[0] if sh else "green")
+            if not ph and sh:
+                self.ship_select_index = 1
         self.ship_anim_t = 0.0
+        self.ship_cycle_phase = "idle"
+        self.ship_cycle_t = 0.0
+        self.ship_cycle_first = True
+        self.ship_cycle_focus = int(getattr(self, "ship_select_index", 0) or 0)
         self.input_grace = 0.20
+
+    def _preview_cycle_frame(self, pack, idle, loop):
+        """idle hold → morph in → special hold → morph out → idle."""
+        ph = getattr(self, "ship_cycle_phase", "idle")
+        tt = float(getattr(self, "ship_cycle_t", 0.0))
+        fps = 10.0
+        on_fr = pack.get("on") or []
+        off_fr = pack.get("off") or list(reversed(on_fr))
+        if ph == "to_special" and on_fr:
+            idx = min(len(on_fr) - 1, int(tt * fps))
+            return on_fr[idx]
+        if ph == "special" and loop:
+            return loop[int(tt * 8.0) % len(loop)]
+        if ph == "to_idle" and off_fr:
+            idx = min(len(off_fr) - 1, int(tt * fps))
+            return off_fr[idx]
+        return idle or (loop[0] if loop else None)
+
+    def _tick_preview_cycle(self, dt):
+        ph = getattr(self, "ship_cycle_phase", "idle")
+        tt = float(getattr(self, "ship_cycle_t", 0.0)) + dt
+        focus = int(getattr(self, "ship_select_index", 0) or 0) % 2
+        if focus != int(getattr(self, "ship_cycle_focus", focus)):
+            self.ship_cycle_focus = focus
+            self.ship_cycle_phase = "idle"
+            self.ship_cycle_t = 0.0
+            self.ship_cycle_first = True
+            return
+        sid = "shield" if focus == 1 else "phoenix"
+        pack = (getattr(self, "preview_ships", {}) or {}).get(sid) or {}
+        on_fr = pack.get("on") or []
+        off_fr = pack.get("off") or []
+        fps = 10.0
+        if ph == "idle":
+            need = 0.40 if getattr(self, "ship_cycle_first", True) else 1.25
+            if tt >= need:
+                self.ship_cycle_first = False
+                self.ship_cycle_phase = "to_special"
+                self.ship_cycle_t = 0.0
+            else:
+                self.ship_cycle_t = tt
+        elif ph == "to_special":
+            need = max(0.08, len(on_fr) / fps) if on_fr else 0.08
+            if tt >= need:
+                self.ship_cycle_phase = "special"
+                self.ship_cycle_t = 0.0
+            else:
+                self.ship_cycle_t = tt
+        elif ph == "special":
+            if tt >= 1.45:
+                self.ship_cycle_phase = "to_idle"
+                self.ship_cycle_t = 0.0
+            else:
+                self.ship_cycle_t = tt
+        elif ph == "to_idle":
+            need = max(0.08, len(off_fr) / fps) if off_fr else 0.08
+            if tt >= need:
+                self.ship_cycle_phase = "idle"
+                self.ship_cycle_t = 0.0
+            else:
+                self.ship_cycle_t = tt
+        else:
+            self.ship_cycle_phase = "idle"
+            self.ship_cycle_t = 0.0
 
     def _draw_ship_select(self, surface):
         slot = int(getattr(self, "ship_select_slot", 1) or 1)
@@ -1528,59 +2052,161 @@ class Game:
         ids = ("phoenix", "shield")
         labels = (t("ship_phoenix"), t("ship_shield"))
         focus = int(getattr(self, "ship_select_index", 0)) % 2
+        locked = getattr(self, "ship_select_locked", False)
+        chosen = ids[focus]
+        # Coop final lock: two different hulls → both stay lit + timer under each
+        both_lit = (
+            locked
+            and getattr(self, "play_mode", "solo") == "coop"
+            and int(getattr(self, "ship_select_slot", 1) or 1) == 2
+            and getattr(self, "ship_id", "phoenix") != chosen
+        )
         anim_t = getattr(self, "ship_anim_t", 0.0)
         previews = getattr(self, "preview_ships", {})
         slots = (BASE_WIDTH // 2 - 220, BASE_WIDTH // 2 + 220)
+        cy = 292
+        pad = 18
+        def _pack_for(sid):
+            pack = previews.get(sid) or {}
+            tint = self._tint_of(sid, slot)
+            pack = previews.get(sid + "_" + tint) or pack
+            return pack
+        def _extent(pack):
+            idle = pack.get("idle")
+            if idle is None:
+                return 168, 168, 1.0
+            scale = 168 / max(1, idle.get_height())
+            mw = mh = 1
+            for key in ("idle", "anim", "on", "off"):
+                frs = pack.get(key)
+                if frs is None:
+                    continue
+                if not isinstance(frs, (list, tuple)):
+                    frs = [frs]
+                for fr in frs:
+                    if fr is None:
+                        continue
+                    mw = max(mw, int(fr.get_width() * scale))
+                    mh = max(mh, int(fr.get_height() * scale))
+            return mw, mh, scale
+        box_w = box_h = 1
+        scales = {}
+        for sid in ids:
+            mw, mh, sc = _extent(_pack_for(sid))
+            scales[sid] = sc
+            box_w = max(box_w, mw)
+            box_h = max(box_h, mh)
         for i, sid in enumerate(ids):
             cx = slots[i]
-            cy = 360
-            pack = previews.get(sid) or {}
+            pack = _pack_for(sid)
             idle = pack.get("idle")
             frames = pack.get("anim") or []
             img = idle
-            if i == focus and frames:
-                idx = int(anim_t * 8.0) % len(frames)
-                img = frames[idx]
+            active = (i == focus) or both_lit
+            if active:
+                img = self._preview_cycle_frame(pack, idle, frames)
             if img is None:
                 continue
-            # Focused ship a bit larger
-            target_h = 200 if i == focus else 150
-            scale = target_h / max(1, img.get_height())
+            scale = scales.get(sid, 168 / max(1, (idle or img).get_height()))
             tw = max(1, int(img.get_width() * scale))
             th = max(1, int(img.get_height() * scale))
             spr = pygame.transform.smoothscale(img, (tw, th))
-            if i == focus:
-                bob = int(math.sin(anim_t * 3.2) * 4)
+            max_w, max_h = box_w, box_h
+            if locked and (not active):
+                spr = spr.copy()
+                spr.fill((80, 80, 90, 160), special_flags=pygame.BLEND_RGBA_MULT)
+            if active:
+                bob = int(math.sin(anim_t * (5.0 if locked else 3.2)) * 4)
             else:
                 bob = 0
             rx = cx - tw // 2
             ry = cy - th // 2 + bob
-            if i == focus:
-                pad = 18
-                box = pygame.Rect(rx - pad, ry - pad, tw + pad * 2, th + pad * 2)
-                pygame.draw.rect(surface, (255, 210, 90), box, 2, border_radius=10)
-            surface.blit(spr, (rx, ry))
-            col = (255, 230, 120) if i == focus else (150, 150, 175)
+            box = pygame.Rect(
+                cx - box_w // 2 - pad,
+                cy - box_h // 2 - pad,
+                box_w + pad * 2,
+                box_h + pad * 2,
+            )
+            if active:
+                col_box = (255, 240, 120) if locked else (255, 210, 90)
+                pygame.draw.rect(surface, col_box, box, 3 if locked else 2, border_radius=10)
+            else:
+                pygame.draw.rect(surface, (70, 70, 90), box, 2, border_radius=10)
+            solo_slide = (
+                i == focus
+                and float(getattr(self, "shield_slide", 1.0)) < 0.999
+                and not locked
+            )
+            if solo_slide:
+                tslide = min(1.0, max(0.0, float(self.shield_slide)))
+                sdir = int(getattr(self, "shield_slide_dir", -1) or -1)
+                pad_in = 6
+                clip = pygame.Rect(rx - 12 + pad_in, ry - 12 + pad_in, tw + 24 - pad_in * 2, th + 24 - pad_in * 2)
+                if active:
+                    clip = pygame.Rect(box.x + 5, box.y + 5, box.w - 10, box.h - 10)
+                other_key = getattr(self, "shield_slide_from", "red")
+                other_pack = previews.get(sid + "_" + str(other_key)) or pack
+                other_img = other_pack.get("idle")
+                ofr = other_pack.get("anim") or []
+                if active and ofr:
+                    other_img = ofr[int(anim_t * 8.0) % len(ofr)]
+                if other_img is not None:
+                    oscale = scale
+                    ow = max(1, int(other_img.get_width() * oscale))
+                    oh = max(1, int(other_img.get_height() * oscale))
+                    other_spr = pygame.transform.smoothscale(other_img, (ow, oh))
+                else:
+                    other_spr = spr
+                    ow, oh = tw, th
+                travel = clip.h
+                old_oy = int(sdir * tslide * travel)
+                new_oy = int(-sdir * (1.0 - tslide) * travel)
+                surface.set_clip(clip)
+                surface.blit(other_spr, (cx - ow // 2, ry + old_oy))
+                surface.blit(spr, (rx, ry + new_oy))
+                surface.set_clip(None)
+            else:
+                surface.blit(spr, (rx, ry))
+            if locked and active:
+                blink = int(anim_t * 6) % 2 == 0
+                col = (255, 255, 200) if blink else (255, 170, 60)
+            elif i == focus:
+                col = (255, 230, 120)
+            else:
+                col = (90, 90, 105) if locked else (150, 150, 175)
             name = self._txt(self.font, labels[i], col)
-            surface.blit(name, (cx - name.get_width() // 2, cy + 130))
+            surface.blit(name, (cx - name.get_width() // 2, box.bottom + 10))
+            # color label omitted — slide animation carries the tint
+            coop_wait = (
+                locked
+                and getattr(self, "play_mode", "solo") == "coop"
+                and int(getattr(self, "ship_select_slot", 1) or 1) == 2
+            )
+            if locked and hasattr(self, "sounds") and self.sounds.vo_is_busy() and (active or coop_wait):
+                pbar = self.sounds.vo_progress()
+                bw, bh = 120, 6
+                bx = cx - bw // 2
+                by = box.bottom + 48
+                pygame.draw.rect(surface, (40, 40, 50), pygame.Rect(bx, by, bw, bh), border_radius=3)
+                pygame.draw.rect(surface, (255, 200, 80), pygame.Rect(bx, by, max(2, int(bw * pbar)), bh), border_radius=3)
         hint = self._txt(self.font, t("ship_hint"), (160, 160, 190))
-        surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 56))
+        surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 42))
 
     def _apply_ship_choice(self):
         for ship in self._ships():
             if not hasattr(ship, "set_ship"):
                 continue
             pid = int(getattr(ship, "pid", 1) or 1)
-            ship.set_ship(self._ship_for_pid(pid))
-            if pid == 2 and self._p2_needs_blue() and hasattr(ship, "apply_blue_palette"):
-                ship.apply_blue_palette()
+            sid = self._ship_for_pid(pid)
+            ship.set_ship(sid, tint=self._tint_for_pid(pid))
+            # Real hull PNGs — no live hue shift.
         self._rebuild_life_icon()
 
 
     def _play_level_vo(self, stage):
-        """English stage callout (level1.wav … level15.wav). Stages >15 stay silent."""
+        """English stage callout (level1.wav … level21.wav). Stages >21 stay silent."""
         n = int(stage or 0)
-        if n < 1 or n > 15 or not hasattr(self, "sounds"):
+        if n < 1 or n > 21 or not hasattr(self, "sounds"):
             return
         try:
             self.sounds.play_vo(f"level{n}", volume=0.88)
@@ -1601,6 +2227,31 @@ class Game:
         self.transition_timer = 0.0
         self.input_grace = 0.5
         self._play_level_vo(int(getattr(self, "stage", 1) or 1))
+
+
+    def _queue_after_welcome(self, action):
+        """Launch only after Welcome aboard… has finished."""
+        self._pending_after_welcome = action
+        self.ship_select_locked = True
+        try:
+            self._play_ship_welcome()
+        except Exception:
+            pass
+        if not (hasattr(self, "sounds") and self.sounds.vo_is_busy()):
+            self._flush_after_welcome()
+
+    def _flush_after_welcome(self):
+        action = getattr(self, "_pending_after_welcome", None)
+        if not action:
+            return
+        self._pending_after_welcome = None
+        self.ship_select_locked = False
+        if action == "hotseat_p2":
+            self._fade_to("hotseat_p2")
+        elif action == "open_select_p2":
+            self._fade_to("open_select_p2")
+        else:
+            self._fade_to("begin")
 
     def _begin_run(self):
         """Start the chosen play mode after ship select."""
@@ -1639,6 +2290,7 @@ class Game:
             "life_thresholds": list(self.life_thresholds),
             "boss_bird_timer": getattr(self, "boss_bird_timer", 0.0),
             "eliminated": bool(getattr(self.player, "alive", True) is False),
+            "intro_done": False,
         }
 
     def _apply_slot(self, slot):
@@ -1682,17 +2334,17 @@ class Game:
         cap = self._capture_slot()
         if self.slots[self.current_p]:
             cap["eliminated"] = self.slots[self.current_p].get("eliminated", False)
+            cap["intro_done"] = self.slots[self.current_p].get("intro_done", False)
         self.slots[self.current_p] = cap
 
     def _init_hotseat_slots(self):
         """Build two independent stage-1 runs (same difficulty / cheat flags)."""
         self.slots = []
         for i in range(2):
-            self.player = Player(BASE_WIDTH // 2, BASE_HEIGHT - 95, ship_id=self._ship_for_pid(i + 1))
+            self.player = Player(BASE_WIDTH // 2, BASE_HEIGHT - 95, ship_id=self._ship_for_pid(i + 1), tint=self._tint_for_pid(i + 1))
             self.player.sounds = self.sounds
             self.player.pid = i + 1
-            if i == 1 and self._p2_needs_blue():
-                self.player.apply_blue_palette()
+            pass
             self.formation = EnemyFormation()
             self.boss_saucer = None
             self.score = 0
@@ -1711,10 +2363,9 @@ class Game:
         sid = getattr(self, "ship_id_p2", "phoenix")
         if self.slots and len(self.slots) > 1 and self.slots[1].get("player"):
             p = self.slots[1]["player"]
-            p.set_ship(sid)
+            p.set_ship(sid, tint=self._tint_for_pid(2))
             p.pid = 2
-            if self._p2_needs_blue():
-                p.apply_blue_palette()
+            pass
             if getattr(p, "uses_shield", False):
                 p.phenix_gauge = 10.0
                 p.phenix_cooldown = 0.0
@@ -1769,7 +2420,12 @@ class Game:
         self._apply_slot(self.slots[self.current_p])
         self.input_grace = 0.35
         self.game_over = False
-        if int(getattr(self, "stage", 1) or 1) == 1:
+        sl = self.slots[self.current_p] if self.slots else None
+        first = sl is None or not sl.get("intro_done")
+        if sl is not None:
+            sl["intro_done"] = True
+        # Extra lives on stage 1 respawn on the pad (same as solo). Intro once per player.
+        if first and int(getattr(self, "stage", 1) or 1) == 1:
             self._start_arrive_intro()
 
     def _hotseat_arm_hold(self, pending, duration):
@@ -1788,10 +2444,12 @@ class Game:
         if pending == "switch":
             self._hotseat_try_switch()
         elif pending == "eliminated":
-            self._hotseat_player_eliminated()
+            other = self._other_p()
+            still = self._slot_still_playing(other)
+            label = int(getattr(self, "current_p", 0) or 0) + 1
+            self._start_gameover_card(after="switch" if still else "hs", player_label=label)
         elif pending == "gameover":
-            self.game_over = True
-            self._begin_highscore_flow()
+            self._start_gameover_card(after="hs", player_label=None)
 
     def _hotseat_try_switch(self):
         """After a lost life (ship still has lives): other player takes their own run."""
@@ -1811,8 +2469,7 @@ class Game:
         if self._slot_still_playing(other):
             self._hotseat_begin_wait(other)
         else:
-            self.game_over = True
-            self._begin_highscore_flow()
+            self._start_gameover_card()
 
     def _ships(self):
         """Active ships this frame (1 in solo/hotseat, 2 in coop)."""
@@ -1859,14 +2516,13 @@ class Game:
     def _start_coop(self):
         self.play_mode = "coop"
         self.hotseat = False
-        self.player2 = Player(BASE_WIDTH // 2 + 70, BASE_HEIGHT - 95, ship_id=self._ship_for_pid(2))
-        self.player = Player(BASE_WIDTH // 2 - 70, BASE_HEIGHT - 95, ship_id=self._ship_for_pid(1))
+        self.player2 = Player(BASE_WIDTH // 2 + 70, BASE_HEIGHT - 95, ship_id=self._ship_for_pid(2), tint=self._tint_for_pid(2))
+        self.player = Player(BASE_WIDTH // 2 - 70, BASE_HEIGHT - 95, ship_id=self._ship_for_pid(1), tint=self._tint_for_pid(1))
         self.player.pid = 1
         self.player2.pid = 2
         self.player.sounds = self.sounds
         self.player2.sounds = self.sounds
-        if self._p2_needs_blue():
-            self.player2.apply_blue_palette()
+        pass
         self.player.use_shared_lives = True
         self.player2.use_shared_lives = True
         b1, b2 = self._coop_bindings()
@@ -1954,9 +2610,9 @@ class Game:
                         self.life_flash_timer = 4.0
                         self.life_flash_index = max(0, self.lives_shared - 1)
                         if threshold == 1337:
-                            self._unlock_ach("one_up_1337")
+                            self._note_scalable("one_up_1337")
                         elif threshold == 8086:
-                            self._unlock_ach("elite_8086")
+                            self._note_scalable("elite_8086")
             return
         for i, (threshold, awarded) in enumerate(self.life_thresholds):
             if not awarded and self.score >= threshold:
@@ -1970,9 +2626,9 @@ class Game:
                     self.life_flash_timer = 4.0
                     self.life_flash_index = max(0, self.player.lives - 1)
                     if threshold == 1337:
-                        self._unlock_ach("one_up_1337")
+                        self._note_scalable("one_up_1337")
                     elif threshold == 8086:
-                        self._unlock_ach("elite_8086")
+                        self._note_scalable("elite_8086")
 
     # --- Stage setup (content cycle + speed tier) ---
     def _play_boss_cry(self, name, volume=0.9, x=None):
@@ -2041,8 +2697,9 @@ class Game:
         self.menu_screen = "main"
         self.stage = stage
         self.stage_transition = None
-        self.player = Player(BASE_WIDTH // 2, BASE_HEIGHT - 95)
+        self.player = Player(BASE_WIDTH // 2, BASE_HEIGHT - 95, ship_id=self._ship_for_pid(1), tint=self._tint_for_pid(1))
         self.player.sounds = self.sounds
+        self.player.pid = 1
         if getattr(self, "cheat_live", False):
             self.player.infinite_lives = True
             self.player.lives = 99
@@ -2062,10 +2719,151 @@ class Game:
         self._setup_stage(stage)
 
     # --- High-score entry / table ---
+
+    def _start_gameover_card(self, after="hs", player_label=None):
+        """Hold the playfield with a GAME OVER title before high scores / hot-seat hand-off."""
+        self.game_over = True
+        self.hs_phase = "card"
+        self.go_card_t = 0.0
+        self.go_card_after = after
+        self.go_card_player = player_label
+        self.paused = False
+        self.quit_confirm = False
+        self.go_rumble_acc = 0.0
+        self.go_rumble_on = True
+        if hasattr(self, "sounds"):
+            try:
+                self.sounds.play_vo("gameover_vo", volume=0.92)
+            except Exception:
+                pass
+
+    def _tick_gameover_card(self):
+        self.go_card_t = float(getattr(self, "go_card_t", 0.0)) + self.dt
+        self.starfield.update(self.dt)
+        for exp in self.explosions[:]:
+            exp.update(self.dt)
+            if exp.is_finished():
+                self.explosions.remove(exp)
+        if self.tesla_fx is not None:
+            self.tesla_fx.update(self.dt)
+            if self.tesla_fx.is_finished():
+                self.tesla_fx = None
+        if self.shake_amount > 0:
+            self.shake_amount = max(0.0, self.shake_amount - 18.0 * self.dt)
+        self._tick_gameover_rumble()
+        if self.go_card_t >= 2.15:
+            self._finish_gameover_card()
+
+    def _tick_gameover_rumble(self):
+        """Dying pad rumble: jolts that fade out before the card ends."""
+        t = float(getattr(self, "go_card_t", 0.0))
+        if t >= 1.65 or not getattr(self, "go_rumble_on", False):
+            if getattr(self, "go_rumble_on", False):
+                self.go_rumble_on = False
+                self._stop_go_rumble()
+            return
+        self.go_rumble_acc = float(getattr(self, "go_rumble_acc", 0.0)) + self.dt
+        # Envelope 1 → 0 over 1.65s, plus a 7 Hz stutter
+        fade = max(0.0, 1.0 - t / 1.65)
+        fade = fade * fade
+        period = 0.11 + 0.08 * (1.0 - fade)
+        if self.go_rumble_acc < period:
+            return
+        self.go_rumble_acc = 0.0
+        # Occasional missed beat so it feels like a dying motor
+        if int(t * 13) % 4 == 3 and fade < 0.7:
+            return
+        low = 0.55 * fade
+        high = 0.95 * fade
+        ms = int(70 + 50 * fade)
+        if t < 0.14:
+            low, high, ms = 1.0, 1.0, 220
+        for ship in self._ships():
+            if ship is None:
+                continue
+            if getattr(ship, "_joy", None) is None and getattr(self, "joystick", None):
+                ship._joy = self.joystick
+            ship.rumble_level = int(getattr(self, "rumble_level", 3))
+            ship.rumble(low, high, ms)
+
+    def _stop_go_rumble(self):
+        for ship in self._ships():
+            if ship is not None:
+                try:
+                    ship.stop_rumble()
+                except Exception:
+                    pass
+
+    def _skip_gameover_card(self):
+        if getattr(self, "go_card_t", 0.0) >= 1.0:
+            self._finish_gameover_card()
+
+    def _finish_gameover_card(self):
+        self.go_rumble_on = False
+        self._stop_go_rumble()
+        after = getattr(self, "go_card_after", "hs")
+        self.go_card_after = "hs"
+        self.hs_phase = None
+        if after == "switch":
+            self.game_over = False
+            self._hotseat_player_eliminated()
+        else:
+            self.game_over = True
+            if self.hotseat:
+                self._save_current_slot()
+                if self.slots[self.current_p]:
+                    self.slots[self.current_p]["eliminated"] = True
+            self._begin_highscore_flow()
+
+
+    def _draw_gameover_card(self, surface):
+        tcard = float(getattr(self, "go_card_t", 0.0))
+        dur = 2.15
+        fade_in, fade_out = 0.28, 0.40
+        if tcard < fade_in:
+            fade = max(0.0, tcard / fade_in)
+        elif tcard > dur - fade_out:
+            fade = max(0.0, (dur - tcard) / fade_out)
+        else:
+            fade = 1.0
+        pulse = 0.45 + 0.55 * abs(math.sin(tcard * 4.2))
+        veil = pygame.Surface((BASE_WIDTH, BASE_HEIGHT), pygame.SRCALPHA)
+        veil.fill((90, 0, 0, int((70 + 50 * pulse) * fade)))
+        surface.blit(veil, (0, 0))
+        # One fast sweep (~0.85 s top → bottom)
+        span = BASE_HEIGHT + 48
+        y = int(tcard * 920) - 24
+        if -20 <= y <= BASE_HEIGHT + 20:
+            pygame.draw.rect(surface, (255, 80, 60), pygame.Rect(0, y, BASE_WIDTH, 3))
+            pygame.draw.rect(surface, (180, 20, 20), pygame.Rect(0, y + 4, BASE_WIDTH, 1))
+        msg = t("game_over")
+        col = (255, int(80 + 80 * pulse), int(60 + 40 * pulse))
+        title = self._txt(self.big_font, msg, col)
+        if fade < 0.99:
+            title = title.copy()
+            title.set_alpha(int(255 * fade))
+        cx = BASE_WIDTH // 2 - title.get_width() // 2
+        cy = BASE_HEIGHT // 2 - title.get_height() // 2
+        who = getattr(self, "go_card_player", None)
+        if who:
+            sub = self._txt(self.medium_font, t("player_n").format(n=int(who)), (255, 200, 120))
+            if fade < 0.99:
+                sub = sub.copy()
+                sub.set_alpha(int(255 * fade))
+            surface.blit(sub, (BASE_WIDTH // 2 - sub.get_width() // 2, cy - 52))
+        glow = self._txt(self.big_font, msg, (80, 0, 0))
+        if fade < 0.99:
+            glow = glow.copy()
+            glow.set_alpha(int(255 * fade))
+        for ox, oy in ((-2, 0), (2, 0), (0, -2), (0, 2)):
+            surface.blit(glow, (cx + ox, cy + oy))
+        surface.blit(title, (cx, cy))
+
     def _begin_highscore_flow(self):
 
         self.hs_entries = load_highscores()
         self.hs_submitted = False
+        self.hs_just_added = []
         self.hs_name = ["A", "A", "A"]
         self.hs_char_index = 0
         self.shake_amount = 0.0
@@ -2107,6 +2905,7 @@ class Game:
             self.hs_phase = "table"
         elif is_highscore(self.score, self.hs_entries):
             self.hs_ship = getattr(self.player, "ship_id", "phoenix")
+            self.hs_tint = getattr(self.player, "palette", None) or self._tint_for_pid(1)
             self.hs_phase = "enter"
         else:
             self.hs_phase = "table"
@@ -2117,6 +2916,7 @@ class Game:
         self.hs_slot_label = slot_idx + 1
         p = sl.get("player")
         self.hs_ship = getattr(p, "ship_id", None) or self._ship_for_pid(slot_idx + 1)
+        self.hs_tint = getattr(p, "palette", None) or self._tint_for_pid(slot_idx + 1)
         self.hs_name = ["A", "A", "A"]
         self.hs_char_index = 0
         self.hs_submitted = False
@@ -2126,6 +2926,7 @@ class Game:
         self.score = int(getattr(ship, "score", 0) or 0)
         self.hs_slot_label = int(getattr(ship, "pid", 1) or 1)
         self.hs_ship = getattr(ship, "ship_id", "phoenix")
+        self.hs_tint = getattr(ship, "palette", None) or self._tint_of(self.hs_ship, int(getattr(ship, "pid", 1) or 1))
         self.hs_name = ["A", "A", "A"]
         self.hs_char_index = 0
         self.hs_submitted = False
@@ -2136,12 +2937,23 @@ class Game:
             return
         name = "".join(self.hs_name)
         ship = getattr(self, "hs_ship", None) or getattr(self.player, "ship_id", None) or "phoenix"
+        tint = getattr(self, "hs_tint", None) or getattr(self.player, "palette", None)
         self.hs_entries = insert_score(
             name, self.score,
             coop=(getattr(self, "play_mode", "solo") == "coop"),
             ship=ship, ship2=None,
+            veteran=(getattr(self, "difficulty", "normal") == "veteran"),
+            tint=tint,
         )
         self.hs_submitted = True
+        added = getattr(self, "hs_just_added", None)
+        if added is None:
+            added = self.hs_just_added = []
+        added.append({
+            "name": name[:3].upper().ljust(3, "A"),
+            "score": int(self.score),
+            "pid": int(getattr(self, "hs_slot_label", 1) or 1),
+        })
         if self.hs_queue:
             self._hs_prepare_entry(self.hs_queue.pop(0))
         elif getattr(self, "hs_coop_queue", None):
@@ -2835,9 +3647,26 @@ class Game:
             else:
                 self.gamepad_detected = True
         else:
+            lost = bool(self.gamepad_detected or self.joystick)
             self.joystick = None
-            if self.gamepad_detected:
-                self.gamepad_detected = False
+            self.gamepad_detected = False
+            in_run = (
+                bool(getattr(self, "started", False))
+                and not getattr(self, "game_over", False)
+                and not getattr(self, "attract_mode", False)
+            )
+            if lost and in_run:
+                if not getattr(self, "paused", False):
+                    self.paused = True
+                    self.pause_index = 0
+                    self.pause_options = False
+                    self.quit_confirm = False
+                try:
+                    self.cheat_msg = t("pad_unplugged")
+                except Exception:
+                    self.cheat_msg = "PAD"
+                self.cheat_msg_timer = 3.5
+            elif lost and not getattr(self, "started", False):
                 if self.input_mode == "gamepad":
                     self.input_mode = "keyboard"
 
@@ -2850,6 +3679,8 @@ class Game:
             "monitor_index": int(getattr(self, "monitor_index", 0) or 0),
             "sfx_volume": self.sfx_volume,
             "music_volume": self.music_volume,
+            "audio_mix": getattr(self, "audio_mix", "sfx"),
+            "ingame_music": ingame_normalize(getattr(self, "ingame_music", "none")),
             "rumble_level": int(getattr(self, "rumble_level", 3)),
             "autofire": bool(getattr(self, "autofire", True)),
             "language": self.language,
@@ -2858,8 +3689,6 @@ class Game:
             "gpu_present": bool(getattr(self, "gpu_present", True)),
             "vsync_mode": getattr(self, "vsync_mode", "adaptive"),
             "fps_cap": int(getattr(self, "fps_cap", 120) or 120),
-            "ship_id": getattr(self, "ship_id", "phoenix"),
-            "ship_id_p2": getattr(self, "ship_id_p2", "phoenix"),
         })
 
     # --- Menu navigation ---
@@ -2880,8 +3709,27 @@ class Game:
     def _menu_nav(self, direction):
         """direction: -1 up, +1 down"""
         if self.menu_screen == "ship_select":
-            self.ship_select_index = (int(getattr(self, "ship_select_index", 0)) + direction) % 2
-            self._play_ship_welcome()
+            if getattr(self, "ship_select_locked", False):
+                return
+            focus = int(getattr(self, "ship_select_index", 0)) % 2
+            slot = int(getattr(self, "ship_select_slot", 1) or 1)
+            sid = "shield" if focus == 1 else "phoenix"
+            order = self._available_tints(sid, slot)
+            if order:
+                cur = self._tint_of(sid, slot)
+                if cur not in order:
+                    cur = order[0]
+                nxt = order[(order.index(cur) + (1 if direction > 0 else -1)) % len(order)]
+                self.shield_slide_from = cur
+                self._set_tint(sid, slot, nxt)
+                self.shield_slide = 0.0
+                self.shield_slide_dir = -1 if direction < 0 else 1
+                return
+            self.ship_select_index = (focus + direction) % 2
+            self.ship_cycle_phase = "idle"
+            self.ship_cycle_t = 0.0
+            self.ship_cycle_first = True
+            self.ship_cycle_focus = self.ship_select_index
             return
         if self.menu_screen == "jukebox":
             n = len(self._juke_catalog())
@@ -3063,8 +3911,13 @@ class Game:
     def _menu_adjust(self, direction):
         """direction: -1 left, +1 right — change current option value"""
         if self.menu_screen == "ship_select":
+            if getattr(self, "ship_select_locked", False):
+                return
             self.ship_select_index = (int(getattr(self, "ship_select_index", 0)) + direction) % 2
-            self._play_ship_welcome()
+            self.ship_cycle_phase = "idle"
+            self.ship_cycle_t = 0.0
+            self.ship_cycle_first = True
+            self.ship_cycle_focus = self.ship_select_index
             return
         if self.menu_screen == "main":
             if self.menu_index == 1:
@@ -3105,9 +3958,11 @@ class Game:
             i = modes.index(cur) if cur in modes else 0
             self.audio_mix = modes[(i + direction) % len(modes)]
             self._apply_audio_mix()
+            self.save_settings()
 
         elif key == "ingame_music":
             self.ingame_music = ingame_cycle(getattr(self, "ingame_music", "none"), direction)
+            self.save_settings()
 
         elif key == "rumble":
             self.rumble_level = max(0, min(5, int(getattr(self, "rumble_level", 3)) + direction))
@@ -3343,16 +4198,12 @@ class Game:
                 if not os.path.isfile(path):
                     continue
                 try:
-                    img = pygame.image.load(path).convert_alpha()
+                    sframes.append(pygame.image.load(path).convert_alpha())
                 except Exception:
                     continue
-                ph = 80
-                sc = ph / max(1, img.get_height())
-                sframes.append(pygame.transform.smoothscale(
-                    img, (max(1, int(img.get_width() * sc)), ph)
-                ))
+        self.help_icons["shield_fx"] = sframes
         self.help_icons["shield_frames"] = sframes
-        self.help_icons["shield"] = sframes[0] if sframes else None
+        self.help_icons["shield"] = sframes[0] if sframes else self.help_icons.get("ship_shield")
 
 
     def _draw_help_page(self, surface, page, y_off):
@@ -3475,9 +4326,34 @@ class Game:
                 surface.blit(tip, (hx + (col_w - tip.get_width()) // 2, yy(y)))
                 return y + 22
 
-            def _art_row(hx, col_w, art_left, art_right, hcol, art_y):
-                left = _fit(art_left)
-                right = _fit(art_right)
+            def _fit_shield(hull, fx, hull_h=90):
+                """Same hull size as idle; dome may overflow the box."""
+                if hull is None:
+                    return _fit(fx, hull_h)
+                try:
+                    r = hull.get_bounding_rect(min_alpha=24)
+                    hsrc = hull.subsurface(r).copy() if r.width > 1 else hull
+                except Exception:
+                    hsrc = hull
+                sc = hull_h / max(1, hsrc.get_height())
+                hs = pygame.transform.smoothscale(
+                    hsrc, (max(1, int(hsrc.get_width() * sc)), hull_h)
+                )
+                if fx is None:
+                    return hs
+                fs = pygame.transform.smoothscale(
+                    fx, (max(1, int(fx.get_width() * sc)), max(1, int(fx.get_height() * sc)))
+                )
+                cw = max(hs.get_width(), fs.get_width())
+                ch = max(hs.get_height(), fs.get_height())
+                canvas = pygame.Surface((cw, ch), pygame.SRCALPHA)
+                canvas.blit(hs, ((cw - hs.get_width()) // 2, (ch - hs.get_height()) // 2))
+                canvas.blit(fs, ((cw - fs.get_width()) // 2, (ch - fs.get_height()) // 2))
+                return canvas
+
+            def _art_row(hx, col_w, art_left, art_right, hcol, art_y, right_is_shield=False, hull_h=90):
+                left = _fit(art_left, hull_h)
+                right = _fit_shield(art_left, art_right, hull_h) if right_is_shield else _fit(art_right, hull_h)
                 arrow = self._txt(self.medium_font, ">>>", hcol)
                 total = arrow.get_width() + 20
                 if left is not None:
@@ -3485,13 +4361,14 @@ class Game:
                 if right is not None:
                     total += right.get_width()
                 x0 = hx + max(0, (col_w - total) // 2)
+                cy = art_y + hull_h // 2  # common hull midline
                 if left is not None:
-                    surface.blit(left, (x0, yy(art_y)))
+                    surface.blit(left, (x0, yy(cy - left.get_height() // 2)))
                     x0 += left.get_width() + 10
-                surface.blit(arrow, (x0, yy(art_y + 32)))
+                surface.blit(arrow, (x0, yy(cy - arrow.get_height() // 2)))
                 x0 += arrow.get_width() + 10
                 if right is not None:
-                    surface.blit(right, (x0, yy(art_y)))
+                    surface.blit(right, (x0, yy(cy - right.get_height() // 2)))
 
             tnow = float(getattr(self, "help_anim_t", 0.0))
             pframes = self.help_icons.get("phenix_frames") or []
@@ -3505,7 +4382,7 @@ class Game:
             y_r = _text_col("SHIELD", t_list("shield"), rx, col_w, (120, 200, 255), 146)
             art_y = max(y_l, y_r) + 16
             _art_row(lx, col_w, self.help_icons.get("ship"), phenix, (255, 160, 80), art_y)
-            _art_row(rx, col_w, self.help_icons.get("ship_shield"), bubble, (120, 200, 255), art_y)
+            _art_row(rx, col_w, self.help_icons.get("ship_shield"), bubble, (120, 200, 255), art_y, right_is_shield=True)
 
     def _draw_help_bird(self, surface, bird, x, y, phase=0.0):
         """Stage 1–2 bird: flap + eye glow, desynced by phase."""
@@ -3732,7 +4609,12 @@ class Game:
         self.bosses_defeated = max(0, (self.stage - 1) // 5)
         self.used_cheat = True  # never write high score
         sid = random.choice(("phoenix", "shield"))
-        self.player = Player(BASE_WIDTH // 2, BASE_HEIGHT - 95, ship_id=sid)
+        tint = "red" if sid == "shield" else "argent"
+        if sid == "shield":
+            self.shield_tint = "red"
+        else:
+            self.phoenix_tint = "argent"
+        self.player = Player(BASE_WIDTH // 2, BASE_HEIGHT - 95, ship_id=sid, tint=tint)
         self.player.sounds = self.sounds
         self.player.lives = 5
         self.ship_id = sid
@@ -3832,6 +4714,10 @@ class Game:
         self.cheat_live = False
         self.phenix_cheat = False
         self.used_cheat = False
+        try:
+            self.sounds.play_music("menu", fade_ms=getattr(self.sounds, "MENU_RETURN_MS", 900))
+        except Exception:
+            pass
         self._paint_menu_frame()
 
     def _return_from_gameover(self):
@@ -3858,6 +4744,10 @@ class Game:
             self.menu_screen = "options"
             self._focus_option("reset_hs")
         elif self.menu_screen == "ship_select":
+            if getattr(self, "ship_select_locked", False):
+                self.ship_select_locked = False
+                self._pending_after_welcome = None
+                return
             if int(getattr(self, "ship_select_slot", 1) or 1) == 2:
                 self._open_ship_select(1)
             else:
@@ -3885,7 +4775,7 @@ class Game:
 
         if self.menu_screen == "main":
             if self.menu_index == 0:
-                self._open_ship_select(1)
+                self._fade_to("open_select")
             elif self.menu_index == 1:
                 pass  # Mode: Left/Right only
             elif self.menu_index == 2:
@@ -3904,13 +4794,19 @@ class Game:
                 self.credits_from_start = True
                 self.menu_index = 0
             elif self.menu_index == 6:
-                self.running = False
+                self._quit_app()
         elif self.menu_screen == "jukebox":
             self._juke_play_or_pause()
         elif self.menu_screen == "ship_select":
+            if getattr(self, "ship_select_locked", False) or getattr(self, "_pending_after_welcome", None):
+                return
             ids = ("phoenix", "shield")
             chosen = ids[int(getattr(self, "ship_select_index", 0)) % 2]
             slot = int(getattr(self, "ship_select_slot", 1) or 1)
+            if slot == 2:
+                av = self._available_tints(chosen, 2)
+                if av and self._tint_of(chosen, 2) not in av:
+                    self._set_tint(chosen, 2, av[0])
             two_p = getattr(self, "play_mode", "solo") in ("hotseat", "coop")
             if slot == 2:
                 self.ship_id_p2 = chosen
@@ -3921,11 +4817,15 @@ class Game:
             except Exception:
                 pass
             if two_p and slot == 1 and getattr(self, "play_mode", "solo") == "coop":
-                self._open_ship_select(2)
-            elif getattr(self, "hotseat_pick_p2", False):
-                self._apply_hotseat_p2_ship()
+                try:
+                    self._play_ship_welcome()
+                except Exception:
+                    pass
+                self._fade_to("open_select_p2")
             else:
-                self._begin_run()
+                self._queue_after_welcome(
+                    "hotseat_p2" if getattr(self, "hotseat_pick_p2", False) else "begin"
+                )
         elif self.menu_screen == "reset_confirm":
             if self.menu_index == 0:  # Oui
                 self.hs_entries = reset_highscores()
@@ -3976,9 +4876,17 @@ class Game:
             events = []
         for event in events:
             if event.type == pygame.QUIT:
-                self.running = False
+                self._quit_app()
             elif event.type in (getattr(pygame, "JOYDEVICEADDED", -1), getattr(pygame, "JOYDEVICEREMOVED", -2)):
                 self._poll_gamepad()
+            elif getattr(self, "fade_phase", None) and event.type not in (
+                pygame.QUIT,
+                getattr(pygame, "JOYDEVICEADDED", -1),
+                getattr(pygame, "JOYDEVICEREMOVED", -2),
+            ):
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_F12:
+                    self.take_screenshot()
+                continue
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_F12:
                     self.take_screenshot()
@@ -3988,9 +4896,13 @@ class Game:
                     continue
                 if getattr(self, "hotseat_pick_p2", False) and self.menu_screen == "ship_select":
                     if self._is_menu_confirm(event.key) or event.key in (
-                        pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE, pygame.K_ESCAPE,
+                        pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE,
                     ):
                         self._menu_confirm()
+                    elif self._is_menu_up(event.key):
+                        self._menu_nav(-1)
+                    elif self._is_menu_down(event.key):
+                        self._menu_nav(1)
                     elif event.key in (pygame.K_LEFT, pygame.K_a, pygame.K_q):
                         self._menu_adjust(-1)
                     elif event.key in (pygame.K_RIGHT, pygame.K_d):
@@ -4109,7 +5021,7 @@ class Game:
                         self.quit_index = (self.quit_index + 1) % 2
                     elif self._is_menu_confirm(event.key):
                         if self.quit_index == 0:
-                            self.running = False
+                            self._quit_app()
                         else:
                             self.quit_confirm = False
                             self.input_grace = 0.30
@@ -4204,6 +5116,10 @@ class Game:
                         self._menu_confirm()
                 
                 if self.game_over:
+                    if self.hs_phase == "card":
+                        if self._is_menu_confirm(event.key):
+                            self._skip_gameover_card()
+                        continue
                     if self.hs_phase == "enter":
                         if event.key == pygame.K_LEFT:
                             self.hs_char_index = (self.hs_char_index - 1) % 3
@@ -4236,7 +5152,7 @@ class Game:
                     self._end_attract()
                     continue
                 if getattr(self, "hotseat_pick_p2", False) and self.menu_screen == "ship_select":
-                    if event.button in (0, 1, 2, 3):
+                    if event.button == 0:
                         self._menu_confirm()
                     continue
                 if self.hotseat_wait and self.started and not self.game_over:
@@ -4314,7 +5230,7 @@ class Game:
                 elif self.quit_confirm and not self.started:
                     if event.button == 0:
                         if self.quit_index == 0:
-                            self.running = False
+                            self._quit_app()
                         else:
                             self.quit_confirm = False
                             self.input_grace = 0.30
@@ -4340,6 +5256,8 @@ class Game:
                         self._submit_highscore()
                         self.input_grace = 0.40
                         continue
+                elif self.game_over and self.hs_phase == "card":
+                    self._skip_gameover_card()
                 elif self.game_over and self.hs_phase == "table":
                     if event.button in (0, 1):
                         self._return_from_gameover()
@@ -4353,6 +5271,10 @@ class Game:
                     if getattr(self, "hotseat_pick_p2", False) and self.menu_screen == "ship_select":
                         if hx != 0:
                             self._menu_adjust(1 if hx > 0 else -1)
+                        if hy > 0:
+                            self._menu_nav(-1)
+                        elif hy < 0:
+                            self._menu_nav(1)
                     elif self.paused and self.started and not self.game_over and not self.pause_options:
                         if hy > 0:
                             self.pause_index = (self.pause_index - 1) % 3
@@ -4411,6 +5333,18 @@ class Game:
                             elif event.value > DEAD and self._joy_axis_latch_x != 1:
                                 self._menu_adjust(1)
                                 self._joy_axis_latch_x = 1
+                                self._joy_menu_cooldown = 0.28
+                    elif event.axis == 1:
+                        if abs(event.value) < 0.40:
+                            self._joy_axis_latch_y = 0
+                        elif self._joy_menu_cooldown <= 0:
+                            if event.value < -DEAD and self._joy_axis_latch_y != -1:
+                                self._menu_nav(-1)
+                                self._joy_axis_latch_y = -1
+                                self._joy_menu_cooldown = 0.28
+                            elif event.value > DEAD and self._joy_axis_latch_y != 1:
+                                self._menu_nav(1)
+                                self._joy_axis_latch_y = 1
                                 self._joy_menu_cooldown = 0.28
                 elif self.paused and self.started and not self.game_over:
                     if self.pause_options:
@@ -4528,16 +5462,22 @@ class Game:
 
     # --- Simulation step ---
     def update(self):
+        self._tick_fade()
         self.title_timer += self.dt
-        self._update_music(); self._tick_ingame_music()
+        self._update_music()
         self._tick_listen_achs()
+        if getattr(self, "sounds", None):
+            self.sounds.pause_duck = bool(
+                getattr(self, "paused", False)
+                and getattr(self, "started", False)
+                and not getattr(self, "game_over", False)
+            )
         self.sounds.update(self.dt)
-        # Detect controller plugged after launch (especially on menus)
-        if not self.started or self.game_over:
-            self._gp_poll = float(getattr(self, "_gp_poll", 0.0)) + self.dt
-            if self._gp_poll >= 0.45:
-                self._gp_poll = 0.0
-                self._poll_gamepad()
+        # Hot-plug on menus and mid-run (wireless drop).
+        self._gp_poll = float(getattr(self, "_gp_poll", 0.0)) + self.dt
+        if self._gp_poll >= 0.45:
+            self._gp_poll = 0.0
+            self._poll_gamepad()
         if self._joy_menu_cooldown > 0:
             self._joy_menu_cooldown = max(0.0, self._joy_menu_cooldown - self.dt)
         if self.input_grace > 0:
@@ -4569,6 +5509,11 @@ class Game:
             except Exception:
                 pass
         
+        if self.game_over and getattr(self, "hs_phase", None) == "card":
+            self.sounds.play_electric(False)
+            self._tick_gameover_card()
+            return
+
         if not self.started or self.game_over:
             # Still scroll stars on title/game over (no parallax)
             self.starfield.update(self.dt)
@@ -4609,6 +5554,13 @@ class Game:
                     self.credits_xv = 0.0
             if not self.started and self.menu_screen == "ship_select":
                 self.ship_anim_t = getattr(self, "ship_anim_t", 0.0) + self.dt
+                self._tick_preview_cycle(self.dt)
+                sl = float(getattr(self, "shield_slide", 1.0))
+                if sl < 1.0:
+                    self.shield_slide = min(1.0, sl + self.dt / 0.28)
+                if getattr(self, "_pending_after_welcome", None):
+                    if not (hasattr(self, "sounds") and self.sounds.vo_is_busy()):
+                        self._flush_after_welcome()
             # Attract / help screen from main menu idle
             if not self.started and not self.quit_confirm:
                 if self.menu_screen == "main":
@@ -4669,7 +5621,14 @@ class Game:
         if getattr(self, "hotseat_pick_p2", False):
             self.starfield.update(self.dt)
             self.ship_anim_t = getattr(self, "ship_anim_t", 0.0) + self.dt
+            self._tick_preview_cycle(self.dt)
+            sl = float(getattr(self, "shield_slide", 1.0))
+            if sl < 1.0:
+                self.shield_slide = min(1.0, sl + self.dt / 0.28)
             self.sounds.play_electric(False)
+            if getattr(self, "_pending_after_welcome", None):
+                if not (hasattr(self, "sounds") and self.sounds.vo_is_busy()):
+                    self._flush_after_welcome()
             return
         if self.hotseat_wait:
             self.starfield.update(self.dt)
@@ -4683,6 +5642,11 @@ class Game:
                 exp.update(self.dt)
                 if exp.is_finished():
                     self.explosions.remove(exp)
+            form = getattr(self, "formation", None)
+            if form is not None:
+                for enemy in list(getattr(form, "enemies", []) or []):
+                    if getattr(enemy, "dying", False) or getattr(enemy, "hit_flash_frames", 0):
+                        enemy.update(self.dt, getattr(form, "offset_x", 0.0), 0.0)
             tesla_on = False
             if self.tesla_fx is not None:
                 self.tesla_fx.update(self.dt)
@@ -4696,6 +5660,11 @@ class Game:
                 self._hotseat_finish_hold()
             return
             
+        hs = float(getattr(self, "hitstop", 0.0) or 0.0)
+        if hs > 0 and self.stage_transition is None:
+            self.hitstop = max(0.0, hs - self.dt)
+            return
+
         keys = pygame.key.get_pressed()
         
         edge_killed_any = False
@@ -4725,10 +5694,14 @@ class Game:
                         self.dt, keys, mode, joy,
                         allow_shoot=(self.input_grace <= 0),
                     )
+                cd = float(getattr(ship, "shield_ripple_cd", 0.0) or 0.0)
+                if cd > 0:
+                    ship.shield_ripple_cd = max(0.0, cd - self.dt)
                 if edge_killed:
                     edge_killed_any = True
+                    self._note_scalable("razor")
                     kind = "gameover" if ship.dying else "edge"
-                    self.explosions.append(Explosion(ship.x, ship.y, kind=kind))
+                    self.explosions.append(self._boom(ship.x, ship.y, kind=kind))
                     self.shake_amount = 22.0 if ship.dying else 14.0
                     self.sounds.play("explosion_big" if ship.dying else "explosion", x=ship.x)
                     side = getattr(ship, "last_edge_side", 0) or getattr(ship, "edge_side", -1)
@@ -4741,7 +5714,7 @@ class Game:
                     if getattr(ship, "flag_gauge_max", False):
                         ship.flag_gauge_max = False
                         if not getattr(ship, "phenix_auto_refill", False):
-                            self._unlock_ach("gauge_max")
+                            self._note_scalable("gauge_max")
                     if getattr(self, "play_mode", "") == "coop" and getattr(ship, "just_lost_life", False):
                         self._on_coop_life_lost(ship)
         else:
@@ -4774,6 +5747,20 @@ class Game:
         
         # Starfield with parallax based on player movement
         self.starfield.update(self.dt, self.player.x)
+        neb = getattr(self.starfield, "nebula", None)
+        if neb is not None and "pleiades" in str(getattr(neb, "kind", "")):
+            nid = id(neb)
+            if nid != getattr(self, "_pleiades_seen_id", None):
+                self._pleiades_seen_id = nid
+                self._note_scalable("pleiades")
+        if getattr(self, "play_mode", "") == "coop":
+            ships = [s for s in self._ships() if s and s.alive]
+            both = len(ships) >= 2 and all(getattr(s, "is_phenix", False) for s in ships)
+            if both and not getattr(self, "_duo_latched", False):
+                self._duo_latched = True
+                self._note_scalable("duo_fire")
+            elif not both:
+                self._duo_latched = False
         
         # Stage transition: ship flies off top
         if self.stage_transition == "fly_up":
@@ -4784,15 +5771,16 @@ class Game:
             self.starfield.update(self.dt, self.player.x)
             if all((not s.alive) or s.y < -80 for s in self._ships()):
                 self.stage += 1
-                if self.stage == 2:
-                    self._unlock_ach("stage2")
-                elif self.stage == 6:
-                    self._unlock_ach("loop")
+                self._note_scalable("stage2", self.stage, absolute=True)
+                if self.stage > 1 and (self.stage - 1) % 5 == 0:
+                    self._note_scalable("loop")
+                if self.stage >= 21:
+                    self._note_scalable("boldly_go", self.stage, absolute=True)
                 self._setup_stage(self.stage)
-                xs = [BASE_WIDTH // 2 - 70, BASE_WIDTH // 2 + 70] if self.play_mode == "coop" else [BASE_WIDTH // 2]
-                for i, ship in enumerate(self._ships()):
+                for ship in self._ships():
                     ship.y = BASE_HEIGHT + 60
-                    ship.x = xs[min(i, len(xs) - 1)]
+                    hw = float(getattr(ship, "width", 60) or 60) * 0.5
+                    ship.x = max(hw + 4.0, min(float(BASE_WIDTH) - hw - 4.0, float(ship.x)))
                 self.stage_transition = "arrive"
                 self.transition_timer = 0.0
             # still draw explosions etc lightly
@@ -4815,6 +5803,9 @@ class Game:
                 for ship in self._ships():
                     if ship.alive:
                         ship.y = target_y
+                        feet = ship.y + float(getattr(ship, "height", 90) or 90) * 0.48
+                        self.explosions.append(self._boom(ship.x - 18, feet, kind="dust"))
+                        self.explosions.append(self._boom(ship.x + 18, feet, kind="dust"))
                 self.stage_transition = None
                 self.input_grace = 0.4
             for exp in self.explosions[:]:
@@ -4883,15 +5874,15 @@ class Game:
             for c in living:
                 c.alive = False
                 if _r.random() < 0.35:
-                    self.explosions.append(Explosion(c.x, c.y, kind="enemy"))
+                    self.explosions.append(self._boom(c.x, c.y, kind="enemy"))
             for d in self.boss_saucer.decorations:
                 if d.alive:
                     d.alive = False
-                    self.explosions.append(Explosion(d.x, d.y, kind="enemy"))
+                    self.explosions.append(self._boom(d.x, d.y, kind="enemy"))
             bx = self.boss_saucer.boss.x
             by = self.boss_saucer.boss.y
             for _ in range(8):
-                self.explosions.append(Explosion(
+                self.explosions.append(self._boom(
                     bx + _r.uniform(-120, 120),
                     by + _r.uniform(-40, 80),
                     kind="gameover" if _ < 3 else "collision"
@@ -4902,11 +5893,10 @@ class Game:
                 e.kill()
             self.boss_saucer = None
             self.bosses_defeated += 1
-            self._unlock_ach("boss_down")
+            self._note_scalable("boss_down")
             if self.difficulty == "veteran":
-                self._unlock_ach("veteran_clear")
-            if self.bosses_defeated >= 10:
-                self._unlock_ach("ten_flags")
+                self._note_scalable("veteran_clear")
+            self._note_scalable("ten_flags")
             self._clear_enemy_fire()
             self.stage_transition = "boss_outro"
             self.transition_timer = 0.0
@@ -4940,27 +5930,33 @@ class Game:
                     if kind == "cell":
                         ship.destroy_bullet("neutral", index=shot_i)
                         if getattr(target, "is_purple", False):
-                            self.explosions.append(Explosion(target.x, target.y, kind="electric"))
+                            self.explosions.append(self._boom(target.x, target.y, kind="electric"))
                             self.shake_amount = 4.5
                             self.sounds.play("shield_zap", volume=0.75, x=target.x)
                         else:
-                            self.explosions.append(Explosion(target.x, target.y, kind="enemy"))
+                            self.explosions.append(self._boom(target.x, target.y, kind="enemy"))
                             self.shake_amount = 3.5
                             self.sounds.play("enemy_explosion", volume=0.4, x=target.x)
                         self._add_score(ship, 1)
+                        self._note_scalable("wrecker")
                     elif kind == "deco":
                         ship.destroy_bullet("neutral", index=shot_i)
-                        self.explosions.append(Explosion(target.x, target.y, kind="flame"))
+                        self.explosions.append(self._boom(target.x, target.y, kind="flame"))
                         self.shake_amount = 5.0
                         self.sounds.play("enemy_explosion", volume=0.45, x=target.x)
                         self._add_score(ship, 50)
+                        self._note_scalable("cutter")
                         delay = 0.72 + random.uniform(0.18, 0.65)
                         self._boss_angry_queue.append(delay)
+                        if getattr(self.boss_saucer, "flag_ports_pair", False):
+                            self.boss_saucer.flag_ports_pair = False
+                            self._note_scalable("port_pair")
                     elif kind == "boss":
+                        self._hitstop(0.045)
                         ship.destroy_bullet("valid", index=shot_i)
                         target.kill()
                         self._add_score(ship, self._boss_points())
-                        self.explosions.append(Explosion(target.x, target.y, kind="gameover"))
+                        self.explosions.append(self._boom(target.x, target.y, kind="gameover"))
                         self.shake_amount = 20.0
                         self.sounds.play("explosion_big", x=ship.x)
                     hit_something = True
@@ -4972,7 +5968,7 @@ class Game:
                     if bullet_rect.colliderect(enemy.get_left_wing_hitbox()):
                         if enemy.hit_wing("left"):
                             ship.destroy_bullet("neutral", index=shot_i)
-                            self.explosions.append(Explosion(enemy.x - 35, enemy.y, kind="enemy"))
+                            self.explosions.append(self._boom(enemy.x - 35, enemy.y, kind="enemy"))
                             self.shake_amount = 3.0
                             self.sounds.play("enemy_explosion", volume=0.5, x=enemy.x)
                         else:
@@ -4982,7 +5978,7 @@ class Game:
                     if bullet_rect.colliderect(enemy.get_right_wing_hitbox()):
                         if enemy.hit_wing("right"):
                             ship.destroy_bullet("neutral", index=shot_i)
-                            self.explosions.append(Explosion(enemy.x + 35, enemy.y, kind="enemy"))
+                            self.explosions.append(self._boom(enemy.x + 35, enemy.y, kind="enemy"))
                             self.shake_amount = 3.0
                             self.sounds.play("enemy_explosion", volume=0.5, x=enemy.x)
                         else:
@@ -4991,9 +5987,14 @@ class Game:
                         break
                     if bullet_rect.colliderect(enemy.get_body_hitbox()):
                         enemy.kill()
+                        self._hitstop()
                         ship.destroy_bullet("valid", index=shot_i)
                         self._add_score(ship, self._enemy_points(getattr(enemy, "stage", 3)))
-                        self.explosions.append(Explosion(enemy.x, enemy.y, kind="enemy"))
+                        self._note_bird_kill()
+                        if getattr(enemy, "diving", False):
+                            self._note_scalable("butcher")
+                        self._note_scalable("clean_shot", int(getattr(ship, "combo_streak", 0) or 0), absolute=True)
+                        self.explosions.append(self._boom(enemy.x, enemy.y, kind="enemy", delay_frames=1))
                         self.shake_amount = 7.0
                         self.sounds.play("enemy_explosion", x=enemy.x)
                         hit_something = True
@@ -5001,9 +6002,14 @@ class Game:
                     # Catch-all: silhouette overlap that slipped between wing/body boxes
                     if bullet_rect.colliderect(enemy.get_hitbox()):
                         enemy.kill()
+                        self._hitstop()
                         ship.destroy_bullet("valid", index=shot_i)
                         self._add_score(ship, self._enemy_points(getattr(enemy, "stage", 3)))
-                        self.explosions.append(Explosion(enemy.x, enemy.y, kind="enemy"))
+                        self._note_bird_kill()
+                        if getattr(enemy, "diving", False):
+                            self._note_scalable("butcher")
+                        self._note_scalable("clean_shot", int(getattr(ship, "combo_streak", 0) or 0), absolute=True)
+                        self.explosions.append(self._boom(enemy.x, enemy.y, kind="enemy", delay_frames=1))
                         self.shake_amount = 7.0
                         self.sounds.play("enemy_explosion", x=enemy.x)
                         hit_something = True
@@ -5011,15 +6017,45 @@ class Game:
                 else:
                     if bullet_rect.colliderect(enemy.get_hitbox()):
                         enemy.kill()
+                        self._hitstop()
                         ship.destroy_bullet("valid", index=shot_i)
                         self._add_score(ship, self._enemy_points(getattr(enemy, "stage", 1)))
-                        self.explosions.append(Explosion(enemy.x, enemy.y, kind="enemy"))
+                        self._note_bird_kill()
+                        if getattr(enemy, "diving", False):
+                            self._note_scalable("butcher")
+                        self._note_scalable("clean_shot", int(getattr(ship, "combo_streak", 0) or 0), absolute=True)
+                        self.explosions.append(self._boom(enemy.x, enemy.y, kind="enemy", delay_frames=1))
                         self.shake_amount = 5.5
                         self.sounds.play("enemy_explosion", x=enemy.x)
                         hit_something = True
                         break
             if hit_something:
                 break
+
+        # Unbroken saucer brick hits the bottom of the screen → game over
+        if (self.boss_saucer is not None and self.boss_saucer.alive
+                and self.stage_transition is None
+                and self.boss_saucer.touches_floor(BASE_HEIGHT)):
+            for ship in self._ships():
+                if not ship.alive or ship.dying:
+                    continue
+                if getattr(ship, "infinite_lives", False):
+                    continue
+                if self.play_mode == "coop":
+                    ship.hit()
+                    self._on_coop_life_lost(ship)
+                else:
+                    ship.lives = 0
+                    ship.dying = True
+                    ship.death_timer = 0.0
+                    ship.invulnerable = 0.0
+                    ship.rumble(1.0, 1.0, 640)
+                ship.phenix_gauge = float(getattr(ship, "phenix_min_gauge", 0))
+                ship.combo_streak = 0
+                ship.phenix_timer = 0.0
+                self.explosions.append(self._boom(ship.x, ship.y, kind="gameover"))
+            self.shake_amount = 24.0
+            self.sounds.play("explosion_big", x=BASE_WIDTH // 2)
 
         # Enemy attacks vs Player(s) — ships do not collide with each other
         for ship in self._ships():
@@ -5031,7 +6067,7 @@ class Game:
                 if hull.width > 0 and player_hitbox.colliderect(hull):
                     if ship.infinite_lives:
                         ship.hit()
-                        self.explosions.append(Explosion(ship.x, ship.y, kind="bullet"))
+                        self.explosions.append(self._boom(ship.x, ship.y, kind="bullet"))
                         self.shake_amount = 14.0
                         self.sounds.play("explosion", x=ship.x)
                         ship.y = min(BASE_HEIGHT - 80, ship.y + 40)
@@ -5048,46 +6084,65 @@ class Game:
                         ship.phenix_gauge = float(getattr(ship, "phenix_min_gauge", 0))
                         ship.combo_streak = 0
                         ship.phenix_timer = 0.0
-                        self.explosions.append(Explosion(ship.x, ship.y, kind="gameover"))
+                        self.explosions.append(self._boom(ship.x, ship.y, kind="gameover"))
                         self.shake_amount = 24.0
                         self.sounds.play("explosion_big", x=ship.x)
                 for b in self.boss_saucer.bullets[:]:
                     if b.alive and b.get_hitbox().colliderect(player_hitbox):
                         b.alive = False
-                        if (not ship.is_phenix) and ship.invulnerable <= 0 and ship.alive and not ship.dying:
+                        if ship.is_phenix and getattr(ship, "uses_shield", False):
+                            bh = b.get_hitbox()
+                            self._shield_absorb(ship, bh.centerx, bh.centery)
+                            self._add_score(ship, 5)
+                        elif (not ship.is_phenix) and ship.invulnerable <= 0 and ship.alive and not ship.dying:
                             ship.hit()
                             if self.play_mode == "coop":
                                 self._on_coop_life_lost(ship)
                             kind = "gameover" if ship.dying else "bullet"
-                            self.explosions.append(Explosion(ship.x, ship.y, kind=kind))
+                            self.explosions.append(self._boom(ship.x, ship.y, kind=kind))
                             self.shake_amount = 22.0 if ship.dying else 12.0
                             self.sounds.play("explosion_big" if ship.dying else "explosion", x=ship.x)
                         break
             for bullet in self.formation.bullets[:]:
                 if bullet.alive and bullet.get_hitbox().colliderect(player_hitbox):
                     bullet.alive = False
-                    if (not ship.is_phenix) and ship.invulnerable <= 0 and ship.alive and not ship.dying:
+                    if ship.is_phenix and getattr(ship, "uses_shield", False):
+                        bh = bullet.get_hitbox()
+                        self._shield_absorb(ship, bh.centerx, bh.centery)
+                        self._add_score(ship, 5)
+                    elif (not ship.is_phenix) and ship.invulnerable <= 0 and ship.alive and not ship.dying:
                         ship.hit()
                         if self.play_mode == "coop":
                             self._on_coop_life_lost(ship)
                         kind = "gameover" if ship.dying else "bullet"
-                        self.explosions.append(Explosion(ship.x, ship.y, kind=kind))
+                        self.explosions.append(self._boom(ship.x, ship.y, kind=kind))
                         self.shake_amount = 22.0 if ship.dying else 12.0
                         self.sounds.play("explosion_big" if ship.dying else "explosion", x=ship.x)
                     break
             for enemy in self.formation.get_hittable_enemies():
                 if enemy.diving and enemy.get_hitbox().colliderect(player_hitbox):
-                    enemy.kill()
-                    self.explosions.append(Explosion(enemy.x, enemy.y, kind="collision"))
+                    try:
+                        enemy.kill(flash=False)
+                    except TypeError:
+                        enemy.kill()
+                        enemy.hit_flash_frames = 0
+                        enemy.alive = False
+                        enemy.dying = False
+                    self.explosions.append(self._boom(enemy.x, enemy.y, kind="collision"))
                     self.sounds.play("enemy_explosion", x=enemy.x)
                     if ship.is_phenix:
                         self.shake_amount = max(self.shake_amount, 8.0)
+                        if getattr(ship, "uses_shield", False):
+                            self._add_score(ship, self._enemy_points(getattr(enemy, "stage", 1)))
+                            self._note_bird_kill()
+                            if getattr(enemy, "diving", False):
+                                self._note_scalable("butcher")
                     else:
                         ship.hit()
                         if self.play_mode == "coop":
                             self._on_coop_life_lost(ship)
                         pkind = "gameover" if ship.dying else "collision"
-                        self.explosions.append(Explosion(ship.x, ship.y, kind=pkind))
+                        self.explosions.append(self._boom(ship.x, ship.y, kind=pkind))
                         self.shake_amount = 26.0 if ship.dying else 18.0
                         self.sounds.play("explosion_big", x=ship.x)
                     break
@@ -5098,7 +6153,7 @@ class Game:
             if getattr(s, "flag_gauge_max", False):
                 s.flag_gauge_max = False
                 if not getattr(s, "phenix_auto_refill", False):
-                    self._unlock_ach("gauge_max")
+                    self._note_scalable("gauge_max")
 
         for exp in self.explosions[:]:
             exp.update(self.dt)
@@ -5189,17 +6244,21 @@ class Game:
 
 
     def draw(self):
-        self.game_surface.fill(COLOR_BG)
+        # TEMP debug: True = pale backdrop to spot opaque leaks. Set False after.
+        if getattr(self, "DEBUG_LIGHT_BG", False):
+            self.game_surface.fill((198, 202, 210))
+        else:
+            self.game_surface.fill(COLOR_BG)
         
         # Starfield first (background)
         self.starfield.draw(self.game_surface)
         
         shake_x = shake_y = 0
-        if self.shake_amount > 0 and self.started and not self.game_over:
+        if self.shake_amount > 0 and self.started and (not self.game_over or self.hs_phase == "card"):
             shake_x = random.randint(-int(self.shake_amount), int(self.shake_amount))
             shake_y = random.randint(-int(self.shake_amount), int(self.shake_amount))
         
-        if self.started and not self.game_over:
+        if self.started and (not self.game_over or self.hs_phase == "card"):
             if self.boss_saucer:
                 self.boss_saucer.draw(self.game_surface)
             self.formation.draw(self.game_surface)
@@ -5215,20 +6274,26 @@ class Game:
             # UI (cached text — re-render only when string/color changes)
             tc = self.text_cache
             if self.play_mode == "coop" and self.player2:
-                p1s = tc.get(self.font, f"P1 {self.format_score(getattr(self.player, 'score', 0))}", (110, 255, 150))
-                p2s = tc.get(self.font, f"P2 {self.format_score(getattr(self.player2, 'score', 0))}", (120, 180, 255))
+                c1 = self._palette_score_color(getattr(self.player, "palette", "argent"))
+                c2 = self._palette_score_color(getattr(self.player2, "palette", "blue"))
+                p1s = tc.get(self.font, f"P1 {self.format_score(getattr(self.player, 'score', 0))}", c1)
+                p2s = tc.get(self.font, f"P2 {self.format_score(getattr(self.player2, 'score', 0))}", c2)
                 self.game_surface.blit(p1s, (16, 16))
                 self.game_surface.blit(p2s, (BASE_WIDTH - 16 - p2s.get_width(), 16))
                 self._draw_phenix_gauge(self.player, 18, 100)
                 self._draw_phenix_gauge(self.player2, BASE_WIDTH - 18 - 14, 100, align="right")
             else:
-                score_surf = tc.get(self.font, self.format_score(self.score), (110, 255, 150))
+                score_surf = tc.get(self.font, self.format_score(self.score), self._palette_score_color(getattr(self.player, "palette", "argent")))
                 self.game_surface.blit(score_surf, (BASE_WIDTH // 2 - score_surf.get_width() // 2, 16))
                 if self.hotseat and self.slots[0] and self.slots[1]:
                     s0 = self.slots[0]["score"] if self.current_p != 0 else self.score
                     s1 = self.slots[1]["score"] if self.current_p != 1 else self.score
-                    c0 = (255, 230, 120) if self.current_p == 0 else (140, 140, 170)
-                    c1 = (255, 230, 120) if self.current_p == 1 else (140, 140, 170)
+                    p0 = self.slots[0].get("player")
+                    p1p = self.slots[1].get("player")
+                    pal0 = getattr(p0, "palette", None) or self._tint_for_pid(1)
+                    pal1 = getattr(p1p, "palette", None) or self._tint_for_pid(2)
+                    c0 = self._palette_score_color(pal0, bright=(self.current_p == 0))
+                    c1 = self._palette_score_color(pal1, bright=(self.current_p == 1))
                     hp1 = tc.get(self.font, f"P1 {self.format_score(s0)}", c0)
                     hp2 = tc.get(self.font, f"P2 {self.format_score(s1)}", c1)
                     self.game_surface.blit(hp1, (16, 44))
@@ -5384,6 +6449,8 @@ class Game:
                             coop=bool(entries[i].get("coop")),
                             ship=entries[i].get("ship"),
                             ship2=entries[i].get("ship2"),
+                            veteran=bool(entries[i].get("veteran")),
+                            tint=entries[i].get("tint"),
                         )
                     else:
                         self._draw_hs_row(
@@ -5489,6 +6556,12 @@ class Game:
                 if int(self.title_timer * 2.5) % 2 == 0:
                     press = self._txt(self.font, t("press_confirm"), (255, 220, 100))
                     self.game_surface.blit(press, (BASE_WIDTH // 2 - press.get_width() // 2, BASE_HEIGHT - 70))
+                ver = getattr(self, "_ver_surf", None)
+                if ver is None:
+                    vf = pygame.font.SysFont(pygame.font.get_default_font(), 16)
+                    ver = vf.render("v1.4.2", True, (110, 110, 130))
+                    self._ver_surf = ver
+                self.game_surface.blit(ver, (BASE_WIDTH - ver.get_width() - 10, BASE_HEIGHT - ver.get_height() - 8))
                 
                 if self.input_mode == "gamepad":
                     controls = self._txt(self.font, t("controls_pad"), (140, 140, 180))
@@ -5503,14 +6576,16 @@ class Game:
                 self.game_surface.blit(controls, (BASE_WIDTH // 2 - controls.get_width() // 2, BASE_HEIGHT - 40))
         
         # High score / Game Over screens
-        if self.game_over and self.hs_phase:
+        if self.game_over and self.hs_phase == "card":
+            self._draw_gameover_card(self.game_surface)
+        elif self.game_over and self.hs_phase:
             overlay = self._dim_overlay(180)
             self.game_surface.blit(overlay, (0, 0))
             
             if self.hs_phase == "enter":
                 title = self._txt(self.big_font, t("new_record"), (255, 220, 100))
                 self.game_surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 100))
-                if self.hotseat:
+                if self.hotseat or getattr(self, "play_mode", "solo") == "coop":
                     who = self._txt(self.font, t("player_n").format(n=self.hs_slot_label), (255, 200, 120))
                     self.game_surface.blit(who, (BASE_WIDTH // 2 - who.get_width() // 2, 72))
                 
@@ -5543,7 +6618,12 @@ class Game:
                 title = self._txt(self.big_font, t("high_scores"), (255, 120, 255))
                 self.game_surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 40))
                 
-                sc = self._txt(self.font, f"{t('your_score')} : {self.format_score(self.score)}", (200, 255, 180))
+                added = getattr(self, "hs_just_added", None) or []
+                if len(added) >= 2:
+                    parts = [f"P{e['pid']} {self.format_score(e['score'])}" for e in sorted(added, key=lambda e: e['pid'])]
+                    sc = self._txt(self.font, f"{t('your_scores')} : " + "  —  ".join(parts), (200, 255, 180))
+                else:
+                    sc = self._txt(self.font, f"{t('your_score')} : {self.format_score(self.score)}", (200, 255, 180))
                 self.game_surface.blit(sc, (BASE_WIDTH // 2 - sc.get_width() // 2, 110))
                 
                 entries = self.hs_entries if self.hs_entries else []
@@ -5554,7 +6634,10 @@ class Game:
                     if i < len(entries):
                         name = entries[i]["name"]
                         score = entries[i]["score"]
-                        highlight = (self.hs_submitted and score == self.score and name == "".join(self.hs_name))
+                        added = getattr(self, "hs_just_added", None) or []
+                        highlight = any(e.get("score") == score and e.get("name") == name for e in added)
+                        if not highlight:
+                            highlight = (self.hs_submitted and score == self.score and name == "".join(self.hs_name))
                         col = (255, 230, 120) if highlight else (200, 200, 230)
                         self._draw_hs_row(
                             self.game_surface, base_y + i * 28, rank,
@@ -5562,6 +6645,8 @@ class Game:
                             coop=bool(entries[i].get("coop")),
                             ship=entries[i].get("ship"),
                             ship2=entries[i].get("ship2"),
+                            veteran=bool(entries[i].get("veteran")),
+                            tint=entries[i].get("tint"),
                         )
                     else:
                         self._draw_hs_row(
@@ -5655,6 +6740,15 @@ class Game:
             )
             self.game_surface.blit(fps_surf, (BASE_WIDTH - fps_surf.get_width() - 130, 12))
 
+        if int(getattr(self, "phenix_flash", 0) or 0) > 0:
+            flash = getattr(self, "_phenix_flash_surf", None)
+            if flash is None or flash.get_size() != (BASE_WIDTH, BASE_HEIGHT):
+                flash = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+                flash.fill((255, 210, 140))
+                self._phenix_flash_surf = flash
+            self.game_surface.blit(flash, (0, 0), special_flags=pygame.BLEND_RGB_ADD)
+            self.phenix_flash = 0
+
         # CRT scanlines — multiply, same format as game_surface (no alpha blit)
         if int(getattr(self, "scanlines", 0) or 0) > 0:
             sc = self._ensure_scanline_surf()
@@ -5664,6 +6758,7 @@ class Game:
         # Toast last so menus / credits / hauts faits can show unlocks
         self._draw_cheat_message()
         
+        self._draw_screen_fade()
         # Present — GPU upscale when bound, else CPU scale
         self._flip_frame(shake_x, shake_y)
 
@@ -5674,6 +6769,10 @@ class Game:
             self._intro_done = True
             self.input_grace = 0.45
             self.menu_idle = 0.0
+            self.fade_t = 1.0
+            self.fade_phase = "in"
+            self.fade_action = None
+            self.FADE_SEC = 0.50
         while self.running:
             cap = int(getattr(self, "fps_cap", getattr(self, "fps_target", 60)) or 60)
             panel = int(getattr(self, "panel_hz", 60) or 60)
@@ -5684,9 +6783,21 @@ class Game:
             # Safety clamp (spiral of death protection)
             self.dt = min(self.dt, 0.05)
             
-            self.handle_events()
-            self.update()
-            self.draw()
-            
+            try:
+                self.handle_events()
+                self.update()
+                self.draw()
+            except Exception:
+                import traceback
+                tb = traceback.format_exc()
+                print(tb)
+                try:
+                    log = os.path.join(user_data_dir(), "crash.log")
+                    with open(log, "a", encoding="utf-8") as fh:
+                        fh.write(tb + "\n")
+                except Exception:
+                    pass
+                self.running = False
+
         pygame.quit()
         sys.exit(0)

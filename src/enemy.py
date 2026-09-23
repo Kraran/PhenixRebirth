@@ -43,6 +43,29 @@ class EnemyBullet:
         return pygame.Rect(int(self.x) - 4, int(top), 8, int(h))
 
 
+def _whiten_surf(src):
+    """Opaque-white copy keeping source alpha. Cached by caller."""
+    w, h = src.get_size()
+    out = pygame.Surface((w, h), pygame.SRCALPHA)
+    out.blit(src, (0, 0))
+    out.fill((255, 255, 255, 0), special_flags=pygame.BLEND_RGBA_ADD)
+    # force RGB to white where alpha remains
+    arr_ok = False
+    try:
+        out.fill((255, 255, 255, 255), special_flags=pygame.BLEND_RGB_MAX)
+        arr_ok = True
+    except Exception:
+        pass
+    if not arr_ok:
+        out = src.copy()
+        for y in range(h):
+            for x in range(w):
+                r, g, b, a = src.get_at((x, y))
+                if a > 20:
+                    out.set_at((x, y), (255, 255, 255, a))
+    return out
+
+
 class Enemy:
     def __init__(self, x, y, formation_index=0, stage=1):
         self.x = float(x)
@@ -170,6 +193,9 @@ class Enemy:
         
         # Disappearance animation — no AI, just fade out
         if self.dying:
+            if int(getattr(self, "hit_flash_frames", 0) or 0) > 0:
+                self.hit_flash_frames -= 1
+                return
             self.death_timer += dt
             self.death_flash = (int(self.death_timer * 20) % 2) == 0
             if self.death_timer >= self.DEATH_DURATION:
@@ -246,12 +272,16 @@ class Enemy:
         self.dive_lane = max(28, min(BASE_WIDTH - 28, player_x + jitter))
         self.dive_target_x = self.dive_lane
 
-    def kill(self):
+    def kill(self, flash=True):
         """Start disappearance animation (idempotent)."""
         if not self.alive or self.dying:
             return
         self.dying = True
         self.death_timer = 0.0
+        self.hit_flash_frames = 1 if flash else 0
+        if not flash:
+            self.alive = False
+            self.dying = False
 
     @property
     def diving(self):
@@ -280,6 +310,10 @@ class Enemy:
             return
         
         if self.dying:
+            if int(getattr(self, "hit_flash_frames", 0) or 0) > 0:
+                img = self._get_white_image()
+                surface.blit(img, (int(self.x - self.width // 2), int(self.y - self.height // 2)))
+                return
             t = self.death_timer / self.DEATH_DURATION
             alpha = max(0, int(255 * (1.0 - t)))
             scale = 1.0 + 0.28 * t
@@ -638,6 +672,9 @@ class BigBird:
             return
 
         if self.dying:
+            if int(getattr(self, "hit_flash_frames", 0) or 0) > 0:
+                self.hit_flash_frames -= 1
+                return
             self.death_timer += dt
             self.death_flash = (int(self.death_timer * 18) % 2) == 0
             if self.death_timer >= self.DEATH_DURATION:
@@ -715,11 +752,15 @@ class BigBird:
         self.dive_lane = max(50, min(BASE_WIDTH - 50, player_x + jitter))
         self.dive_target_x = self.dive_lane
 
-    def kill(self):
+    def kill(self, flash=True):
         if not self.alive or self.dying:
             return
         self.dying = True
         self.death_timer = 0.0
+        self.hit_flash_frames = 1 if flash else 0
+        if not flash:
+            self.alive = False
+            self.dying = False
 
     def hit_wing(self, side):
         if side == "left" and self.wing_left:
@@ -810,6 +851,19 @@ class BigBird:
         right_x = int(self.x + bw // 2 - 6)
 
         if self.dying:
+            if int(getattr(self, "hit_flash_frames", 0) or 0) > 0:
+                body_w = getattr(self, "_white_body", None)
+                if body_w is None:
+                    self._white_body = body_w = _whiten_surf(self.body_img)
+                wing_w = getattr(self, "_white_wing", None)
+                if wing_w is None:
+                    self._white_wing = wing_w = _whiten_surf(wing_src)
+                if self.wing_left:
+                    surface.blit(wing_w, (left_x, wing_y))
+                if self.wing_right:
+                    surface.blit(pygame.transform.flip(wing_w, True, False), (right_x, wing_y))
+                surface.blit(body_w, (bx, by))
+                return
             t = self.death_timer / self.DEATH_DURATION
             alpha = max(0, int(255 * (1.0 - t)))
             body = self.body_img.copy()
