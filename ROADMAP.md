@@ -1,26 +1,11 @@
 # Roadmap — Phenix Rebirth
-Current release: **v1.4.2**
+Current release: **v1.4.3**
 
-## Done in 1.4.2
+## Done in 1.4.3
 
-- Six hull colors: Phenix silver / blue / gold, Shield red / green / violet
-- Coop select: P1 among 6, P2 among the 5 remaining
-- Welcome VO on confirm only (both players in coop; bars together)
-- HUD scores and Phenix shots follow hull color
-- Shield absorb: +5 per blocked shot, full bird value on a ram into the dome
-- Shield walls spark with no slowdown and no electric death
-- Stage climb keeps ship X; landing dust puff
-- First Blood thresholds 1 / 100 / 500 / 2000
-- Saucer cannon R + gargoyle 3/4 bodies retouched
-
-## Done in 1.4.1
-
-- GAME OVER card + VO + dying rumble
-- Stage announcer VO 16–21
-- Pleiades easter-egg nebula
-- Veteran medal on high scores
-- Coop / hot-seat high-score prompts
-- Scalable achievements (tiers bronze / silver / gold)
+- Title-only seasonal overlays (Christmas / Halloween)
+- April Fools logo gag (boot, 1 April)
+- Starfield comet (1 per cycle, stages 1–4, rare on menus)
 
 ## Done in 1.4.0
 
@@ -88,13 +73,12 @@ Current release: **v1.4.2**
 - **0.2.0-rc.1** — feature-complete release candidate
 - **0.1.0** — stages 1–5, boss, difficulties, high scores, 13 languages, attract mode
 
-## Planned (post-1.4.2)
+## Planned (post-1.2.1)
 
 ### Play & feel
 - [ ] Native **144 Hz** path (cap already easy; exclusive modes still report 60 on some GPUs)
 - [ ] Attract AI polish
 - [ ] Optional separate lives in coop
-- [ ] Further Shield / Phenix balance
 
 ### Packaging
 - [ ] Optional one-file Windows build

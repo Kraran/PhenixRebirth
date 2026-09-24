@@ -1,6 +1,6 @@
 # Phenix Rebirth
 
-**Version 1.4.2**
+**Version 1.4.3**
 
 A modern, ultra-responsive PC remake of the classic arcade shooter **Phoenix** (1978 / 1980).
 
@@ -22,21 +22,19 @@ Free to play · Open source · MIT License
 
 [![Phenix Rebirth gameplay](https://img.youtube.com/vi/NIiuKcSgEOk/maxresdefault.jpg)](https://youtu.be/NIiuKcSgEOk)
 
-[Watch on YouTube](https://youtu.be/NIiuKcSgEOk) · [Play on itch.io](https://kraran.itch.io/phenix-rebirth) · [Release v1.4.2](https://github.com/Kraran/PhenixRebirth/releases/tag/v1.4.2)
+[Watch on YouTube](https://youtu.be/NIiuKcSgEOk) · [Play on itch.io](https://kraran.itch.io/phenix-rebirth)
 
 ## Features
 
-- Two doctrines: **PHENIX** (firebird) and **SHIELD** (dome)
-- Six hull colors — Phenix silver / blue / gold, Shield red / green / violet
-- Solo, hot seat, simultaneous coop (P1 picks among 6, P2 among the 5 left)
-- Shield: 2 s barrier, 5 s cooldown, +5 per absorbed shot, full bird value on a ram
-- Shield walls spark but never slow or kill
-- Achievements (scrollable, dated, scalable tiers)
+- **Shield ship** — second craft: freeze + explosive barrier (2 s, 5 s cooldown)
+- Ship select at start (and P2 in hot-seat); blue tint only when both pick the same hull
+- Achievements (scrollable, dated)
 - Jukebox (ID3 titles, PHEQ1 equalizer, intro video)
 - In-game music picker (Off + the 5 soundtrack themes)
 - Stereo SFX panned to the event
-- GPU present, 60 / 75 / 120 Hz, VSync, ultrawide bezels, CRT scanlines
-- 13 languages
+- Seasonal title overlay (Christmas 1 Dec–6 Jan, Halloween 24 Oct–1 Nov)
+- April Fools logo gag (1 April, once per boot)
+- Rare animated comet in the starfield (once per stage cycle, never spawned on the boss)
 
 ## Requirements
 
@@ -65,7 +63,7 @@ python main.py
 |--------|----------|---------|
 | Move | Arrow keys / WASD | Left stick / D-Pad |
 | Fire | Space / Up / W | A (or face buttons) |
-| **PHENIX / SHIELD** | Left Shift / Right Shift / X | **B** |
+| **PHENIX** activate / cancel | Left Shift / Right Shift / X | **B** |
 | Pause | Esc | Start |
 | Menus | Arrows + Enter | Stick / D-Pad + A · B = back |
 
@@ -91,7 +89,7 @@ python main.py
 Persisted in `settings.json` (created at runtime, **not** shipped in the repo):
 
 - Input mode, display (window / fullscreen / borderless)
-- SFX & music volume, rumble, autofire, in-game audio mix & track
+- SFX & music volume, rumble, autofire
 - Language (13 locales)
 - FPS counter, scanlines OFF / 1 / 2 / 3
 - GPU render, VSync, refresh cap (60 / 75 / 120)
@@ -120,7 +118,7 @@ PhenixRebirth/
 
 Franck Fornasari (Kraran)
 
-Music: *Phenix — Eternal Dawn*, *Eternal Dawn (Game Over)*, *Last Coin (Credits)* and the Nostalgie themes — created with [Suno](https://suno.com).
+Music: *Phenix — Eternal Dawn*, *Eternal Dawn (Game Over)*, *Last Coin (Credits)* — created with [Suno](https://suno.com).
 
 Tech: Python 3, Pygame 2 (SCALED GPU present), delta-time action loop.
 

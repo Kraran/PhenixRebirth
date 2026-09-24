@@ -8,7 +8,7 @@ Play modes: solo, hot-seat (alternating), coop (simultaneous). Options cover
 controls, autofire, volumes, session audio mix, rumble, display, GPU present,
 VSync, refresh cap, bezels, FPS counter, CRT scanlines and language.
 Cheats on the high-score menu: LVL2–LVL5, LIVE, PHEN.
-v1.4.2 — six hull tints, Shield absorb score + wall sparks-only,
+v1.4.3 — seasonal title, April gag, comet, Shield absorb score + wall sparks-only,
 stage keep-X, landing dust, Welcome on confirm only.
 
 Architecture notes:
@@ -52,7 +52,7 @@ from gpu_present import GpuPresenter
 from desktop_cover import show_cover, hide_cover
 from intro import play_intro
 
-from settings import user_data_dir, asset_path
+from settings import user_data_dir, asset_path, project_root
 SETTINGS_FILE = os.path.join(user_data_dir(), "settings.json")
 
 def load_user_settings():
@@ -73,6 +73,7 @@ def load_user_settings():
         "fps_cap": 120,  # 60 | 75 | 120
         "audio_mix": "sfx",
         "ingame_music": "none",
+        "season_force": "",  # "" | xmas | halloween — title overlay test
     }
     try:
         with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
@@ -381,6 +382,10 @@ class Game:
             self.audio_mix = mix if mix in getattr(self, "AUDIO_MIXES", ["sfx"]) else "sfx"
         if not hasattr(self, "ingame_music"):
             self.ingame_music = ingame_normalize(user.get("ingame_music", "none"))
+        self.season_force = self._read_season_force(user)
+        self.april_gag = "idle"
+        self.april_t = 0.0
+        self.april_ox = self.april_oy = self.april_rot = 0.0
         if not hasattr(self, "rumble_level"):
             try:
                 self.rumble_level = int(user.get("rumble_level", 3))
@@ -1355,6 +1360,19 @@ class Game:
             return Explosion(x, y, kind=kind, delay_frames=delay_frames)
         except TypeError:
             return Explosion(x, y, kind=kind)
+
+    def _drain_detach_pops(self):
+        """Wing-pop explosions after a gargoyle body kill."""
+        form = getattr(self, "formation", None)
+        if form is None:
+            return
+        for enemy in list(getattr(form, "enemies", []) or []):
+            pops = getattr(enemy, "detach_pops", None)
+            if not pops:
+                continue
+            for x, y in list(pops):
+                self.explosions.append(self._boom(x, y, kind="enemy"))
+            enemy.detach_pops.clear()
 
     def _draw_phenix_gauge(self, ship=None, gx=18, gy=100, align="left"):
         """HUD: 10-segment Phenix gauge + fire around label from level 3."""
@@ -2739,7 +2757,7 @@ class Game:
 
     def _tick_gameover_card(self):
         self.go_card_t = float(getattr(self, "go_card_t", 0.0)) + self.dt
-        self.starfield.update(self.dt)
+        self._tick_stars(follow=False)
         for exp in self.explosions[:]:
             exp.update(self.dt)
             if exp.is_finished():
@@ -3689,6 +3707,7 @@ class Game:
             "gpu_present": bool(getattr(self, "gpu_present", True)),
             "vsync_mode": getattr(self, "vsync_mode", "adaptive"),
             "fps_cap": int(getattr(self, "fps_cap", 120) or 120),
+            "season_force": str(getattr(self, "season_force", "") or ""),
         })
 
     # --- Menu navigation ---
@@ -4073,13 +4092,250 @@ class Game:
         self._credits_layout_cache = (lang, logo_h, lines, heights, total)
         return lines, heights, total
 
-    def _draw_logo(self, surface, center_x, top_y):
+    def _tick_stars(self, follow=False):
+        """Starfield step with comet rules (cycle / menu)."""
+        px = None
+        if follow and getattr(self, "player", None) is not None:
+            px = self.player.x
+        menu = not bool(getattr(self, "started", False))
+        stage = int(getattr(self, "stage", 1) or 1) if not menu else 0
+        self.starfield.update(self.dt, px, stage=stage, menu=menu)
+
+    def _draw_logo(self, surface, center_x, top_y, ox=0.0, oy=0.0, angle=0.0):
         """Draw current animated logo frame centered horizontally."""
         if not self.logo_frames:
             return False
         img = self.logo_frames[self.logo_index % len(self.logo_frames)]
-        surface.blit(img, (center_x - img.get_width() // 2, top_y))
+        if angle:
+            img = pygame.transform.rotozoom(img, angle, 1.0)
+        surface.blit(img, (int(center_x + ox - img.get_width() // 2),
+                           int(top_y + oy)))
         return True
+
+    def _april_fool_ok(self):
+        """1 April, or season.txt = april / poisson (test)."""
+        force = self._read_season_force()
+        if force in ("april", "poisson", "1avril", "avril"):
+            return True
+        now = datetime.now()
+        return now.month == 4 and now.day == 1
+
+    def _update_april_gag(self, dt):
+        """Boot-only title logo gag. Runs once."""
+        st = getattr(self, "april_gag", None)
+        if st in (None, "skip", "done"):
+            return
+        if st == "idle":
+            if self.menu_screen != "main" or not self._april_fool_ok():
+                self.april_gag = "skip"
+                return
+            self.april_gag = "wait"
+            self.april_t = 0.0
+            self.april_ox = self.april_oy = self.april_rot = 0.0
+        self.april_t = float(getattr(self, "april_t", 0.0)) + dt
+        t = self.april_t
+        if st == "wait":
+            self.april_ox = self.april_oy = self.april_rot = 0.0
+            if t >= 0.45:
+                self.april_gag = "left"
+                self.april_t = 0.0
+        elif st == "left":
+            k = min(1.0, t / 0.90)
+            e = k * k * (3 - 2 * k)
+            self.april_ox = -95.0 * e
+            self.april_oy = 6.0 * e
+            self.april_rot = 16.0 * e
+            if t >= 0.90:
+                self.april_gag = "right"
+                self.april_t = 0.0
+        elif st == "right":
+            k = min(1.0, t / 0.95)
+            e = k * k * (3 - 2 * k)
+            self.april_ox = -95.0 + 205.0 * e
+            self.april_oy = 6.0 + 10.0 * e
+            self.april_rot = 16.0 - 40.0 * e
+            if t >= 0.95:
+                self.april_gag = "sway"
+                self.april_t = 0.0
+        elif st == "sway":
+            # Slow hang before the drop
+            w = t * 3.2
+            damp = max(0.35, 1.0 - t / 1.35)
+            self.april_ox = 110.0 + math.sin(w) * 22.0 * damp
+            self.april_oy = 16.0 + abs(math.sin(w)) * 4.0 * damp
+            self.april_rot = -24.0 + math.sin(w) * 11.0 * damp
+            if t >= 1.25:
+                self.april_gag = "fall"
+                self.april_t = 0.0
+        elif st == "fall":
+            k = min(1.0, t / 0.55)
+            e = k * k
+            self.april_ox = 110.0 + 20.0 * k
+            self.april_oy = 16.0 + (BASE_HEIGHT - 100) * e
+            self.april_rot = -24.0 + 70.0 * e
+            if t >= 0.55:
+                self.april_gag = "boom"
+                self.april_t = 0.0
+                lx = BASE_WIDTH // 2 + self.april_ox
+                ly = 8 + self.april_oy + 40
+                try:
+                    self.explosions.append(self._boom(lx, ly, kind="collision"))
+                except Exception:
+                    self.explosions.append(Explosion(lx, ly, kind="collision"))
+                try:
+                    self.sounds.play("explosion", x=lx)
+                except Exception:
+                    try:
+                        self.sounds.play("explosion")
+                    except Exception:
+                        pass
+        elif st == "boom":
+            self.april_ox = 9999
+            alive = False
+            for exp in self.explosions[:]:
+                exp.update(dt)
+                if getattr(exp, "life", 0) > 0:
+                    alive = True
+                else:
+                    self.explosions.remove(exp)
+            if (not alive and t >= 0.35) or t >= 1.4:
+                self.explosions.clear()
+                self.april_gag = "done"
+                self.april_ox = self.april_oy = self.april_rot = 0.0
+            return
+        for exp in self.explosions[:]:
+            exp.update(dt)
+            if getattr(exp, "life", 1) <= 0:
+                self.explosions.remove(exp)
+
+    def _read_season_force(self, user=None):
+        """season.txt wins, then settings.json. Not wiped by empty defaults."""
+        for flag in (
+            os.path.join(project_root(), "season.txt"),
+            os.path.join(user_data_dir(), "season.txt"),
+        ):
+            try:
+                if os.path.isfile(flag):
+                    val = open(flag, encoding="utf-8").read().strip().lower()
+                    if val:
+                        return val
+            except Exception:
+                pass
+        if user and user.get("season_force"):
+            return str(user.get("season_force") or "").lower()
+        return str(getattr(self, "season_force", "") or "").lower()
+
+    def _season_id(self):
+        """Title-screen only. season.txt / season_force / calendar."""
+        force = self._read_season_force()
+        if force in ("xmas", "christmas", "noel"):
+            return "xmas"
+        if force in ("halloween", "hallo"):
+            return "halloween"
+        now = datetime.now()
+        if (now.month == 10 and now.day >= 24) or (now.month == 11 and now.day == 1):
+            return "halloween"
+        if now.month == 12 or (now.month == 1 and now.day <= 6):
+            return "xmas"
+        return None
+
+    def _ensure_season_bits(self, theme):
+        if getattr(self, "_season_theme", None) == theme and getattr(self, "_season_bits", None) is not None:
+            return
+        self._season_theme = theme
+        bits = []
+        if theme == "xmas":
+            for i in range(70):
+                bits.append({
+                    "k": "snow",
+                    "x": random.uniform(0, BASE_WIDTH),
+                    "y": random.uniform(0, BASE_HEIGHT),
+                    "s": random.choice((1, 1, 2, 2, 3)),
+                    "vy": random.uniform(18, 48),
+                    "vx": random.uniform(-8, 8),
+                })
+        self._season_bits = bits
+
+    def _update_season(self, dt):
+        theme = self._season_id()
+        if not theme:
+            self._season_bits = []
+            self._season_theme = None
+            return
+        self._ensure_season_bits(theme)
+        for b in self._season_bits:
+            if b["k"] == "snow":
+                b["y"] += b["vy"] * dt
+                b["x"] += b["vx"] * dt + math.sin(b["y"] * 0.04) * 8 * dt
+                if b["y"] > BASE_HEIGHT:
+                    b["y"] = -4
+                    b["x"] = random.uniform(0, BASE_WIDTH)
+
+    def _season_load_corners(self, prefix):
+        cache = f"_{prefix}_corners"
+        corners = getattr(self, cache, None)
+        if corners is None:
+            corners = {}
+            for key in ("tl", "tr", "bl", "br"):
+                fp = asset_path("sprites", "season", f"{prefix}_{key}.png")
+                if os.path.isfile(fp):
+                    try:
+                        corners[key] = pygame.image.load(fp).convert_alpha()
+                    except Exception:
+                        pass
+            setattr(self, cache, corners)
+        return corners
+
+    def _season_load_png(self, attr, filename):
+        img = getattr(self, attr, None)
+        if img is False:
+            return None
+        if img is None:
+            fp = asset_path("sprites", "season", filename)
+            if os.path.isfile(fp):
+                try:
+                    img = pygame.image.load(fp).convert_alpha()
+                except Exception:
+                    img = False
+            else:
+                img = False
+            setattr(self, attr, img)
+        return img if img else None
+
+    def _season_blit_corners(self, surface, corners):
+        if "tl" in corners:
+            surface.blit(corners["tl"], (0, 0))
+        if "tr" in corners:
+            img = corners["tr"]
+            surface.blit(img, (BASE_WIDTH - img.get_width(), 0))
+        if "bl" in corners:
+            img = corners["bl"]
+            surface.blit(img, (0, BASE_HEIGHT - img.get_height()))
+        if "br" in corners:
+            img = corners["br"]
+            surface.blit(img, (BASE_WIDTH - img.get_width(), BASE_HEIGHT - img.get_height()))
+
+    def _draw_season_title(self, surface):
+        """Corner overlay on the main menu only."""
+        theme = getattr(self, "_season_theme", None) or self._season_id()
+        if theme:
+            self._season_theme = theme
+            self._ensure_season_bits(theme)
+        if not theme:
+            return
+        if theme == "xmas":
+            sack = self._season_load_png("_xmas_sack", "xmas_sack.png")
+            if sack:
+                surface.blit(sack, (148, BASE_HEIGHT - sack.get_height() - 10))
+            self._season_blit_corners(surface, self._season_load_corners("xmas"))
+            for b in self._season_bits:
+                if b["k"] == "snow":
+                    pygame.draw.circle(surface, (230, 238, 255), (int(b["x"]), int(b["y"])), int(b["s"]))
+        elif theme == "halloween":
+            bat = self._season_load_png("_hallo_bat", "hallo_bat.png")
+            if bat:
+                surface.blit(bat, (108, 72))
+            self._season_blit_corners(surface, self._season_load_corners("hallo"))
 
     def _draw_boss_flag(self, surface, x, y, big=False):
 
@@ -5516,13 +5772,18 @@ class Game:
 
         if not self.started or self.game_over:
             # Still scroll stars on title/game over (no parallax)
-            self.starfield.update(self.dt)
+            self._tick_stars(follow=False)
             self.sounds.play_electric(False)
             if self.logo_frames:
                 self.logo_timer += self.dt
                 if self.logo_timer >= 1.0 / self.logo_fps:
                     self.logo_timer -= 1.0 / self.logo_fps
                     self.logo_index = (self.logo_index + 1) % len(self.logo_frames)
+            if not self.started and self.menu_screen == "main":
+                self._update_season(self.dt)
+                self._update_april_gag(self.dt)
+            else:
+                self._season_theme = None
             if not self.started and self.menu_screen == "jukebox":
                 self._update_jukebox()
             if not self.started and self.menu_screen == "achievements":
@@ -5564,7 +5825,8 @@ class Game:
             # Attract / help screen from main menu idle
             if not self.started and not self.quit_confirm:
                 if self.menu_screen == "main":
-                    self.menu_idle += self.dt
+                    if getattr(self, "april_gag", "done") not in ("idle", "wait", "left", "right", "sway", "fall", "boom"):
+                        self.menu_idle += self.dt
                     # First idle after launch: 10s help; then alternate help / attract every 5s
                     idle_need = 10.0 if not self.help_first_shown else 5.0
                     if self.menu_idle >= idle_need:
@@ -5614,12 +5876,12 @@ class Game:
             return
         
         if self.paused:
-            self.starfield.update(self.dt)
+            self._tick_stars(follow=False)
             self.sounds.play_electric(False)
             return
 
         if getattr(self, "hotseat_pick_p2", False):
-            self.starfield.update(self.dt)
+            self._tick_stars(follow=False)
             self.ship_anim_t = getattr(self, "ship_anim_t", 0.0) + self.dt
             self._tick_preview_cycle(self.dt)
             sl = float(getattr(self, "shield_slide", 1.0))
@@ -5631,13 +5893,13 @@ class Game:
                     self._flush_after_welcome()
             return
         if self.hotseat_wait:
-            self.starfield.update(self.dt)
+            self._tick_stars(follow=False)
             self.sounds.play_electric(False)
             return
 
         if self.hotseat_hold > 0:
             self.hotseat_hold = max(0.0, self.hotseat_hold - self.dt)
-            self.starfield.update(self.dt, self.player.x if self.player else BASE_WIDTH / 2)
+            self._tick_stars(follow=True)
             for exp in self.explosions[:]:
                 exp.update(self.dt)
                 if exp.is_finished():
@@ -5647,6 +5909,7 @@ class Game:
                 for enemy in list(getattr(form, "enemies", []) or []):
                     if getattr(enemy, "dying", False) or getattr(enemy, "hit_flash_frames", 0):
                         enemy.update(self.dt, getattr(form, "offset_x", 0.0), 0.0)
+                self._drain_detach_pops()
             tesla_on = False
             if self.tesla_fx is not None:
                 self.tesla_fx.update(self.dt)
@@ -5746,7 +6009,7 @@ class Game:
                 return
         
         # Starfield with parallax based on player movement
-        self.starfield.update(self.dt, self.player.x)
+        self._tick_stars(follow=True)
         neb = getattr(self.starfield, "nebula", None)
         if neb is not None and "pleiades" in str(getattr(neb, "kind", "")):
             nid = id(neb)
@@ -5768,7 +6031,7 @@ class Game:
                 if ship.alive or ship.dying:
                     ship.y -= 420 * self.dt
                     ship.engine_intensity = 1.0
-            self.starfield.update(self.dt, self.player.x)
+            self._tick_stars(follow=True)
             if all((not s.alive) or s.y < -80 for s in self._ships()):
                 self.stage += 1
                 self._note_scalable("stage2", self.stage, absolute=True)
@@ -5797,8 +6060,9 @@ class Game:
                 if ship.alive:
                     ship.y -= 380 * self.dt
                     ship.engine_intensity = 1.0
-            self.starfield.update(self.dt, self.player.x)
+            self._tick_stars(follow=True)
             self.formation.update(self.dt, self.player.x)
+            self._drain_detach_pops()
             if all((not s.alive) or s.y <= target_y for s in self._ships()):
                 for ship in self._ships():
                     if ship.alive:
@@ -5815,6 +6079,7 @@ class Game:
             return
         
         self.formation.update(self.dt, self.player.x)
+        self._drain_detach_pops()
         self._check_extra_lives()
         if self.life_flash_timer > 0:
             self.life_flash_timer = max(0.0, self.life_flash_timer - self.dt)
@@ -5903,7 +6168,7 @@ class Game:
         
         if self.stage_transition == "boss_outro":
             self.transition_timer += self.dt
-            self.starfield.update(self.dt, self.player.x)
+            self._tick_stars(follow=True)
             for exp in self.explosions[:]:
                 exp.update(self.dt)
                 if exp.is_finished():
@@ -6371,9 +6636,20 @@ class Game:
         if not self.started:
             if self.menu_screen in ("main",):
                 # Animated fiery logo (fallback to text if frames missing)
-                if not self._draw_logo(self.game_surface, BASE_WIDTH // 2, 8):
-                    title = self._txt(self.big_font, "PHENIX REBIRTH", (255, 120, 255))
-                    self.game_surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 80))
+                hide = getattr(self, "april_gag", "") == "boom"
+                if not hide:
+                    ok = self._draw_logo(
+                        self.game_surface, BASE_WIDTH // 2, 8,
+                        ox=float(getattr(self, "april_ox", 0.0)),
+                        oy=float(getattr(self, "april_oy", 0.0)),
+                        angle=float(getattr(self, "april_rot", 0.0)),
+                    )
+                    if not ok:
+                        title = self._txt(self.big_font, "PHENIX REBIRTH", (255, 120, 255))
+                        self.game_surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 80))
+                for exp in getattr(self, "explosions", []) or []:
+                    if not self.started:
+                        exp.draw(self.game_surface)
                 
                 # Subtitle below logo
                 logo_h = self.logo_frames[0].get_height() if self.logo_frames else 100
@@ -6559,7 +6835,7 @@ class Game:
                 ver = getattr(self, "_ver_surf", None)
                 if ver is None:
                     vf = pygame.font.SysFont(pygame.font.get_default_font(), 16)
-                    ver = vf.render("v1.4.2", True, (110, 110, 130))
+                    ver = vf.render("v1.4.3", True, (110, 110, 130))
                     self._ver_surf = ver
                 self.game_surface.blit(ver, (BASE_WIDTH - ver.get_width() - 10, BASE_HEIGHT - ver.get_height() - 8))
                 
@@ -6568,6 +6844,7 @@ class Game:
                 else:
                     controls = self._txt(self.font, t("controls_kb"), (140, 140, 180))
                 self.game_surface.blit(controls, (BASE_WIDTH // 2 - controls.get_width() // 2, BASE_HEIGHT - 40))
+                self._draw_season_title(self.game_surface)
             elif self.menu_screen == "options":
                 if self.input_mode == "gamepad":
                     controls = self._txt(self.font, t("controls_pad"), (140, 140, 180))

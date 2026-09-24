@@ -3,6 +3,8 @@ Scrolling multi-layer starfield with parallax, planets, and nebulae.
 
 Stars are procedural; planets use solar-system inspired art; nebulae use
 Hubble-inspired assets. Usually one planet or one nebula; rarely both may share the screen.
+A cyan comet (30-frame loop) crosses at most once per 5-stage cycle on bands 1–4,
+and very rarely on pre-game menus. It is never spawned on the boss stage.
 """
 import pygame
 import random
@@ -284,7 +286,85 @@ class Nebula:
         surface.blit(self.image, (int(self.x - self.w // 2), int(self.y - self.h // 2)))
 
 
+COMET_DIR = asset_path("sprites", "comet")
+
+
+class Comet:
+    """Rare cyan comet crossing the starfield. Frames from giphy.gif, black keyed out."""
+
+    _frames = None
+
+    @classmethod
+    def _load(cls):
+        if cls._frames is not None:
+            return cls._frames
+        frames = []
+        if os.path.isdir(COMET_DIR):
+            names = sorted(n for n in os.listdir(COMET_DIR) if n.endswith(".png"))
+            for n in names:
+                fp = os.path.join(COMET_DIR, n)
+                try:
+                    img = pygame.image.load(fp).convert_alpha()
+                    frames.append(img)
+                except Exception:
+                    pass
+        cls._frames = frames
+        return frames
+
+    def __init__(self):
+        frames = self._load()
+        self.alive = bool(frames)
+        if not self.alive:
+            return
+        self.flip = random.random() < 0.5
+        scale = random.uniform(0.72, 0.95)
+        src = frames[0]
+        self.w = max(8, int(src.get_width() * scale))
+        self.h = max(8, int(src.get_height() * scale))
+        self.frames = []
+        for fr in frames:
+            img = pygame.transform.smoothscale(fr, (self.w, self.h))
+            if self.flip:
+                img = pygame.transform.flip(img, True, False)
+            self.frames.append(img)
+        self.idx = 0.0
+        self.fps = 10.0
+        # Fully off-screen, then slide in. Tail is top-left (or top-right if flipped).
+        if self.flip:
+            self.vx = -random.uniform(55, 90)
+            self.x = float(BASE_WIDTH + 12)
+        else:
+            self.vx = random.uniform(55, 90)
+            self.x = float(-self.w - 12)
+        self.y = float(-self.h - 12)
+        self.vy = random.uniform(38, 62)
+        self.parallax = 0.04
+        self.seen = False
+
+    def update(self, dt, player_dx=0.0):
+        if not self.alive:
+            return
+        self.x += self.vx * dt - player_dx * self.parallax
+        self.y += self.vy * dt
+        self.idx = (self.idx + self.fps * dt) % max(1, len(self.frames))
+        visible = (
+            self.x + self.w > 0 and self.x < BASE_WIDTH
+            and self.y + self.h > 0 and self.y < BASE_HEIGHT
+        )
+        if visible:
+            self.seen = True
+        elif self.seen:
+            self.alive = False
+
+    def draw(self, surface):
+        if not self.alive or not self.frames:
+            return
+        img = self.frames[int(self.idx) % len(self.frames)]
+        surface.blit(img, (int(self.x), int(self.y)))
+
+
 class Starfield:
+
     """Parallax star layers + occasional planet / nebula."""
 
     def __init__(self):
@@ -304,6 +384,12 @@ class Starfield:
         self.planets = []
         self.galaxies = []
         self.nebula = None
+        self.comet = None
+        self.comet_timer = random.uniform(70.0, 140.0)  # menus only
+        self._comet_cycle = None
+        self._comet_used = False
+        self._comet_band = random.randint(1, 4)
+        self._comet_delay = random.uniform(4.0, 14.0)
 
         if random.random() < 0.30:
             self.planets.append(Planet())
@@ -317,7 +403,7 @@ class Starfield:
 
         self.last_player_x = BASE_WIDTH / 2
 
-    def update(self, dt, player_x=None):
+    def update(self, dt, player_x=None, stage=None, menu=False):
         player_dx = 0.0
         if player_x is not None:
             player_dx = player_x - self.last_player_x
@@ -340,6 +426,12 @@ class Starfield:
             self.nebula.update(dt, player_dx)
             if not self.nebula.alive:
                 self.nebula = None
+
+        if self.comet is not None:
+            self.comet.update(dt, player_dx)
+            if not self.comet.alive:
+                self.comet = None
+        self._tick_comet_spawn(dt, stage, menu)
 
         self.planet_timer -= dt
         if self.planet_timer <= 0:
@@ -368,6 +460,37 @@ class Starfield:
                         self.planet_timer = random.uniform(14.0, 28.0)
             self.nebula_timer = random.uniform(22.0, 38.0)
 
+    def _tick_comet_spawn(self, dt, stage, menu):
+        """One comet per 5-stage cycle, spawn on band 1-4 only. Rare on menus."""
+        if self.comet is not None or not Comet._load():
+            return
+        if menu:
+            self.comet_timer -= dt
+            if self.comet_timer <= 0:
+                if random.random() < 0.22:
+                    self.comet = Comet()
+                self.comet_timer = random.uniform(90.0, 180.0)
+            return
+        try:
+            st = int(stage or 0)
+        except Exception:
+            st = 0
+        if st < 1:
+            return
+        cycle = (st - 1) // 5
+        band = ((st - 1) % 5) + 1  # 1..5
+        if cycle != self._comet_cycle:
+            self._comet_cycle = cycle
+            self._comet_used = False
+            self._comet_band = random.randint(1, 4)
+            self._comet_delay = random.uniform(3.5, 16.0)
+        if self._comet_used or band == 5 or band != self._comet_band:
+            return
+        self._comet_delay -= dt
+        if self._comet_delay <= 0:
+            self.comet = Comet()
+            self._comet_used = True
+
     def draw(self, surface):
         # Depth (back → front): nebula / galaxies → stars → planets
         if self.nebula is not None:
@@ -386,3 +509,5 @@ class Starfield:
 
         for planet in self.planets:
             planet.draw(surface)
+        if self.comet is not None:
+            self.comet.draw(surface)
