@@ -1,7 +1,7 @@
 """
 Particle explosions for combat feedback.
 
-Kinds: bullet hit, enemy death, collision, edge death, game-over blast.
+Kinds: enemy, bullet, collision, edge, gameover, electric, flame, shield ripple.
 Object lifetime is short; Game caps concurrent instances for performance.
 """
 import pygame
@@ -16,16 +16,23 @@ class Explosion:
       - "collision"  : player rammed by diving enemy
       - "edge"       : killed by screen edge
       - "gameover"   : final death — maximum spectacle
+      - "electric"   : rotating-shield brick
+      - "flame"      : saucer decoration
+      - "shield"     : shot absorbed by Shield form (ripple + sparks)
+      - "dust"       : landing puff when a ship arrives (8 frames)
     """
-    def __init__(self, x, y, kind="enemy"):
+    def __init__(self, x, y, kind="enemy", delay_frames=0):
         self.x = float(x)
         self.y = float(y)
         self.kind = kind
+        self.delay_frames = int(delay_frames)
         self.particles = []
         self.debris = []
         self.flashes = []
         self.rings = []
         self.sparks = []
+        self.bolts = []
+        self.tongues = []
         
         if kind == "enemy":
             self.life = 0.55
@@ -83,6 +90,108 @@ class Explosion:
             self._spawn_flash(18, (255, 255, 255))
             self._spawn_ring(36, (100, 170, 255))
             self._spawn_ring(24, (200, 230, 255))
+            
+        elif kind == "flame":
+            self.life = 1.15
+            self.max_life = 1.15
+            self._spawn_particles(28, 40, 160, [
+                (255, 250, 180), (255, 170, 40), (255, 90, 20), (255, 50, 0)
+            ])
+            self._spawn_sparks(16, (255, 220, 80))
+            self._spawn_flash(42, (255, 180, 60))
+            self._spawn_flash(24, (255, 240, 160))
+            self._spawn_ring(36, (255, 120, 20))
+            # Rising fire tongues + smoke puffs (visible on dark hull)
+            for _ in range(10):
+                self.tongues.append({
+                    "x": random.uniform(-16, 16),
+                    "y": random.uniform(-6, 10),
+                    "vx": random.uniform(-18, 18),
+                    "vy": random.uniform(-90, -40),
+                    "w": random.uniform(10, 22),
+                    "h": random.uniform(22, 44),
+                    "kind": "fire",
+                    "color": random.choice([
+                        (255, 90, 10), (255, 140, 20), (255, 200, 50), (255, 240, 140)
+                    ]),
+                })
+            for _ in range(8):
+                self.tongues.append({
+                    "x": random.uniform(-20, 20),
+                    "y": random.uniform(-4, 8),
+                    "vx": random.uniform(-12, 12),
+                    "vy": random.uniform(-55, -20),
+                    "w": random.uniform(16, 34),
+                    "h": random.uniform(16, 28),
+                    "kind": "smoke",
+                    "color": random.choice([
+                        (160, 150, 140), (120, 115, 110), (90, 90, 95)
+                    ]),
+                })
+            
+        elif kind == "dust":
+            self.life = 0.32
+            self.max_life = 0.32
+            cols = [(230, 210, 170), (200, 185, 150), (170, 160, 140), (255, 240, 210)]
+            for _ in range(22):
+                side = -1.0 if random.random() < 0.5 else 1.0
+                self.particles.append({
+                    "x": random.uniform(-6, 6),
+                    "y": random.uniform(-2, 6),
+                    "vx": side * random.uniform(90, 240),
+                    "vy": random.uniform(-80, -20),
+                    "size": random.uniform(5.0, 12.0),
+                    "color": random.choice(cols),
+                    "drag": random.uniform(0.86, 0.93),
+                })
+            for _ in range(8):
+                side = -1.0 if random.random() < 0.5 else 1.0
+                self.tongues.append({
+                    "x": side * random.uniform(8, 28),
+                    "y": random.uniform(-4, 8),
+                    "vx": side * random.uniform(40, 110),
+                    "vy": random.uniform(-35, -8),
+                    "w": random.uniform(14, 28),
+                    "h": random.uniform(8, 16),
+                    "kind": "smoke",
+                    "color": random.choice(cols),
+                })
+            self._spawn_flash(10, (210, 190, 150))
+
+        elif kind == "shield":
+            self.life = 0.38
+            self.max_life = 0.38
+            self._spawn_flash(20, (140, 210, 255))
+            self._spawn_flash(10, (220, 245, 255))
+            self._spawn_ring(20, (90, 190, 255))
+            self._spawn_ring(12, (180, 230, 255))
+            self._spawn_sparks(8, (160, 220, 255))
+
+        elif kind == "electric":
+            self.life = 0.42
+            self.max_life = 0.42
+            self._spawn_sparks(14, (180, 230, 255))
+            self._spawn_sparks(6, (255, 255, 255))
+            self._spawn_flash(22, (160, 210, 255))
+            self._spawn_flash(10, (255, 255, 255))
+            self._spawn_ring(18, (120, 190, 255))
+            for _ in range(4):
+                ang = random.uniform(0, math.pi * 2)
+                length = random.uniform(18, 46)
+                pts = [(0.0, 0.0)]
+                x = y = 0.0
+                steps = random.randint(4, 7)
+                for i in range(steps):
+                    x += math.cos(ang) * length / steps + random.uniform(-4, 4)
+                    y += math.sin(ang) * length / steps + random.uniform(-4, 4)
+                    pts.append((x, y))
+                    if random.random() < 0.35:
+                        fang = ang + random.choice((-1, 1)) * random.uniform(0.6, 1.3)
+                        fx = x + math.cos(fang) * random.uniform(6, 16)
+                        fy = y + math.sin(fang) * random.uniform(6, 16)
+                        pts.append((fx, fy))
+                        pts.append((x, y))
+                self.bolts.append(pts)
             
         else:  # gameover — spectacular
             self.life = 2.10
@@ -170,6 +279,9 @@ class Explosion:
         })
 
     def update(self, dt):
+        if int(getattr(self, "delay_frames", 0) or 0) > 0:
+            self.delay_frames -= 1
+            return
         self.life -= dt
         
         for p in self.particles:
@@ -198,11 +310,23 @@ class Explosion:
         
         for r in self.rings:
             r["r"] += (r["max_r"] - r["r"]) * min(1.0, 3.2 * dt)
+        for tng in getattr(self, "tongues", ()):
+            tng["x"] += tng["vx"] * dt
+            tng["y"] += tng["vy"] * dt
+            tng["vy"] -= 30 * dt
+            if tng["kind"] == "fire":
+                tng["h"] += 18 * dt
+                tng["w"] = max(4, tng["w"] - 6 * dt)
+            else:
+                tng["w"] += 22 * dt
+                tng["h"] += 14 * dt
 
     def is_finished(self):
         return self.life <= 0
 
     def draw(self, surface):
+        if int(getattr(self, "delay_frames", 0) or 0) > 0:
+            return
         if self.life <= 0:
             return
         
@@ -225,6 +349,28 @@ class Explosion:
             rad = int(f["r"] * (0.5 + 0.5 * fa))
             col = (int(c[0] * fa), int(c[1] * fa), int(c[2] * fa))
             pygame.draw.circle(surface, col, (int(self.x), int(self.y)), rad)
+
+        for tng in getattr(self, "tongues", ()):
+            tw, th = tng["w"], tng["h"]
+            px = int(self.x + tng["x"] - tw / 2)
+            py = int(self.y + tng["y"] - th)
+            c = tng["color"]
+            if tng["kind"] == "smoke":
+                fa = alpha * 0.55
+            else:
+                fa = alpha
+            col = (int(c[0] * fa), int(c[1] * fa), int(c[2] * fa))
+            if tw >= 2 and th >= 2 and sum(col) > 20:
+                pygame.draw.ellipse(surface, col, (px, py, int(tw), int(th)))
+
+        for pts in getattr(self, "bolts", ()):
+            if len(pts) < 2:
+                continue
+            screen = [(int(self.x + px), int(self.y + py)) for px, py in pts]
+            wcol = (int(220 * alpha), int(240 * alpha), int(255 * alpha))
+            bcol = (int(80 * alpha), int(160 * alpha), int(255 * alpha))
+            pygame.draw.lines(surface, bcol, False, screen, 3)
+            pygame.draw.lines(surface, wcol, False, screen, 1)
         
         for p in self.particles:
             size = p["size"] * alpha

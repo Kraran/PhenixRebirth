@@ -21,6 +21,7 @@ NEBULA_FILES = [
     "galaxy_blackhole.png",
     "galaxy_milkyway.png",
     "galaxy_collision.png",
+    "galaxy_pleiades.png",
     "nebula_orion.png",
     "nebula_helix.png",
     "nebula_dark.png",
@@ -234,27 +235,28 @@ class Nebula:
 
     _cache = {}
 
-    def __init__(self):
+    def __init__(self, filename=None):
         self.parallax = 0.05
         self.alive = True
-        self.reset()
+        self.reset(filename)
 
     @classmethod
     def _load_image(cls, filename):
         if filename not in cls._cache:
             path = os.path.join(NEBULA_DIR, filename)
             img = pygame.image.load(path).convert_alpha()
-            scale = random.uniform(0.55, 0.85)
+            scale = random.uniform(0.75, 1.05) if "pleiades" in filename else random.uniform(0.55, 0.85)
             w = max(1, int(img.get_width() * scale))
             h = max(1, int(img.get_height() * scale))
             img = pygame.transform.smoothscale(img, (w, h))
             cls._cache[filename] = img
         return cls._cache[filename].copy()
 
-    def reset(self):
-        filename = random.choice(NEBULA_FILES)
+    def reset(self, filename=None):
+        filename = filename or random.choice(NEBULA_FILES)
         self.image = self._load_image(filename)
-        if random.random() < 0.4:
+        self.kind = filename
+        if "pleiades" not in filename and random.random() < 0.4:
             self.image = pygame.transform.flip(self.image, True, False)
         self.w = self.image.get_width()
         self.h = self.image.get_height()

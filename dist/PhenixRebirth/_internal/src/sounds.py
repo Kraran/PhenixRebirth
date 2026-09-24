@@ -2,6 +2,7 @@
 SFX and music manager (SDL_mixer via pygame).
 
 SFX are WAV samples under assets/sounds/.
+Announcer VO (level1–15, welcome_phoenix / welcome_shield) uses reserved mixer channel 0.
 Music tracks are MP3 under assets/music/ with short cross-fades between
 menu theme, game-over theme, credits theme, and in-game silence.
 
@@ -21,6 +22,7 @@ MUSIC_DIR = asset_path("music")
 
 class SoundManager:
     FADE_MS = 350          # crossfade when switching themes
+    MENU_RETURN_MS = 900   # quit run → title
     LOOP_GAP_SEC = 1.5     # silence before re-looping any track
     # Soft end-fade length (seconds before track end). Credits gets a longer one.
     END_FADE_DEFAULT = 2.5
@@ -31,8 +33,17 @@ class SoundManager:
         self.sfx_muted = False
         self.sounds = {}
         self._electric_channel = None
+        self._vo_channel = None
         self.master_volume = 0.8
         self.music_volume = 0.4
+        self._duck = 1.0
+        self.DUCK_LEVEL = 0.40   # -8 dB VO
+        self.PAUSE_DUCK = 0.32   # ~-10 dB in-game pause
+        self.DUCK_IN = 0.10
+        self.DUCK_OUT = 0.16
+        self.PAUSE_IN = 0.30
+        self.PAUSE_OUT = 0.40
+        self.pause_duck = False
         self._base_volumes = {}
         self._current_music = None  # "menu" | "gameover" | "credits" | None
         self._fading_out = False
@@ -52,6 +63,7 @@ class SoundManager:
                 pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=2048)
             try:
                 pygame.mixer.set_num_channels(24)
+                pygame.mixer.set_reserved(1)
             except Exception:
                 pass
             for name, vol in [
@@ -64,6 +76,34 @@ class SoundManager:
                 ("1up", 1.0),
                 ("phenix_activate", 0.75),
                 ("phenix_end", 0.65),
+                ("shield_zap", 0.70),
+                ("boss_ready", 0.90),
+                ("boss_angry", 0.88),
+                ("boss_yell", 0.86),
+                ("level1", 0.88),
+                ("level2", 0.88),
+                ("level3", 0.88),
+                ("level4", 0.88),
+                ("level5", 0.88),
+                ("level6", 0.88),
+                ("level7", 0.88),
+                ("level8", 0.88),
+                ("level9", 0.88),
+                ("level10", 0.88),
+                ("level11", 0.88),
+                ("level12", 0.88),
+                ("level13", 0.88),
+                ("level14", 0.88),
+                ("level15", 0.88),
+                ("level16", 0.88),
+                ("level17", 0.88),
+                ("level18", 0.88),
+                ("level19", 0.88),
+                ("level20", 0.88),
+                ("level21", 0.88),
+                ("welcome_phoenix", 0.90),
+                ("gameover_vo", 0.92),
+                ("welcome_shield", 0.90),
             ]:
                 self._load(name, f"{name}.wav", vol)
             self.enabled = len(self.sounds) > 0
@@ -74,13 +114,19 @@ class SoundManager:
                 "credits": os.path.join(MUSIC_DIR, "Phenix-LastCoin-Credits.mp3"),
             }
             self._register_extra_music()
-            # Known lengths (seconds) when probe is unavailable
+            # Authoritative lengths (ffprobe). Size-estimate is wrong on CBR/VBR MP3.
             self._music_durations = {
-                "credits": 480.0,  # Phenix-LastCoin-Credits (ffprobe)
+                "menu": 288.720,
+                "gameover": 328.248,
+                "credits": 480.000,
+                "nostalgie_start": 216.456,  # 3:36
+                "nostalgie_elise": 199.656,  # 3:19
             }
             for k, path in self._music_paths.items():
                 probed = self._probe_duration(path)
-                if probed:
+                if probed and abs(probed - self._music_durations.get(k, probed)) < 8.0:
+                    self._music_durations[k] = probed
+                elif probed and k not in self._music_durations:
                     self._music_durations[k] = probed
         except Exception as e:
             print("Sound disabled:", e)
@@ -116,13 +162,6 @@ class SoundManager:
                 length = float(info.info.length)
                 if length > 1.0:
                     return length
-        except Exception:
-            pass
-        try:
-            size = os.path.getsize(path)
-            est = size / 20000.0
-            if est > 5.0:
-                return est
         except Exception:
             pass
         return None
@@ -208,7 +247,7 @@ class SoundManager:
         self._loop_key = None
         try:
             pygame.mixer.music.load(path)
-            pygame.mixer.music.set_volume(self.music_volume)
+            pygame.mixer.music.set_volume(self._music_out())
             pygame.mixer.music.play(int(loops))
             self._current_music = key
             self._music_elapsed = 0.0
@@ -263,11 +302,16 @@ class SoundManager:
     def set_master_volume(self, vol):
         self.master_volume = max(0.0, min(1.0, vol))
 
+    def _music_out(self):
+        """OST is mastered hotter than SFX. Slider 1.0 ≈ 30% mixer, then VO duck."""
+        duck = float(getattr(self, "_duck", 1.0) or 1.0)
+        return max(0.0, min(1.0, float(self.music_volume) * 0.30 * duck))
+
     def set_music_volume(self, vol):
         self.music_volume = max(0.0, min(1.0, vol))
         if not self._end_fading and not self._fading_out:
             try:
-                pygame.mixer.music.set_volume(self.music_volume)
+                pygame.mixer.music.set_volume(self._music_out())
             except Exception:
                 pass
 
@@ -283,6 +327,49 @@ class SoundManager:
         else:
             gain = self._base_volumes.get(name, 0.5) * self.master_volume
         self._play_on_channel(snd, gain, x=x)
+
+    def play_vo(self, name, volume=None):
+        """Announcer: reserved channel, never stolen by SFX."""
+        if not self.enabled or getattr(self, "sfx_muted", False):
+            return
+        snd = self.sounds.get(name)
+        if not snd:
+            return
+        gain = (float(volume) if volume is not None else self._base_volumes.get(name, 0.88))
+        gain = max(0.0, min(1.0, gain)) * self.master_volume
+        try:
+            ch = pygame.mixer.Channel(0)
+            self._vo_channel = ch
+            ch.play(snd)
+            ch.set_volume(gain, gain)
+            self._vo_t0 = pygame.time.get_ticks() * 0.001
+            try:
+                self._vo_len = float(snd.get_length())
+            except Exception:
+                self._vo_len = 2.5
+        except Exception:
+            self._play_on_channel(snd, gain)
+
+    def vo_progress(self):
+        """0..1 how far the current announcer clip has played."""
+        if not self.vo_is_busy():
+            return 1.0
+        t0 = float(getattr(self, "_vo_t0", 0.0) or 0.0)
+        ln = float(getattr(self, "_vo_len", 0.0) or 0.0)
+        if ln <= 0.05:
+            return 1.0
+        now = pygame.time.get_ticks() * 0.001
+        return max(0.0, min(1.0, (now - t0) / ln))
+
+    def vo_is_busy(self):
+        """True while the reserved announcer channel is playing."""
+        ch = getattr(self, "_vo_channel", None)
+        if ch is None:
+            return False
+        try:
+            return bool(ch.get_busy())
+        except Exception:
+            return False
 
     def play_electric(self, active, x=None):
         """Loop electric crackle while edge shock is active. x pans to the wall."""
@@ -313,8 +400,9 @@ class SoundManager:
                 self._electric_channel.stop()
                 self._electric_channel = None
 
-    def play_music(self, key, loops=-1):
+    def play_music(self, key, loops=-1, fade_ms=None):
         """Request a theme. Cross-fades from the current one if needed."""
+        fade = int(self.FADE_MS if fade_ms is None else fade_ms)
         if key not in self._music_paths:
             return
         path = self._music_paths.get(key)
@@ -330,19 +418,20 @@ class SoundManager:
         self._loop_key = None
 
         if self._current_music is None and not self._fading_out:
-            self._start_track(path, key)
+            self._start_track(path, key, fade_ms=fade)
             return
 
         if self._current_music == key:
             return
 
         self._pending_music = key
+        self._pending_fade_ms = fade
         if not self._fading_out:
             self._fading_out = True
             self._end_fading = False
-            self._fade_timer = self.FADE_MS / 1000.0
+            self._fade_timer = fade / 1000.0
             try:
-                pygame.mixer.music.fadeout(self.FADE_MS)
+                pygame.mixer.music.fadeout(fade)
             except Exception:
                 self._finish_fade()
 
@@ -362,12 +451,13 @@ class SoundManager:
             except Exception:
                 self._finish_fade()
 
-    def _start_track(self, path, key):
+    def _start_track(self, path, key, fade_ms=None):
         try:
+            fade = int(self.FADE_MS if fade_ms is None else fade_ms)
             pygame.mixer.music.load(path)
-            pygame.mixer.music.set_volume(self.music_volume)
+            pygame.mixer.music.set_volume(self._music_out())
             # Native loop: no mid-track reload (that was the rare hitch)
-            pygame.mixer.music.play(-1, fade_ms=self.FADE_MS)
+            pygame.mixer.music.play(-1, fade_ms=fade)
             self._current_music = key
             self._fading_out = False
             self._pending_music = None
@@ -387,19 +477,53 @@ class SoundManager:
         self._current_music = None
         self._music_elapsed = 0.0
         pending = self._pending_music
+        fade = getattr(self, "_pending_fade_ms", None)
         self._pending_music = None
+        self._pending_fade_ms = None
         if pending:
             path = self._music_paths.get(pending)
             if path and os.path.exists(path):
-                self._start_track(path, pending)
+                self._start_track(path, pending, fade_ms=fade)
 
     def _end_fade_seconds(self, key):
         if key == "credits":
             return self.END_FADE_CREDITS
         return self.END_FADE_DEFAULT
 
+    def _tick_duck(self, dt):
+        """Ramp OST down for announcer VO and in-game pause."""
+        target = 1.0
+        speed_in, speed_out = self.DUCK_IN, self.DUCK_OUT
+        if self.vo_is_busy():
+            target = min(target, self.DUCK_LEVEL)
+        if getattr(self, "pause_duck", False):
+            target = min(target, self.PAUSE_DUCK)
+            speed_in, speed_out = self.PAUSE_IN, self.PAUSE_OUT
+        cur = float(getattr(self, "_duck", 1.0) or 1.0)
+        speed = speed_in if target < cur else speed_out
+        if speed <= 0:
+            cur = target
+        else:
+            k = min(1.0, dt / speed)
+            cur = cur + (target - cur) * k
+        if abs(cur - target) < 0.01:
+            cur = target
+        if cur != getattr(self, "_duck", 1.0):
+            self._duck = cur
+            if not self._end_fading and not self._fading_out:
+                try:
+                    pygame.mixer.music.set_volume(self._music_out())
+                except Exception:
+                    pass
+        else:
+            self._duck = cur
+
     def update(self, dt):
-        """Call each frame: finish a theme crossfade. Loops are native (no reload)."""
+        """Call each frame: VO duck + finish a theme crossfade."""
+        try:
+            self._tick_duck(dt)
+        except Exception:
+            pass
         if not self._fading_out:
             return
         self._fade_timer -= dt

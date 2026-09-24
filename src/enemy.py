@@ -89,7 +89,7 @@ class Enemy:
         # Death / disappearance animation
         self.dying = False
         self.death_timer = 0.0
-        self.DEATH_DURATION = 0.38
+        self.DEATH_DURATION = 0.24
         self.death_flash = False
         self._white_image = None
         
@@ -503,8 +503,11 @@ class BigBird:
         self.alive = True
         self.dying = False
         self.death_timer = 0.0
-        self.DEATH_DURATION = 0.50
+        self.DEATH_DURATION = 0.24
+        self.WING_POP_TIME = 0.12
         self.death_flash = False
+        self.detach_wings = []
+        self.detach_pops = []
 
         self.time = 0.0
         self.state = "roam"
@@ -677,6 +680,16 @@ class BigBird:
                 return
             self.death_timer += dt
             self.death_flash = (int(self.death_timer * 18) % 2) == 0
+            for w in self.detach_wings:
+                if not w.get("alive"):
+                    continue
+                w["x"] += w["vx"] * dt
+                w["rot"] += w["vr"] * dt
+            if self.death_timer >= self.WING_POP_TIME:
+                for w in self.detach_wings:
+                    if w.get("alive"):
+                        w["alive"] = False
+                        self.detach_pops.append((w["x"], w["y"]))
             if self.death_timer >= self.DEATH_DURATION:
                 self.alive = False
                 self.dying = False
@@ -758,9 +771,43 @@ class BigBird:
         self.dying = True
         self.death_timer = 0.0
         self.hit_flash_frames = 1 if flash else 0
+        self.detach_wings = []
+        self.detach_pops = []
+        if flash:
+            self._spawn_detach_wings()
         if not flash:
             self.alive = False
             self.dying = False
+
+    def _spawn_detach_wings(self):
+        """Horizontal drift of remaining wings after a body kill."""
+        wing_up = math.sin(self.flap) > 0
+        wing_src = self.wing_up if wing_up else self.wing_down
+        flap_y = -5 if wing_up else 5
+        bw = self.body_img.get_width()
+        ww = wing_src.get_width()
+        wh = wing_src.get_height()
+        wy = self.y + flap_y
+        if self.wing_left:
+            self.detach_wings.append({
+                "x": self.x - bw / 2 - ww / 2 + 6,
+                "y": wy,
+                "vx": -340.0,
+                "rot": 0.0,
+                "vr": -70.0,
+                "alive": True,
+                "img": wing_src,
+            })
+        if self.wing_right:
+            self.detach_wings.append({
+                "x": self.x + bw / 2 + ww / 2 - 6,
+                "y": wy,
+                "vx": 340.0,
+                "rot": 0.0,
+                "vr": 70.0,
+                "alive": True,
+                "img": pygame.transform.flip(wing_src, True, False),
+            })
 
     def hit_wing(self, side):
         if side == "left" and self.wing_left:
@@ -864,11 +911,15 @@ class BigBird:
                     surface.blit(pygame.transform.flip(wing_w, True, False), (right_x, wing_y))
                 surface.blit(body_w, (bx, by))
                 return
-            t = self.death_timer / self.DEATH_DURATION
-            alpha = max(0, int(255 * (1.0 - t)))
-            body = self.body_img.copy()
-            body.set_alpha(alpha)
-            surface.blit(body, (bx, by))
+            for w in self.detach_wings:
+                if not w.get("alive"):
+                    continue
+                img = w["img"]
+                rot = w.get("rot", 0.0)
+                if abs(rot) > 0.4:
+                    img = pygame.transform.rotate(img, rot)
+                surface.blit(img, (int(w["x"] - img.get_width() / 2),
+                                   int(w["y"] - img.get_height() / 2)))
             return
 
         # Wings behind body
