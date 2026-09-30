@@ -156,23 +156,29 @@ def _spectrum_bios_ok():
     roms = _roms_dir()
     if not roms:
         return False
-    return os.path.isfile(os.path.join(roms, "spectrum.zip"))
+    for name in ("spectrum.zip", "spectrum.rom"):
+        if os.path.isfile(os.path.join(roms, name)):
+            return True
+    return False
 
 
 def find_spectrum_pheenix():
-    """Loose .z80 dump — not a software-list entry. BIOS spectrum.zip is required."""
+    """Loose .z80 — walk addon/mame (roms/, spectrum/, next to mame.exe)."""
+    roots = []
     roms = _roms_dir()
-    if not roms or not _spectrum_bios_ok():
-        return None
-    needles = ("pheenix", "phoenix")
-    roots = [
-        os.path.join(roms, "spectrum"),
-        roms,
-    ]
+    if roms:
+        roots.append(roms)
+        roots.append(os.path.join(roms, "spectrum"))
+    exe = mame_exe()
+    if exe:
+        roots.append(os.path.dirname(exe))
+        roots.append(os.path.join(os.path.dirname(exe), "spectrum"))
     found = []
+    seen = set()
     for root in roots:
-        if not os.path.isdir(root):
+        if not root or not os.path.isdir(root) or root in seen:
             continue
+        seen.add(root)
         try:
             names = os.listdir(root)
         except Exception:
@@ -181,14 +187,25 @@ def find_spectrum_pheenix():
             low = name.lower()
             if not low.endswith(".z80"):
                 continue
-            if any(n in low for n in needles):
+            if "pheenix" in low or "phoenix" in low:
                 found.append(os.path.join(root, name))
+        # one extra level (roms/spectrum/… already covered; also roms/<folder>/*.z80)
+        for name in names:
+            sub = os.path.join(root, name)
+            if not os.path.isdir(sub) or sub in seen:
+                continue
+            try:
+                for fn in os.listdir(sub):
+                    low = fn.lower()
+                    if low.endswith(".z80") and ("pheenix" in low or "phoenix" in low):
+                        found.append(os.path.join(sub, fn))
+            except Exception:
+                pass
     if not found:
         return None
-    # Prefer the Megadodo 16K TOSEC name if several dumps sit in the folder.
     for fp in found:
         low = os.path.basename(fp).lower()
-        if "megadodo" in low or "16k" in low:
+        if "pheenix" in low:
             return fp
     return found[0]
 
