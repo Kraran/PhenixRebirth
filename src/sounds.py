@@ -101,9 +101,9 @@ class SoundManager:
                 ("level19", 0.88),
                 ("level20", 0.88),
                 ("level21", 0.88),
-                ("welcome_phoenix", 0.90),
+                ("welcome_phoenix", 1.00),
                 ("gameover_vo", 0.92),
-                ("welcome_shield", 0.90),
+                ("welcome_shield", 1.00),
             ]:
                 self._load(name, f"{name}.wav", vol)
             self.enabled = len(self.sounds) > 0

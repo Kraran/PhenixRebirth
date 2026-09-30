@@ -42,6 +42,8 @@ from pheq import load_pheq, resolve_path as pheq_resolve, sample as pheq_sample,
 from ingame_music import cycle as ingame_cycle, label as ingame_label, normalize as ingame_normalize
 from mp3_title import title_from_path, title_for_key
 from i18n import set_lang, get_lang, t, t_help, t_list, get_credits_lines, LANGS, LANG_CODES
+from story import StoryHub
+import addon as mame_addon
 from highscores import load_highscores, is_highscore, insert_score, reset_highscores
 from achievements import (
     CATALOG, load_achievements, unlock_achievement, unlocked_count,
@@ -298,6 +300,7 @@ class Game:
         # Fonts with broad Unicode coverage (Cyrillic, accents, etc.)
         _font_names = "dejavusans,segoe ui,arial,consolas,notosans"
         self.font = pygame.font.SysFont(_font_names, 28, bold=True)
+        self.menu_font = pygame.font.SysFont(_font_names, 22, bold=True)
         self.big_font = pygame.font.SysFont(_font_names, 64, bold=True)
         self.medium_font = pygame.font.SysFont(_font_names, 32, bold=True)
         self.text_cache = TextCache()
@@ -353,8 +356,9 @@ class Game:
             self.joystick.init()
             self.gamepad_detected = True
         
-        # Menu state: "main" | "options"
+        # Menu state: "main" | "options" | "story_hub"
         self.menu_screen = "main"
+        self.story = StoryHub()
         self.menu_index = 0
         # Difficulty is session-only (not in settings.json) but must survive soft resets
         if not hasattr(self, "difficulty"):
@@ -528,6 +532,8 @@ class Game:
                 self.sounds.play_music("gameover")
             elif self.menu_screen == "credits":
                 self.sounds.play_music("credits")
+            elif self.menu_screen == "addon":
+                self.sounds.play_music("nostalgie_elise")
             else:
                 self.sounds.play_music("menu")
         elif getattr(self, "attract_mode", False):
@@ -3754,8 +3760,16 @@ class Game:
             n = len(self._juke_catalog())
             self.juke_index = (int(getattr(self, "juke_index", 0) or 0) + direction) % n
             return
+        if self.menu_screen == "story_hub":
+            if getattr(self, "story", None):
+                self.story.nav_v(1 if direction > 0 else -1)
+            return
+        if self.menu_screen == "addon":
+            n = max(1, len(mame_addon.available_sets()))
+            self.menu_index = (self.menu_index + direction) % n
+            return
         if self.menu_screen == "main":
-            n = 7  # Jouer, mode, diff, Options, HS, Credits, Quitter
+            n = 9  # Jouer, Aventure, Add-on, mode, diff, Options, HS, Credits, Quitter
         elif self.menu_screen == "reset_confirm":
             n = 2  # Oui, Non
         else:
@@ -3938,13 +3952,17 @@ class Game:
             self.ship_cycle_first = True
             self.ship_cycle_focus = self.ship_select_index
             return
+        if self.menu_screen == "story_hub":
+            if getattr(self, "story", None):
+                self.story.nav_h(1 if direction > 0 else -1)
+            return
         if self.menu_screen == "main":
-            if self.menu_index == 1:
+            if self.menu_index == 3:
                 modes = getattr(self, "PLAY_MODES", ["solo", "hotseat", "coop"])
                 cur = getattr(self, "play_mode", "solo")
                 idx = modes.index(cur) if cur in modes else 0
                 self.play_mode = modes[(idx + direction) % len(modes)]
-            elif self.menu_index == 2:
+            elif self.menu_index == 4:
                 idx = self.DIFFICULTIES.index(self.difficulty)
                 self.difficulty = self.DIFFICULTIES[(idx + direction) % len(self.DIFFICULTIES)]
             return
@@ -4100,6 +4118,58 @@ class Game:
         menu = not bool(getattr(self, "started", False))
         stage = int(getattr(self, "stage", 1) or 1) if not menu else 0
         self.starfield.update(self.dt, px, stage=stage, menu=menu)
+
+    def _addon_snap(self, set_name):
+        cache = getattr(self, "_addon_snaps", None)
+        if cache is None:
+            self._addon_snaps = cache = {}
+        if set_name in cache:
+            return cache[set_name]
+        img = None
+        fp = mame_addon.snap_path(set_name)
+        if fp:
+            try:
+                raw = pygame.image.load(fp).convert()
+                box = (400, 280)
+                scale = min(box[0] / max(1, raw.get_width()), box[1] / max(1, raw.get_height()))
+                nw = max(1, int(raw.get_width() * scale))
+                nh = max(1, int(raw.get_height() * scale))
+                img = pygame.transform.smoothscale(raw, (nw, nh))
+            except Exception:
+                img = None
+        cache[set_name] = img
+        return img
+
+    def _draw_addon_menu(self, surface):
+        hdr = self._txt(self.medium_font, t("addon"), (255, 180, 90))
+        surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 70))
+        sets = mame_addon.available_sets()
+        list_x = 72
+        frame = pygame.Rect(720, 160, 480, 360)
+        pygame.draw.rect(surface, (16, 18, 28), frame, border_radius=18)
+        pygame.draw.rect(surface, (200, 140, 60), frame, 3, border_radius=18)
+        if not sets:
+            empty = self._txt(self.font, t("addon_missing"), (160, 160, 180))
+            surface.blit(empty, (list_x, 280))
+        else:
+            y = 200
+            focus = None
+            for i, (sid, label) in enumerate(sets):
+                selected = (i == self.menu_index)
+                if selected:
+                    focus = sid
+                col = (255, 230, 120) if selected else (160, 160, 190)
+                prefix = "> " if selected else "  "
+                surf = self._txt(self.medium_font, prefix + label, col)
+                surface.blit(surf, (list_x, y))
+                y += 44
+            if focus:
+                snap = self._addon_snap(focus)
+                if snap is not None:
+                    surface.blit(snap, (frame.centerx - snap.get_width() // 2,
+                                       frame.centery - snap.get_height() // 2))
+        hint = self._txt(self.font, t("addon_hint"), (255, 220, 100))
+        surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 48))
 
     def _draw_logo(self, surface, center_x, top_y, ox=0.0, oy=0.0, angle=0.0):
         """Draw current animated logo frame centered horizontally."""
@@ -4991,6 +5061,159 @@ class Game:
         self._paint_menu_frame()
         self.input_grace = 0.45
 
+    def _wait_mame_pad_idle(self, ms=1500):
+        """Do not refocus while Guide/Start/Select is still down (Windows window-switch)."""
+        import pygame
+        t = 0
+        while t < ms:
+            try:
+                if mame_addon.xinput_pad_idle():
+                    break
+            except Exception:
+                break
+            pygame.time.wait(50)
+            t += 50
+
+    def _wait_mame_quit(self, proc, set_name=""):
+        """Wait for MAME. XInput poll for Select/Guide+Start."""
+        import pygame
+        while proc.poll() is None:
+            pygame.event.pump()
+            try:
+                if mame_addon.xinput_quit_combo():
+                    try:
+                        show_cover()
+                    except Exception:
+                        pass
+                    try:
+                        proc.terminate()
+                    except Exception:
+                        pass
+                    pygame.time.wait(250)
+                    if proc.poll() is None:
+                        try:
+                            proc.kill()
+                        except Exception:
+                            pass
+                    self._wait_mame_pad_idle()
+                    break
+            except Exception:
+                pass
+            pygame.time.wait(32)
+
+    def _release_joystick_for_mame(self):
+        """Drop SDL joystick so MAME can open XInput/DInput."""
+        for attr in ("joystick",):
+            js = getattr(self, attr, None)
+            if js is not None:
+                try:
+                    js.quit()
+                except Exception:
+                    pass
+            setattr(self, attr, None)
+        extra = getattr(self, "joysticks", None) or []
+        for js in extra:
+            try:
+                js.quit()
+            except Exception:
+                pass
+        self.joysticks = []
+
+    def _launch_addon(self):
+        """Run local MAME on the focused ROM, hide the console, wait, come back."""
+        sets = mame_addon.available_sets()
+        idx = int(getattr(self, "menu_index", 0) or 0)
+        if not sets or idx < 0 or idx >= len(sets):
+            return
+        sid, _label = sets[idx]
+        mon_i, mon_w, mon_h = 0, 0, 0
+        try:
+            mon = self._pick_monitor()
+            mon_i, mon_w, mon_h = int(mon[0]), int(mon[1]), int(mon[2])
+        except Exception:
+            mon_i = int(getattr(self, "monitor_index", 0) or 0)
+        try:
+            pygame.mixer.music.stop()
+            pygame.mixer.stop()
+        except Exception:
+            pass
+        try:
+            self.sounds._current_music = None
+            self.sounds._fading_out = False
+            self.sounds._pending_music = None
+        except Exception:
+            pass
+        try:
+            self._release_joystick_for_mame()
+        except Exception:
+            pass
+        try:
+            show_cover()
+        except Exception:
+            pass
+        proc = None
+        try:
+            proc = mame_addon.launch(sid, wait=False, monitor_index=mon_i, width=mon_w, height=mon_h)
+        except Exception:
+            proc = None
+        try:
+            pygame.time.wait(700)
+        except Exception:
+            pass
+        try:
+            hide_cover()
+        except Exception:
+            pass
+        if proc is not None:
+            try:
+                self._wait_mame_quit(proc, sid)
+            except Exception:
+                try:
+                    proc.wait()
+                except Exception:
+                    pass
+            try:
+                getattr(proc, "_phenix_log", None) and proc._phenix_log.close()
+            except Exception:
+                pass
+        try:
+            show_cover()
+        except Exception:
+            pass
+        try:
+            self._wait_mame_pad_idle()
+        except Exception:
+            pass
+        pygame.event.clear()
+        try:
+            mame_addon.focus_pygame_window()
+        except Exception:
+            pass
+        try:
+            pygame.display.flip()
+        except Exception:
+            pass
+        try:
+            pygame.time.wait(180)
+        except Exception:
+            pass
+        try:
+            hide_cover()
+        except Exception:
+            pass
+        try:
+            if getattr(self, "menu_screen", "") == "addon":
+                self.sounds.play_music("nostalgie_elise")
+            else:
+                self.sounds.play_music("menu")
+        except Exception:
+            pass
+        try:
+            self._rebind_joystick()
+        except Exception:
+            pass
+        self.input_grace = 0.4
+
     def _menu_back(self):
 
         """B / Esc — return to previous menu screen."""
@@ -5009,12 +5232,18 @@ class Game:
             else:
                 self.menu_screen = "main"
                 self.menu_index = 0
+        elif self.menu_screen == "story_hub":
+            self.menu_screen = "main"
+            self.menu_index = 1
+        elif self.menu_screen == "addon":
+            self.menu_screen = "main"
+            self.menu_index = 2
         elif self.menu_screen == "options":
             self.menu_screen = "main"
-            self.menu_index = 3  # OPTIONS
+            self.menu_index = 5  # OPTIONS
         elif self.menu_screen == "highscores":
             self.menu_screen = "main"
-            self.menu_index = 4
+            self.menu_index = 6
         elif self.menu_screen == "achievements":
             self.ach_data = load_achievements()
             self.menu_screen = "highscores"
@@ -5022,7 +5251,7 @@ class Game:
             self._close_jukebox()
         elif self.menu_screen == "credits":
             self.menu_screen = "main"
-            self.menu_index = 5
+            self.menu_index = 7
         else:
             self.menu_screen = "main"
             self.menu_index = 0
@@ -5033,24 +5262,42 @@ class Game:
             if self.menu_index == 0:
                 self._fade_to("open_select")
             elif self.menu_index == 1:
-                pass  # Mode: Left/Right only
+                if not getattr(self, "story", None):
+                    from story import StoryHub
+                    self.story = StoryHub()
+                self.story.pane = "hangar"
+                self.story.zone = "slots"
+                self.menu_screen = "story_hub"
+                self.menu_idle = 0.0
             elif self.menu_index == 2:
-                # Difficulty changes only with Left/Right — Enter does not cycle
-                pass
+                sets = mame_addon.available_sets()
+                if sets:
+                    self.menu_screen = "addon"
+                    self.menu_index = 0
+                    self.menu_idle = 0.0
             elif self.menu_index == 3:
+                pass  # Mode: Left/Right only
+            elif self.menu_index == 4:
+                pass
+            elif self.menu_index == 5:
                 self.menu_screen = "options"
                 self.menu_index = 0
-            elif self.menu_index == 4:
+            elif self.menu_index == 6:
                 self.hs_entries = load_highscores()
                 self.menu_screen = "highscores"
                 self.menu_index = 0
-            elif self.menu_index == 5:
+            elif self.menu_index == 7:
                 self.menu_screen = "credits"
                 self.credits_scroll = float(BASE_HEIGHT)
                 self.credits_from_start = True
                 self.menu_index = 0
-            elif self.menu_index == 6:
+            elif self.menu_index == 8:
                 self._quit_app()
+        elif self.menu_screen == "story_hub":
+            if getattr(self, "story", None):
+                self.story.confirm()
+        elif self.menu_screen == "addon":
+            self._launch_addon()
         elif self.menu_screen == "jukebox":
             self._juke_play_or_pause()
         elif self.menu_screen == "ship_select":
@@ -5211,7 +5458,7 @@ class Game:
                             self._reset_menu_idle()
                         elif self.quit_confirm:
                             self.quit_confirm = False
-                        elif self.menu_screen in ("options", "credits", "reset_confirm", "ship_select", "jukebox"):
+                        elif self.menu_screen in ("options", "credits", "reset_confirm", "ship_select", "jukebox", "story_hub", "addon"):
                             self._menu_back()
                         else:
                             self.quit_confirm = True
@@ -5439,7 +5686,7 @@ class Game:
                             self._reset_menu_idle()
                         elif self.quit_confirm:
                             self.quit_confirm = False
-                        elif self.menu_screen in ("options", "credits", "reset_confirm", "ship_select", "jukebox"):
+                        elif self.menu_screen in ("options", "credits", "reset_confirm", "ship_select", "jukebox", "story_hub", "addon"):
                             self._menu_back()
                         else:
                             self.quit_confirm = True
@@ -6651,10 +6898,11 @@ class Game:
                     if not self.started:
                         exp.draw(self.game_surface)
                 
-                # Subtitle below logo
+                # Subtitle glued under the logo bitmap (not over the menu)
                 logo_h = self.logo_frames[0].get_height() if self.logo_frames else 100
                 sub = self._txt(self.font, t("subtitle"), (180, 160, 220))
-                self.game_surface.blit(sub, (BASE_WIDTH // 2 - sub.get_width() // 2, 8 + logo_h - 4))
+                self._title_sub_y = 8 + logo_h + 2
+                self.game_surface.blit(sub, (BASE_WIDTH // 2 - sub.get_width() // 2, self._title_sub_y))
             
             if self.menu_screen == "help":
                 # Two pages with optional vertical scroll transition
@@ -6675,6 +6923,11 @@ class Game:
 
             elif self.menu_screen == "ship_select":
                 self._draw_ship_select(self.game_surface)
+            elif self.menu_screen == "story_hub":
+                if getattr(self, "story", None):
+                    self.story.draw(self.game_surface, self.font, self.medium_font, self.font)
+            elif self.menu_screen == "addon":
+                self._draw_addon_menu(self.game_surface)
             elif self.menu_screen == "jukebox":
                 self._draw_jukebox(self.game_surface)
             elif self.menu_screen == "main":
@@ -6684,6 +6937,8 @@ class Game:
                 mode_key = {"solo": "mode_solo", "hotseat": "mode_hotseat", "coop": "mode_coop"}.get(mode, "mode_solo")
                 options = [
                     t("play"),
+                    t("story"),
+                    t("addon"),
                     f"{t('mode')} :  <  {t(mode_key)}  >",
                     f"{t('difficulty')} :  <  {diff}  >",
                     t("options"),
@@ -6691,22 +6946,29 @@ class Game:
                     t("credits"),
                     t("quit"),
                 ]
-                # Under logo + subtitle, no overlap
-                logo_h = self.logo_frames[0].get_height() if self.logo_frames else 100
-                base_y = max(300, 12 + logo_h + 48)
-                spacing = 34 if base_y + 6 * 34 < BASE_HEIGHT - 100 else 30
+                sub_y = int(getattr(self, "_title_sub_y", 200))
+                sub_h = 22
+                base_y = sub_y + sub_h + 28
+                foot = 80
+                room = max(160, BASE_HEIGHT - foot - base_y)
+                spacing = max(18, min(24, room // max(1, len(options))))
+                menu_font = getattr(self, "menu_font", None) or self.font
                 for i, label in enumerate(options):
                     selected = (i == self.menu_index)
-                    col = (255, 230, 120) if selected else (160, 160, 190)
+                    disabled = (i == 2) and not mame_addon.addon_ready()
+                    if disabled:
+                        col = (255, 230, 120) if selected else (90, 90, 105)
+                    else:
+                        col = (255, 230, 120) if selected else (160, 160, 190)
                     prefix = "> " if selected else "  "
-                    surf = self._txt(self.medium_font, prefix + label, col)
+                    surf = self._txt(menu_font, prefix + label, col)
                     self.game_surface.blit(surf, (BASE_WIDTH // 2 - surf.get_width() // 2, base_y + i * spacing))
                 
                 if self.gamepad_detected:
                     status = self._txt(self.font, t("gamepad_detected"), (100, 200, 140))
                 else:
                     status = self._txt(self.font, t("gamepad_none"), (180, 140, 120))
-                status_y = min(BASE_HEIGHT - 100, base_y + len(options) * spacing + 10)
+                status_y = min(BASE_HEIGHT - 64, base_y + len(options) * spacing + 6)
                 self.game_surface.blit(status, (BASE_WIDTH // 2 - status.get_width() // 2, status_y))
             
             elif self.menu_screen == "highscores":
