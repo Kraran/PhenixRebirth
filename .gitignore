@@ -7,3 +7,9 @@ boot.log
 dist/
 build/
 *.zip
+
+story.json
+addon/mame/*.exe
+addon/mame/*.dll
+addon/mame/roms/*.zip
+
