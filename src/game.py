@@ -5070,10 +5070,16 @@ class Game:
             t += 50
 
     def _wait_mame_quit(self, proc, set_name=""):
-        """Wait for MAME. XInput poll for Select/Guide+Start."""
+        """Wait for MAME. XInput poll for quit + Spectrum Pheenix keys."""
         import pygame
+        spec = None
         while proc.poll() is None:
             pygame.event.pump()
+            if set_name == "spectrum_pheenix":
+                try:
+                    spec = mame_addon.spectrum_input_tick(spec)
+                except Exception:
+                    pass
             try:
                 if mame_addon.xinput_quit_combo():
                     try:
