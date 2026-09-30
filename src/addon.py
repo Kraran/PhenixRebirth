@@ -121,6 +121,9 @@ ROM_SETS = (
     ("a2600_phoenix", "Phoenix (Atari 2600, 1982)",
      ["a2600", "phoenix", "-joyport1", "joy", "-joystick"],
      ("a2600/phoenix.zip", "a2600/phoenix.bin")),
+    ("spectrum_pheenix", "Pheenix (ZX Spectrum, 1983)",
+     ["spectrum", "-dump", "", "-ramsize", "16K", "-ui_active"],
+     ()),
 )
 
 
@@ -149,6 +152,47 @@ def _roms_dir():
     return os.path.join(os.path.dirname(exe), "roms")
 
 
+def _spectrum_bios_ok():
+    roms = _roms_dir()
+    if not roms:
+        return False
+    return os.path.isfile(os.path.join(roms, "spectrum.zip"))
+
+
+def find_spectrum_pheenix():
+    """Loose .z80 dump — not a software-list entry. BIOS spectrum.zip is required."""
+    roms = _roms_dir()
+    if not roms or not _spectrum_bios_ok():
+        return None
+    needles = ("pheenix", "phoenix")
+    roots = [
+        os.path.join(roms, "spectrum"),
+        roms,
+    ]
+    found = []
+    for root in roots:
+        if not os.path.isdir(root):
+            continue
+        try:
+            names = os.listdir(root)
+        except Exception:
+            continue
+        for name in names:
+            low = name.lower()
+            if not low.endswith(".z80"):
+                continue
+            if any(n in low for n in needles):
+                found.append(os.path.join(root, name))
+    if not found:
+        return None
+    # Prefer the Megadodo 16K TOSEC name if several dumps sit in the folder.
+    for fp in found:
+        low = os.path.basename(fp).lower()
+        if "megadodo" in low or "16k" in low:
+            return fp
+    return found[0]
+
+
 def rom_path(set_name):
     roms = _roms_dir()
     if not roms:
@@ -160,10 +204,12 @@ def rom_path(set_name):
 
 
 def _set_ready(entry):
+    sid, _label, _argv, files = entry
+    if sid == "spectrum_pheenix":
+        return find_spectrum_pheenix() is not None
     roms = _roms_dir()
     if not roms:
         return False
-    sid, _label, _argv, files = entry
     for rel in files:
         if os.path.isfile(os.path.join(roms, rel.replace("/", os.sep))):
             return True
@@ -190,6 +236,16 @@ def mame_argv(set_name):
         if sid != set_name:
             continue
         out = list(argv)
+        if sid == "spectrum_pheenix":
+            z80 = find_spectrum_pheenix()
+            if z80:
+                # slot after -dump
+                try:
+                    i = out.index("-dump")
+                    out[i + 1] = os.path.abspath(z80)
+                except ValueError:
+                    out += ["-dump", os.path.abspath(z80)]
+            return out
         if roms and len(out) >= 3 and out[1] in ("-cart", "-cart1", "-flop"):
             for rel in files:
                 fp = os.path.abspath(os.path.join(roms, rel.replace("/", os.sep)))
@@ -207,6 +263,13 @@ def snap_path(set_name):
             os.path.join("a2600", "phoenix.png"),
             os.path.join("a2600", "phoenix.jpg"),
             "a2600_phoenix.png",
+        ] + names
+    if set_name == "spectrum_pheenix":
+        names = [
+            os.path.join("spectrum", "pheenix.png"),
+            os.path.join("spectrum", "phoenix.png"),
+            "pheenix.png",
+            "spectrum_pheenix.png",
         ] + names
     roots = []
     exe = mame_exe()
@@ -370,6 +433,8 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
     ]
     if set_name == "a2600_phoenix":
         ensure_a2600_cfg(root)
+    elif set_name == "spectrum_pheenix":
+        pass
     else:
         ensure_arcade_cfg(root, set_name)
         ctrlr = ensure_quit_ctrlr(root)
