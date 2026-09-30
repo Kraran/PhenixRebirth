@@ -201,7 +201,8 @@ ROM_SETS = (
      ["a2600", "phoenix", "-joyport1", "joy", "-joystick"],
      ("a2600/phoenix.zip", "a2600/phoenix.bin")),
     ("spectrum_pheenix", "Pheenix (ZX Spectrum, 1983)",
-     ["spectrum", "-dump", "", "-ramsize", "16K", "-ui_active"],
+     ["spectrum", "-dump", "", "-ramsize", "16K", "-ui_active",
+      "-natural", "-autoboot_delay", "2", "-autoboot_command", "sk1"],
      ()),
 )
 
@@ -504,6 +505,63 @@ def ensure_a2600_cfg(mame_root):
         return None
 
 
+def ensure_spectrum_cfg(mame_root):
+    """Pheenix keys on pad: Caps Shift / W / Space / Enter. Start = S."""
+    folder = os.path.join(mame_root, "cfg")
+    try:
+        os.makedirs(folder, exist_ok=True)
+    except Exception:
+        return None
+    path = os.path.join(folder, "spectrum.cfg")
+    left = "KEYCODE_LSHIFT OR JOYCODE_1_HAT1LEFT OR JOYCODE_1_XAXIS_LEFT_SWITCH"
+    right = "KEYCODE_W OR JOYCODE_1_HAT1RIGHT OR JOYCODE_1_XAXIS_RIGHT_SWITCH"
+    fire = "KEYCODE_SPACE OR JOYCODE_1_BUTTON1"
+    barrier = "KEYCODE_ENTER OR JOYCODE_1_BUTTON2"
+    start_s = "KEYCODE_S OR JOYCODE_1_START"
+    key_k = "KEYCODE_K OR JOYCODE_1_START"
+    key_1 = "KEYCODE_1 OR JOYCODE_1_START"
+    xml = (
+        '<?xml version="1.0"?>\n'
+        '<mameconfig version="10">\n'
+        '    <system name="spectrum">\n'
+        "        <input>\n"
+        '            <mapdevice device="XInput Player 1" controller="JOYCODE_1" />\n'
+        '            <port tag=":LINE0" type="KEYBOARD" mask="1" defvalue="1">\n'
+        '                <newseq type="standard">%s</newseq>\n'
+        "            </port>\n"
+        '            <port tag=":LINE2" type="KEYBOARD" mask="2" defvalue="2">\n'
+        '                <newseq type="standard">%s</newseq>\n'
+        "            </port>\n"
+        '            <port tag=":LINE7" type="KEYBOARD" mask="1" defvalue="1">\n'
+        '                <newseq type="standard">%s</newseq>\n'
+        "            </port>\n"
+        '            <port tag=":LINE6" type="KEYBOARD" mask="1" defvalue="1">\n'
+        '                <newseq type="standard">%s</newseq>\n'
+        "            </port>\n"
+        '            <port tag=":LINE1" type="KEYBOARD" mask="2" defvalue="2">\n'
+        '                <newseq type="standard">%s</newseq>\n'
+        "            </port>\n"
+        '            <port tag=":LINE6" type="KEYBOARD" mask="4" defvalue="4">\n'
+        '                <newseq type="standard">%s</newseq>\n'
+        "            </port>\n"
+        '            <port tag=":LINE3" type="KEYBOARD" mask="1" defvalue="1">\n'
+        '                <newseq type="standard">%s</newseq>\n'
+        "            </port>\n"
+        '            <port type="UI_CANCEL">\n'
+        '                <newseq type="standard">%s</newseq>\n'
+        "            </port>\n"
+        "        </input>\n"
+        "    </system>\n"
+        "</mameconfig>\n"
+    ) % (left, right, fire, barrier, start_s, key_k, key_1, _JOY_QUIT)
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(xml)
+        return folder
+    except Exception:
+        return None
+
+
 def _monitor_device(index):
     """\\\\.\\DISPLAY n for MAME -screen (1-based)."""
     try:
@@ -530,7 +588,8 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
     if set_name == "a2600_phoenix":
         ensure_a2600_cfg(root)
     elif set_name == "spectrum_pheenix":
-        base += ["-keyboardprovider", "win32"]
+        ensure_spectrum_cfg(root)
+        base += ["-ui_active"]
     else:
         ensure_arcade_cfg(root, set_name)
         ctrlr = ensure_quit_ctrlr(root)
