@@ -2201,12 +2201,7 @@ class Game:
             name = self._txt(self.font, labels[i], col)
             surface.blit(name, (cx - name.get_width() // 2, box.bottom + 10))
             # color label omitted — slide animation carries the tint
-            coop_wait = (
-                locked
-                and getattr(self, "play_mode", "solo") == "coop"
-                and int(getattr(self, "ship_select_slot", 1) or 1) == 2
-            )
-            if locked and hasattr(self, "sounds") and self.sounds.vo_is_busy() and (active or coop_wait):
+            if locked and hasattr(self, "sounds") and self.sounds.vo_is_busy() and active:
                 pbar = self.sounds.vo_progress()
                 bw, bh = 120, 6
                 bx = cx - bw // 2
