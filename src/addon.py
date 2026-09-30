@@ -68,21 +68,100 @@ def _xinput_bind():
     return None
 
 
-def xinput_buttons():
-    """Raw XInput wButtons for pad 0, or 0."""
+_XI_DPAD_LEFT = 0x0004
+_XI_DPAD_RIGHT = 0x0008
+_XI_A = 0x1000
+_XI_B = 0x2000
+_XI_STICK = 14000
+
+_VK_LSHIFT = 0xA0
+_VK_W = 0x57
+_VK_SPACE = 0x20
+_VK_RETURN = 0x0D
+_VK_S = 0x53
+_VK_K = 0x4B
+_VK_1 = 0x31
+
+
+def xinput_state():
+    """(wButtons, thumbLX) for pad 0."""
     if not sys.platform.startswith("win"):
-        return 0
+        return 0, 0
     get = _xinput_bind()
     if not get:
-        return 0
+        return 0, 0
     st = _XiState()
     fn = _XI_GETEX or get
     try:
         if fn(0, ctypes.byref(st)) != 0:
-            return 0
+            return 0, 0
     except Exception:
-        return 0
-    return int(st.Gamepad.wButtons)
+        return 0, 0
+    return int(st.Gamepad.wButtons), int(st.Gamepad.sThumbLX)
+
+
+def xinput_buttons():
+    """Raw XInput wButtons for pad 0, or 0."""
+    return xinput_state()[0]
+
+
+def _key_set(vk, down):
+    user32 = ctypes.windll.user32
+    if down:
+        user32.keybd_event(vk, 0, 0, 0)
+    else:
+        user32.keybd_event(vk, 0, 2, 0)
+
+
+def _key_tap(vk):
+    _key_set(vk, True)
+    _key_set(vk, False)
+
+
+def spectrum_input_tick(prev):
+    """Pheenix: pad → LShift / W / Space / Enter. Start = S then K then 1."""
+    import time
+    now = time.monotonic()
+    if prev is None:
+        prev = {"held": set(), "start": False, "seq": []}
+    b, lx = xinput_state()
+    want = set()
+    if (b & _XI_DPAD_LEFT) or lx <= -_XI_STICK:
+        want.add(_VK_LSHIFT)
+    if (b & _XI_DPAD_RIGHT) or lx >= _XI_STICK:
+        want.add(_VK_W)
+    if b & _XI_A:
+        want.add(_VK_SPACE)
+    if b & _XI_B:
+        want.add(_VK_RETURN)
+    seq = list(prev.get("seq") or [])
+    start = bool(b & _XI_START) and not bool(b & _XI_BACK) and not bool(b & _XI_GUIDE)
+    if start and not prev.get("start") and not seq:
+        seq = [
+            (_VK_S, now + 0.06, now + 0.18),
+            (_VK_K, now + 0.34, now + 0.46),
+            (_VK_1, now + 0.62, now + 0.74),
+        ]
+    extra = set()
+    keep = []
+    try:
+        for vk, t0, t1 in seq:
+            if now < t1:
+                keep.append((vk, t0, t1))
+            if t0 <= now < t1:
+                extra.add(vk)
+    except Exception:
+        keep = seq
+    target = set(want) | extra
+    held = set(prev.get("held") or set())
+    try:
+        for vk in target - held:
+            _key_set(vk, True)
+        for vk in held - target:
+            _key_set(vk, False)
+    except Exception:
+        pass
+    return {"held": target, "start": start, "seq": keep}
 
 
 def xinput_quit_combo():
@@ -451,7 +530,7 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
     if set_name == "a2600_phoenix":
         ensure_a2600_cfg(root)
     elif set_name == "spectrum_pheenix":
-        pass
+        base += ["-keyboardprovider", "win32"]
     else:
         ensure_arcade_cfg(root, set_name)
         ctrlr = ensure_quit_ctrlr(root)
