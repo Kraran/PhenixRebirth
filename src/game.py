@@ -29,6 +29,8 @@ import sys
 import random
 import os
 import json
+import subprocess
+import threading
 from datetime import datetime
 from settings import *
 from settings import stage_content, stage_speed_mult
@@ -113,6 +115,72 @@ class TextCache:
 
     def clear(self):
         self._data.clear()
+
+
+class _AddonClip:
+    """Loop a snap mp4 in the addon frame. ffmpeg raw frames, main thread blit."""
+
+    def __init__(self, path, size):
+        self.path = path
+        self.w, self.h = size
+        self.surface = None
+        self._proc = None
+        self._buf = b""
+        self._frame = self.w * self.h * 3
+        self._lock = threading.Lock()
+        self._raw = None
+        self._alive = True
+        self._thread = threading.Thread(target=self._read, daemon=True)
+        self._thread.start()
+
+    def _spawn(self):
+        cmd = [
+            "ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin",
+            "-i", self.path, "-an", "-vf", "scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2" % (self.w, self.h, self.w, self.h),
+            "-r", "12", "-f", "rawvideo", "-pix_fmt", "rgb24", "-",
+        ]
+        return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+
+    def _read(self):
+        while self._alive:
+            try:
+                self._proc = self._spawn()
+            except Exception:
+                return
+            out = self._proc.stdout
+            while self._alive and out is not None:
+                chunk = out.read(self._frame)
+                if not chunk or len(chunk) < self._frame:
+                    break
+                with self._lock:
+                    self._raw = chunk
+            try:
+                self._proc.kill()
+            except Exception:
+                pass
+            if not self._alive:
+                break
+
+    def pump(self):
+        raw = None
+        with self._lock:
+            raw = self._raw
+            self._raw = None
+        if not raw:
+            return
+        try:
+            self.surface = pygame.image.frombuffer(raw, (self.w, self.h), "RGB").convert()
+        except Exception:
+            self.surface = None
+
+    def close(self):
+        self._alive = False
+        proc = self._proc
+        if proc is not None:
+            try:
+                proc.kill()
+            except Exception:
+                pass
 
 
 class Game:
@@ -4135,6 +4203,44 @@ class Game:
         cache[set_name] = img
         return img
 
+    def _tick_addon_clip(self, dt):
+        sets = mame_addon.available_sets()
+        sid = ""
+        if sets:
+            i = int(getattr(self, "menu_index", 0) or 0) % len(sets)
+            sid = sets[i][0]
+        if sid != getattr(self, "_addon_clip_sid", ""):
+            self._addon_clip_stop()
+            self._addon_clip_sid = sid
+            self._addon_clip_t = 0.0
+            self._addon_clip_path = mame_addon.video_path(sid) if sid else None
+        self._addon_clip_t = float(getattr(self, "_addon_clip_t", 0.0)) + dt
+        if self._addon_clip_t >= 3.0 and getattr(self, "_addon_clip_path", None):
+            self._addon_clip_start()
+        clip = getattr(self, "_addon_clip", None)
+        if clip is not None:
+            clip.pump()
+
+    def _addon_clip_start(self):
+        if getattr(self, "_addon_clip", None) is not None:
+            return
+        path = getattr(self, "_addon_clip_path", None)
+        if not path:
+            return
+        self._addon_clip = _AddonClip(path, (400, 280))
+
+    def _addon_clip_stop(self):
+        clip = getattr(self, "_addon_clip", None)
+        self._addon_clip = None
+        if clip is not None:
+            clip.close()
+
+    def _addon_clip_frame(self):
+        clip = getattr(self, "_addon_clip", None)
+        if clip is None:
+            return None
+        return clip.surface
+
     def _draw_addon_menu(self, surface):
         hdr = self._txt(self.medium_font, t("addon"), (255, 180, 90))
         surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 70))
@@ -4159,7 +4265,9 @@ class Game:
                 surface.blit(surf, (list_x, y))
                 y += 44
             if focus:
-                snap = self._addon_snap(focus)
+                snap = self._addon_clip_frame()
+                if snap is None:
+                    snap = self._addon_snap(focus)
                 if snap is not None:
                     surface.blit(snap, (frame.centerx - snap.get_width() // 2,
                                        frame.centery - snap.get_height() // 2))
@@ -6072,6 +6180,8 @@ class Game:
                         self._flush_after_welcome()
             # Attract / help screen from main menu idle
             if not self.started and not self.quit_confirm:
+                if self.menu_screen != "addon" and getattr(self, "_addon_clip", None):
+                    self._addon_clip_stop()
                 if self.menu_screen == "main":
                     if getattr(self, "april_gag", "done") not in ("idle", "wait", "left", "right", "sway", "fall", "boom"):
                         self.menu_idle += self.dt
@@ -6097,6 +6207,8 @@ class Game:
                             self.help_page = 0
                             self.help_scroll = 0.0
                             self.help_transitioning = False
+                elif self.menu_screen == "addon":
+                    self._tick_addon_clip(self.dt)
                 elif self.menu_screen == "help":
                     self.help_anim_t += self.dt
                     if self.help_transitioning:
