@@ -5073,8 +5073,19 @@ class Game:
         """Wait for MAME. XInput poll for quit + Spectrum Pheenix keys."""
         import pygame
         spec = None
+        nag_left = 3
+        nag_wait = 0
         while proc.poll() is None:
             pygame.event.pump()
+            if nag_left > 0:
+                nag_wait += 32
+                if nag_wait >= 450:
+                    nag_wait = 0
+                    nag_left -= 1
+                    try:
+                        mame_addon.dismiss_nag(proc.pid)
+                    except Exception:
+                        pass
             if set_name == "spectrum_pheenix":
                 try:
                     spec = mame_addon.spectrum_input_tick(spec)
