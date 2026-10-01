@@ -582,7 +582,7 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
     base = [exe] + mame_argv(set_name) + [
         "-rompath", roms,
         "-skip_gameinfo",
-        "-artwork_crop",
+        "-noartwork_crop",
         "-joystick",
     ]
     if set_name == "a2600_phoenix":
