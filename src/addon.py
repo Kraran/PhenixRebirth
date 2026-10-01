@@ -582,7 +582,6 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
     base = [exe] + mame_argv(set_name) + [
         "-rompath", roms,
         "-skip_gameinfo",
-        "-skip_warnings",
         "-noartwork_crop",
         "-joystick",
     ]
