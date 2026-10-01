@@ -204,6 +204,10 @@ ROM_SETS = (
      ["spectrum", "-dump", "", "-ramsize", "16K", "-ui_active",
       "-natural", "-autoboot_delay", "2", "-autoboot_command", "sk1"],
      ()),
+    ("c64_eagle", "Eagle Empire (C64, 1984)",
+     ["c64", "-quik", "", "-joy2", "joy", "-natural", "-ui_active",
+      "-autoboot_delay", "6", "-autoboot_command", "RUN\\n"],
+     ()),
 )
 
 
@@ -290,6 +294,50 @@ def find_spectrum_pheenix():
     return found[0]
 
 
+def find_c64_eagle():
+    """Loose Eagle Empire .prg — same search as the Spectrum snapshot."""
+    roots = []
+    roms = _roms_dir()
+    if roms:
+        roots.append(roms)
+        roots.append(os.path.join(roms, "c64"))
+    exe = mame_exe()
+    if exe:
+        roots.append(os.path.dirname(exe))
+        roots.append(os.path.join(os.path.dirname(exe), "c64"))
+    found = []
+    seen = set()
+    for root in roots:
+        if not root or not os.path.isdir(root) or root in seen:
+            continue
+        seen.add(root)
+        try:
+            names = os.listdir(root)
+        except Exception:
+            continue
+        for name in names:
+            low = name.lower()
+            if low.endswith(".prg") and "eagle" in low:
+                found.append(os.path.join(root, name))
+        for name in names:
+            sub = os.path.join(root, name)
+            if not os.path.isdir(sub) or sub in seen:
+                continue
+            try:
+                for fn in os.listdir(sub):
+                    low = fn.lower()
+                    if low.endswith(".prg") and "eagle" in low:
+                        found.append(os.path.join(sub, fn))
+            except Exception:
+                pass
+    if not found:
+        return None
+    for fp in found:
+        if "empire" in os.path.basename(fp).lower():
+            return fp
+    return found[0]
+
+
 def rom_path(set_name):
     roms = _roms_dir()
     if not roms:
@@ -304,6 +352,8 @@ def _set_ready(entry):
     sid, _label, _argv, files = entry
     if sid == "spectrum_pheenix":
         return find_spectrum_pheenix() is not None
+    if sid == "c64_eagle":
+        return find_c64_eagle() is not None
     roms = _roms_dir()
     if not roms:
         return False
@@ -343,6 +393,15 @@ def mame_argv(set_name):
                 except ValueError:
                     out += ["-dump", os.path.abspath(z80)]
             return out
+        if sid == "c64_eagle":
+            prg = find_c64_eagle()
+            if prg:
+                try:
+                    i = out.index("-quik")
+                    out[i + 1] = os.path.abspath(prg)
+                except ValueError:
+                    out += ["-quik", os.path.abspath(prg)]
+            return out
         if roms and len(out) >= 3 and out[1] in ("-cart", "-cart1", "-flop"):
             for rel in files:
                 fp = os.path.abspath(os.path.join(roms, rel.replace("/", os.sep)))
@@ -367,6 +426,14 @@ def snap_path(set_name):
             os.path.join("spectrum", "phoenix.png"),
             "pheenix.png",
             "spectrum_pheenix.png",
+        ] + names
+    if set_name == "c64_eagle":
+        names = [
+            os.path.join("c64", "eagle.png"),
+            os.path.join("c64", "eagle_empire.png"),
+            os.path.join("c64", "eagle.jpg"),
+            "eagle_empire.png",
+            "c64_eagle.png",
         ] + names
     roots = []
     exe = mame_exe()
@@ -589,6 +656,8 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
         ensure_a2600_cfg(root)
     elif set_name == "spectrum_pheenix":
         ensure_spectrum_cfg(root)
+    elif set_name == "c64_eagle":
+        pass
     else:
         ensure_arcade_cfg(root, set_name)
         ctrlr = ensure_quit_ctrlr(root)
