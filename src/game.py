@@ -5082,7 +5082,7 @@ class Game:
                     pass
             elif set_name == "c64_eagle":
                 try:
-                    spec = mame_addon.c64_input_tick(spec)
+                    spec = mame_addon.c64_input_tick(spec, proc.pid)
                 except Exception:
                     pass
             try:
