@@ -582,6 +582,7 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
     base = [exe] + mame_argv(set_name) + [
         "-rompath", roms,
         "-skip_gameinfo",
+        "-skip_warnings",
         "-noartwork_crop",
         "-joystick",
     ]
@@ -600,6 +601,17 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
         base += ["-hashpath", hashdir]
     if os.path.isdir(art):
         base += ["-artpath", art]
+    try:
+        ui_ini = os.path.join(root, "ui.ini")
+        lines = []
+        if os.path.isfile(ui_ini):
+            with open(ui_ini, "r", encoding="utf-8", errors="replace") as uf:
+                lines = [ln for ln in uf.readlines() if not ln.strip().lower().startswith("skip_warnings")]
+        lines.append("skip_warnings 1\n")
+        with open(ui_ini, "w", encoding="utf-8") as uf:
+            uf.writelines(lines)
+    except Exception:
+        pass
     screen = _monitor_device(monitor_index)
     if screen:
         base += ["-screen", screen]
