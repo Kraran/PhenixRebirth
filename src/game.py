@@ -26,6 +26,7 @@ This file is intentionally large; split only if a future refactor needs it.
 import pygame
 import math
 import sys
+import time
 import random
 import os
 import json
@@ -129,6 +130,7 @@ class _AddonClip:
         self._frame = self.w * self.h * 3
         self._lock = threading.Lock()
         self._raw = None
+        self._fps = 12.0
         self._alive = True
         self._thread = threading.Thread(target=self._read, daemon=True)
         self._thread.start()
@@ -147,18 +149,35 @@ class _AddonClip:
         return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, creationflags=flags)
 
     def _read(self):
+        interval = 1.0 / self._fps
         while self._alive:
             try:
                 self._proc = self._spawn()
             except Exception:
                 return
             out = self._proc.stdout
+            next_t = time.perf_counter()
             while self._alive and out is not None:
                 chunk = out.read(self._frame)
                 if not chunk or len(chunk) < self._frame:
                     break
+                # Hold the frame until the display has taken it, then wait the frame slot.
+                while self._alive:
+                    with self._lock:
+                        pending = self._raw is not None
+                    if not pending:
+                        break
+                    time.sleep(0.004)
+                if not self._alive:
+                    break
                 with self._lock:
                     self._raw = chunk
+                next_t += interval
+                delay = next_t - time.perf_counter()
+                if delay > 0:
+                    time.sleep(delay)
+                else:
+                    next_t = time.perf_counter()
             try:
                 self._proc.kill()
             except Exception:
