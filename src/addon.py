@@ -164,18 +164,77 @@ def spectrum_input_tick(prev):
     return {"held": target, "start": start, "seq": keep}
 
 
-def c64_input_tick(prev):
-    """Eagle Empire: Start taps the real F5 key. Stick stays on the C64 port."""
+def c64_input_tick(prev, pid=0):
+    """Eagle Empire: Start sends a real F5 scancode into the MAME window."""
     if prev is None:
         prev = {"start": False}
     b = xinput_buttons()
     start = bool(b & _XI_START) and not bool(b & _XI_BACK) and not bool(b & _XI_GUIDE)
     if start and not prev.get("start"):
         try:
-            _key_tap(0x74)  # VK_F5
+            _send_f5_to_pid(pid)
         except Exception:
             pass
     return {"start": start}
+
+
+def _send_f5_to_pid(pid):
+    if not sys.platform.startswith("win"):
+        _key_tap(0x74)
+        return
+    user32 = ctypes.windll.user32
+    hwnd = _hwnd_for_pid(pid)
+    if hwnd:
+        try:
+            user32.ShowWindow(hwnd, 9)
+            user32.SetForegroundWindow(hwnd)
+        except Exception:
+            pass
+    # F5 scancode 0x3F. Scan code, not virtual key: RawInput/win32 both see it.
+    extra = ctypes.c_size_t(0)
+    class KEYBDINPUT(ctypes.Structure):
+        _fields_ = [
+            ("wVk", wintypes.WORD),
+            ("wScan", wintypes.WORD),
+            ("dwFlags", wintypes.DWORD),
+            ("time", wintypes.DWORD),
+            ("dwExtraInfo", ctypes.c_size_t),
+        ]
+    class INPUT(ctypes.Structure):
+        _fields_ = [("type", wintypes.DWORD), ("ki", KEYBDINPUT)]
+    def _one(up):
+        inp = INPUT()
+        inp.type = 1
+        inp.ki.wVk = 0
+        inp.ki.wScan = 0x3F
+        inp.ki.dwFlags = 0x0008 | (0x0002 if up else 0)
+        inp.ki.time = 0
+        inp.ki.dwExtraInfo = extra
+        user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(inp))
+    _one(False)
+    _one(True)
+
+
+def _hwnd_for_pid(pid):
+    if not pid or not sys.platform.startswith("win"):
+        return 0
+    user32 = ctypes.windll.user32
+    found = []
+
+    @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    def _cb(hwnd, _lp):
+        if user32.IsWindowVisible(hwnd):
+            proc = wintypes.DWORD()
+            user32.GetWindowThreadProcessId(hwnd, ctypes.byref(proc))
+            if int(proc.value) == int(pid):
+                found.append(int(hwnd))
+        return True
+
+    try:
+        user32.EnumWindows(_cb, 0)
+    except Exception:
+        return 0
+    return found[0] if found else 0
 
 
 def xinput_quit_combo():
@@ -669,7 +728,7 @@ def ensure_c64_cfg(mame_root):
         '    <system name="c64">\n'
         "        <input>\n"
         '            <mapdevice device="XInput Player 1" controller="JOYCODE_1" />\n'
-        '            <port tag=":ROW0" type="KEYBOARD" mask="64" defvalue="64">\n'
+        '            <port tag=":ROW0" type="KEYBOARD" mask="64" defvalue="255">\n'
         '                <newseq type="standard">%s</newseq>\n'
         "            </port>\n"
         "        </input>\n"
