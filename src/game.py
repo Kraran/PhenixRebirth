@@ -134,12 +134,17 @@ class _AddonClip:
         self._thread.start()
 
     def _spawn(self):
+        exe = _ffmpeg_exe()
         cmd = [
-            "ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin",
-            "-i", self.path, "-an", "-vf", "scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2" % (self.w, self.h, self.w, self.h),
+            exe, "-hide_banner", "-loglevel", "error", "-nostdin",
+            "-i", self.path, "-an",
+            "-vf", "scale=%d:%d:force_original_aspect_ratio=decrease,pad=%d:%d:(ow-iw)/2:(oh-ih)/2" % (self.w, self.h, self.w, self.h),
             "-r", "12", "-f", "rawvideo", "-pix_fmt", "rgb24", "-",
         ]
-        return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        flags = 0
+        if sys.platform.startswith("win"):
+            flags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        return subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, creationflags=flags)
 
     def _read(self):
         while self._alive:
@@ -181,6 +186,27 @@ class _AddonClip:
                 proc.kill()
             except Exception:
                 pass
+
+
+def _ffmpeg_exe():
+    """Decoder shipped with the game, then PATH."""
+    names = ("ffmpeg.exe", "ffmpeg")
+    roots = []
+    try:
+        roots.append(os.path.join(project_root(), "bin"))
+    except Exception:
+        pass
+    roots.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bin"))
+    try:
+        roots.append(os.path.join(user_data_dir(), "bin"))
+    except Exception:
+        pass
+    for root in roots:
+        for name in names:
+            fp = os.path.join(root, name)
+            if os.path.isfile(fp):
+                return fp
+    return "ffmpeg.exe" if sys.platform.startswith("win") else "ffmpeg"
 
 
 class Game:
