@@ -527,6 +527,27 @@ def snap_path(set_name):
     return None
 
 
+def video_path(set_name):
+    """Preview clip next to the snap. Phoenix uses snap/phoenix.mp4."""
+    names = [set_name + ".mp4", set_name + ".webm"]
+    roots = []
+    exe = mame_exe()
+    if exe:
+        roots.append(os.path.join(os.path.dirname(exe), "snap"))
+    for base in (user_data_dir(), project_root()):
+        roots.append(os.path.join(base, "addon", "mame", "snap"))
+    seen = []
+    for root in roots:
+        if root in seen:
+            continue
+        seen.append(root)
+        for n in names:
+            fp = os.path.join(root, n)
+            if os.path.isfile(fp):
+                return fp
+    return None
+
+
 def _write_cfg(path, system, extra_ports=""):
     xml = (
         '<?xml version="1.0"?>\n'
