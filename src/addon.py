@@ -429,6 +429,7 @@ def snap_path(set_name):
         ] + names
     if set_name == "c64_eagle":
         names = [
+            os.path.join("c64", "Eagle Empire (1984)(Alligata).png"),
             os.path.join("c64", "eagle.png"),
             os.path.join("c64", "eagle_empire.png"),
             os.path.join("c64", "eagle.jpg"),
