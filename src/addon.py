@@ -582,6 +582,7 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
     base = [exe] + mame_argv(set_name) + [
         "-rompath", roms,
         "-skip_gameinfo",
+        "-skip_warnings",
         "-noartwork_crop",
         "-joystick",
     ]
@@ -646,6 +647,50 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
             pass
         return True
     return proc
+
+
+def _mame_hwnd(pid):
+    if not sys.platform.startswith("win") or not pid:
+        return 0
+    user32 = ctypes.windll.user32
+    found = []
+
+    @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    def _cb(hwnd, _lparam):
+        if not user32.IsWindowVisible(hwnd):
+            return True
+        proc = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(proc))
+        if int(proc.value) == int(pid):
+            found.append(int(hwnd))
+        return True
+
+    try:
+        user32.EnumWindows(_cb, 0)
+    except Exception:
+        return 0
+    return found[0] if found else 0
+
+
+def dismiss_nag(pid):
+    """Tap a key on the MAME window so the 'known problems' box closes itself."""
+    hwnd = _mame_hwnd(pid)
+    if not hwnd:
+        return False
+    user32 = ctypes.windll.user32
+    try:
+        user32.ShowWindow(hwnd, 9)
+        user32.SetForegroundWindow(hwnd)
+    except Exception:
+        pass
+    # F8 is not fire / start / coin. Any key dismisses the nag.
+    vk = 0x77
+    try:
+        user32.keybd_event(vk, 0, 0, 0)
+        user32.keybd_event(vk, 0, 2, 0)
+        return True
+    except Exception:
+        return False
 
 
 def focus_pygame_window():
