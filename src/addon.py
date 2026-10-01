@@ -639,6 +639,36 @@ def _monitor_device(index):
     return r"\\.\DISPLAY%d" % (n + 1)
 
 
+def ensure_c64_cfg(mame_root):
+    """Eagle Empire: Start = C64 F5 (ROW0 bit 0x40). Joystick stays on joy2."""
+    folder = os.path.join(mame_root, "cfg")
+    try:
+        os.makedirs(folder, exist_ok=True)
+    except Exception:
+        return None
+    path = os.path.join(folder, "c64.cfg")
+    f5 = "KEYCODE_F3 OR KEYCODE_F5 OR JOYCODE_1_START"
+    xml = (
+        '<?xml version="1.0"?>\n'
+        '<mameconfig version="10">\n'
+        '    <system name="c64">\n'
+        "        <input>\n"
+        '            <mapdevice device="XInput Player 1" controller="JOYCODE_1" />\n'
+        '            <port tag=":ROW0" type="KEYBOARD" mask="64" defvalue="64">\n'
+        '                <newseq type="standard">%s</newseq>\n'
+        "            </port>\n"
+        "        </input>\n"
+        "    </system>\n"
+        "</mameconfig>\n"
+    ) % f5
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(xml)
+        return folder
+    except Exception:
+        return None
+
+
 def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
     exe = mame_exe()
     ready = any(sid == set_name for sid, _lab in available_sets())
@@ -658,7 +688,7 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
     elif set_name == "spectrum_pheenix":
         ensure_spectrum_cfg(root)
     elif set_name == "c64_eagle":
-        pass
+        ensure_c64_cfg(root)
     else:
         ensure_arcade_cfg(root, set_name)
         ctrlr = ensure_quit_ctrlr(root)
