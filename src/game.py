@@ -5080,6 +5080,11 @@ class Game:
                     spec = mame_addon.spectrum_input_tick(spec)
                 except Exception:
                     pass
+            elif set_name == "c64_eagle":
+                try:
+                    spec = mame_addon.c64_input_tick(spec)
+                except Exception:
+                    pass
             try:
                 if mame_addon.xinput_quit_combo():
                     try:
