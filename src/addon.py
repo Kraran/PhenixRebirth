@@ -164,6 +164,20 @@ def spectrum_input_tick(prev):
     return {"held": target, "start": start, "seq": keep}
 
 
+def c64_input_tick(prev):
+    """Eagle Empire: Start taps the real F5 key. Stick stays on the C64 port."""
+    if prev is None:
+        prev = {"start": False}
+    b = xinput_buttons()
+    start = bool(b & _XI_START) and not bool(b & _XI_BACK) and not bool(b & _XI_GUIDE)
+    if start and not prev.get("start"):
+        try:
+            _key_tap(0x74)  # VK_F5
+        except Exception:
+            pass
+    return {"start": start}
+
+
 def xinput_quit_combo():
     """True if Select+Start or Guide+Start is held on pad 0."""
     b = xinput_buttons()
@@ -205,7 +219,8 @@ ROM_SETS = (
       "-natural", "-autoboot_delay", "2", "-autoboot_command", "sk1"],
      ()),
     ("c64_eagle", "Eagle Empire (C64, 1984)",
-     ["c64", "-quik", "", "-joy2", "joy", "-natural", "-ui_active",
+     ["c64", "-quik", "", "-joy2", "joy", "-keyboardprovider", "win32",
+      "-natural", "-ui_active",
       "-autoboot_delay", "6", "-autoboot_command", "RUN\\n"],
      ()),
 )
@@ -647,7 +662,7 @@ def ensure_c64_cfg(mame_root):
     except Exception:
         return None
     path = os.path.join(folder, "c64.cfg")
-    f5 = "KEYCODE_F3 OR KEYCODE_F5 OR JOYCODE_1_START"
+    f5 = "KEYCODE_F5 OR JOYCODE_1_START OR JOYCODE_1_BUTTON8"
     xml = (
         '<?xml version="1.0"?>\n'
         '<mameconfig version="10">\n'
