@@ -832,6 +832,55 @@ def ensure_arcade_cfg(mame_root, set_name):
         return None
 
 
+def ensure_arcadia_cfg(mame_root):
+    """Keypad 2 = fire (A), keypad 1 = shield (B). Keyboard 1/2 stay."""
+    folder = os.path.join(mame_root, "cfg")
+    try:
+        os.makedirs(folder, exist_ok=True)
+    except Exception:
+        return None
+    path = os.path.join(folder, "arcadia.cfg")
+    fire = "KEYCODE_2 OR KEYCODE_2_PAD OR JOYCODE_1_BUTTON1"
+    shield = "KEYCODE_1 OR KEYCODE_1_PAD OR JOYCODE_1_BUTTON2"
+    xml = (
+        '<?xml version="1.0"?>\n'
+        '<mameconfig version="10">\n'
+        '    <system name="arcadia">\n'
+        "        <input>\n"
+        '            <mapdevice device="XInput Player 1" controller="JOYCODE_1" />\n'
+        '            <port tag=":controller1_col2" type="KEYPAD" mask="8" defvalue="0">\n'
+        '                <newseq type="standard">%s</newseq>\n'
+        "            </port>\n"
+        '            <port tag=":controller1_col1" type="KEYPAD" mask="8" defvalue="0">\n'
+        '                <newseq type="standard">%s</newseq>\n'
+        "            </port>\n"
+        '            <port tag=":joysticks" type="P1_JOYSTICK_LEFT" mask="1" defvalue="0">\n'
+        '                <newseq type="standard">%s</newseq>\n'
+        "            </port>\n"
+        '            <port tag=":joysticks" type="P1_JOYSTICK_RIGHT" mask="2" defvalue="0">\n'
+        '                <newseq type="standard">%s</newseq>\n'
+        "            </port>\n"
+        '            <port tag=":joysticks" type="P1_JOYSTICK_DOWN" mask="4" defvalue="0">\n'
+        '                <newseq type="standard">%s</newseq>\n'
+        "            </port>\n"
+        '            <port tag=":joysticks" type="P1_JOYSTICK_UP" mask="8" defvalue="0">\n'
+        '                <newseq type="standard">%s</newseq>\n'
+        "            </port>\n"
+        '            <port type="UI_CANCEL">\n'
+        '                <newseq type="standard">%s</newseq>\n'
+        "            </port>\n"
+        "        </input>\n"
+        "    </system>\n"
+        "</mameconfig>\n"
+    ) % (fire, shield, _JOY_LEFT, _JOY_RIGHT, _JOY_DOWN, _JOY_UP, _JOY_QUIT)
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(xml)
+        return folder
+    except Exception:
+        return None
+
+
 def ensure_a2600_cfg(mame_root):
     """2600 pad: tagged joyport + Reset/Select."""
     folder = os.path.join(mame_root, "cfg")
@@ -990,7 +1039,11 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
         cfg = ensure_c64_cfg(root)
         if cfg:
             base += ["-cfg_directory", cfg, "-ctrlrpath", os.path.join(root, "ctrlr"), "-ctrlr", "eagle"]
-    elif set_name in ("arcadia_vultures", "bbc_eagle", "apple2_falcon", "coco_demon"):
+    elif set_name == "arcadia_vultures":
+        cfg = ensure_arcadia_cfg(root)
+        if cfg:
+            base += ["-cfg_directory", cfg]
+    elif set_name in ("bbc_eagle", "apple2_falcon", "coco_demon"):
         pass
     else:
         ensure_arcade_cfg(root, set_name)
