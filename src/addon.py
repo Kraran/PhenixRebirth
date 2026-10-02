@@ -281,6 +281,18 @@ ROM_SETS = (
      ["c64", "-quik", "", "-joy2", "joy", "-ui_active",
       "-autoboot_delay", "6", "-autoboot_command", "RUN\\n"],
      ()),
+    ("arcadia_vultures", "Space Vultures (Arcadia 2001, 1982)",
+     ["arcadia", "spcevult"],
+     ("arcadia/spcevult.zip", "arcadia/spcevult.bin")),
+    ("bbc_eagle", "Eagle Empire (BBC Micro, 1983)",
+     ["bbcb", "-cass", ""],
+     ()),
+    ("apple2_falcon", "Falcon (Apple II, 1981)",
+     ["apple2p", "-flop1", ""],
+     ()),
+    ("coco_demon", "Demon Seed (Tandy CoCo, 1983)",
+     ["coco2", "-cass", ""],
+     ()),
 )
 
 
@@ -411,6 +423,85 @@ def find_c64_eagle():
     return found[0]
 
 
+def _find_media(folders, exts, needles, avoid=()):
+    """Loose image whose name contains every needle."""
+    found = []
+    seen = set()
+    for root in folders:
+        if not root or not os.path.isdir(root) or root in seen:
+            continue
+        seen.add(root)
+        try:
+            names = os.listdir(root)
+        except Exception:
+            continue
+        scan = list(names)
+        for name in names:
+            sub = os.path.join(root, name)
+            if os.path.isdir(sub) and sub not in seen:
+                try:
+                    scan.extend(os.path.join(name, fn) for fn in os.listdir(sub))
+                except Exception:
+                    pass
+        for rel in scan:
+            base = os.path.basename(rel).lower()
+            if not base.endswith(exts):
+                continue
+            if any(bad in base for bad in avoid):
+                continue
+            if all(n in base for n in needles):
+                found.append(os.path.join(root, rel))
+    return found[0] if found else None
+
+
+def _media_roots(folder):
+    roots = []
+    roms = _roms_dir()
+    if roms:
+        roots.append(roms)
+        roots.append(os.path.join(roms, folder))
+    exe = mame_exe()
+    if exe:
+        roots.append(os.path.dirname(exe))
+        roots.append(os.path.join(os.path.dirname(exe), folder))
+    return roots
+
+
+def find_arcadia_vultures():
+    roms = _roms_dir()
+    if roms:
+        for rel in ("arcadia/spcevult.zip", "arcadia/spcevult.bin", "spcevult.zip", "spcevult.bin"):
+            fp = os.path.join(roms, rel.replace("/", os.sep))
+            if os.path.isfile(fp):
+                return fp
+    return _find_media(_media_roots("arcadia"), (".zip", ".bin"), ("vultur",))
+
+
+def find_bbc_eagle():
+    return _find_media(
+        _media_roots("bbcb"),
+        (".uef", ".ssd", ".dsd", ".wav"),
+        ("eagle",),
+    )
+
+
+def find_apple2_falcon():
+    return _find_media(
+        _media_roots("apple2"),
+        (".woz", ".dsk", ".do", ".po", ".nib"),
+        ("falcon",),
+    )
+
+
+def find_coco_demon():
+    return _find_media(
+        _media_roots("coco"),
+        (".cas", ".wav", ".dsk"),
+        ("demon",),
+        avoid=("world", "wld"),
+    )
+
+
 def rom_path(set_name):
     roms = _roms_dir()
     if not roms:
@@ -427,6 +518,14 @@ def _set_ready(entry):
         return find_spectrum_pheenix() is not None
     if sid == "c64_eagle":
         return find_c64_eagle() is not None
+    if sid == "arcadia_vultures":
+        return find_arcadia_vultures() is not None
+    if sid == "bbc_eagle":
+        return find_bbc_eagle() is not None
+    if sid == "apple2_falcon":
+        return find_apple2_falcon() is not None
+    if sid == "coco_demon":
+        return find_coco_demon() is not None
     roms = _roms_dir()
     if not roms:
         return False
@@ -475,6 +574,32 @@ def mame_argv(set_name):
                 except ValueError:
                     out += ["-quik", os.path.abspath(prg)]
             return out
+        if sid == "arcadia_vultures":
+            media = find_arcadia_vultures()
+            if media and not media.lower().endswith(".zip"):
+                return ["arcadia", "-cart", os.path.abspath(media)]
+            return out
+        if sid == "bbc_eagle":
+            media = find_bbc_eagle()
+            if media:
+                flag = "-flop1" if media.lower().endswith((".ssd", ".dsd")) else "-cass"
+                boot = "*CAT\\nCHAIN\\\"EAGLE\\\"\\n" if flag == "-flop1" else "CHAIN\\\"\\\"\\n"
+                return ["bbcb", flag, os.path.abspath(media), "-ui_active",
+                        "-autoboot_delay", "3", "-autoboot_command", boot]
+            return out
+        if sid == "apple2_falcon":
+            media = find_apple2_falcon()
+            if media:
+                return ["apple2p", "-flop1", os.path.abspath(media)]
+            return out
+        if sid == "coco_demon":
+            media = find_coco_demon()
+            if media:
+                if media.lower().endswith(".dsk"):
+                    return ["coco2", "-flop1", os.path.abspath(media)]
+                return ["coco2", "-cass", os.path.abspath(media), "-ui_active",
+                        "-autoboot_delay", "2", "-autoboot_command", "CLOADM:EXEC\\n"]
+            return out
         if roms and len(out) >= 3 and out[1] in ("-cart", "-cart1", "-flop"):
             for rel in files:
                 fp = os.path.abspath(os.path.join(roms, rel.replace("/", os.sep)))
@@ -508,6 +633,30 @@ def snap_path(set_name):
             os.path.join("c64", "eagle.jpg"),
             "eagle_empire.png",
             "c64_eagle.png",
+        ] + names
+    if set_name == "arcadia_vultures":
+        names = [
+            os.path.join("arcadia", "spcevult.png"),
+            os.path.join("arcadia", "space_vultures.png"),
+            "spcevult.png",
+        ] + names
+    if set_name == "bbc_eagle":
+        names = [
+            os.path.join("bbcb", "eagle.png"),
+            os.path.join("bbcb", "eagle_empire.png"),
+            "bbc_eagle.png",
+        ] + names
+    if set_name == "apple2_falcon":
+        names = [
+            os.path.join("apple2", "falcon.png"),
+            os.path.join("apple2", "falcons.png"),
+            "falcon.png",
+        ] + names
+    if set_name == "coco_demon":
+        names = [
+            os.path.join("coco", "demonseed.png"),
+            os.path.join("coco", "demon_seed.png"),
+            "demonseed.png",
         ] + names
     roots = []
     exe = mame_exe()
@@ -558,6 +707,30 @@ def video_path(set_name):
             os.path.join("c64", "eagle.mp4"),
             os.path.join("c64", "eagle_empire.mp4"),
             "c64_eagle.mp4",
+        ] + extra
+    if set_name == "arcadia_vultures":
+        extra = [
+            os.path.join("arcadia", "spcevult.mp4"),
+            os.path.join("arcadia", "space_vultures.mp4"),
+            "spcevult.mp4",
+        ] + extra
+    if set_name == "bbc_eagle":
+        extra = [
+            os.path.join("bbcb", "eagle.mp4"),
+            os.path.join("bbcb", "eagle_empire.mp4"),
+            "bbc_eagle.mp4",
+        ] + extra
+    if set_name == "apple2_falcon":
+        extra = [
+            os.path.join("apple2", "falcon.mp4"),
+            os.path.join("apple2", "falcons.mp4"),
+            "falcon.mp4",
+        ] + extra
+    if set_name == "coco_demon":
+        extra = [
+            os.path.join("coco", "demonseed.mp4"),
+            os.path.join("coco", "demon_seed.mp4"),
+            "demonseed.mp4",
         ] + extra
     roots = []
     exe = mame_exe()
@@ -817,6 +990,8 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
         cfg = ensure_c64_cfg(root)
         if cfg:
             base += ["-cfg_directory", cfg, "-ctrlrpath", os.path.join(root, "ctrlr"), "-ctrlr", "eagle"]
+    elif set_name in ("arcadia_vultures", "bbc_eagle", "apple2_falcon", "coco_demon"):
+        pass
     else:
         ensure_arcade_cfg(root, set_name)
         ctrlr = ensure_quit_ctrlr(root)
