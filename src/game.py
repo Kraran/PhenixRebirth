@@ -4260,7 +4260,7 @@ class Game:
             self._addon_clip_t = 0.0
             self._addon_clip_path = mame_addon.video_path(sid) if sid else None
         self._addon_clip_t = float(getattr(self, "_addon_clip_t", 0.0)) + dt
-        if self._addon_clip_t >= 3.0 and getattr(self, "_addon_clip_path", None):
+        if self._addon_clip_t >= 2.0 and getattr(self, "_addon_clip_path", None):
             self._addon_clip_start()
         clip = getattr(self, "_addon_clip", None)
         if clip is not None:
