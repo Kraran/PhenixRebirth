@@ -528,46 +528,53 @@ def snap_path(set_name):
 
 
 def video_path(set_name):
-    """Clip beside the snap, same folder and same stem. Arcade: snap/pleiads.mp4. Soft: snap/a2600/phoenix.mp4, snap/c64/Eagle Empire (1984)(Alligata).mp4."""
+    """Clip beside the snap, same folder and same stem.
+
+    Arcade: snap/pleiads.mp4, snap/megaphx.mp4.
+    Soft: snap/a2600/phoenix.mp4, snap/c64/Eagle Empire (1984)(Alligata).mp4.
+    """
     names = []
-    for ext in (".mp4", ".webm"):
-        names.append(set_name + ext)
+    snap = snap_path(set_name)
+    if snap:
+        stem, _ext = os.path.splitext(snap)
+        names.append(stem + ".mp4")
+        names.append(stem + ".webm")
+    extra = [set_name + ".mp4", set_name + ".webm"]
     if set_name == "a2600_phoenix":
-        names = [
+        extra = [
             os.path.join("a2600", "phoenix.mp4"),
             os.path.join("a2600", "phoenix.webm"),
             "a2600_phoenix.mp4",
-        ] + names
+        ] + extra
     if set_name == "spectrum_pheenix":
-        names = [
+        extra = [
             os.path.join("spectrum", "pheenix.mp4"),
             os.path.join("spectrum", "phoenix.mp4"),
             "pheenix.mp4",
-            "spectrum_pheenix.mp4",
-        ] + names
+        ] + extra
     if set_name == "c64_eagle":
-        names = [
+        extra = [
             os.path.join("c64", "Eagle Empire (1984)(Alligata).mp4"),
             os.path.join("c64", "eagle.mp4"),
             os.path.join("c64", "eagle_empire.mp4"),
-            "eagle_empire.mp4",
             "c64_eagle.mp4",
-        ] + names
+        ] + extra
     roots = []
     exe = mame_exe()
     if exe:
         roots.append(os.path.join(os.path.dirname(exe), "snap"))
     for base in (user_data_dir(), project_root()):
         roots.append(os.path.join(base, "addon", "mame", "snap"))
-    seen = []
     for root in roots:
-        if root in seen:
+        for n in extra:
+            names.append(os.path.join(root, n))
+    seen = []
+    for fp in names:
+        if not fp or fp in seen:
             continue
-        seen.append(root)
-        for n in names:
-            fp = os.path.join(root, n)
-            if os.path.isfile(fp):
-                return fp
+        seen.append(fp)
+        if os.path.isfile(fp):
+            return fp
     return None
 
 
