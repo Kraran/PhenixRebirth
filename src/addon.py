@@ -864,8 +864,8 @@ def ensure_arcade_cfg(mame_root, set_name):
         return None
 
 
-def ensure_arcadia_cfg(mame_root):
-    """Keypad 2 = fire (A), keypad 1 = shield (B). Keyboard 1/2 stay."""
+def ensure_arcadia_cfg(mame_root, shield=True):
+    """Keypad 2 = fire (A). Keypad 1 = shield (B) only if shield, else B is unbound."""
     folder = os.path.join(mame_root, "cfg")
     try:
         os.makedirs(folder, exist_ok=True)
@@ -873,7 +873,10 @@ def ensure_arcadia_cfg(mame_root):
         return None
     path = os.path.join(folder, "arcadia.cfg")
     fire = "KEYCODE_2 OR KEYCODE_2_PAD OR JOYCODE_1_BUTTON1"
-    shield = "KEYCODE_1 OR KEYCODE_1_PAD OR JOYCODE_1_BUTTON2"
+    shield_seq = (
+        "KEYCODE_1 OR KEYCODE_1_PAD OR JOYCODE_1_BUTTON2"
+        if shield else "KEYCODE_1 OR KEYCODE_1_PAD"
+    )
     xml = (
         '<?xml version="1.0"?>\n'
         '<mameconfig version="10">\n'
@@ -904,7 +907,7 @@ def ensure_arcadia_cfg(mame_root):
         "        </input>\n"
         "    </system>\n"
         "</mameconfig>\n"
-    ) % (fire, shield, _JOY_LEFT, _JOY_RIGHT, _JOY_DOWN, _JOY_UP, _JOY_QUIT)
+    ) % (fire, shield_seq, _JOY_LEFT, _JOY_RIGHT, _JOY_DOWN, _JOY_UP, _JOY_QUIT)
     try:
         with open(path, "w", encoding="utf-8") as f:
             f.write(xml)
@@ -1072,7 +1075,7 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
         if cfg:
             base += ["-cfg_directory", cfg, "-ctrlrpath", os.path.join(root, "ctrlr"), "-ctrlr", "eagle"]
     elif set_name in ("arcadia_vultures", "arcadia_pleiades"):
-        cfg = ensure_arcadia_cfg(root)
+        cfg = ensure_arcadia_cfg(root, shield=(set_name == "arcadia_vultures"))
         if cfg:
             base += ["-cfg_directory", cfg]
     elif set_name in ("bbc_eagle", "apple2_falcon", "coco_demon"):
