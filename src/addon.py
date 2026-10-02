@@ -528,8 +528,31 @@ def snap_path(set_name):
 
 
 def video_path(set_name):
-    """Preview clip next to the snap. Phoenix uses snap/phoenix.mp4."""
-    names = [set_name + ".mp4", set_name + ".webm"]
+    """Clip beside the snap, same folder and same stem. Arcade: snap/pleiads.mp4. Soft: snap/a2600/phoenix.mp4, snap/c64/Eagle Empire (1984)(Alligata).mp4."""
+    names = []
+    for ext in (".mp4", ".webm"):
+        names.append(set_name + ext)
+    if set_name == "a2600_phoenix":
+        names = [
+            os.path.join("a2600", "phoenix.mp4"),
+            os.path.join("a2600", "phoenix.webm"),
+            "a2600_phoenix.mp4",
+        ] + names
+    if set_name == "spectrum_pheenix":
+        names = [
+            os.path.join("spectrum", "pheenix.mp4"),
+            os.path.join("spectrum", "phoenix.mp4"),
+            "pheenix.mp4",
+            "spectrum_pheenix.mp4",
+        ] + names
+    if set_name == "c64_eagle":
+        names = [
+            os.path.join("c64", "Eagle Empire (1984)(Alligata).mp4"),
+            os.path.join("c64", "eagle.mp4"),
+            os.path.join("c64", "eagle_empire.mp4"),
+            "eagle_empire.mp4",
+            "c64_eagle.mp4",
+        ] + names
     roots = []
     exe = mame_exe()
     if exe:
