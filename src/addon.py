@@ -284,6 +284,9 @@ ROM_SETS = (
     ("arcadia_vultures", "Space Vultures (Arcadia 2001, 1982)",
      ["arcadia", "spcevult"],
      ("arcadia/spcevult.zip", "arcadia/spcevult.bin")),
+    ("arcadia_pleiades", "Pleiades (Arcadia 2001, 1983)",
+     ["arcadia", "pleiades"],
+     ("arcadia/pleiades.zip", "arcadia/pleiades.bin")),
     ("bbc_eagle", "Eagle Empire (BBC Micro, 1983)",
      ["bbcb", "-cass", ""],
      ()),
@@ -477,6 +480,16 @@ def find_arcadia_vultures():
     return _find_media(_media_roots("arcadia"), (".zip", ".bin"), ("vultur",))
 
 
+def find_arcadia_pleiades():
+    roms = _roms_dir()
+    if roms:
+        for rel in ("arcadia/pleiades.zip", "arcadia/pleiades.bin", "pleiades.zip", "pleiades.bin"):
+            fp = os.path.join(roms, rel.replace("/", os.sep))
+            if os.path.isfile(fp):
+                return fp
+    return _find_media(_media_roots("arcadia"), (".zip", ".bin"), ("pleiad",))
+
+
 def find_bbc_eagle():
     return _find_media(
         _media_roots("bbcb"),
@@ -520,6 +533,8 @@ def _set_ready(entry):
         return find_c64_eagle() is not None
     if sid == "arcadia_vultures":
         return find_arcadia_vultures() is not None
+    if sid == "arcadia_pleiades":
+        return find_arcadia_pleiades() is not None
     if sid == "bbc_eagle":
         return find_bbc_eagle() is not None
     if sid == "apple2_falcon":
@@ -576,6 +591,11 @@ def mame_argv(set_name):
             return out
         if sid == "arcadia_vultures":
             media = find_arcadia_vultures()
+            if media and not media.lower().endswith(".zip"):
+                return ["arcadia", "-cart", os.path.abspath(media)]
+            return out
+        if sid == "arcadia_pleiades":
+            media = find_arcadia_pleiades()
             if media and not media.lower().endswith(".zip"):
                 return ["arcadia", "-cart", os.path.abspath(media)]
             return out
@@ -639,6 +659,12 @@ def snap_path(set_name):
             os.path.join("arcadia", "spcevult.png"),
             os.path.join("arcadia", "space_vultures.png"),
             "spcevult.png",
+        ] + names
+    if set_name == "arcadia_pleiades":
+        names = [
+            os.path.join("arcadia", "pleiades.png"),
+            os.path.join("arcadia", "pleiads.png"),
+            "pleiades.png",
         ] + names
     if set_name == "bbc_eagle":
         names = [
@@ -713,6 +739,12 @@ def video_path(set_name):
             os.path.join("arcadia", "spcevult.mp4"),
             os.path.join("arcadia", "space_vultures.mp4"),
             "spcevult.mp4",
+        ] + extra
+    if set_name == "arcadia_pleiades":
+        extra = [
+            os.path.join("arcadia", "pleiades.mp4"),
+            os.path.join("arcadia", "pleiads.mp4"),
+            "pleiades.mp4",
         ] + extra
     if set_name == "bbc_eagle":
         extra = [
@@ -1039,7 +1071,7 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
         cfg = ensure_c64_cfg(root)
         if cfg:
             base += ["-cfg_directory", cfg, "-ctrlrpath", os.path.join(root, "ctrlr"), "-ctrlr", "eagle"]
-    elif set_name == "arcadia_vultures":
+    elif set_name in ("arcadia_vultures", "arcadia_pleiades"):
         cfg = ensure_arcadia_cfg(root)
         if cfg:
             base += ["-cfg_directory", cfg]
