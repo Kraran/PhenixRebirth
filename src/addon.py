@@ -865,8 +865,11 @@ def ensure_arcade_cfg(mame_root, set_name):
 
 
 def ensure_arcadia_cfg(mame_root, shield=True):
-    """Keypad 2 = fire (A). Keypad 1 = shield (B) only if shield, else B is unbound."""
-    folder = os.path.join(mame_root, "cfg")
+    """Keypad 2 = fire (A). B = shield only for Space Vultures.
+
+    Pleiades gets its own cfg folder: B is NONE, so it cannot hit keypad 1.
+    """
+    folder = os.path.join(mame_root, "cfg", "arcadia" if shield else "arcadia_pleiades")
     try:
         os.makedirs(folder, exist_ok=True)
     except Exception:
@@ -875,7 +878,7 @@ def ensure_arcadia_cfg(mame_root, shield=True):
     fire = "KEYCODE_2 OR KEYCODE_2_PAD OR JOYCODE_1_BUTTON1"
     shield_seq = (
         "KEYCODE_1 OR KEYCODE_1_PAD OR JOYCODE_1_BUTTON2"
-        if shield else "KEYCODE_1 OR KEYCODE_1_PAD"
+        if shield else "NONE"
     )
     xml = (
         '<?xml version="1.0"?>\n'
@@ -887,6 +890,9 @@ def ensure_arcadia_cfg(mame_root, shield=True):
         '                <newseq type="standard">%s</newseq>\n'
         "            </port>\n"
         '            <port tag=":controller1_col1" type="KEYPAD" mask="8" defvalue="0">\n'
+        '                <newseq type="standard">%s</newseq>\n'
+        "            </port>\n"
+        '            <port type="P1_BUTTON2">\n'
         '                <newseq type="standard">%s</newseq>\n'
         "            </port>\n"
         '            <port tag=":joysticks" type="P1_JOYSTICK_LEFT" mask="1" defvalue="0">\n'
@@ -907,7 +913,12 @@ def ensure_arcadia_cfg(mame_root, shield=True):
         "        </input>\n"
         "    </system>\n"
         "</mameconfig>\n"
-    ) % (fire, shield_seq, _JOY_LEFT, _JOY_RIGHT, _JOY_DOWN, _JOY_UP, _JOY_QUIT)
+    ) % (
+        fire,
+        shield_seq,
+        "KEYCODE_1 OR KEYCODE_1_PAD OR JOYCODE_1_BUTTON2" if shield else "NONE",
+        _JOY_LEFT, _JOY_RIGHT, _JOY_DOWN, _JOY_UP, _JOY_QUIT,
+    )
     try:
         with open(path, "w", encoding="utf-8") as f:
             f.write(xml)
