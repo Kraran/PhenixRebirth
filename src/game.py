@@ -8,7 +8,7 @@ Play modes: solo, hot-seat (alternating), coop (simultaneous). Options cover
 controls, autofire, volumes, session audio mix, rumble, display, GPU present,
 VSync, refresh cap, bezels, FPS counter, CRT scanlines and language.
 Cheats on the high-score menu: LVL2–LVL5, LIVE, PHEN.
-v1.4.3 — seasonal title, April gag, comet, Shield absorb score + wall sparks-only,
+v1.4.4 — seasonal title, April gag, comet, Shield absorb score + wall sparks-only,
 stage keep-X, landing dust, Welcome on confirm only.
 
 Architecture notes:
@@ -7260,7 +7260,7 @@ class Game:
                 ver = getattr(self, "_ver_surf", None)
                 if ver is None:
                     vf = pygame.font.SysFont(pygame.font.get_default_font(), 16)
-                    ver = vf.render("v1.4.3", True, (110, 110, 130))
+                    ver = vf.render("v1.4.4", True, (110, 110, 130))
                     self._ver_surf = ver
                 self.game_surface.blit(ver, (BASE_WIDTH - ver.get_width() - 10, BASE_HEIGHT - ver.get_height() - 8))
                 
