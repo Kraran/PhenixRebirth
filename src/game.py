@@ -4298,17 +4298,22 @@ class Game:
             empty = self._txt(self.font, t("addon_missing"), (160, 160, 180))
             surface.blit(empty, (list_x, 280))
         else:
-            y = 200
+            y = 148
             focus = None
+            prev_fam = None
             for i, (sid, label) in enumerate(sets):
+                fam = mame_addon.family_of(sid)
+                if prev_fam is not None and fam != prev_fam:
+                    y += 16
+                prev_fam = fam
                 selected = (i == self.menu_index)
                 if selected:
                     focus = sid
                 col = (255, 230, 120) if selected else (160, 160, 190)
                 prefix = "> " if selected else "  "
-                surf = self._txt(self.medium_font, prefix + label, col)
+                surf = self._txt(self.font, prefix + label, col)
                 surface.blit(surf, (list_x, y))
-                y += 44
+                y += 32
             if focus:
                 snap = self._addon_clip_frame()
                 if snap is None:
