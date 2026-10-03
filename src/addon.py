@@ -1,8 +1,8 @@
 """
-Optional MAME add-on (Phoenix / Pleiads / Mega Phoenix / Atari 2600 Phoenix).
+Optional MAME add-on. ROMs and mame.exe stay local, never shipped.
 
-Looks for addon/mame/mame.exe and ROMs under addon/mame/roms.
-ROMs are never shipped.
+Arcade, then consoles, then micros, each by release date.
+Arcadia bezels: -override_artwork so arcadia.zip does not hide the game zip.
 """
 import os
 import subprocess
@@ -1172,46 +1172,6 @@ def bezel_view(mame_root, set_name):
         return None
     return view
 
-
-
-def prepare_arcadia_art(mame_root, set_name):
-    """MAME loads system artwork arcadia.zip, not pleiades.zip / spcevult.zip.
-
-    Copy the per-game layout into a private folder as arcadia.zip, and rename
-    the view to Standard so it is the default even if -view is ignored.
-    """
-    import zipfile
-    art = os.path.join(mame_root, "artwork")
-    src_name = {
-        "arcadia_vultures": "spcevult.zip",
-        "arcadia_pleiades": "pleiades.zip",
-    }.get(set_name)
-    if not src_name:
-        return None
-    src = os.path.join(art, src_name)
-    if not os.path.isfile(src):
-        return None
-    try:
-        with zipfile.ZipFile(src) as zin:
-            lay_name = next((n for n in zin.namelist() if n.endswith("default.lay") or n.endswith(".lay")), None)
-            if not lay_name:
-                return None
-            lay = zin.read(lay_name).decode("utf-8", "replace")
-            pngs = [(os.path.basename(n), zin.read(n)) for n in zin.namelist() if n.lower().endswith(".png")]
-        if not pngs:
-            return None
-        lay = lay.replace('view name="Pleiades Bezel"', 'view name="Standard"')
-        lay = lay.replace('view name="Space Vultures Bezel"', 'view name="Standard"')
-        folder = os.path.join(art, "_run")
-        os.makedirs(folder, exist_ok=True)
-        out = os.path.join(folder, "arcadia.zip")
-        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zout:
-            zout.writestr("default.lay", lay.encode("utf-8"))
-            for name, data in pngs:
-                zout.writestr(name, data)
-        return folder
-    except Exception:
-        return None
 
 
 def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
