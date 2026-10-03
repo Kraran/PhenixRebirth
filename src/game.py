@@ -5280,6 +5280,8 @@ class Game:
 
     def _launch_addon(self):
         """Run local MAME on the focused ROM, hide the console, wait, come back."""
+        if getattr(self, "input_grace", 0) > 0:
+            return
         sets = mame_addon.available_sets()
         idx = int(getattr(self, "menu_index", 0) or 0)
         if not sets or idx < 0 or idx >= len(sets):
@@ -5434,6 +5436,8 @@ class Game:
                     self.menu_screen = "addon"
                     self.menu_index = 0
                     self.menu_idle = 0.0
+                    # Same press / key repeat must not launch the first ROM.
+                    self.input_grace = 0.45
             elif self.menu_index == 3:
                 pass  # Mode: Left/Right only
             elif self.menu_index == 4:
