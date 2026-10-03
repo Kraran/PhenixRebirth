@@ -8,8 +8,8 @@ Play modes: solo, hot-seat (alternating), coop (simultaneous). Options cover
 controls, autofire, volumes, session audio mix, rumble, display, GPU present,
 VSync, refresh cap, bezels, FPS counter, CRT scanlines and language.
 Cheats on the high-score menu: LVL2–LVL5, LIVE, PHEN.
-v1.4.4 — seasonal title, April gag, comet, Shield absorb score + wall sparks-only,
-stage keep-X, landing dust, Welcome on confirm only.
+v1.4.4 — Adventure chapter 1 (Shield, broken dome, bestiary, hangar credits).
+Arcade loop is unchanged. Seasonal title, April gag, comet stay.
 
 Architecture notes:
 - Logical resolution BASE_WIDTH x BASE_HEIGHT (see settings.py).
@@ -1060,7 +1060,7 @@ class Game:
 
     def _note_scalable(self, aid, amount=1, absolute=False):
         """Progress a scalable haut-fait. Toast only on unlock / tier up."""
-        if getattr(self, "attract_mode", False) or getattr(self, "used_cheat", False):
+        if getattr(self, "attract_mode", False) or getattr(self, "used_cheat", False) or getattr(self, "adventure", None):
             return
         data = getattr(self, "ach_data", None)
         if absolute:
@@ -1100,7 +1100,7 @@ class Game:
 
     def _unlock_ach(self, aid):
         """Unlock a haut-fait unless attract / cheat run."""
-        if getattr(self, "attract_mode", False) or getattr(self, "used_cheat", False):
+        if getattr(self, "attract_mode", False) or getattr(self, "used_cheat", False) or getattr(self, "adventure", None):
             return False
         data = getattr(self, "ach_data", None)
         if unlock_achievement(aid, data):
@@ -2721,6 +2721,8 @@ class Game:
             ship.rumble(1.0, 1.0, 640)
 
     def _check_extra_lives(self):
+        if getattr(self, "adventure", None):
+            return
 
         """Award a life when crossing score thresholds (once each)."""
         if self.play_mode == "coop":
@@ -2768,12 +2770,96 @@ class Game:
         self.sounds.play(name, volume=volume, x=x)
         self._boss_cry_quiet = 0.0
 
+    def _begin_adventure(self, spec):
+        """Launch a story mission. Arcade ship select and high scores stay out."""
+        self.adventure = dict(spec)
+        self.hotseat = False
+        self.player2 = None
+        self.play_mode = "solo"
+        self.attract_mode = False
+        self.started = True
+        self.game_over = False
+        self.hs_phase = None
+        self.paused = False
+        self.quit_confirm = False
+        self.menu_screen = "main"
+        self.stage = 1
+        self.score = 0
+        self.explosions = []
+        self.boss_saucer = None
+        self.formation = EnemyFormation()
+        self.stage_transition = None
+        self.life_thresholds = []
+        loadout = self.story.loadout() if getattr(self, "story", None) else {}
+        sid = loadout.get("ship_id") or "shield"
+        tint = loadout.get("tint") or "red"
+        self.ship_id = sid
+        self.player = Player(BASE_WIDTH // 2, BASE_HEIGHT - 95, ship_id=sid, tint=tint)
+        self.player.sounds = self.sounds
+        self.player.pid = 1
+        self.player.lives = int(loadout.get("lives") or 1)
+        self.player.infinite_lives = False
+        pct = int(loadout.get("speed_pct") or 60)
+        self.player.speed = PLAYER_SPEED * (pct / 100.0)
+        dome = bool(loadout.get("dome"))
+        self.player.adventure_dome = dome
+        self.player.adventure_wall = loadout.get("wall") or "instant"
+        self.adventure["dome"] = dome
+        if sid == "shield":
+            self.player.SHIELD_DURATION = max(0.4, int(loadout.get("dome_dur") or 60) / 60.0)
+            self.player.SHIELD_COOLDOWN = max(1.5, int(loadout.get("dome_cd") or 300) / 60.0)
+            if not dome:
+                self.player.phenix_gauge = 0.0
+                self.player.phenix_cooldown = 9999.0
+        self.input_grace = 0.35
+        self.shake_amount = 0.0
+        self._setup_stage(1)
+        self._rebuild_life_icon()
+        self._start_arrive_intro()
+
+    def _end_adventure(self, cleared):
+        """Bank the run into the hangar and return to the mission map."""
+        spec = getattr(self, "adventure", None) or {}
+        score = int(getattr(self, "score", 0) or 0)
+        story = getattr(self, "story", None)
+        if story is not None:
+            try:
+                story.apply_result(spec.get("id"), score, bool(cleared))
+            except Exception:
+                pass
+        self.adventure = None
+        self.started = False
+        self.game_over = False
+        self.hs_phase = None
+        self.paused = False
+        self.quit_confirm = False
+        self.stage_transition = None
+        self.boss_saucer = None
+        self.menu_screen = "story_hub"
+        self.input_grace = 0.4
+        try:
+            self.sounds.play_electric(False)
+        except Exception:
+            pass
+        try:
+            self.sounds.play_music("menu", fade_ms=getattr(self.sounds, "MENU_RETURN_MS", 900))
+        except Exception:
+            pass
+
     def _setup_stage(self, stage):
-        """Load content for stage (1-5 cycle) with speed scaling + difficulty."""
+        """Load content for stage (1-5 cycle) with speed scaling + difficulty.
+
+        Adventure forces the mission content (chapter 1 main = stage 1 only).
+        """
         self.stage_life_lost = False
         self.stage_touched_edge = False
-        content = stage_content(stage)
-        mult = stage_speed_mult(stage) * self.difficulty_speed_mult()
+        adv = getattr(self, "adventure", None)
+        if adv:
+            content = int(adv.get("content") or 1)
+            mult = float(adv.get("speed") or 1.0) * self.difficulty_speed_mult()
+        else:
+            content = stage_content(stage)
+            mult = stage_speed_mult(stage) * self.difficulty_speed_mult()
         self.formation.enemies = []
         self.formation.bullets = []
         self.boss_saucer = None
@@ -5172,6 +5258,17 @@ class Game:
 
     def _quit_to_menu(self):
         """Leave current run, return to main menu (keep settings)."""
+        back_story = False
+        toast = ""
+        if getattr(self, "adventure", None) and getattr(self, "story", None):
+            try:
+                cleared = self.stage_transition == "fly_up"
+                self.story.apply_result(self.adventure.get("id"), int(self.score), cleared)
+                toast = self.story.toast
+            except Exception:
+                pass
+            self.adventure = None
+            back_story = True
         saved = (self.input_mode, self.display_mode, self.sfx_volume, self.music_volume,
                  self.fps_target, self.show_fps, self.difficulty, self.language,
                  getattr(self, "bezel_style", "phoenix"), int(getattr(self, "monitor_index", 0) or 0))
@@ -5186,8 +5283,15 @@ class Game:
         self.paused = False
         self.quit_confirm = False
         self.pause_options = False
-        self.menu_screen = "main"
-        self.menu_index = 0
+        if back_story:
+            self.menu_screen = "story_hub"
+            self.menu_index = 1
+            if getattr(self, "story", None):
+                self.story.pane = "map"
+                self.story.toast = toast
+        else:
+            self.menu_screen = "main"
+            self.menu_index = 0
         self.input_grace = 0.35  # absorb the confirm key/button that quit the run
         self.player.infinite_lives = False
         self.cheat_live = False
@@ -5457,8 +5561,11 @@ class Game:
             elif self.menu_index == 8:
                 self._quit_app()
         elif self.menu_screen == "story_hub":
+            spec = None
             if getattr(self, "story", None):
-                self.story.confirm()
+                spec = self.story.confirm()
+            if isinstance(spec, dict) and spec.get("launch"):
+                self._begin_adventure(spec)
         elif self.menu_screen == "addon":
             self._launch_addon()
         elif self.menu_screen == "jukebox":
@@ -6416,6 +6523,9 @@ class Game:
                 if self.hotseat_hold > 0:
                     return
             elif not any(p.alive for p in self._ships()):
+                if getattr(self, "adventure", None):
+                    self._end_adventure(False)
+                    return
                 if self.hotseat:
                     self._hotseat_arm_hold("eliminated", self.HOTSEAT_HOLD_FINAL)
                 else:
@@ -6447,6 +6557,9 @@ class Game:
                     ship.engine_intensity = 1.0
             self._tick_stars(follow=True)
             if all((not s.alive) or s.y < -80 for s in self._ships()):
+                if getattr(self, "adventure", None):
+                    self._end_adventure(True)
+                    return
                 self.stage += 1
                 self._note_scalable("stage2", self.stage, absolute=True)
                 if self.stage > 1 and (self.stage - 1) % 5 == 0:
@@ -6538,7 +6651,8 @@ class Game:
                 and self.boss_saucer is None):
             self._clear_enemy_fire()
             self._on_stage_cleared()
-            self._play_level_vo(int(getattr(self, "stage", 1) or 1) + 1)
+            if not getattr(self, "adventure", None):
+                self._play_level_vo(int(getattr(self, "stage", 1) or 1) + 1)
             self.stage_transition = "fly_up"
             for ship in self._ships():
                 ship.destroy_bullet()
@@ -6990,9 +7104,16 @@ class Game:
                 ch = tc.get(self.font, t("cheat_active"), (255, 60, 60))
                 self.game_surface.blit(ch, (BASE_WIDTH // 2 - ch.get_width() // 2, 74))
             
-            stage_surf = tc.get(self.font, f"{t('stage')} {self.stage}", (180, 180, 220))
+            stage_surf = tc.get(
+                self.font,
+                t(self.adventure.get("title") or "story") if getattr(self, "adventure", None) else f"{t('stage')} {self.stage}",
+                (255, 170, 80) if getattr(self, "adventure", None) else (180, 180, 220),
+            )
             stage_x = BASE_WIDTH // 2 - stage_surf.get_width() // 2 if self.play_mode == "coop" else 16
             self.game_surface.blit(stage_surf, (stage_x, 16))
+            if getattr(self, "adventure", None) and not self.adventure.get("dome"):
+                off = tc.get(self.font, t("story_dome_broken"), (255, 90, 80))
+                self.game_surface.blit(off, (16, 40))
             if self.difficulty in ("novice", "veteran") and not self.attract_mode:
                 dkey = "diff_novice" if self.difficulty == "novice" else "diff_veteran"
                 dcol = (120, 210, 255) if self.difficulty == "novice" else (255, 150, 80)

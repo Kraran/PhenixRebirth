@@ -442,8 +442,11 @@ class Player:
                 self.last_edge_side = 1
         
         if self.edge_contact and self.invulnerable <= 0:
-            # Shield hull: sparks only — no slow, no wall death, no gauge dump.
-            if self.uses_shield:
+            # Arcade Shield: sparks only — no slow, no wall death, no gauge dump.
+            # Adventure can downgrade that: instant (kill) or slow (phoenix wall).
+            wall = getattr(self, "adventure_wall", None)
+            shield_immune = self.uses_shield and wall not in ("slow", "instant")
+            if shield_immune:
                 self.edge_flash = 1.0
                 self.edge_timer = 0.0
             elif self.is_phenix and not self.uses_shield:
@@ -498,8 +501,10 @@ class Player:
         return self._check_edge_kill()
 
     def _check_edge_kill(self):
+        wall = getattr(self, "adventure_wall", None)
+        shield_dies = self.uses_shield and wall == "instant"
         if self.edge_timer >= self.EDGE_KILL_TIME and self.alive and not self.dying:
-            if self.invulnerable <= 0 and not self.is_phenix and not self.uses_shield:
+            if self.invulnerable <= 0 and not self.is_phenix and (not self.uses_shield or shield_dies):
                 self.hit()
                 self.edge_timer = 0.0
                 self.slowdown_timer = 0.0
@@ -609,6 +614,8 @@ class Player:
         if getattr(self, "phenix_cooldown", 0) > 0:
             return False
         if self.uses_shield:
+            if getattr(self, "adventure_dome", True) is False:
+                return False
             return True
         return self.phenix_gauge >= 3
 
@@ -617,10 +624,11 @@ class Player:
         if not self.can_activate_phenix():
             return False
         if self.uses_shield:
+            dur = float(getattr(self, "SHIELD_DURATION", 2.0) or 2.0)
             self.phenix_start_level = 10
-            self.phenix_duration = 2.0
-            self.phenix_timer = 2.0
-            self.SHIELD_DURATION = 2.0
+            self.phenix_duration = dur
+            self.phenix_timer = dur
+            self.SHIELD_DURATION = dur
             self.phenix_gauge = 10.0
             self.combo_streak = 0
             self.phenix_anim_time = 0.0
