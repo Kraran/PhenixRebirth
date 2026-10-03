@@ -1090,6 +1090,45 @@ def ensure_c64_cfg(mame_root):
         return None
 
 
+
+def ensure_arcadia_artwork(mame_root, set_name):
+    """Split artwork/arcadia.zip into the software zip MAME actually loads.
+
+    View names come from the .lay files. Crop stays on so the picture sits
+    in the transparent window instead of covering the bezel.
+    """
+    import zipfile
+    art = os.path.join(mame_root, "artwork")
+    if not os.path.isdir(art):
+        return None
+    src = None
+    for name in ("arcadia.zip", "ardadia.zip", "Arcadia.zip"):
+        fp = os.path.join(art, name)
+        if os.path.isfile(fp):
+            src = fp
+            break
+    if not src:
+        return None
+    spec = {
+        "arcadia_vultures": ("spcevult", "spcevult.lay", "spcevult.png", "Space Vultures Bezel"),
+        "arcadia_pleiades": ("pleiades", "pleiades.lay", "pleiades.png", "Pleiades Bezel"),
+    }.get(set_name)
+    if not spec:
+        return None
+    short, lay_name, png_name, view = spec
+    try:
+        with zipfile.ZipFile(src) as zin:
+            lay = zin.read(lay_name)
+            png = zin.read(png_name)
+        out = os.path.join(art, short + ".zip")
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zout:
+            zout.writestr("default.lay", lay)
+            zout.writestr(png_name, png)
+    except Exception:
+        return None
+    return view
+
+
 def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
     exe = mame_exe()
     ready = any(sid == set_name for sid, _lab in available_sets())
@@ -1098,12 +1137,18 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
     root = os.path.dirname(exe)
     roms = os.path.join(root, "roms")
     art = os.path.join(root, "artwork")
+    arcadia_view = None
+    if set_name in ("arcadia_vultures", "arcadia_pleiades"):
+        arcadia_view = ensure_arcadia_artwork(root, set_name)
     base = [exe] + mame_argv(set_name) + [
         "-rompath", roms,
         "-skip_gameinfo",
-        "-noartwork_crop",
         "-joystick",
     ]
+    if arcadia_view:
+        base += ["-view", arcadia_view, "-bezel", "1"]
+    else:
+        base += ["-noartwork_crop"]
     if set_name == "a2600_phoenix":
         ensure_a2600_cfg(root)
     elif set_name == "spectrum_pheenix":
