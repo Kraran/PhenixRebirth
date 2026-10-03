@@ -938,9 +938,6 @@ def ensure_arcadia_cfg(mame_root, shield=True):
         '                <newseq type="standard">%s</newseq>\n'
         "            </port>\n"
         "        </input>\n"
-        "        <video>\n"
-        "            <target index=\"0\" view=\"%s\" />\n"
-        "        </video>\n"
         "    </system>\n"
         "</mameconfig>\n"
     ) % (
@@ -948,7 +945,6 @@ def ensure_arcadia_cfg(mame_root, shield=True):
         shield_seq,
         "KEYCODE_1 OR KEYCODE_1_PAD OR JOYCODE_1_BUTTON2" if shield else "NONE",
         _JOY_LEFT, _JOY_RIGHT, _JOY_DOWN, _JOY_UP, _JOY_QUIT,
-        "Space Vultures Bezel" if shield else "Pleiades Bezel",
     )
     try:
         with open(path, "w", encoding="utf-8") as f:
@@ -1258,11 +1254,12 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
     hashdir = os.path.join(root, "hash")
     if os.path.isdir(hashdir):
         base += ["-hashpath", hashdir]
-    art_extra = prepare_arcadia_art(root, set_name) if set_name in ("arcadia_vultures", "arcadia_pleiades") else None
-    if art_extra:
-        base += ["-artpath", art_extra + ";" + art, "-view", "Standard"]
-    elif os.path.isdir(art):
+    if os.path.isdir(art):
         base += ["-artpath", art]
+    # arcadia.zip would win otherwise. override_artwork forces pleiades.zip / spcevult.zip.
+    override = {"arcadia_vultures": "spcevult", "arcadia_pleiades": "pleiades"}.get(set_name)
+    if override and os.path.isfile(os.path.join(art, override + ".zip")):
+        base += ["-override_artwork", override]
     screen = _monitor_device(monitor_index)
     if screen:
         base += ["-screen", screen]
