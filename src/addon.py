@@ -1188,7 +1188,7 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
         "-joystick",
     ]
     if arcadia_view:
-        base += ["-view", arcadia_view, "-bezel", "1"]
+        base += ["-view", arcadia_view]
     else:
         base += ["-noartwork_crop"]
     if set_name == "a2600_phoenix":
