@@ -1091,15 +1091,61 @@ def ensure_c64_cfg(mame_root):
 
 
 
-def ensure_arcadia_artwork(mame_root, set_name):
-    """Split artwork/arcadia.zip into the software zip MAME actually loads.
+def _lay_view(xml):
+    """First view name in a layout, or None."""
+    try:
+        text = xml.decode("utf-8", "replace") if isinstance(xml, bytes) else xml
+    except Exception:
+        return None
+    key = 'view name="'
+    i = text.find(key)
+    if i < 0:
+        return None
+    i += len(key)
+    j = text.find('"', i)
+    return text[i:j] if j > i else None
 
-    View names come from the .lay files. Crop stays on so the picture sits
-    in the transparent window instead of covering the bezel.
-    """
+
+def _flatten_artwork_zip(path):
+    """MAME only reads default.lay at the zip root. Lift a nested layout."""
+    import zipfile
+    try:
+        with zipfile.ZipFile(path) as zin:
+            names = zin.namelist()
+            if "default.lay" in names:
+                return _lay_view(zin.read("default.lay"))
+            lay_name = next((n for n in names if n.endswith("default.lay") or n.endswith(".lay")), None)
+            if not lay_name:
+                return None
+            lay = zin.read(lay_name)
+            pngs = [(n, zin.read(n)) for n in names if n.lower().endswith(".png")]
+        with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as zout:
+            zout.writestr("default.lay", lay)
+            for n, data in pngs:
+                zout.writestr(os.path.basename(n), data)
+        return _lay_view(lay)
+    except Exception:
+        return None
+
+
+def bezel_view(mame_root, set_name):
+    """View to pass to -view when a local bezel zip is present."""
     import zipfile
     art = os.path.join(mame_root, "artwork")
     if not os.path.isdir(art):
+        return None
+    direct = {
+        "spectrum_pheenix": "spectrum.zip",
+        "arcadia_vultures": "spcevult.zip",
+        "arcadia_pleiades": "pleiades.zip",
+    }.get(set_name)
+    if direct:
+        fp = os.path.join(art, direct)
+        if os.path.isfile(fp):
+            view = _flatten_artwork_zip(fp)
+            if view:
+                return view
+    if set_name not in ("arcadia_vultures", "arcadia_pleiades"):
         return None
     src = None
     for name in ("arcadia.zip", "ardadia.zip", "Arcadia.zip"):
@@ -1112,9 +1158,7 @@ def ensure_arcadia_artwork(mame_root, set_name):
     spec = {
         "arcadia_vultures": ("spcevult", "spcevult.lay", "spcevult.png", "Space Vultures Bezel"),
         "arcadia_pleiades": ("pleiades", "pleiades.lay", "pleiades.png", "Pleiades Bezel"),
-    }.get(set_name)
-    if not spec:
-        return None
+    }[set_name]
     short, lay_name, png_name, view = spec
     try:
         with zipfile.ZipFile(src) as zin:
@@ -1137,9 +1181,7 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
     root = os.path.dirname(exe)
     roms = os.path.join(root, "roms")
     art = os.path.join(root, "artwork")
-    arcadia_view = None
-    if set_name in ("arcadia_vultures", "arcadia_pleiades"):
-        arcadia_view = ensure_arcadia_artwork(root, set_name)
+    arcadia_view = bezel_view(root, set_name)
     base = [exe] + mame_argv(set_name) + [
         "-rompath", roms,
         "-skip_gameinfo",
