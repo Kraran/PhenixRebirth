@@ -1177,6 +1177,47 @@ def bezel_view(mame_root, set_name):
     return view
 
 
+
+def prepare_arcadia_art(mame_root, set_name):
+    """MAME loads system artwork arcadia.zip, not pleiades.zip / spcevult.zip.
+
+    Copy the per-game layout into a private folder as arcadia.zip, and rename
+    the view to Standard so it is the default even if -view is ignored.
+    """
+    import zipfile
+    art = os.path.join(mame_root, "artwork")
+    src_name = {
+        "arcadia_vultures": "spcevult.zip",
+        "arcadia_pleiades": "pleiades.zip",
+    }.get(set_name)
+    if not src_name:
+        return None
+    src = os.path.join(art, src_name)
+    if not os.path.isfile(src):
+        return None
+    try:
+        with zipfile.ZipFile(src) as zin:
+            lay_name = next((n for n in zin.namelist() if n.endswith("default.lay") or n.endswith(".lay")), None)
+            if not lay_name:
+                return None
+            lay = zin.read(lay_name).decode("utf-8", "replace")
+            pngs = [(os.path.basename(n), zin.read(n)) for n in zin.namelist() if n.lower().endswith(".png")]
+        if not pngs:
+            return None
+        lay = lay.replace('view name="Pleiades Bezel"', 'view name="Standard"')
+        lay = lay.replace('view name="Space Vultures Bezel"', 'view name="Standard"')
+        folder = os.path.join(art, "_run")
+        os.makedirs(folder, exist_ok=True)
+        out = os.path.join(folder, "arcadia.zip")
+        with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zout:
+            zout.writestr("default.lay", lay.encode("utf-8"))
+            for name, data in pngs:
+                zout.writestr(name, data)
+        return folder
+    except Exception:
+        return None
+
+
 def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
     exe = mame_exe()
     ready = any(sid == set_name for sid, _lab in available_sets())
@@ -1217,7 +1258,10 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
     hashdir = os.path.join(root, "hash")
     if os.path.isdir(hashdir):
         base += ["-hashpath", hashdir]
-    if os.path.isdir(art):
+    art_extra = prepare_arcadia_art(root, set_name) if set_name in ("arcadia_vultures", "arcadia_pleiades") else None
+    if art_extra:
+        base += ["-artpath", art_extra + ";" + art, "-view", "Standard"]
+    elif os.path.isdir(art):
         base += ["-artpath", art]
     screen = _monitor_device(monitor_index)
     if screen:
