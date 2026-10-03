@@ -550,6 +550,32 @@ def _set_ready(entry):
     return rom_path(sid) is not None
 
 
+# family, platform year, game year. Menu: arcade, then consoles, then micros.
+_ROM_ORDER = {
+    "phoenix": ("arcade", 1980, 1980),
+    "pleiads": ("arcade", 1980, 1981),
+    "megaphx": ("arcade", 1980, 1991),
+    "a2600_phoenix": ("console", 1977, 1982),
+    "arcadia_vultures": ("console", 1982, 1982),
+    "arcadia_pleiades": ("console", 1982, 1983),
+    "apple2_falcon": ("micro", 1977, 1981),
+    "coco_demon": ("micro", 1980, 1983),
+    "bbc_eagle": ("micro", 1981, 1983),
+    "spectrum_pheenix": ("micro", 1982, 1983),
+    "c64_eagle": ("micro", 1982, 1984),
+}
+_FAMILY_RANK = {"arcade": 0, "console": 1, "micro": 2}
+
+
+def family_of(set_name):
+    return _ROM_ORDER.get(set_name, ("micro", 9999, 9999))[0]
+
+
+def _sort_key(set_name):
+    fam, plat, year = _ROM_ORDER.get(set_name, ("micro", 9999, 9999))
+    return (_FAMILY_RANK.get(fam, 9), plat, year, set_name)
+
+
 def available_sets():
     if not mame_exe():
         return []
@@ -557,6 +583,7 @@ def available_sets():
     for entry in ROM_SETS:
         if _set_ready(entry):
             out.append((entry[0], entry[1]))
+    out.sort(key=lambda item: _sort_key(item[0]))
     return out
 
 
