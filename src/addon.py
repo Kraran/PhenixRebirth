@@ -938,6 +938,9 @@ def ensure_arcadia_cfg(mame_root, shield=True):
         '                <newseq type="standard">%s</newseq>\n'
         "            </port>\n"
         "        </input>\n"
+        "        <video>\n"
+        "            <target index=\"0\" view=\"%s\" />\n"
+        "        </video>\n"
         "    </system>\n"
         "</mameconfig>\n"
     ) % (
@@ -945,6 +948,7 @@ def ensure_arcadia_cfg(mame_root, shield=True):
         shield_seq,
         "KEYCODE_1 OR KEYCODE_1_PAD OR JOYCODE_1_BUTTON2" if shield else "NONE",
         _JOY_LEFT, _JOY_RIGHT, _JOY_DOWN, _JOY_UP, _JOY_QUIT,
+        "Space Vultures Bezel" if shield else "Pleiades Bezel",
     )
     try:
         with open(path, "w", encoding="utf-8") as f:
@@ -1187,10 +1191,10 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
         "-skip_gameinfo",
         "-joystick",
     ]
+    # Crop would cut the bezel, which sits outside the screen element.
+    base += ["-noartwork_crop"]
     if arcadia_view:
         base += ["-view", arcadia_view]
-    else:
-        base += ["-noartwork_crop"]
     if set_name == "a2600_phoenix":
         ensure_a2600_cfg(root)
     elif set_name == "spectrum_pheenix":
