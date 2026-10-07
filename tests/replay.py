@@ -146,6 +146,13 @@ def run_scenario(name, frames, setup, events=None, stage_jumps=None, god=False,
     g = _new_game(hash_seed(name))
     clock = {"frame": 0}
     real_ticks, real_pressed = pygame.time.get_ticks, pygame.key.get_pressed
+    # Audio runs in real time (even on the dummy driver): whether a voice-over or a
+    # track is "still playing" would depend on the machine speed, not on the frame.
+    from sounds import SoundManager
+    real_audio = (SoundManager.vo_is_busy, SoundManager.music_busy, SoundManager.music_pos_sec)
+    SoundManager.vo_is_busy = lambda self: False
+    SoundManager.music_busy = lambda self: False
+    SoundManager.music_pos_sec = lambda self: 0.0
     pygame.time.get_ticks = lambda: int(clock["frame"] * 1000 * DT)
     current = {"keys": _Keys()}
     pygame.key.get_pressed = lambda: current["keys"]
@@ -180,6 +187,7 @@ def run_scenario(name, frames, setup, events=None, stage_jumps=None, god=False,
                 out.append(fingerprint(g))
     finally:
         pygame.time.get_ticks, pygame.key.get_pressed = real_ticks, real_pressed
+        SoundManager.vo_is_busy, SoundManager.music_busy, SoundManager.music_pos_sec = real_audio
         g.running = False
     return out
 
