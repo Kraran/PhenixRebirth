@@ -62,6 +62,7 @@ import ship_select_screen
 import highscores_screen
 import credits_screen
 import update_idle
+import update_play
 
 from settings import user_data_dir, asset_path, project_root
 SETTINGS_FILE = os.path.join(user_data_dir(), "settings.json")
@@ -5566,63 +5567,7 @@ class Game:
             self.hitstop = max(0.0, hs - self.dt)
             return
 
-        keys = pygame.key.get_pressed()
-        
-        edge_killed_any = False
-        if self.stage_transition is None:
-            ai_move = ai_shoot = None
-            if self.attract_mode:
-                ai_move, ai_shoot = self._attract_ai()
-            for ship in self._ships():
-                ship.rumble_level = int(getattr(self, "rumble_level", 3))
-                ship.autofire = True if self.attract_mode else bool(getattr(self, "autofire", True))
-                if getattr(self, "play_mode", "solo") != "coop":
-                    mode = self.input_mode
-                    joy = self.joystick
-                    ship.input_scheme = "solo"
-                else:
-                    scheme = getattr(ship, "input_scheme", "solo")
-                    joy = getattr(ship, "_joy", None)
-                    mode = "gamepad" if scheme == "pad" else "keyboard"
-                if self.attract_mode and ship is self.player:
-                    edge_killed = ship.update(
-                        self.dt, keys, mode, joy,
-                        allow_shoot=(self.input_grace <= 0),
-                        ai_move=ai_move, ai_shoot=ai_shoot,
-                    )
-                else:
-                    edge_killed = ship.update(
-                        self.dt, keys, mode, joy,
-                        allow_shoot=(self.input_grace <= 0),
-                    )
-                cd = float(getattr(ship, "shield_ripple_cd", 0.0) or 0.0)
-                if cd > 0:
-                    ship.shield_ripple_cd = max(0.0, cd - self.dt)
-                if edge_killed:
-                    edge_killed_any = True
-                    self._note_scalable("razor")
-                    kind = "gameover" if ship.dying else "edge"
-                    self.explosions.append(self._boom(ship.x, ship.y, kind=kind))
-                    self.shake_amount = 22.0 if ship.dying else 14.0
-                    self.sounds.play("explosion_big" if ship.dying else "explosion", x=ship.x)
-                    side = getattr(ship, "last_edge_side", 0) or getattr(ship, "edge_side", -1)
-                    self.tesla_fx = TeslaCoilFx(side, ship.y)
-                    self.sounds.play_electric(True, x=ship.x)
-                    if getattr(ship, "just_lost_life", False):
-                        self.stage_life_lost = True
-                    if getattr(ship, "edge_contact", False) and getattr(ship, "edge_flash", 0) > 0:
-                        self.stage_touched_edge = True
-                    if getattr(ship, "flag_gauge_max", False):
-                        ship.flag_gauge_max = False
-                        if not getattr(ship, "phenix_auto_refill", False):
-                            self._note_scalable("gauge_max")
-                    if getattr(self, "play_mode", "") == "coop" and getattr(ship, "just_lost_life", False):
-                        self._on_coop_life_lost(ship)
-        else:
-            edge_killed_any = False
-        tesla_on = self.tesla_fx is not None and not self.tesla_fx.is_finished()
-        flash_on = any(p.edge_flash > 0.08 and not p.dying for p in self._ships())
-        self.sounds.play_electric(tesla_on or flash_on, x=self._sfx_electric_x())
+        update_play.tick_ships(self)
         
         # Attract mode: 30s demo or death → back to menu (no high score)
         if self.attract_mode:
@@ -5668,58 +5613,11 @@ class Game:
         
         # Stage transition: ship flies off top
         if self.stage_transition == "fly_up":
-            for ship in self._ships():
-                if ship.alive or ship.dying:
-                    ship.y -= 420 * self.dt
-                    ship.engine_intensity = 1.0
-            self._tick_stars(follow=True)
-            if all((not s.alive) or s.y < -80 for s in self._ships()):
-                if getattr(self, "adventure", None):
-                    self._end_adventure(True)
-                    return
-                self.stage += 1
-                self._note_scalable("stage2", self.stage, absolute=True)
-                if self.stage > 1 and (self.stage - 1) % 5 == 0:
-                    self._note_scalable("loop")
-                if self.stage >= 21:
-                    self._note_scalable("boldly_go", self.stage, absolute=True)
-                self._setup_stage(self.stage)
-                for ship in self._ships():
-                    ship.y = BASE_HEIGHT + 60
-                    hw = float(getattr(ship, "width", 60) or 60) * 0.5
-                    ship.x = max(hw + 4.0, min(float(BASE_WIDTH) - hw - 4.0, float(ship.x)))
-                self.stage_transition = "arrive"
-                self.transition_timer = 0.0
-            # still draw explosions etc lightly
-            for exp in self.explosions[:]:
-                exp.update(self.dt)
-                if exp.is_finished():
-                    self.explosions.remove(exp)
+            update_play.tick_fly_up(self)
             return
         
         if self.stage_transition == "arrive":
-            # Ship enters from bottom
-            target_y = BASE_HEIGHT - 95
-            for ship in self._ships():
-                if ship.alive:
-                    ship.y -= 380 * self.dt
-                    ship.engine_intensity = 1.0
-            self._tick_stars(follow=True)
-            self.formation.update(self.dt, self.player.x)
-            self._drain_detach_pops()
-            if all((not s.alive) or s.y <= target_y for s in self._ships()):
-                for ship in self._ships():
-                    if ship.alive:
-                        ship.y = target_y
-                        feet = ship.y + float(getattr(ship, "height", 90) or 90) * 0.48
-                        self.explosions.append(self._boom(ship.x - 18, feet, kind="dust"))
-                        self.explosions.append(self._boom(ship.x + 18, feet, kind="dust"))
-                self.stage_transition = None
-                self.input_grace = 0.4
-            for exp in self.explosions[:]:
-                exp.update(self.dt)
-                if exp.is_finished():
-                    self.explosions.remove(exp)
+            update_play.tick_arrive(self)
             return
         
         self.formation.update(self.dt, self.player.x)
@@ -5730,35 +5628,7 @@ class Game:
         
         # --- Stage 5 boss ---
         if self.boss_saucer is not None and self.boss_saucer.alive:
-            self.boss_saucer.update(self.dt, self.player.x)
-            self._boss_cry_quiet = getattr(self, "_boss_cry_quiet", 0.0) + self.dt
-            # Idle yell only after a long silence (ready / angry / yell all reset the clock)
-            if self._boss_cry_quiet > 8.0 and random.random() < 0.045 * self.dt:
-                self._play_boss_cry("boss_yell", volume=0.88, x=self.boss_saucer.boss.x)
-            q = getattr(self, "_boss_angry_queue", None)
-            if q:
-                nxt = []
-                for wait in q:
-                    wait -= self.dt
-                    if wait <= 0:
-                        self._play_boss_cry("boss_angry", volume=0.9, x=self.boss_saucer.boss.x)
-                    else:
-                        nxt.append(wait)
-                self._boss_angry_queue = nxt
-            # Spawn birds more often — stage1 2x more likely than stage2, max 10
-            self.boss_bird_timer -= self.dt
-            if self.boss_bird_timer <= 0:
-                rate = float(getattr(self.boss_saucer, "bird_rate", 1.0) or 1.0)
-                self.boss_bird_timer = random.uniform(0.9, 1.8) / max(0.15, rate)
-                alive_birds = len(self.formation.get_alive_enemies())
-                if alive_birds < 6:
-                    x = random.uniform(60, BASE_WIDTH - 60)
-                    st = 1 if random.random() < 0.67 else 2
-                    bird = Enemy(x, -30, formation_index=alive_birds + random.randint(0, 6), stage=st)
-                    bird.speed_mult = stage_speed_mult(self.stage) * self.difficulty_speed_mult()
-                    bird.state = "formation"
-                    bird.start_dive(x)  # dive in their spawn lane, not a shared player X
-                    self.formation.enemies.append(bird)
+            update_play.tick_boss_saucer(self)
         
         # Stage clear → fly to next stage (non-boss content)
         content = stage_content(self.stage)
@@ -5766,329 +5636,28 @@ class Game:
                 and self.formation.all_dead()
                 and not any(s.dying for s in self._ships())
                 and self.boss_saucer is None):
-            self._clear_enemy_fire()
-            self._on_stage_cleared()
-            if not getattr(self, "adventure", None):
-                self._play_level_vo(int(getattr(self, "stage", 1) or 1) + 1)
-            self.stage_transition = "fly_up"
-            for ship in self._ships():
-                ship.destroy_bullet()
+            update_play.begin_stage_clear(self)
             return
         
         # Boss killed → cataclysmic saucer explosion, kill all birds, then fly up
         if (self.boss_saucer is not None and not self.boss_saucer.alive
                 and self.stage_transition is None and not self.game_over):
-            # Cataclysm: explode many cells + boss area
-            import random as _r
-            living = [c for c in self.boss_saucer.cells if c.alive]
-            for c in living:
-                c.alive = False
-                if _r.random() < 0.35:
-                    self.explosions.append(self._boom(c.x, c.y, kind="enemy"))
-            for d in self.boss_saucer.decorations:
-                if d.alive:
-                    d.alive = False
-                    self.explosions.append(self._boom(d.x, d.y, kind="enemy"))
-            bx = self.boss_saucer.boss.x
-            by = self.boss_saucer.boss.y
-            for _ in range(8):
-                self.explosions.append(self._boom(
-                    bx + _r.uniform(-120, 120),
-                    by + _r.uniform(-40, 80),
-                    kind="gameover" if _ < 3 else "collision"
-                ))
-            self.shake_amount = 30.0
-            self.sounds.play("explosion_big", x=bx)
-            for e in self.formation.get_alive_enemies():
-                e.kill()
-            self.boss_saucer = None
-            self.bosses_defeated += 1
-            self._note_scalable("boss_down")
-            if self.difficulty == "veteran":
-                self._note_scalable("veteran_clear")
-            self._note_scalable("ten_flags")
-            self._clear_enemy_fire()
-            self.stage_transition = "boss_outro"
-            self.transition_timer = 0.0
+            update_play.boss_cataclysm(self)
         
         if self.stage_transition == "boss_outro":
-            self.transition_timer += self.dt
-            self._tick_stars(follow=True)
-            for exp in self.explosions[:]:
-                exp.update(self.dt)
-                if exp.is_finished():
-                    self.explosions.remove(exp)
-            # After spectacle, ship flies to next stage
-            if self.transition_timer > 1.8:
-                self._clear_enemy_fire()
-                self._on_stage_cleared()
-                self._play_level_vo(int(getattr(self, "stage", 1) or 1) + 1)
-                self.stage_transition = "fly_up"
-                for ship in self._ships():
-                    ship.destroy_bullet()
+            update_play.tick_boss_outro(self)
             return
         
         # Player bullet(s) vs Enemies / Boss
-        for ship in self._ships():
-          for shot_i, bullet_rect in ship.get_bullet_rects():
-            hit_something = False
-            # Boss saucer armor / core
-            if self.boss_saucer is not None and self.boss_saucer.alive:
-                result = self.boss_saucer.hit_bullet(bullet_rect)
-                if result is not None:
-                    kind, target = result
-                    if kind == "cell":
-                        ship.destroy_bullet("neutral", index=shot_i)
-                        if getattr(target, "is_purple", False):
-                            self.explosions.append(self._boom(target.x, target.y, kind="electric"))
-                            self.shake_amount = 4.5
-                            self.sounds.play("shield_zap", volume=0.75, x=target.x)
-                        else:
-                            self.explosions.append(self._boom(target.x, target.y, kind="enemy"))
-                            self.shake_amount = 3.5
-                            self.sounds.play("enemy_explosion", volume=0.4, x=target.x)
-                        self._add_score(ship, 1)
-                        self._note_scalable("wrecker")
-                    elif kind == "deco":
-                        ship.destroy_bullet("neutral", index=shot_i)
-                        self.explosions.append(self._boom(target.x, target.y, kind="flame"))
-                        self.shake_amount = 5.0
-                        self.sounds.play("enemy_explosion", volume=0.45, x=target.x)
-                        self._add_score(ship, 50)
-                        self._note_scalable("cutter")
-                        delay = 0.72 + random.uniform(0.18, 0.65)
-                        self._boss_angry_queue.append(delay)
-                        if getattr(self.boss_saucer, "flag_ports_pair", False):
-                            self.boss_saucer.flag_ports_pair = False
-                            self._note_scalable("port_pair")
-                    elif kind == "boss":
-                        self._hitstop(0.045)
-                        ship.destroy_bullet("valid", index=shot_i)
-                        target.kill()
-                        self._add_score(ship, self._boss_points())
-                        self.explosions.append(self._boom(target.x, target.y, kind="gameover"))
-                        self.shake_amount = 20.0
-                        self.sounds.play("explosion_big", x=ship.x)
-                    hit_something = True
-            if hit_something:
-                break  # indices shifted; next frame continues
-
-            for enemy in self.formation.get_hittable_enemies():
-                if isinstance(enemy, BigBird):
-                    if bullet_rect.colliderect(enemy.get_left_wing_hitbox()):
-                        if enemy.hit_wing("left"):
-                            ship.destroy_bullet("neutral", index=shot_i)
-                            self.explosions.append(self._boom(enemy.x - 35, enemy.y, kind="enemy"))
-                            self.shake_amount = 3.0
-                            self.sounds.play("enemy_explosion", volume=0.5, x=enemy.x)
-                        else:
-                            ship.destroy_bullet("neutral", index=shot_i)
-                        hit_something = True
-                        break
-                    if bullet_rect.colliderect(enemy.get_right_wing_hitbox()):
-                        if enemy.hit_wing("right"):
-                            ship.destroy_bullet("neutral", index=shot_i)
-                            self.explosions.append(self._boom(enemy.x + 35, enemy.y, kind="enemy"))
-                            self.shake_amount = 3.0
-                            self.sounds.play("enemy_explosion", volume=0.5, x=enemy.x)
-                        else:
-                            ship.destroy_bullet("neutral", index=shot_i)
-                        hit_something = True
-                        break
-                    if bullet_rect.colliderect(enemy.get_body_hitbox()):
-                        enemy.kill()
-                        self._hitstop()
-                        ship.destroy_bullet("valid", index=shot_i)
-                        self._add_score(ship, self._enemy_points(getattr(enemy, "stage", 3)))
-                        self._note_bird_kill()
-                        if getattr(enemy, "diving", False):
-                            self._note_scalable("butcher")
-                        self._note_scalable("clean_shot", int(getattr(ship, "combo_streak", 0) or 0), absolute=True)
-                        self.explosions.append(self._boom(enemy.x, enemy.y, kind="enemy", delay_frames=1))
-                        self.shake_amount = 7.0
-                        self.sounds.play("enemy_explosion", x=enemy.x)
-                        hit_something = True
-                        break
-                    # Catch-all: silhouette overlap that slipped between wing/body boxes
-                    if bullet_rect.colliderect(enemy.get_hitbox()):
-                        enemy.kill()
-                        self._hitstop()
-                        ship.destroy_bullet("valid", index=shot_i)
-                        self._add_score(ship, self._enemy_points(getattr(enemy, "stage", 3)))
-                        self._note_bird_kill()
-                        if getattr(enemy, "diving", False):
-                            self._note_scalable("butcher")
-                        self._note_scalable("clean_shot", int(getattr(ship, "combo_streak", 0) or 0), absolute=True)
-                        self.explosions.append(self._boom(enemy.x, enemy.y, kind="enemy", delay_frames=1))
-                        self.shake_amount = 7.0
-                        self.sounds.play("enemy_explosion", x=enemy.x)
-                        hit_something = True
-                        break
-                else:
-                    if bullet_rect.colliderect(enemy.get_hitbox()):
-                        enemy.kill()
-                        self._hitstop()
-                        ship.destroy_bullet("valid", index=shot_i)
-                        self._add_score(ship, self._enemy_points(getattr(enemy, "stage", 1)))
-                        self._note_bird_kill()
-                        if getattr(enemy, "diving", False):
-                            self._note_scalable("butcher")
-                        self._note_scalable("clean_shot", int(getattr(ship, "combo_streak", 0) or 0), absolute=True)
-                        self.explosions.append(self._boom(enemy.x, enemy.y, kind="enemy", delay_frames=1))
-                        self.shake_amount = 5.5
-                        self.sounds.play("enemy_explosion", x=enemy.x)
-                        hit_something = True
-                        break
-            if hit_something:
-                break
+        update_play.player_bullets_vs_enemies(self)
 
         # Unbroken saucer brick hits the bottom of the screen → game over
-        if (self.boss_saucer is not None and self.boss_saucer.alive
-                and self.stage_transition is None
-                and self.boss_saucer.touches_floor(BASE_HEIGHT)):
-            for ship in self._ships():
-                if not ship.alive or ship.dying:
-                    continue
-                if getattr(ship, "infinite_lives", False):
-                    continue
-                if self.play_mode == "coop":
-                    ship.hit()
-                    self._on_coop_life_lost(ship)
-                else:
-                    ship.lives = 0
-                    ship.dying = True
-                    ship.death_timer = 0.0
-                    ship.invulnerable = 0.0
-                    ship.rumble(1.0, 1.0, 640)
-                ship.phenix_gauge = float(getattr(ship, "phenix_min_gauge", 0))
-                ship.combo_streak = 0
-                ship.phenix_timer = 0.0
-                self.explosions.append(self._boom(ship.x, ship.y, kind="gameover"))
-            self.shake_amount = 24.0
-            self.sounds.play("explosion_big", x=BASE_WIDTH // 2)
+        update_play.boss_floor_check(self)
 
         # Enemy attacks vs Player(s) — ships do not collide with each other
-        for ship in self._ships():
-            if not ship.alive or ship.dying:
-                continue
-            player_hitbox = ship.get_hitbox()
-            if self.boss_saucer is not None and self.boss_saucer.alive:
-                hull = self.boss_saucer.get_hull_hitbox()
-                if hull.width > 0 and player_hitbox.colliderect(hull):
-                    if ship.infinite_lives:
-                        ship.hit()
-                        self.explosions.append(self._boom(ship.x, ship.y, kind="bullet"))
-                        self.shake_amount = 14.0
-                        self.sounds.play("explosion", x=ship.x)
-                        ship.y = min(BASE_HEIGHT - 80, ship.y + 40)
-                    else:
-                        if self.play_mode == "coop":
-                            ship.hit()
-                            self._on_coop_life_lost(ship)
-                        else:
-                            ship.lives = 0
-                            ship.dying = True
-                            ship.death_timer = 0.0
-                            ship.invulnerable = 0.0
-                            ship.rumble(1.0, 1.0, 640)
-                        ship.phenix_gauge = float(getattr(ship, "phenix_min_gauge", 0))
-                        ship.combo_streak = 0
-                        ship.phenix_timer = 0.0
-                        self.explosions.append(self._boom(ship.x, ship.y, kind="gameover"))
-                        self.shake_amount = 24.0
-                        self.sounds.play("explosion_big", x=ship.x)
-                for b in self.boss_saucer.bullets[:]:
-                    if b.alive and b.get_hitbox().colliderect(player_hitbox):
-                        b.alive = False
-                        if ship.is_phenix and getattr(ship, "uses_shield", False):
-                            bh = b.get_hitbox()
-                            self._shield_absorb(ship, bh.centerx, bh.centery)
-                            self._add_score(ship, 5)
-                        elif (not ship.is_phenix) and ship.invulnerable <= 0 and ship.alive and not ship.dying:
-                            ship.hit()
-                            if self.play_mode == "coop":
-                                self._on_coop_life_lost(ship)
-                            kind = "gameover" if ship.dying else "bullet"
-                            self.explosions.append(self._boom(ship.x, ship.y, kind=kind))
-                            self.shake_amount = 22.0 if ship.dying else 12.0
-                            self.sounds.play("explosion_big" if ship.dying else "explosion", x=ship.x)
-                        break
-            for bullet in self.formation.bullets[:]:
-                if bullet.alive and bullet.get_hitbox().colliderect(player_hitbox):
-                    bullet.alive = False
-                    if ship.is_phenix and getattr(ship, "uses_shield", False):
-                        bh = bullet.get_hitbox()
-                        self._shield_absorb(ship, bh.centerx, bh.centery)
-                        self._add_score(ship, 5)
-                    elif (not ship.is_phenix) and ship.invulnerable <= 0 and ship.alive and not ship.dying:
-                        ship.hit()
-                        if self.play_mode == "coop":
-                            self._on_coop_life_lost(ship)
-                        kind = "gameover" if ship.dying else "bullet"
-                        self.explosions.append(self._boom(ship.x, ship.y, kind=kind))
-                        self.shake_amount = 22.0 if ship.dying else 12.0
-                        self.sounds.play("explosion_big" if ship.dying else "explosion", x=ship.x)
-                    break
-            for enemy in self.formation.get_hittable_enemies():
-                if enemy.diving and enemy.get_hitbox().colliderect(player_hitbox):
-                    try:
-                        enemy.kill(flash=False)
-                    except TypeError:
-                        enemy.kill()
-                        enemy.hit_flash_frames = 0
-                        enemy.alive = False
-                        enemy.dying = False
-                    self.explosions.append(self._boom(enemy.x, enemy.y, kind="collision"))
-                    self.sounds.play("enemy_explosion", x=enemy.x)
-                    if ship.is_phenix:
-                        self.shake_amount = max(self.shake_amount, 8.0)
-                        if getattr(ship, "uses_shield", False):
-                            self._add_score(ship, self._enemy_points(getattr(enemy, "stage", 1)))
-                            self._note_bird_kill()
-                            if getattr(enemy, "diving", False):
-                                self._note_scalable("butcher")
-                    else:
-                        ship.hit()
-                        if self.play_mode == "coop":
-                            self._on_coop_life_lost(ship)
-                        pkind = "gameover" if ship.dying else "collision"
-                        self.explosions.append(self._boom(ship.x, ship.y, kind=pkind))
-                        self.shake_amount = 26.0 if ship.dying else 18.0
-                        self.sounds.play("explosion_big", x=ship.x)
-                    break
+        update_play.enemy_attacks_vs_players(self)
 
-        if any(getattr(s, "just_lost_life", False) for s in self._ships()):
-            self.stage_life_lost = True
-        for s in self._ships():
-            if getattr(s, "flag_gauge_max", False):
-                s.flag_gauge_max = False
-                if not getattr(s, "phenix_auto_refill", False):
-                    self._note_scalable("gauge_max")
-
-        for exp in self.explosions[:]:
-            exp.update(self.dt)
-            if exp.is_finished():
-                self.explosions.remove(exp)
-        if self.tesla_fx is not None:
-            self.tesla_fx.update(self.dt)
-            if self.tesla_fx.is_finished():
-                self.tesla_fx = None
-                self.sounds.play_electric(False)
-        
-        # Soft performance cap: keep newest explosions only
-        if len(self.explosions) > 24:
-            self.explosions = self.explosions[-24:]
-        
-        if self.shake_amount > 0:
-            self.shake_amount = max(0.0, self.shake_amount - SCREEN_SHAKE_DECAY * self.dt)
-
-        # Life lost mid-frame (enemy bullet / dive) — hold, then hand off
-        if (self.hotseat and not self.attract_mode and not self.game_over
-                and not self.hotseat_wait and self.hotseat_hold <= 0
-                and self.stage_transition is None
-                and getattr(self.player, "just_lost_life", False)
-                and self.player.alive and not self.player.dying):
-            self._hotseat_arm_hold("switch", self.HOTSEAT_HOLD_LIFE)
+        update_play.tick_effects_and_hotseat(self)
 
     def _clear_enemy_fire(self):
         """Drop leftover enemy / boss shots before the ship flies up."""
