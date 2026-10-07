@@ -11,7 +11,8 @@ sur le menu, puis les niveaux 1 à 6 dont le boss du niveau 5. Pour chaque
 partie il mesure, image par image :
   - logique   : événements + mise à jour du jeu
   - dessin    : tout le dessin, sans l'affichage final
-  - affichage : l'envoi de l'image à l'écran (flip)
+  - copie     : préparation de l'image avant l'envoi (bordures, copie du canevas)
+  - flip      : l'envoi de l'image à l'écran (pygame.display.flip)
   - total     : la somme, soit ce que coûte vraiment une image
 
 Le jeu avance à pas fixe de 1/144 s par image et SANS limiteur : le total
@@ -49,12 +50,62 @@ def parse_args():
     ap.add_argument("--monitor", type=int, default=0, help="numéro de l'écran (0 = principal)")
     ap.add_argument("--mute", action="store_true", help="sans son (carte son factice)")
     ap.add_argument("--quick", action="store_true", help="test très court (vérification du script)")
+    ap.add_argument("--profile", action="store_true",
+                    help="au lieu des mesures : liste les fonctions de dessin les plus coûteuses (menu, niveau 3, boss)")
     return ap.parse_args()
 
 
 def pct(values, p):
     s = sorted(values)
     return s[min(len(s) - 1, int(len(s) * p))] if s else 0.0
+
+
+def run_profile(args, g, run_frame, new_rec, settings, replay, root):
+    """--profile: which drawing functions cost the most on this PC (menu, level 3, boss)."""
+    import cProfile
+    import io
+    import pstats
+
+    n = 120 if args.quick else 400
+    out = ["Phenix Rebirth - profil du dessin (fonctions les plus coûteuses)",
+           "Date : %s   écran/canevas : %s" % (time.strftime("%Y-%m-%d %H:%M:%S"), g.screen.get_size()),
+           "Le profileur ralentit le jeu : seuls les rangs et les proportions comptent.", ""]
+
+    def section(title, playing):
+        prof = cProfile.Profile()
+        rec = new_rec()
+        for i in range(n):
+            run_frame(rec, playing, i, n, prof)
+        buf = io.StringIO()
+        stats = pstats.Stats(prof, stream=buf)
+        stats.sort_stats("tottime").print_stats(14)
+        txt = buf.getvalue().replace(root, "").replace("\\", "/")
+        out.append("=== %s (%d images) ===" % (title, n))
+        keep = [l[:150] for l in txt.split("\n") if l.strip()][1:]
+        out.extend(keep)
+        out.append("")
+
+    section("Menu titre", False)
+    replay._solo("phoenix")(g)
+    for stage, title in ((3, "Niveau 3"), (5, "Niveau 5 (boss)")):
+        if g.stage < stage:
+            g.stage = stage
+            g._setup_stage(stage)
+            g.stage_transition = None
+            for ship in g._ships():
+                ship.y = settings.BASE_HEIGHT - 95
+        while g.stage_transition is not None:
+            run_frame(new_rec(), True, 0, n)
+        section(title, True)
+    text = "\n".join(out)
+    print(text)
+    path = os.path.join(root, "bench_profile.txt")
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(text + "\n")
+        print("\nRésultat enregistré dans : %s" % path)
+    except OSError as e:
+        print("\n(Impossible d'écrire bench_profile.txt : %s)" % e)
 
 
 def main():
@@ -83,18 +134,29 @@ def main():
     import replay
     import game as game_module
 
-    # time spent presenting the frame (flip) is measured apart from the drawing
-    flip_ms = [0.0]
-    real_flip = game_module.Game._flip_frame
+    # Presentation is measured apart from the drawing, and split in two:
+    #   flip = pygame.display.flip() alone, copy = the rest of Game._flip_frame
+    present_ms = [0.0]   # whole Game._flip_frame
+    flip_ms = [0.0]      # pygame.display.flip only
+    real_present = game_module.Game._flip_frame
+    real_display_flip = pygame.display.flip
 
-    def timed_flip(self, *a, **k):
+    def timed_present(self, *a, **k):
         t = time.perf_counter()
         try:
-            return real_flip(self, *a, **k)
+            return real_present(self, *a, **k)
+        finally:
+            present_ms[0] += (time.perf_counter() - t) * 1000
+
+    def timed_display_flip():
+        t = time.perf_counter()
+        try:
+            return real_display_flip()
         finally:
             flip_ms[0] += (time.perf_counter() - t) * 1000
 
-    game_module.Game._flip_frame = timed_flip
+    game_module.Game._flip_frame = timed_present
+    pygame.display.flip = timed_display_flip
 
     g = replay._new_game(12345)
     keys = {"cur": replay._Keys()}
@@ -105,7 +167,7 @@ def main():
     results = []
     state = {"frame": 0}
 
-    def run_frame(rec, playing, i, count):
+    def run_frame(rec, playing, i, count, prof=None):
         """One frame of the game, timed and added to `rec`."""
         if playing:
             for ship in g._ships():
@@ -120,26 +182,39 @@ def main():
         else:
             keys["cur"] = replay._Keys(replay._menu_pressed(g, state["frame"]))
         g.dt = STEP
+        present_ms[0] = 0.0
         flip_ms[0] = 0.0
         t0 = time.perf_counter()
         g.handle_events()
         g.update()
         t1 = time.perf_counter()
+        if prof is not None:
+            prof.enable()
         g.draw()
+        if prof is not None:
+            prof.disable()
         t2 = time.perf_counter()
         logic = (t1 - t0) * 1000
         draw_all = (t2 - t1) * 1000
         rec["logic"].append(logic)
-        rec["draw"].append(draw_all - flip_ms[0])
+        rec["draw"].append(draw_all - present_ms[0])
+        rec["copy"].append(present_ms[0] - flip_ms[0])
         rec["flip"].append(flip_ms[0])
         rec["total"].append(logic + draw_all)
         state["frame"] += 1
 
     def new_rec():
-        return {"logic": [], "draw": [], "flip": [], "total": []}
+        return {"logic": [], "draw": [], "copy": [], "flip": [], "total": []}
 
     print("Test en cours (une minute environ), ne touche à rien...")
     gc.collect()
+
+    if args.profile:
+        run_profile(args, g, run_frame, new_rec, settings, replay, ROOT)
+        g.running = False
+        pygame.quit()
+        shutil.rmtree(user_dir, ignore_errors=True)
+        return
 
     # --- menu ---
     rec = new_rec()
@@ -185,8 +260,8 @@ def main():
         "",
     ]
     lines = list(info)
-    head = "%-18s %6s | %6s %6s | %6s %6s %6s | %6s %6s | %7s %7s %7s %7s %6s | %6s" % (
-        "Partie", "images", "logiq.", "p99", "dessin", "p99", "max", "affich", "p99",
+    head = "%-17s %6s | %5s %5s | %5s %5s %5s | %5s | %5s %5s | %6s %6s %6s %6s %5s | %6s" % (
+        "Partie", "images", "logiq", "p99", "dessin", "p99", "max", "copie", "flip", "p99",
         "total", "p95", "p99", "max", "i/s", ">6,9ms")
     lines += [head, "-" * len(head)]
     all_total = []
@@ -196,15 +271,17 @@ def main():
             continue
         all_total += t
         over = 100.0 * sum(1 for x in t if x > BUDGETS[0][1]) / len(t)
-        lines.append("%-18s %6d | %6.2f %6.2f | %6.2f %6.2f %6.2f | %6.2f %6.2f | %7.2f %7.2f %7.2f %7.2f %6.0f | %5.1f%%" % (
+        lines.append("%-17s %6d | %5.2f %5.2f | %5.2f %5.2f %5.2f | %5.2f | %5.2f %5.2f | %6.2f %6.2f %6.2f %6.2f %5.0f | %5.1f%%" % (
             label, len(t),
             statistics.mean(rec["logic"]), pct(rec["logic"], .99),
             statistics.mean(rec["draw"]), pct(rec["draw"], .99), max(rec["draw"]),
+            statistics.mean(rec["copy"]),
             statistics.mean(rec["flip"]), pct(rec["flip"], .99),
             statistics.mean(t), pct(t, .95), pct(t, .99), max(t),
             1000.0 / statistics.mean(t), over))
     lines.append("")
-    lines.append("Durées en millisecondes. i/s = images par seconde que le PC peut tenir (1000 / total moyen).")
+    lines.append("Durées en millisecondes. copie = bordures + copie du canevas avant le flip ; flip = pygame.display.flip().")
+    lines.append("i/s = images par seconde que le PC peut tenir (1000 / total moyen).")
     lines.append("Budget par image : 144 Hz = 6,94 ms   120 Hz = 8,33 ms   60 Hz = 16,67 ms.")
     if all_total:
         lines.append("")
