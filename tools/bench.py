@@ -102,55 +102,73 @@ def main():
 
     n = 300 if args.quick else 1200
     menu_n = 120 if args.quick else 600
-    segments = [("Menu titre", menu_n, None)]
-    for stage in (1, 2, 3, 4, 5, 6):
-        label = "Niveau %d%s" % (stage, " (boss)" if stage % 5 == 0 else "")
-        segments.append((label, n, stage))
-
     results = []
-    frame = 0
-    print("Test en cours (%s frames environ), ne touche à rien..." % sum(s[1] for s in segments))
+    state = {"frame": 0}
+
+    def run_frame(rec, playing, i, count):
+        """One frame of the game, timed and added to `rec`."""
+        if playing:
+            for ship in g._ships():
+                ship.infinite_lives = True
+            if i == count // 2:
+                for ship in g._ships():
+                    ship.phenix_gauge = 10.0
+                replay._press(pygame.K_RSHIFT)
+            if i == count // 2 + 3:
+                replay._release(pygame.K_RSHIFT)
+            keys["cur"] = replay._Keys(replay._pressed(g, state["frame"]))
+        else:
+            keys["cur"] = replay._Keys(replay._menu_pressed(g, state["frame"]))
+        g.dt = STEP
+        flip_ms[0] = 0.0
+        t0 = time.perf_counter()
+        g.handle_events()
+        g.update()
+        t1 = time.perf_counter()
+        g.draw()
+        t2 = time.perf_counter()
+        logic = (t1 - t0) * 1000
+        draw_all = (t2 - t1) * 1000
+        rec["logic"].append(logic)
+        rec["draw"].append(draw_all - flip_ms[0])
+        rec["flip"].append(flip_ms[0])
+        rec["total"].append(logic + draw_all)
+        state["frame"] += 1
+
+    def new_rec():
+        return {"logic": [], "draw": [], "flip": [], "total": []}
+
+    print("Test en cours (une minute environ), ne touche à rien...")
     gc.collect()
-    for label, count, stage in segments:
-        if stage == 1:
-            replay._solo("phoenix")(g)
-        elif stage:
+
+    # --- menu ---
+    rec = new_rec()
+    for i in range(menu_n):
+        run_frame(rec, False, i, menu_n)
+    results.append(("Menu titre", rec))
+
+    # --- levels 1 to 6: the game's own level changes are never interrupted ---
+    replay._solo("phoenix")(g)
+    for stage in range(1, 7):
+        if stage > 1 and g.stage < stage:
             g.stage = stage
             g._setup_stage(stage)
             g.stage_transition = None
-        rec = {"logic": [], "draw": [], "flip": [], "total": []}
-        for i in range(count):
-            if stage:
-                for ship in g._ships():
-                    ship.infinite_lives = True
-                if i == count // 2:
-                    for ship in g._ships():
-                        ship.phenix_gauge = 10.0
-                    replay._press(pygame.K_RSHIFT)
-                if i == count // 2 + 3:
-                    replay._release(pygame.K_RSHIFT)
-                keys["cur"] = replay._Keys(replay._pressed(g, frame))
-            else:
-                keys["cur"] = replay._Keys(replay._menu_pressed(g, frame))
-            g.dt = STEP
-            flip_ms[0] = 0.0
-            t0 = time.perf_counter()
-            g.handle_events()
-            g.update()
-            t1 = time.perf_counter()
-            g.draw()
-            t2 = time.perf_counter()
-            if not g.running:
-                print("Le jeu s'est fermé pendant le test.")
-                break
-            logic = (t1 - t0) * 1000
-            draw_all = (t2 - t1) * 1000
-            rec["logic"].append(logic)
-            rec["draw"].append(draw_all - flip_ms[0])
-            rec["flip"].append(flip_ms[0])
-            rec["total"].append(logic + draw_all)
-            frame += 1
+            for ship in g._ships():            # back to the normal play height
+                ship.y = settings.BASE_HEIGHT - 95
+        rec = new_rec()
+        label = "Niveau %d%s" % (g.stage, " (boss)" if settings.stage_content(g.stage) == 5 else "")
+        for i in range(n):
+            run_frame(rec, True, i, n)
+        # let a level change in progress finish (ship flying up, next level arriving)
+        extra = 0
+        while g.stage_transition is not None and extra < 2000 and g.running:
+            run_frame(rec, True, n, n)
+            extra += 1
         results.append((label, rec))
+        if not g.running:
+            print("Le jeu s'est fermé pendant le test.")
+            break
 
     info = [
         "Phenix Rebirth - benchmark de fluidité",
