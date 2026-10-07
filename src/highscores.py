@@ -10,6 +10,7 @@ Default board is seeded with KRA / FFC / GRK for first launch.
 import json
 import os
 
+from safe_io import atomic_write_json, backup_unreadable
 from settings import user_data_dir
 HS_FILE = os.path.join(user_data_dir(), "highscores.json")
 MAX_ENTRIES = 15
@@ -60,7 +61,8 @@ def load_highscores():
                 return cleaned[:MAX_ENTRIES]
     except Exception:
         pass
-    # First launch or empty/invalid file
+    # First launch or empty/invalid file (keep a copy of an unreadable file first)
+    backup_unreadable(HS_FILE)
     scores = default_highscores()
     save_highscores(scores)
     return scores
@@ -68,8 +70,7 @@ def load_highscores():
 def save_highscores(entries):
     entries = sorted(entries, key=lambda x: x["score"], reverse=True)[:MAX_ENTRIES]
     try:
-        with open(HS_FILE, "w", encoding="utf-8") as f:
-            json.dump(entries, f, indent=2)
+        atomic_write_json(HS_FILE, entries)
     except Exception as e:
         print("Could not save highscores:", e)
     return entries

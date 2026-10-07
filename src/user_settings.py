@@ -7,6 +7,7 @@ importing the whole Game class.
 import json
 import os
 
+from safe_io import atomic_write_json, backup_unreadable
 from settings import user_data_dir
 
 SETTINGS_FILE = os.path.join(user_data_dir(), "settings.json")
@@ -35,13 +36,14 @@ def load_user_settings():
         with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
         defaults.update({k: data[k] for k in defaults if k in data})
-    except Exception:
+    except FileNotFoundError:
         pass
+    except Exception:
+        backup_unreadable(SETTINGS_FILE)
     return defaults
 
 def save_user_settings(data):
     try:
-        with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
+        atomic_write_json(SETTINGS_FILE, data)
     except Exception as e:
         print("Could not save settings:", e)

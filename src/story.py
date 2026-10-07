@@ -8,6 +8,7 @@ Points earned in a mission are hangar credits.
 import json
 import os
 import pygame
+from safe_io import atomic_write_json, backup_unreadable
 from settings import BASE_WIDTH, BASE_HEIGHT, asset_path, user_data_dir
 from i18n import t
 
@@ -167,12 +168,11 @@ class StoryHub:
                 base["slots"] = merged
             self.state = base
         except Exception:
-            pass
+            backup_unreadable(path)
 
     def save(self):
         try:
-            with open(_story_path(), "w", encoding="utf-8") as f:
-                json.dump(self.state, f, indent=2)
+            atomic_write_json(_story_path(), self.state)
         except Exception:
             pass
 
