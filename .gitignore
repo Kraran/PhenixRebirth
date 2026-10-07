@@ -8,6 +8,7 @@ achievements.json
 boot.log
 errors.log
 errors.log.old
+bench_result.txt
 dist/
 build/
 *.zip
