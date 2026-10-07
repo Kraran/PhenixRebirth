@@ -1,5 +1,10 @@
 # Roadmap — Phenix Rebirth
-Current release: **v1.4.3**
+Current release: **v1.4.4**
+
+## Done in 1.4.4
+
+- Starfield comet update
+- New Add-on menu
 
 ## Done in 1.4.3
 
