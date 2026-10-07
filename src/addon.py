@@ -7,6 +7,7 @@ Arcadia bezels: -override_artwork so arcadia.zip does not hide the game zip.
 import os
 import subprocess
 import sys
+import time
 import ctypes
 from ctypes import wintypes
 
@@ -577,7 +578,16 @@ def _sort_key(set_name):
     return (_FAMILY_RANK.get(fam, 9), plat, year, set_name)
 
 
-def available_sets():
+# Le menu demande la liste des ROM à CHAQUE image ; la lire sur le disque
+# (parcours de dossiers) coûtait plusieurs ms par image quand MAME est installé.
+# Résultat gardé _SETS_TTL secondes (le scan lui-même coûte ~10 ms : pas question
+# de le refaire souvent) ; les actions du joueur (entrer dans l'Add-on, lancer)
+# relisent toujours à neuf.
+_SETS_TTL = 30.0
+_sets_cache = None  # (heure de lecture, liste)
+
+
+def _scan_sets():
     if not mame_exe():
         return []
     out = []
@@ -586,6 +596,17 @@ def available_sets():
             out.append((entry[0], entry[1]))
     out.sort(key=lambda item: _sort_key(item[0]))
     return out
+
+
+def available_sets(fresh=False):
+    global _sets_cache
+    now = time.monotonic()
+    cached = _sets_cache
+    if not fresh and cached is not None and 0.0 <= now - cached[0] < _SETS_TTL:
+        return list(cached[1])
+    out = _scan_sets()
+    _sets_cache = (now, out)
+    return list(out)
 
 
 def addon_ready():

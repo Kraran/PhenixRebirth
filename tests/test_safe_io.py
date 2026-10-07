@@ -2,6 +2,7 @@
 import json
 import os
 import sys
+import time
 
 import pytest
 
@@ -103,3 +104,64 @@ def test_achievements_save_roundtrip(tmp_path, monkeypatch):
     monkeypatch.setattr(achievements, "ACH_FILE", str(tmp_path / "achievements.json"))
     achievements.save_achievements({"unlocked": {}, "progress": {"marathon": 7}, "tiers": {}})
     assert achievements.load_achievements()["progress"] == {"marathon": 7}
+
+
+# --- écriture différée (hauts faits sauvegardés pendant la partie) -----------
+
+def test_write_behind_visible_tout_de_suite_et_sur_disque_apres_flush(tmp_path, monkeypatch):
+    p = str(tmp_path / "wb.json")
+    monkeypatch.setattr(safe_io, "COALESCE_SEC", 0.05)
+    safe_io.write_behind(p, '{"a": 1}')
+    assert safe_io.read_text_latest(p) == '{"a": 1}'     # même si pas encore écrit
+    assert safe_io.flush() is True
+    assert (tmp_path / "wb.json").read_text(encoding="utf-8") == '{"a": 1}'
+    assert not (tmp_path / "wb.json.tmp").exists()
+    assert safe_io.read_text_latest(p) == '{"a": 1}'     # relu depuis le disque
+
+
+def test_write_behind_ne_fait_pas_attendre_et_fusionne(tmp_path, monkeypatch):
+    p = str(tmp_path / "wb2.json")
+    calls = []
+    real = safe_io.atomic_write_text
+
+    def slow(path, text):
+        calls.append(text)
+        time.sleep(0.15)
+        real(path, text)
+
+    monkeypatch.setattr(safe_io, "atomic_write_text", slow)
+    monkeypatch.setattr(safe_io, "COALESCE_SEC", 0.05)
+    t0 = time.perf_counter()
+    for i in range(50):
+        safe_io.write_behind(p, '{"n": %d}' % i)
+    assert time.perf_counter() - t0 < 0.1               # l'appelant n'attend pas le disque
+    assert safe_io.read_text_latest(p) == '{"n": 49}'
+    assert safe_io.flush() is True
+    assert (tmp_path / "wb2.json").read_text(encoding="utf-8") == '{"n": 49}'
+    assert len(calls) <= 3                              # 50 sauvegardes -> quelques écritures
+    assert calls[-1] == '{"n": 49}'
+
+
+def test_write_behind_erreur_n_arrete_pas_le_fil(tmp_path, monkeypatch):
+    bad = str(tmp_path / "no_such_dir" / "x.json")
+    good = str(tmp_path / "ok.json")
+    monkeypatch.setattr(safe_io, "COALESCE_SEC", 0.01)
+    safe_io.write_behind(bad, "{}")
+    safe_io.flush()
+    safe_io.write_behind(good, '{"ok": true}')
+    assert safe_io.flush() is True
+    assert (tmp_path / "ok.json").read_text(encoding="utf-8") == '{"ok": true}'
+
+
+def test_hauts_faits_relus_apres_chaque_sauvegarde(tmp_path, monkeypatch):
+    p = tmp_path / "achievements.json"
+    monkeypatch.setattr(achievements, "ACH_FILE", str(p))
+    monkeypatch.setattr(safe_io, "COALESCE_SEC", 0.05)
+    # comme Game._note_scalable : ajout + relecture à chaque oiseau abattu
+    data = achievements.load_achievements()
+    for _ in range(120):
+        achievements.add_scalable("first_blood", 1, data)
+        data = achievements.load_achievements()
+    assert data["progress"]["first_blood"] == 120
+    safe_io.flush()
+    assert json.loads(p.read_text(encoding="utf-8"))["progress"]["first_blood"] == 120

@@ -14,7 +14,7 @@ import json
 import os
 from datetime import datetime, timezone
 
-from safe_io import atomic_write_json, backup_unreadable
+from safe_io import backup_unreadable, read_text_latest, write_behind_json
 from settings import user_data_dir
 from errlog import log_exc
 
@@ -93,8 +93,7 @@ def _empty():
 
 def load_achievements():
     try:
-        with open(ACH_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
+        data = json.loads(read_text_latest(ACH_FILE))
         if not isinstance(data, dict):
             backup_unreadable(ACH_FILE)
             return _empty()
@@ -137,7 +136,7 @@ def save_achievements(data):
             "progress": dict((data or {}).get("progress") or {}),
             "tiers": dict((data or {}).get("tiers") or {}),
         }
-        atomic_write_json(ACH_FILE, payload)
+        write_behind_json(ACH_FILE, payload)  # en arrière-plan : voir safe_io
     except Exception as e:
         print("Could not save achievements:", e)
     return data

@@ -122,7 +122,7 @@ def menu_adjust(game, direction):
         game.save_settings()
         game._open_display()
     elif key == "hz":
-        caps = [60, 75, 120]
+        caps = [60, 75, 120, 144]
         cur = int(getattr(game, "fps_cap", 120) or 120)
         i = caps.index(cur) if cur in caps else 2
         game.fps_cap = caps[(i + direction) % len(caps)]
@@ -156,7 +156,7 @@ def menu_confirm(game):
             game.menu_screen = "story_hub"
             game.menu_idle = 0.0
         elif game.menu_index == 2:
-            sets = mame_addon.available_sets()
+            sets = mame_addon.available_sets(fresh=True)
             if sets:
                 game.menu_screen = "addon"
                 game.menu_index = 0

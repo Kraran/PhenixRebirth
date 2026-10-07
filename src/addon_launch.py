@@ -15,7 +15,7 @@ def launch_addon(game):
     """Run local MAME on the focused ROM, hide the console, wait, come back."""
     if getattr(game, "input_grace", 0) > 0:
         return
-    sets = mame_addon.available_sets()
+    sets = mame_addon.available_sets(fresh=True)
     idx = int(getattr(game, "menu_index", 0) or 0)
     if not sets or idx < 0 or idx >= len(sets):
         return

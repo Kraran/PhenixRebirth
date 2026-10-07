@@ -77,6 +77,7 @@ import menu_actions
 from settings import user_data_dir, asset_path, project_root
 from user_settings import SETTINGS_FILE, load_user_settings, save_user_settings
 from text_cache import TextCache
+from pacing import FramePacer
 from errlog import log_exc
 
 
@@ -197,6 +198,9 @@ class Game:
     Lifecycle: __init__ (load settings, build systems) → run() event/update/draw loop.
     Soft restart after a run re-enters __init__ while preserving user settings.
     """
+
+    # Vrai canevas pendant un dessin direct (voir draw()), sinon None.
+    _direct_restore = None
     def __init__(self, soft=False):
         """soft=True: reset session state without recreating the window (no desktop flash)."""
         if not soft:
@@ -594,9 +598,17 @@ class Game:
         cy = BASE_HEIGHT // 2
         # Dark plate behind for readability
         pad_x, pad_y = (18, 10) if kind == "ach" else (28, 16)
-        plate = pygame.Surface((cm.get_width() + pad_x * 2, cm.get_height() + pad_y * 2), pygame.SRCALPHA)
         plate_a = 70 if kind in ("stage", "ach") else 160
-        pygame.draw.rect(plate, (0, 0, 0, plate_a), plate.get_rect(), border_radius=8)
+        # La plaque ne dépend que de sa taille et de son opacité : gardée d'une image à l'autre.
+        pkey = (cm.get_width() + pad_x * 2, cm.get_height() + pad_y * 2, plate_a)
+        plates = self.__dict__.setdefault("_cheat_plates", {})
+        plate = plates.get(pkey)
+        if plate is None:
+            plate = pygame.Surface(pkey[:2], pygame.SRCALPHA)
+            pygame.draw.rect(plate, (0, 0, 0, plate_a), plate.get_rect(), border_radius=8)
+            if len(plates) >= 32:
+                plates.clear()
+            plates[pkey] = plate
         self.game_surface.blit(plate, (cx - plate.get_width() // 2, cy - plate.get_height() // 2))
         # Glow
         for ox, oy in ((-2, 0), (2, 0), (0, -2), (0, 2), (-1, -1), (1, 1)):
@@ -2207,14 +2219,18 @@ class Game:
             getattr(self, "bezel_right_img", None), right_w, sh, False
         )
 
-    def _flip_frame(self, shake_x=0, shake_y=0):
-        """Present game_surface: SCALED 1:1, or CPU blit + cached bezels."""
+    def _flip_frame(self, shake_x=0, shake_y=0, direct=False):
+        """Present game_surface: SCALED 1:1, or CPU blit + cached bezels.
+
+        direct=True : l'image a déjà été dessinée sur l'écran (voir draw())."""
         mode = getattr(self, "display_mode", "window")
         scr_size = self.screen.get_size()
         if getattr(self, "_present_size", None) != scr_size:
-            self._present_size = scr_size
             self._layout_viewport()
             self._invalidate_present_cache()
+            # Mémorisé APRÈS l'invalidation (qui remet _present_size à None) :
+            # sinon la mise en page et les bordures étaient refaites à chaque image.
+            self._present_size = scr_size
         vr = getattr(self, "view_rect", pygame.Rect(0, 0, BASE_WIDTH, BASE_HEIGHT))
         gpu = getattr(self, "_gpu", None)
         if (
@@ -2222,7 +2238,12 @@ class Game:
             and getattr(self, "_gpu_backend", "") == "scaled"
             and not self.bezel_active
         ):
-            if gpu.present(self.game_surface, vr, None, None, None, (shake_x, shake_y)):
+            if direct:
+                if gpu.present_direct():
+                    return
+                # échec rare : le canevas est périmé, on y recopie l'image de l'écran
+                self.game_surface.blit(self.screen, (0, 0))
+            elif gpu.present(self.game_surface, vr, None, None, None, (shake_x, shake_y)):
                 return
         # CPU fallback (previous path)
         if mode == "window" and scr_size == (BASE_WIDTH, BASE_HEIGHT):
@@ -2251,6 +2272,27 @@ class Game:
             if vr.width > 0 and vr.height > 0:
                 self._present_game_scaled(vr, vr.x + shake_x, vr.y + shake_y)
         pygame.display.flip()
+
+    def _present_overwrites_screen(self, shake_x, shake_y):
+        """True si la copie du canevas recouvre l'écran en entier (chemin SCALED,
+        sans bordures ni secousse, mêmes dimensions, canevas opaque) : le
+        remplissage noir de draw() serait aussitôt écrasé, on l'évite."""
+        if shake_x or shake_y or self.bezel_active:
+            return False
+        gpu = getattr(self, "_gpu", None)
+        if gpu is None or not gpu.active or getattr(self, "_gpu_backend", "") != "scaled":
+            return False
+        scr, gs = self.screen, self.game_surface
+        if scr is None or gs is None:
+            return False
+        # mise en page à jour (sinon bezel_active peut changer dans _flip_frame)
+        if getattr(self, "_present_size", None) != scr.get_size():
+            return False
+        if scr.get_size() != gs.get_size():
+            return False
+        if gs.get_flags() & pygame.SRCALPHA or gs.get_colorkey() is not None or gs.get_alpha() not in (None, 255):
+            return False
+        return True
 
     def _present_game_scaled(self, vr, dest_x, dest_y):
         """Scale logical canvas into the window game band."""
@@ -3688,7 +3730,9 @@ class Game:
         level = int(getattr(self, "scanlines", 0) or 0)
         if level <= 0:
             return None
-        gs = getattr(self, "game_surface", None)
+        gs = getattr(self, "_direct_restore", None)  # vrai canevas pendant un dessin direct
+        if gs is None:
+            gs = getattr(self, "game_surface", None)
         key = (level, BASE_WIDTH, BASE_HEIGHT, id(gs) if gs is not None else 0)
         if self._scanline_surf is not None and getattr(self, "_scanline_key", None) == key:
             return self._scanline_surf
@@ -3726,6 +3770,39 @@ class Game:
 
 
     def draw(self):
+        # Dessin direct : quand la copie du canevas vers l'écran recouvrirait tout
+        # l'écran (chemin SCALED, sans bordures ni secousse, même taille et même
+        # format), on dessine tout de suite sur l'écran et on évite cette copie
+        # (~5 Mo par image). Même image, mêmes pixels.
+        shaking = bool(self.shake_amount > 0 and self.started
+                       and (not self.game_over or self.hs_phase == "card"))
+        direct = (not shaking) and self._direct_draw_ok()
+        if direct:
+            canvas = self.game_surface
+            self._direct_restore = canvas
+            self.game_surface = self.screen
+        try:
+            shake_x, shake_y = self._draw_canvas()
+        finally:
+            if direct:
+                self.game_surface = canvas
+                self._direct_restore = None
+        # Present — GPU upscale when bound, else CPU scale
+        self._flip_frame(shake_x, shake_y, direct)
+
+    def _direct_draw_ok(self):
+        if not self._present_overwrites_screen(0, 0):
+            return False
+        scr, gs = self.screen, self.game_surface
+        if scr is gs or pygame.display.get_surface() is not scr:
+            return False
+        if scr.get_masks() != gs.get_masks() or scr.get_bitsize() != gs.get_bitsize():
+            return False
+        if scr.get_flags() & pygame.SRCALPHA or scr.get_colorkey() is not None:
+            return False
+        return True
+
+    def _draw_canvas(self):
         draw_frame.draw_background(self)
         
         shake_x = shake_y = 0
@@ -3759,7 +3836,8 @@ class Game:
 
         draw_frame.draw_hotseat_overlays(self)
         
-        self.screen.fill((0, 0, 0))
+        if not self._present_overwrites_screen(shake_x, shake_y):
+            self.screen.fill((0, 0, 0))
 
         # Pause overlay
         if self.paused and self.started and not self.game_over:
@@ -3779,8 +3857,7 @@ class Game:
         self._draw_cheat_message()
         
         self._draw_screen_fade()
-        # Present — GPU upscale when bound, else CPU scale
-        self._flip_frame(shake_x, shake_y)
+        return shake_x, shake_y
 
     # --- Main loop ---
     def run(self):
@@ -3793,13 +3870,18 @@ class Game:
             self.fade_phase = "in"
             self.fade_action = None
             self.FADE_SEC = 0.50
+        self._pacer = FramePacer()
         while self.running:
             cap = int(getattr(self, "fps_cap", getattr(self, "fps_target", 60)) or 60)
             panel = int(getattr(self, "panel_hz", 60) or 60)
             # VSync On: never present faster than the panel (60 Hz screen + 120 cap = 60).
             if getattr(self, "vsync_mode", "adaptive") == "on":
                 cap = min(cap, panel)
-            self.dt = self.clock.tick(cap) / 1000.0
+            # Limiteur exact (Clock.tick(n) attend un nombre entier de ms : 144 -> ~166 i/s).
+            # clock.tick() sans limite sert seulement à tenir à jour le compteur d'images/s.
+            real = self._pacer.wait(cap)
+            ticked = self.clock.tick() / 1000.0
+            self.dt = ticked if real is None else real
             # Safety clamp (spiral of death protection)
             self.dt = min(self.dt, 0.05)
             

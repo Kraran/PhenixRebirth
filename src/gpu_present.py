@@ -64,6 +64,19 @@ class GpuPresenter:
             self.enabled = False
             return False
 
+    def present_direct(self):
+        """L'image est déjà sur l'écran (dessin direct) : il ne reste que le flip."""
+        if not self.active:
+            return False
+        try:
+            pygame.display.flip()
+            return True
+        except Exception as e:
+            self.last_error = str(e)
+            print("GPU present frame failed:", e)
+            self.enabled = False
+            return False
+
 
 def scaled_flags(mode):
     """Flags for set_mode when GPU/SCALED is on."""
