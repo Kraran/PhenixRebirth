@@ -156,7 +156,7 @@ def menu_confirm(game):
             game.menu_screen = "story_hub"
             game.menu_idle = 0.0
         elif game.menu_index == 2:
-            sets = mame_addon.available_sets()
+            sets = mame_addon.available_sets(fresh=True)
             if sets:
                 game.menu_screen = "addon"
                 game.menu_index = 0

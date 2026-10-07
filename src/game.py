@@ -2212,9 +2212,11 @@ class Game:
         mode = getattr(self, "display_mode", "window")
         scr_size = self.screen.get_size()
         if getattr(self, "_present_size", None) != scr_size:
-            self._present_size = scr_size
             self._layout_viewport()
             self._invalidate_present_cache()
+            # Mémorisé APRÈS l'invalidation (qui remet _present_size à None) :
+            # sinon la mise en page et les bordures étaient refaites à chaque image.
+            self._present_size = scr_size
         vr = getattr(self, "view_rect", pygame.Rect(0, 0, BASE_WIDTH, BASE_HEIGHT))
         gpu = getattr(self, "_gpu", None)
         if (
