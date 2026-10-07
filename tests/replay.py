@@ -33,6 +33,92 @@ class _Keys:
         return key in self.pressed
 
 
+SIDE_EFFECTS = {"quit": 0, "addon": 0}
+
+
+def _frozen_datetime():
+    """The game changes its decor on 1 April, Halloween and Christmas: freeze the date."""
+    import datetime as _dt
+
+    class FrozenDate(_dt.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 6, 15, 12, 0, 0)
+
+    return FrozenDate
+
+
+FUZZ_KEYS = [
+    (pygame.K_UP, ""), (pygame.K_DOWN, ""), (pygame.K_LEFT, ""), (pygame.K_RIGHT, ""),
+    (pygame.K_RETURN, ""), (pygame.K_ESCAPE, ""), (pygame.K_SPACE, " "), (pygame.K_BACKSPACE, ""),
+    (pygame.K_a, "a"), (pygame.K_d, "d"), (pygame.K_q, "q"), (pygame.K_w, "w"), (pygame.K_s, "s"),
+    (pygame.K_z, "z"), (pygame.K_x, "x"), (pygame.K_b, "b"), (pygame.K_n, "n"), (pygame.K_p, "p"),
+    (pygame.K_LSHIFT, ""), (pygame.K_RSHIFT, ""), (pygame.K_KP_ENTER, ""), (pygame.K_CAPSLOCK, ""),
+    (pygame.K_LCTRL, ""),
+]
+
+
+def _fuzz_events(rng, joy):
+    """One random input event (keyboard, plus gamepad buttons / hat / sticks when joy)."""
+    pick = rng.random()
+    if not joy or pick < 0.55:
+        key, uni = rng.choice(FUZZ_KEYS)
+        return pygame.event.Event(pygame.KEYDOWN, key=key, unicode=uni, mod=0)
+    if pick < 0.72:
+        return pygame.event.Event(pygame.JOYBUTTONDOWN, button=rng.choice([0, 1, 2, 3, 6, 7, 9]),
+                                  instance_id=0, joy=0)
+    if pick < 0.85:
+        return pygame.event.Event(pygame.JOYHATMOTION, value=rng.choice(
+            [(0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)]), instance_id=0, joy=0, hat=0)
+    return pygame.event.Event(pygame.JOYAXISMOTION, axis=rng.choice([0, 1]),
+                              value=rng.choice([0.0, 0.3, 0.9, -0.9, 0.6, -0.6, 1.0, -1.0]),
+                              instance_id=0, joy=0)
+
+
+ALL_JUMPS = ["pause", "pause_options", "pause_reset", "quit_confirm", "options",
+             "reset_confirm", "credits", "ship_select", "hotseat_pick", "go_card",
+             "go_enter", "go_table", "hotseat_wait", "to_menu", "highscores",
+             "achievements", "jukebox", "help", "attract"]
+
+
+def _jump_state(g, rng, kinds=None):
+    """Throw the game into a random menu / pause / game-over state (fuzz scenarios)."""
+    k = rng.choice(kinds or ALL_JUMPS)
+    if k in ("pause", "pause_options", "pause_reset", "hotseat_wait") and (not g.started or g.game_over):
+        return k + "-skipped"
+    if k == "pause":
+        g.paused, g.pause_options, g.pause_index = True, False, rng.randrange(3)
+    elif k == "pause_options":
+        g.paused, g.pause_options, g.menu_screen, g.menu_index = True, True, "options", rng.randrange(6)
+    elif k == "pause_reset":
+        g.paused, g.pause_options, g.menu_screen, g.menu_index = True, True, "reset_confirm", rng.randrange(2)
+    elif k == "hotseat_wait":
+        g.hotseat_wait = True
+    elif k == "quit_confirm" and not g.started:
+        g.quit_confirm, g.quit_index = True, rng.randrange(2)
+    elif k in ("options", "reset_confirm", "credits", "ship_select", "highscores",
+               "achievements", "jukebox", "help") and not g.started:
+        g.quit_confirm = False
+        g.menu_screen = k
+        g.menu_index = rng.randrange(6)
+        if k == "ship_select":
+            g.play_mode = rng.choice(["solo", "coop", "hotseat"])
+    elif k == "hotseat_pick" and g.started and g.hotseat and not g.game_over:
+        g.hotseat_pick_p2 = True
+        g.menu_screen = "ship_select"
+    elif k.startswith("go_"):
+        g.game_over = True
+        g.hs_phase = {"go_card": "card", "go_enter": "enter", "go_table": "table"}[k]
+        g.hs_char_index = rng.randrange(3)
+    elif k == "to_menu" and g.started:
+        g._quit_to_menu()
+    elif k == "attract" and not g.started and not g.game_over:
+        g.menu_screen = "main"
+        g.quit_confirm = False
+        g._start_attract()
+    return k
+
+
 def _r(v):
     try:
         return round(float(v), 3)
@@ -65,6 +151,17 @@ def fingerprint(g):
         int(getattr(g, "logo_index", 0) or 0), _r(getattr(g, "input_grace", 0)),
         _r(getattr(g, "ship_anim_t", 0)), _r(getattr(g, "shield_slide", 0)),
         _r(getattr(g, "ach_scroll", 0)), int(getattr(g, "juke_index", 0) or 0),
+        # pause / quit menus, high-score entry, joystick latches, options, side effects
+        int(getattr(g, "pause_index", 0) or 0), bool(getattr(g, "pause_options", False)),
+        bool(getattr(g, "quit_confirm", False)), int(getattr(g, "quit_index", 0) or 0),
+        int(getattr(g, "hs_char_index", 0) or 0), "".join(str(c) for c in getattr(g, "hs_name", [])),
+        str(getattr(g, "play_mode", "")), str(getattr(g, "ship_id", "")),
+        bool(getattr(g, "hotseat_pick_p2", False)),
+        sorted(getattr(g, "_special_keys", None) or []), str(getattr(g, "_hat_latch", None)),
+        int(getattr(g, "_joy_axis_latch_x", 0) or 0), int(getattr(g, "_joy_axis_latch_y", 0) or 0),
+        _r(getattr(g, "_joy_menu_cooldown", 0)), SIDE_EFFECTS["quit"], SIDE_EFFECTS["addon"],
+        [str(getattr(g, k, None)) for k in ("difficulty", "audio_mix", "autofire", "rumble_level",
+                                             "scanlines", "input_mode", "lang", "cheat_buffer")],
     ]
     f = g.formation
     enemies = getattr(f, "enemies", []) or []
@@ -141,8 +238,45 @@ def _new_game(seed):
 
 
 def run_scenario(name, frames, setup, events=None, stage_jumps=None, god=False,
-                 screens=None, menu_keys=False):
-    """Return the list of fingerprints for one scripted game."""
+                 screens=None, menu_keys=False, fuzz=None):
+    """Return the list of fingerprints for one scripted game.
+
+    fuzz = dict(seed=, every=, joy=): every `every` frames a pseudo-random input
+    event is posted (keyboard, and gamepad buttons / hat / sticks when joy=True).
+    """
+    import shutil
+
+    import game as game_module
+    import i18n
+    import settings
+    from game import Game
+
+    # Every scenario starts from a clean profile (settings, high scores, achievements...):
+    # the random-input scenarios change options, which must not leak into the next one.
+    user_dir = settings.user_data_dir()
+    for entry in os.listdir(user_dir):
+        path = os.path.join(user_dir, entry)
+        shutil.rmtree(path, ignore_errors=True) if os.path.isdir(path) else os.remove(path)
+    i18n.set_lang("fr")
+    # Class-level image caches in starfield.py: the first use of an image draws a random
+    # number, so a warm cache (left by an earlier scenario) would shift the generator.
+    import starfield
+
+    for cls in vars(starfield).values():
+        if isinstance(cls, type):
+            for attr in ("_cache", "_stamps"):
+                if isinstance(vars(cls).get(attr), dict):
+                    vars(cls)[attr].clear()
+
+    real_dt = game_module.datetime
+    game_module.datetime = _frozen_datetime()
+    real_methods = (Game._quit_app, Game._launch_addon)
+    SIDE_EFFECTS["quit"] = SIDE_EFFECTS["addon"] = 0
+    Game._quit_app = lambda self: SIDE_EFFECTS.__setitem__("quit", SIDE_EFFECTS["quit"] + 1)
+    Game._launch_addon = lambda self, *a, **k: SIDE_EFFECTS.__setitem__("addon", SIDE_EFFECTS["addon"] + 1)
+    fuzz_rng = random.Random(fuzz["seed"]) if fuzz else None
+    fuzz_release = []
+    errors = []
     g = _new_game(hash_seed(name))
     clock = {"frame": 0}
     real_ticks, real_pressed = pygame.time.get_ticks, pygame.key.get_pressed
@@ -179,15 +313,39 @@ def run_scenario(name, frames, setup, events=None, stage_jumps=None, god=False,
                 _press(events[f])
             if events and (f - 3) in events:
                 _release(events[f - 3])   # the game ignores a key it thinks is still held
+            if fuzz_rng is not None:
+                for key, due in list(fuzz_release):
+                    if f >= due:
+                        _release(key)
+                        fuzz_release.remove((key, due))
+                if fuzz.get("jump_every") and f > 0 and f % fuzz["jump_every"] == 0:
+                    _jump_state(g, fuzz_rng, fuzz.get("kinds"))
+                if f % fuzz["every"] == 0:
+                    ev = _fuzz_events(fuzz_rng, fuzz.get("joy", False))
+                    pygame.event.post(ev)
+                    if ev.type == pygame.KEYDOWN:
+                        fuzz_release.append((ev.key, f + 2))
             g.dt = DT
-            g.handle_events()
-            g.update()
-            g.draw()
+            if fuzz_rng is not None:
+                try:   # states forced at random may be inconsistent: record, do not stop
+                    g.handle_events()
+                    g.update()
+                    g.draw()
+                except Exception as exc:
+                    errors.append((f, type(exc).__name__))
+            else:
+                g.handle_events()
+                g.update()
+                g.draw()
             if f % SAMPLE_EVERY == 0:
                 out.append(fingerprint(g))
+        if fuzz_rng is not None:
+            out.append("errors:%s" % (errors,))
     finally:
         pygame.time.get_ticks, pygame.key.get_pressed = real_ticks, real_pressed
         SoundManager.vo_is_busy, SoundManager.music_busy, SoundManager.music_pos_sec = real_audio
+        game_module.datetime = real_dt
+        Game._quit_app, Game._launch_addon = real_methods
         g.running = False
     return out
 
@@ -279,6 +437,22 @@ SCENARIOS = {
                 1760: pygame.K_RETURN, 1820: pygame.K_RETURN, 1880: pygame.K_RETURN,
                 1940: pygame.K_RETURN, 2000: pygame.K_RETURN, 2060: pygame.K_RETURN},
     ),
+    # random keyboard + gamepad events through menus, options, pause, game over
+    "fuzz_menu": dict(frames=3600, setup=_nothing, fuzz=dict(seed=1, every=6, joy=True, jump_every=90)),
+    "fuzz_solo": dict(frames=3600, setup=_solo("phoenix"), fuzz=dict(seed=2, every=9, joy=True, jump_every=110)),
+    "fuzz_shield": dict(frames=3600, setup=_solo("shield"), fuzz=dict(seed=5, every=7, joy=True, jump_every=130)),
+    "fuzz_coop": dict(frames=3000, setup=_coop, fuzz=dict(seed=3, every=8, joy=True, jump_every=100)),
+    "fuzz_hotseat": dict(frames=3000, setup=_hotseat, fuzz=dict(seed=4, every=8, joy=True, jump_every=120)),
+    "fuzz_gameover": dict(frames=3600, setup=_solo("phoenix"), fuzz=dict(seed=6, every=4, joy=True, jump_every=70)),
+    "fuzz_hotseat_pick": dict(frames=2400, setup=_hotseat, fuzz=dict(
+        seed=8, every=5, joy=True, jump_every=60, kinds=["hotseat_pick", "to_menu"])),
+    "fuzz_pause_gameover": dict(frames=3000, setup=_solo("phoenix"), fuzz=dict(
+        seed=9, every=3, joy=True, jump_every=45,
+        kinds=["pause", "pause_options", "pause_reset", "go_card", "go_enter", "go_table"])),
+    "fuzz_attract_menu": dict(frames=2400, setup=_nothing, fuzz=dict(
+        seed=10, every=4, joy=True, jump_every=50, kinds=["attract", "quit_confirm", "help", "credits",
+                                                          "achievements", "jukebox", "highscores", "options"])),
+    "fuzz_keys_only": dict(frames=3000, setup=_nothing, fuzz=dict(seed=7, every=5, joy=False, jump_every=60)),
 }
 
 
