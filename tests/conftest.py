@@ -26,11 +26,19 @@ import settings  # noqa: E402  (must come first, see docstring)
 settings.user_data_dir = lambda: _USER_DIR
 
 
+_FAILURES = []
+
+
 def pytest_runtest_logreport(report):
+    if report.failed:
+        crash = getattr(report.longrepr, "reprcrash", None)
+        _FAILURES.append((report.nodeid, crash.message if crash else str(report.longrepr)[-600:]))
+
+
+def pytest_terminal_summary(terminalreporter):
     """On GitHub Actions, show each failure as an annotation (visible on the pull request)."""
-    if not (report.failed and os.environ.get("GITHUB_ACTIONS")):
+    if not os.environ.get("GITHUB_ACTIONS"):
         return
-    crash = getattr(report.longrepr, "reprcrash", None)
-    text = crash.message if crash else str(report.longrepr)[-600:]
-    text = text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")[:1000]
-    print(f"::error title=Test failed {report.nodeid}::{text}")
+    for nodeid, text in _FAILURES:
+        text = text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")[:1000]
+        terminalreporter.write_line(f"::error title=Test failed {nodeid}::{text}")
