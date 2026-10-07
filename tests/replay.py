@@ -56,6 +56,15 @@ def fingerprint(g):
         str(g.stage_transition), len(g.explosions), _r(g.shake_amount),
         bool(getattr(g, "paused", False)), str(g.menu_screen),
         [_ship_state(s) for s in g._ships()],
+        # menus, idle / attract, help, credits, pause, hot-seat, high-score entry
+        int(getattr(g, "menu_index", 0) or 0), _r(getattr(g, "menu_idle", 0)),
+        bool(getattr(g, "attract_mode", False)), str(getattr(g, "hs_phase", None)),
+        int(getattr(g, "help_page", 0) or 0), _r(getattr(g, "help_scroll", 0)),
+        bool(getattr(g, "hotseat_wait", False)), _r(getattr(g, "hotseat_hold", 0)),
+        _r(getattr(g, "credits_scroll", 0)), _r(getattr(g, "credits_x", 0)),
+        int(getattr(g, "logo_index", 0) or 0), _r(getattr(g, "input_grace", 0)),
+        _r(getattr(g, "ship_anim_t", 0)), _r(getattr(g, "shield_slide", 0)),
+        _r(getattr(g, "ach_scroll", 0)), int(getattr(g, "juke_index", 0) or 0),
     ]
     f = g.formation
     enemies = getattr(f, "enemies", []) or []
@@ -82,6 +91,13 @@ def _target_x(g):
     if enemies:
         return max(enemies, key=lambda e: e.y).x
     return 640.0
+
+
+def _menu_pressed(g, frame):
+    """Scripted keys for menu scenarios: hold up / down / left / right in turn."""
+    cycle = (pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT, pygame.K_RIGHT, None)
+    key = cycle[(frame // 45) % len(cycle)]
+    return {key} if key is not None else set()
 
 
 def _pressed(g, frame):
@@ -124,7 +140,8 @@ def _new_game(seed):
     return g
 
 
-def run_scenario(name, frames, setup, events=None, stage_jumps=None, god=False):
+def run_scenario(name, frames, setup, events=None, stage_jumps=None, god=False,
+                 screens=None, menu_keys=False):
     """Return the list of fingerprints for one scripted game."""
     g = _new_game(hash_seed(name))
     clock = {"frame": 0}
@@ -140,12 +157,15 @@ def run_scenario(name, frames, setup, events=None, stage_jumps=None, god=False):
                 for ship in g._ships():
                     ship.infinite_lives = True
             clock["frame"] = f
-            current["keys"] = _Keys(_pressed(g, f))
+            current["keys"] = _Keys((_menu_pressed if menu_keys else _pressed)(g, f))
             if stage_jumps and f in stage_jumps:
                 s = stage_jumps[f]
                 g.stage = s
                 g._setup_stage(s)
                 g.stage_transition = None
+            if screens and f in screens:
+                for attr, value in screens[f].items():
+                    setattr(g, attr, value)
             if events and f in events:
                 for ship in g._ships():
                     ship.phenix_gauge = 10.0   # make the special move available
@@ -166,6 +186,10 @@ def run_scenario(name, frames, setup, events=None, stage_jumps=None, god=False):
 
 def hash_seed(name):
     return zlib.crc32(name.encode()) & 0xFFFF
+
+
+def _nothing(g):
+    pass
 
 
 def _solo(ship):
@@ -226,6 +250,27 @@ SCENARIOS = {
     "hotseat": dict(frames=2000, setup=_hotseat, stage_jumps={900: 2},
                     events={40: pygame.K_RETURN}),
     "adventure": dict(frames=1500, setup=_adventure, god=True),
+    # main menu left alone: help pages, then attract mode (demo game)
+    "menu_idle_attract": dict(frames=4800, setup=_nothing),
+    # every menu screen with held direction keys (credits scroll, achievements...)
+    "menu_screens": dict(
+        frames=2400, setup=_nothing, menu_keys=True,
+        screens={
+            0: {"menu_screen": "credits"}, 400: {"menu_screen": "achievements"},
+            800: {"menu_screen": "jukebox"}, 1000: {"menu_screen": "highscores"},
+            1100: {"menu_screen": "options", "menu_index": 0},
+            1300: {"menu_screen": "ship_select", "play_mode": "solo"},
+            1600: {"menu_screen": "story_hub"}, 1900: {"menu_screen": "reset_confirm"},
+            2100: {"menu_screen": "main"},
+        },
+    ),
+    # pause / resume, then play until game over and walk through the end cards
+    "pause_game_over": dict(
+        frames=2600, setup=_solo("phoenix"),
+        events={200: pygame.K_ESCAPE, 330: pygame.K_ESCAPE, 1700: pygame.K_RETURN,
+                1760: pygame.K_RETURN, 1820: pygame.K_RETURN, 1880: pygame.K_RETURN,
+                1940: pygame.K_RETURN, 2000: pygame.K_RETURN, 2060: pygame.K_RETURN},
+    ),
 }
 
 
