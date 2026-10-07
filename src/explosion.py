@@ -8,6 +8,21 @@ import pygame
 import math
 import random
 
+# Les décélérations ci-dessous étaient appliquées « à chaque image » : à 120 ou 144 Hz
+# les explosions freinaient deux à trois fois trop vite. Elles sont maintenant
+# exprimées pour une image à 60 Hz et mises à l'échelle du temps réellement écoulé :
+# à 60 Hz le résultat est exactement le même qu'avant, aux autres cadences
+# l'explosion dure et s'étale pareil.
+REF_FPS = 60.0
+# Reste de délai (en images à 60 Hz) en dessous duquel l'explosion démarre.
+_DELAY_EPS = 0.05
+
+
+def _decay(base, k):
+    """base ** k, sans calcul inutile quand k vaut exactement 1 (60 Hz)."""
+    return base if k == 1.0 else base ** k
+
+
 class Explosion:
     """
     kind:
@@ -279,8 +294,9 @@ class Explosion:
         })
 
     def update(self, dt):
-        if int(getattr(self, "delay_frames", 0) or 0) > 0:
-            self.delay_frames -= 1
+        k = dt * REF_FPS   # nombre d'images « à 60 Hz » écoulées
+        if (getattr(self, "delay_frames", 0) or 0) > _DELAY_EPS:
+            self.delay_frames -= k
             return
         self.life -= dt
         
@@ -288,28 +304,33 @@ class Explosion:
             p["x"] += p["vx"] * dt
             p["y"] += p["vy"] * dt
             p["vy"] += 140 * dt
-            p["vx"] *= p["drag"]
-            p["vy"] *= p["drag"]
+            drag = _decay(p["drag"], k)
+            p["vx"] *= drag
+            p["vy"] *= drag
         
+        deb_drag = _decay(0.975, k)
         for d in self.debris:
             d["x"] += d["vx"] * dt
             d["y"] += d["vy"] * dt
             d["vy"] += 300 * dt
-            d["vx"] *= 0.975
+            d["vx"] *= deb_drag
             d["rot"] += d["rot_spd"] * dt
         
+        spark_drag = _decay(0.94, k)
         for s in self.sparks:
             s["x"] += s["vx"] * dt
             s["y"] += s["vy"] * dt
-            s["vx"] *= 0.94
-            s["vy"] *= 0.94
+            s["vx"] *= spark_drag
+            s["vy"] *= spark_drag
             s["life"] -= dt
         
         for f in self.flashes:
             f["life"] -= dt * 2.8
         
+        # approche de la taille finale : même courbe quelle que soit la cadence
+        ring_step = min(1.0, 3.2 * dt) if k == 1.0 else 1.0 - _decay(1.0 - min(1.0, 3.2 / REF_FPS), k)
         for r in self.rings:
-            r["r"] += (r["max_r"] - r["r"]) * min(1.0, 3.2 * dt)
+            r["r"] += (r["max_r"] - r["r"]) * ring_step
         for tng in getattr(self, "tongues", ()):
             tng["x"] += tng["vx"] * dt
             tng["y"] += tng["vy"] * dt
@@ -325,7 +346,7 @@ class Explosion:
         return self.life <= 0
 
     def draw(self, surface):
-        if int(getattr(self, "delay_frames", 0) or 0) > 0:
+        if (getattr(self, "delay_frames", 0) or 0) > _DELAY_EPS:
             return
         if self.life <= 0:
             return
