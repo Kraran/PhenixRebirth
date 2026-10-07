@@ -61,6 +61,7 @@ import achievements_screen
 import ship_select_screen
 import highscores_screen
 import credits_screen
+import update_idle
 
 from settings import user_data_dir, asset_path, project_root
 SETTINGS_FILE = os.path.join(user_data_dir(), "settings.json")
@@ -5532,52 +5533,7 @@ class Game:
 
     # --- Simulation step ---
     def update(self):
-        self._tick_fade()
-        self.title_timer += self.dt
-        self._update_music()
-        self._tick_listen_achs()
-        if getattr(self, "sounds", None):
-            self.sounds.pause_duck = bool(
-                getattr(self, "paused", False)
-                and getattr(self, "started", False)
-                and not getattr(self, "game_over", False)
-            )
-        self.sounds.update(self.dt)
-        # Hot-plug on menus and mid-run (wireless drop).
-        self._gp_poll = float(getattr(self, "_gp_poll", 0.0)) + self.dt
-        if self._gp_poll >= 0.45:
-            self._gp_poll = 0.0
-            self._poll_gamepad()
-        if self._joy_menu_cooldown > 0:
-            self._joy_menu_cooldown = max(0.0, self._joy_menu_cooldown - self.dt)
-        if self.input_grace > 0:
-            self.input_grace = max(0.0, self.input_grace - self.dt)
-        # Menus need key repeat; in-game it would retrigger Shield / Phenix.
-        want_repeat = not (self.started and not self.game_over)
-        if want_repeat != getattr(self, "_key_repeat_on", True):
-            self._key_repeat_on = want_repeat
-            try:
-                pygame.key.set_repeat(220, 45) if want_repeat else pygame.key.set_repeat(0)
-            except Exception:
-                pass
-        if self.cheat_msg_timer > 0:
-            self.cheat_msg_timer = max(0.0, self.cheat_msg_timer - self.dt)
-        if self._hs_joy_cooldown > 0:
-            self._hs_joy_cooldown = max(0.0, self._hs_joy_cooldown - self.dt)
-        
-        # Analog stick for initials entry
-        if self.game_over and self.hs_phase == "enter" and self.joystick and self._hs_joy_cooldown <= 0:
-            try:
-                ax = self.joystick.get_axis(0) if self.joystick.get_numaxes() > 0 else 0
-                ay = self.joystick.get_axis(1) if self.joystick.get_numaxes() > 1 else 0
-                if abs(ax) > 0.7:
-                    self.hs_char_index = (self.hs_char_index + (1 if ax > 0 else -1)) % 3
-                    self._hs_joy_cooldown = 0.28
-                elif abs(ay) > 0.7:
-                    self._hs_cycle_letter(-1 if ay > 0 else 1)
-                    self._hs_joy_cooldown = 0.22
-            except Exception:
-                pass
+        update_idle.tick_housekeeping(self)
         
         if self.game_over and getattr(self, "hs_phase", None) == "card":
             self.sounds.play_electric(False)
@@ -5585,112 +5541,7 @@ class Game:
             return
 
         if not self.started or self.game_over:
-            # Still scroll stars on title/game over (no parallax)
-            self._tick_stars(follow=False)
-            self.sounds.play_electric(False)
-            if self.logo_frames:
-                self.logo_timer += self.dt
-                if self.logo_timer >= 1.0 / self.logo_fps:
-                    self.logo_timer -= 1.0 / self.logo_fps
-                    self.logo_index = (self.logo_index + 1) % len(self.logo_frames)
-            if not self.started and self.menu_screen == "main":
-                self._update_season(self.dt)
-                self._update_april_gag(self.dt)
-            else:
-                self._season_theme = None
-            if not self.started and self.menu_screen == "jukebox":
-                self._update_jukebox()
-            if not self.started and self.menu_screen == "achievements":
-                self._update_ach_scroll()
-            if not self.started and self.menu_screen == "credits":
-                axis = self._credits_scroll_axis()
-                # signed px/s: negative = normal (text rises)
-                if axis > 0:
-                    target = 140.0
-                elif axis < 0:
-                    target = -150.0
-                else:
-                    target = -42.0
-                k = min(1.0, 8.0 * self.dt)
-                self.credits_speed = getattr(self, "credits_speed", -42.0)
-                self.credits_speed += (target - self.credits_speed) * k
-                self.credits_scroll += self.credits_speed * self.dt
-                ax = self._credits_x_axis()
-                target = ax * 58.0
-                # Spring + damper: resistance while held, ease back when released
-                k_s, k_d = 14.0, 7.5
-                self.credits_x = float(getattr(self, "credits_x", 0.0))
-                self.credits_xv = float(getattr(self, "credits_xv", 0.0))
-                acc = (target - self.credits_x) * k_s - self.credits_xv * k_d
-                self.credits_xv += acc * self.dt
-                self.credits_x += self.credits_xv * self.dt
-                if abs(self.credits_x) < 0.15 and ax == 0:
-                    self.credits_x = 0.0
-                    self.credits_xv = 0.0
-            if not self.started and self.menu_screen == "ship_select":
-                self.ship_anim_t = getattr(self, "ship_anim_t", 0.0) + self.dt
-                self._tick_preview_cycle(self.dt)
-                sl = float(getattr(self, "shield_slide", 1.0))
-                if sl < 1.0:
-                    self.shield_slide = min(1.0, sl + self.dt / 0.28)
-                if getattr(self, "_pending_after_welcome", None):
-                    if not (hasattr(self, "sounds") and self.sounds.vo_is_busy()):
-                        self._flush_after_welcome()
-            # Attract / help screen from main menu idle
-            if not self.started and not self.quit_confirm:
-                if self.menu_screen != "addon" and getattr(self, "_addon_clip", None):
-                    self._addon_clip_stop()
-                if self.menu_screen == "main":
-                    if getattr(self, "april_gag", "done") not in ("idle", "wait", "left", "right", "sway", "fall", "boom"):
-                        self.menu_idle += self.dt
-                    # First idle after launch: 10s help; then alternate help / attract every 5s
-                    idle_need = 10.0 if not self.help_first_shown else 5.0
-                    if self.menu_idle >= idle_need:
-                        self.menu_idle = 0.0
-                        if not self.help_first_shown:
-                            self.help_first_shown = True
-                            self.menu_screen = "help"
-                            self.help_timer = 0.0
-                            self.help_page = 0
-                            self.help_scroll = 0.0
-                            self.help_transitioning = False
-                            self.next_is_attract = True
-                        elif self.next_is_attract:
-                            self.next_is_attract = False
-                            self._start_attract()
-                        else:
-                            self.next_is_attract = True
-                            self.menu_screen = "help"
-                            self.help_timer = 0.0
-                            self.help_page = 0
-                            self.help_scroll = 0.0
-                            self.help_transitioning = False
-                elif self.menu_screen == "addon":
-                    self._tick_addon_clip(self.dt)
-                elif self.menu_screen == "help":
-                    self.help_anim_t += self.dt
-                    if self.help_transitioning:
-                        # Smooth vertical slide page 0 → page 1
-                        self.help_scroll += self.dt / max(0.05, self.HELP_SCROLL_SEC) * BASE_HEIGHT
-                        if self.help_scroll >= BASE_HEIGHT:
-                            self.help_scroll = 0.0
-                            self.help_transitioning = False
-                            self.help_page = 1
-                            self.help_timer = 0.0
-                    else:
-                        self.help_timer += self.dt
-                        if self.help_timer >= self.HELP_PAGE_SEC:
-                            if self.help_page <= 0:
-                                self.help_transitioning = True
-                                self.help_scroll = 0.0
-                            else:
-                                self.menu_screen = "main"
-                                self.menu_index = 0
-                                self.menu_idle = 0.0
-                                self.help_timer = 0.0
-                                self.help_page = 0
-                else:
-                    self.menu_idle = 0.0
+            update_idle.tick_menu_or_gameover(self)
             return
         
         if self.paused:
@@ -5699,16 +5550,7 @@ class Game:
             return
 
         if getattr(self, "hotseat_pick_p2", False):
-            self._tick_stars(follow=False)
-            self.ship_anim_t = getattr(self, "ship_anim_t", 0.0) + self.dt
-            self._tick_preview_cycle(self.dt)
-            sl = float(getattr(self, "shield_slide", 1.0))
-            if sl < 1.0:
-                self.shield_slide = min(1.0, sl + self.dt / 0.28)
-            self.sounds.play_electric(False)
-            if getattr(self, "_pending_after_welcome", None):
-                if not (hasattr(self, "sounds") and self.sounds.vo_is_busy()):
-                    self._flush_after_welcome()
+            update_idle.tick_hotseat_pick_p2(self)
             return
         if self.hotseat_wait:
             self._tick_stars(follow=False)
@@ -5716,29 +5558,7 @@ class Game:
             return
 
         if self.hotseat_hold > 0:
-            self.hotseat_hold = max(0.0, self.hotseat_hold - self.dt)
-            self._tick_stars(follow=True)
-            for exp in self.explosions[:]:
-                exp.update(self.dt)
-                if exp.is_finished():
-                    self.explosions.remove(exp)
-            form = getattr(self, "formation", None)
-            if form is not None:
-                for enemy in list(getattr(form, "enemies", []) or []):
-                    if getattr(enemy, "dying", False) or getattr(enemy, "hit_flash_frames", 0):
-                        enemy.update(self.dt, getattr(form, "offset_x", 0.0), 0.0)
-                self._drain_detach_pops()
-            tesla_on = False
-            if self.tesla_fx is not None:
-                self.tesla_fx.update(self.dt)
-                tesla_on = not self.tesla_fx.is_finished()
-                if not tesla_on:
-                    self.tesla_fx = None
-            self.sounds.play_electric(tesla_on, x=self._sfx_electric_x())
-            if self.shake_amount > 0:
-                self.shake_amount = max(0.0, self.shake_amount - SCREEN_SHAKE_DECAY * self.dt)
-            if self.hotseat_hold <= 0:
-                self._hotseat_finish_hold()
+            update_idle.tick_hotseat_hold(self)
             return
             
         hs = float(getattr(self, "hitstop", 0.0) or 0.0)
