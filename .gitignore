@@ -3,6 +3,8 @@ __pycache__/
 settings.json
 highscores.json
 achievements.json
+*.json.tmp
+*.json.corrupt
 boot.log
 dist/
 build/

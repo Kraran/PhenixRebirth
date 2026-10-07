@@ -14,6 +14,7 @@ import json
 import os
 from datetime import datetime, timezone
 
+from safe_io import atomic_write_json, backup_unreadable
 from settings import user_data_dir
 
 ACH_FILE = os.path.join(user_data_dir(), "achievements.json")
@@ -94,6 +95,7 @@ def load_achievements():
         with open(ACH_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
         if not isinstance(data, dict):
+            backup_unreadable(ACH_FILE)
             return _empty()
         raw = data.get("unlocked") or {}
         cleaned = {}
@@ -120,7 +122,10 @@ def load_achievements():
                 progress[aid] = steps[0]
                 tier_map.setdefault(aid, "normal")
         return {"unlocked": cleaned, "progress": progress, "tiers": tier_map}
+    except FileNotFoundError:
+        return _empty()
     except Exception:
+        backup_unreadable(ACH_FILE)
         return _empty()
 
 
@@ -131,8 +136,7 @@ def save_achievements(data):
             "progress": dict((data or {}).get("progress") or {}),
             "tiers": dict((data or {}).get("tiers") or {}),
         }
-        with open(ACH_FILE, "w", encoding="utf-8") as f:
-            json.dump(payload, f, indent=2)
+        atomic_write_json(ACH_FILE, payload)
     except Exception as e:
         print("Could not save achievements:", e)
     return data
