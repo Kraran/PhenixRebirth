@@ -24,3 +24,21 @@ _USER_DIR = tempfile.mkdtemp(prefix="phenix_test_")
 import settings  # noqa: E402  (must come first, see docstring)
 
 settings.user_data_dir = lambda: _USER_DIR
+
+
+_FAILURES = []
+
+
+def pytest_runtest_logreport(report):
+    if report.failed:
+        crash = getattr(report.longrepr, "reprcrash", None)
+        _FAILURES.append((report.nodeid, crash.message if crash else str(report.longrepr)[-600:]))
+
+
+def pytest_terminal_summary(terminalreporter):
+    """On GitHub Actions, show each failure as an annotation (visible on the pull request)."""
+    if not os.environ.get("GITHUB_ACTIONS"):
+        return
+    for nodeid, text in _FAILURES:
+        text = text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")[:1000]
+        terminalreporter.write_line(f"::error title=Test failed {nodeid}::{text}")

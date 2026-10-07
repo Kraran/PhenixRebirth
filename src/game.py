@@ -64,6 +64,7 @@ import credits_screen
 import update_idle
 import update_play
 import input_events
+import draw_frame
 
 from settings import user_data_dir, asset_path, project_root
 SETTINGS_FILE = os.path.join(user_data_dir(), "settings.json")
@@ -5164,14 +5165,7 @@ class Game:
 
 
     def draw(self):
-        # TEMP debug: True = pale backdrop to spot opaque leaks. Set False after.
-        if getattr(self, "DEBUG_LIGHT_BG", False):
-            self.game_surface.fill((198, 202, 210))
-        else:
-            self.game_surface.fill(COLOR_BG)
-        
-        # Starfield first (background)
-        self.starfield.draw(self.game_surface)
+        draw_frame.draw_background(self)
         
         shake_x = shake_y = 0
         if self.shake_amount > 0 and self.started and (not self.game_over or self.hs_phase == "card"):
@@ -5179,292 +5173,15 @@ class Game:
             shake_y = random.randint(-int(self.shake_amount), int(self.shake_amount))
         
         if self.started and (not self.game_over or self.hs_phase == "card"):
-            if self.boss_saucer:
-                self.boss_saucer.draw(self.game_surface)
-            self.formation.draw(self.game_surface)
-            
-            for exp in self.explosions:
-                exp.draw(self.game_surface)
-            if self.tesla_fx is not None:
-                self.tesla_fx.draw(self.game_surface)
-            
-            for ship in self._ships():
-                ship.draw(self.game_surface)
-            
-            # UI (cached text — re-render only when string/color changes)
-            tc = self.text_cache
-            if self.play_mode == "coop" and self.player2:
-                c1 = self._palette_score_color(getattr(self.player, "palette", "argent"))
-                c2 = self._palette_score_color(getattr(self.player2, "palette", "blue"))
-                p1s = tc.get(self.font, f"P1 {self.format_score(getattr(self.player, 'score', 0))}", c1)
-                p2s = tc.get(self.font, f"P2 {self.format_score(getattr(self.player2, 'score', 0))}", c2)
-                self.game_surface.blit(p1s, (16, 16))
-                self.game_surface.blit(p2s, (BASE_WIDTH - 16 - p2s.get_width(), 16))
-                self._draw_phenix_gauge(self.player, 18, 100)
-                self._draw_phenix_gauge(self.player2, BASE_WIDTH - 18 - 14, 100, align="right")
-            else:
-                score_surf = tc.get(self.font, self.format_score(self.score), self._palette_score_color(getattr(self.player, "palette", "argent")))
-                self.game_surface.blit(score_surf, (BASE_WIDTH // 2 - score_surf.get_width() // 2, 16))
-                if self.hotseat and self.slots[0] and self.slots[1]:
-                    s0 = self.slots[0]["score"] if self.current_p != 0 else self.score
-                    s1 = self.slots[1]["score"] if self.current_p != 1 else self.score
-                    p0 = self.slots[0].get("player")
-                    p1p = self.slots[1].get("player")
-                    pal0 = getattr(p0, "palette", None) or self._tint_for_pid(1)
-                    pal1 = getattr(p1p, "palette", None) or self._tint_for_pid(2)
-                    c0 = self._palette_score_color(pal0, bright=(self.current_p == 0))
-                    c1 = self._palette_score_color(pal1, bright=(self.current_p == 1))
-                    hp1 = tc.get(self.font, f"P1 {self.format_score(s0)}", c0)
-                    hp2 = tc.get(self.font, f"P2 {self.format_score(s1)}", c1)
-                    self.game_surface.blit(hp1, (16, 44))
-                    self.game_surface.blit(hp2, (BASE_WIDTH - 16 - hp2.get_width(), 44))
-                if self.hotseat and self.current_p == 1:
-                    self._draw_phenix_gauge(self.player, BASE_WIDTH - 18 - 14, 100, align="right")
-                else:
-                    self._draw_phenix_gauge(self.player, 18, 100)
-            if self.attract_mode:
-                demo = tc.get(self.medium_font, t("demo"), (255, 180, 80))
-                self.game_surface.blit(demo, (BASE_WIDTH // 2 - demo.get_width() // 2, 72))
-                hint = tc.get(self.font, t("press_any"), (180, 180, 200))
-                self.game_surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 36))
-            if getattr(self, "used_cheat", False) and not self.attract_mode:
-                ch = tc.get(self.font, t("cheat_active"), (255, 60, 60))
-                self.game_surface.blit(ch, (BASE_WIDTH // 2 - ch.get_width() // 2, 74))
-            
-            stage_surf = tc.get(
-                self.font,
-                t(self.adventure.get("title") or "story") if getattr(self, "adventure", None) else f"{t('stage')} {self.stage}",
-                (255, 170, 80) if getattr(self, "adventure", None) else (180, 180, 220),
-            )
-            stage_x = BASE_WIDTH // 2 - stage_surf.get_width() // 2 if self.play_mode == "coop" else 16
-            self.game_surface.blit(stage_surf, (stage_x, 16))
-            if getattr(self, "adventure", None) and not self.adventure.get("dome"):
-                off = tc.get(self.font, t("story_dome_broken"), (255, 90, 80))
-                self.game_surface.blit(off, (16, 40))
-            if self.difficulty in ("novice", "veteran") and not self.attract_mode:
-                dkey = "diff_novice" if self.difficulty == "novice" else "diff_veteran"
-                dcol = (120, 210, 255) if self.difficulty == "novice" else (255, 150, 80)
-                dsurf = tc.get(self.font, t(dkey), dcol)
-                if self.play_mode in ("coop", "hotseat") or getattr(self, "hotseat", False):
-                    dx = BASE_WIDTH // 2 - dsurf.get_width() // 2
-                    dy = 70
-                else:
-                    dx = BASE_WIDTH - 16 - dsurf.get_width()
-                    dy = 16
-                self.game_surface.blit(dsurf, (dx, dy))
-            # Flags for each boss defeated — at 10+, one big flag only
-            if self.bosses_defeated >= 10:
-                fx = stage_x + stage_surf.get_width() + 12
-                self._draw_boss_flag(self.game_surface, fx, 12, big=True)
-            elif self.bosses_defeated > 0:
-                fx = stage_x + stage_surf.get_width() + 10
-                fy = 18
-                for i in range(self.bosses_defeated):
-                    self._draw_boss_flag(self.game_surface, fx + i * 18, fy, big=False)
-            
-            self._draw_cheat_message()
-            
-            # Lives as mini ships
-            if self.player.infinite_lives:
-                inf = self.text_cache.get(self.font, t("lives_inf"), (110, 255, 150))
-                self.game_surface.blit(inf, (BASE_WIDTH // 2 - inf.get_width() // 2, 44))
-            n_lives = max(0, self.player.lives)
-            if n_lives > 0 and not self.player.infinite_lives:
-                gap = 6
-                iw = self.life_icon.get_width()
-                ih = self.life_icon.get_height()
-                total_w = n_lives * iw + (n_lives - 1) * gap
-                start_x = BASE_WIDTH // 2 - total_w // 2
-                for i in range(n_lives):
-                    lx = start_x + i * (iw + gap)
-                    ly = 44
-                    # Extra life flash/shine on the new icon
-                    if self.life_flash_timer > 0 and i == self.life_flash_index:
-                        blink = int(self.life_flash_timer * 8) % 2 == 0
-                        if blink:
-                            # bright glow under ship
-                            glow = pygame.Surface((iw + 10, ih + 10), pygame.SRCALPHA)
-                            pygame.draw.ellipse(glow, (255, 255, 120, 90), glow.get_rect())
-                            self.game_surface.blit(glow, (lx - 5, ly - 5))
-                            # white flash version
-                            white = self.life_icon.copy()
-                            white.fill((255, 255, 200, 0), special_flags=pygame.BLEND_RGBA_ADD)
-                            self.game_surface.blit(white, (lx, ly))
-                            self.game_surface.blit(self.life_icon, (lx, ly))
-                    else:
-                        self.game_surface.blit(self.life_icon, (lx, ly))
+            draw_frame.draw_play(self)
         
         # Title / Menu Screen
         if not self.started:
-            if self.menu_screen in ("main",):
-                # Animated fiery logo (fallback to text if frames missing)
-                hide = getattr(self, "april_gag", "") == "boom"
-                if not hide:
-                    ok = self._draw_logo(
-                        self.game_surface, BASE_WIDTH // 2, 8,
-                        ox=float(getattr(self, "april_ox", 0.0)),
-                        oy=float(getattr(self, "april_oy", 0.0)),
-                        angle=float(getattr(self, "april_rot", 0.0)),
-                    )
-                    if not ok:
-                        title = self._txt(self.big_font, "PHENIX REBIRTH", (255, 120, 255))
-                        self.game_surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 80))
-                for exp in getattr(self, "explosions", []) or []:
-                    if not self.started:
-                        exp.draw(self.game_surface)
-                
-                # Subtitle glued under the logo bitmap (not over the menu)
-                logo_h = self.logo_frames[0].get_height() if self.logo_frames else 100
-                sub = self._txt(self.font, t("subtitle"), (180, 160, 220))
-                self._title_sub_y = 8 + logo_h + 2
-                self.game_surface.blit(sub, (BASE_WIDTH // 2 - sub.get_width() // 2, self._title_sub_y))
+            draw_frame.draw_menu_title(self)
             
-            if self.menu_screen == "help":
-                # Two pages with optional vertical scroll transition
-                if self.help_transitioning:
-                    off = int(self.help_scroll)
-                    self._draw_help_page(self.game_surface, 0, -off)
-                    self._draw_help_page(self.game_surface, 1, BASE_HEIGHT - off)
-                else:
-                    self._draw_help_page(self.game_surface, self.help_page, 0)
-                hint = self._txt(self.font, t("help_return"), (255, 220, 100))
-                self.game_surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 36))
-                page_lbl = self._txt(
-                    self.font,
-                    f"{t_help('help_page')} {int(self.help_page) + 1}/2",
-                    (140, 140, 180),
-                )
-                self.game_surface.blit(page_lbl, (BASE_WIDTH - page_lbl.get_width() - 20, BASE_HEIGHT - 36))
-
-            elif self.menu_screen == "ship_select":
-                self._draw_ship_select(self.game_surface)
-            elif self.menu_screen == "story_hub":
-                if getattr(self, "story", None):
-                    self.story.draw(self.game_surface, self.font, self.medium_font, self.font)
-            elif self.menu_screen == "addon":
-                self._draw_addon_menu(self.game_surface)
-            elif self.menu_screen == "jukebox":
-                self._draw_jukebox(self.game_surface)
-            elif self.menu_screen == "main":
-                diff_key = {"novice": "diff_novice", "normal": "diff_normal", "veteran": "diff_veteran"}.get(self.difficulty, "diff_normal")
-                diff = t(diff_key)
-                mode = getattr(self, "play_mode", "solo")
-                mode_key = {"solo": "mode_solo", "hotseat": "mode_hotseat", "coop": "mode_coop"}.get(mode, "mode_solo")
-                options = [
-                    t("play"),
-                    t("story"),
-                    t("addon"),
-                    f"{t('mode')} :  <  {t(mode_key)}  >",
-                    f"{t('difficulty')} :  <  {diff}  >",
-                    t("options"),
-                    t("high_scores"),
-                    t("credits"),
-                    t("quit"),
-                ]
-                sub_y = int(getattr(self, "_title_sub_y", 200))
-                sub_h = 22
-                base_y = sub_y + sub_h + 28
-                foot = 80
-                room = max(160, BASE_HEIGHT - foot - base_y)
-                spacing = max(18, min(24, room // max(1, len(options))))
-                menu_font = getattr(self, "menu_font", None) or self.font
-                for i, label in enumerate(options):
-                    selected = (i == self.menu_index)
-                    disabled = (i == 2) and not mame_addon.addon_ready()
-                    if disabled:
-                        col = (255, 230, 120) if selected else (90, 90, 105)
-                    else:
-                        col = (255, 230, 120) if selected else (160, 160, 190)
-                    prefix = "> " if selected else "  "
-                    surf = self._txt(menu_font, prefix + label, col)
-                    self.game_surface.blit(surf, (BASE_WIDTH // 2 - surf.get_width() // 2, base_y + i * spacing))
-                
-                if self.gamepad_detected:
-                    status = self._txt(self.font, t("gamepad_detected"), (100, 200, 140))
-                else:
-                    status = self._txt(self.font, t("gamepad_none"), (180, 140, 120))
-                status_y = min(BASE_HEIGHT - 64, base_y + len(options) * spacing + 6)
-                self.game_surface.blit(status, (BASE_WIDTH // 2 - status.get_width() // 2, status_y))
+            draw_frame.draw_menu_screens(self)
             
-            elif self.menu_screen == "highscores":
-                highscores_screen.draw_highscores(self)
-
-            elif self.menu_screen == "achievements":
-                self._draw_achievements(self.game_surface)
-            
-            elif self.menu_screen == "credits":
-                credits_screen.draw_credits(self)
-            
-            elif self.menu_screen == "reset_confirm":
-                hdr = self._txt(self.medium_font, t("reset_hs_title"), (255, 120, 100))
-                self.game_surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 280))
-                warn = self._txt(self.font, t("reset_hs_warn"), (180, 160, 160))
-                self.game_surface.blit(warn, (BASE_WIDTH // 2 - warn.get_width() // 2, 340))
-                for i, label in enumerate([t("yes_u"), t("no_u")]):
-                    selected = (i == self.menu_index)
-                    col = (255, 230, 120) if selected else (160, 160, 190)
-                    prefix = "> " if selected else "  "
-                    surf = self._txt(self.medium_font, prefix + label, col)
-                    self.game_surface.blit(surf, (BASE_WIDTH // 2 - surf.get_width() // 2, 400 + i * 50))
-            
-            elif self.menu_screen == "options":
-                # OPTIONS screen
-                hdr = self._txt(self.medium_font, t("options"), (255, 180, 255))
-                self.game_surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 48))
-                
-                mode_labels = {
-                    "window": t("disp_window"),
-                    "fullscreen": t("disp_fullscreen"),
-                    "borderless": t("disp_borderless"),
-                }
-                ctrl = t("ctrl_pad") if self.input_mode == "gamepad" else t("ctrl_kb")
-                vol_pct = int(round(self.sfx_volume * 100))
-                disp = mode_labels.get(self.display_mode, self.display_mode)
-                
-                fps_label = t("yes") if self.show_fps else t("no")
-                mus_pct = int(round(self.music_volume * 100))
-                lang_label = next((n for c, n in LANGS if c == self.language), self.language)
-                lines = self._options_labels()
-                n = max(1, len(lines))
-                top = 128
-                reserved = 96
-                spacing = min(34, max(24, (BASE_HEIGHT - reserved - top) // n))
-                left_x = 48
-                for i, label in enumerate(lines):
-                    selected = (i == self.menu_index)
-                    col = (255, 230, 120) if selected else (160, 160, 190)
-                    prefix = "> " if selected else "  "
-                    surf = self._txt(self.font, prefix + label, col)
-                    self.game_surface.blit(surf, (left_x, top + i * spacing))
-                spec = self._options_spec()
-                if 0 <= self.menu_index < len(spec):
-                    self._draw_option_help(spec[self.menu_index])
-                hint = self._txt(self.font, t("opt_hint"), (120, 120, 150))
-                self.game_surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 78))
-            
-            if self.menu_screen == "main":
-                if int(self.title_timer * 2.5) % 2 == 0:
-                    press = self._txt(self.font, t("press_confirm"), (255, 220, 100))
-                    self.game_surface.blit(press, (BASE_WIDTH // 2 - press.get_width() // 2, BASE_HEIGHT - 70))
-                ver = getattr(self, "_ver_surf", None)
-                if ver is None:
-                    vf = pygame.font.SysFont(pygame.font.get_default_font(), 16)
-                    ver = vf.render("v1.4.4", True, (110, 110, 130))
-                    self._ver_surf = ver
-                self.game_surface.blit(ver, (BASE_WIDTH - ver.get_width() - 10, BASE_HEIGHT - ver.get_height() - 8))
-                
-                if self.input_mode == "gamepad":
-                    controls = self._txt(self.font, t("controls_pad"), (140, 140, 180))
-                else:
-                    controls = self._txt(self.font, t("controls_kb"), (140, 140, 180))
-                self.game_surface.blit(controls, (BASE_WIDTH // 2 - controls.get_width() // 2, BASE_HEIGHT - 40))
-                self._draw_season_title(self.game_surface)
-            elif self.menu_screen == "options":
-                if self.input_mode == "gamepad":
-                    controls = self._txt(self.font, t("controls_pad"), (140, 140, 180))
-                else:
-                    controls = self._txt(self.font, t("controls_kb"), (140, 140, 180))
-                self.game_surface.blit(controls, (BASE_WIDTH // 2 - controls.get_width() // 2, BASE_HEIGHT - 40))
+            draw_frame.draw_menu_footer(self)
         
         # High score / Game Over screens
         if self.game_over and self.hs_phase == "card":
@@ -5474,177 +5191,28 @@ class Game:
             self.game_surface.blit(overlay, (0, 0))
             
             if self.hs_phase == "enter":
-                title = self._txt(self.big_font, t("new_record"), (255, 220, 100))
-                self.game_surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 100))
-                if self.hotseat or getattr(self, "play_mode", "solo") == "coop":
-                    who = self._txt(self.font, t("player_n").format(n=self.hs_slot_label), (255, 200, 120))
-                    self.game_surface.blit(who, (BASE_WIDTH // 2 - who.get_width() // 2, 72))
-                
-                sc = self._txt(self.font, f"{t('score_label')} : {self.format_score(self.score)}", (200, 255, 180))
-                self.game_surface.blit(sc, (BASE_WIDTH // 2 - sc.get_width() // 2, 180))
-                
-                hint = self._txt(self.font, t("enter_initials_hint"), (180, 180, 220))
-                self.game_surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, 240))
-                
-                # Three letters
-                letter_spacing = 70
-                start_x = BASE_WIDTH // 2 - letter_spacing
-                for i, ch in enumerate(self.hs_name):
-                    col = (255, 255, 120) if i == self.hs_char_index else (220, 220, 255)
-                    letter = self._txt(self.big_font, ch, col)
-                    lx = start_x + i * letter_spacing - letter.get_width() // 2
-                    self.game_surface.blit(letter, (lx, 320))
-                    if i == self.hs_char_index:
-                        pygame.draw.line(
-                            self.game_surface, (255, 220, 100),
-                            (lx, 400), (lx + letter.get_width(), 400), 3
-                        )
-                
-                controls = self._txt(self.font, t("hs_entry_controls"), (140, 140, 180))
-                self.game_surface.blit(controls, (BASE_WIDTH // 2 - controls.get_width() // 2, 480))
-                ok = self._txt(self.font, t("press_confirm"), (255, 220, 100))
-                self.game_surface.blit(ok, (BASE_WIDTH // 2 - ok.get_width() // 2, 540))
+                draw_frame.draw_hs_enter(self)
             
             elif self.hs_phase == "table":
-                title = self._txt(self.big_font, t("high_scores"), (255, 120, 255))
-                self.game_surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 40))
-                
-                added = getattr(self, "hs_just_added", None) or []
-                if len(added) >= 2:
-                    parts = [f"P{e['pid']} {self.format_score(e['score'])}" for e in sorted(added, key=lambda e: e['pid'])]
-                    sc = self._txt(self.font, f"{t('your_scores')} : " + "  —  ".join(parts), (200, 255, 180))
-                else:
-                    sc = self._txt(self.font, f"{t('your_score')} : {self.format_score(self.score)}", (200, 255, 180))
-                self.game_surface.blit(sc, (BASE_WIDTH // 2 - sc.get_width() // 2, 110))
-                
-                entries = self.hs_entries if self.hs_entries else []
-                base_y = 160
-                score_right = BASE_WIDTH // 2 + 170
-                for i in range(15):
-                    rank = i + 1
-                    if i < len(entries):
-                        name = entries[i]["name"]
-                        score = entries[i]["score"]
-                        added = getattr(self, "hs_just_added", None) or []
-                        highlight = any(e.get("score") == score and e.get("name") == name for e in added)
-                        if not highlight:
-                            highlight = (self.hs_submitted and score == self.score and name == "".join(self.hs_name))
-                        col = (255, 230, 120) if highlight else (200, 200, 230)
-                        self._draw_hs_row(
-                            self.game_surface, base_y + i * 28, rank,
-                            name, score, col, score_right,
-                            coop=bool(entries[i].get("coop")),
-                            ship=entries[i].get("ship"),
-                            ship2=entries[i].get("ship2"),
-                            veteran=bool(entries[i].get("veteran")),
-                            tint=entries[i].get("tint"),
-                        )
-                    else:
-                        self._draw_hs_row(
-                            self.game_surface, base_y + i * 28, rank,
-                            "---", None, (100, 100, 120), score_right,
-                        )
-                
-                restart = self._txt(self.font, t("back_to_menu"), (255, 220, 100))
-                self.game_surface.blit(restart, (BASE_WIDTH // 2 - restart.get_width() // 2, BASE_HEIGHT - 50))
+                draw_frame.draw_hs_table(self)
 
-        if getattr(self, "hotseat_pick_p2", False) and self.menu_screen == "ship_select":
-            overlay = self._dim_overlay(150)
-            self.game_surface.blit(overlay, (0, 0))
-            self._draw_ship_select(self.game_surface)
-        if self.hotseat_wait and self.started and not self.game_over:
-            overlay = self._dim_overlay(170)
-            self.game_surface.blit(overlay, (0, 0))
-            who = t("player_n").format(n=self.hotseat_next + 1)
-            title = self._txt(self.big_font, who, (255, 200, 80))
-            self.game_surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, BASE_HEIGHT // 2 - 50))
-            hint = self._txt(self.font, t("hotseat_press"), (220, 220, 240))
-            self.game_surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT // 2 + 24))
+        draw_frame.draw_hotseat_overlays(self)
         
         self.screen.fill((0, 0, 0))
 
         # Pause overlay
         if self.paused and self.started and not self.game_over:
-            overlay = self._dim_overlay(160)
-            self.game_surface.blit(overlay, (0, 0))
-            if self.pause_options:
-                hdr = self._txt(self.medium_font, t("options"), (255, 180, 255))
-                self.game_surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 36))
-                if self.menu_screen == "reset_confirm":
-                    rh = self._txt(self.medium_font, t("reset_hs_title"), (255, 120, 100))
-                    self.game_surface.blit(rh, (BASE_WIDTH // 2 - rh.get_width() // 2, 280))
-                    for i, label in enumerate([t("yes_u"), t("no_u")]):
-                        selected = (i == self.menu_index)
-                        col = (255, 230, 120) if selected else (160, 160, 190)
-                        prefix = "> " if selected else "  "
-                        surf = self._txt(self.medium_font, prefix + label, col)
-                        self.game_surface.blit(surf, (BASE_WIDTH // 2 - surf.get_width() // 2, 360 + i * 50))
-                else:
-                    lines = self._options_labels()
-                    n = max(1, len(lines))
-                    top = 92
-                    reserved = 48
-                    spacing = min(32, max(22, (BASE_HEIGHT - reserved - top) // n))
-                    left_x = 48
-                    for i, label in enumerate(lines):
-                        selected = (i == self.menu_index)
-                        col = (255, 230, 120) if selected else (160, 160, 190)
-                        prefix = "> " if selected else "  "
-                        surf = self._txt(self.font, prefix + label, col)
-                        self.game_surface.blit(surf, (left_x, top + i * spacing))
-                    spec = self._options_spec()
-                    if 0 <= self.menu_index < len(spec):
-                        self._draw_option_help(spec[self.menu_index], box=(700, 100, 520, 460))
-            else:
-                title = self._txt(self.big_font, t("pause"), (255, 220, 100))
-                self.game_surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 200))
-                for i, label in enumerate([t("resume"), t("options"), t("quit_run")]):
-                    selected = (i == self.pause_index)
-                    col = (255, 230, 120) if selected else (160, 160, 190)
-                    prefix = "> " if selected else "  "
-                    surf = self._txt(self.medium_font, prefix + label, col)
-                    self.game_surface.blit(surf, (BASE_WIDTH // 2 - surf.get_width() // 2, 300 + i * 55))
+            draw_frame.draw_pause(self)
         
         # Quit game confirm (menus)
         if self.quit_confirm and not self.started:
-            overlay = self._dim_overlay(180)
-            self.game_surface.blit(overlay, (0, 0))
-            title = self._txt(self.big_font, t("quit_game"), (255, 120, 100))
-            self.game_surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 220))
-            q = self._txt(self.medium_font, t("quit_game_q"), (220, 220, 240))
-            self.game_surface.blit(q, (BASE_WIDTH // 2 - q.get_width() // 2, 300))
-            for i, label in enumerate([t("yes_u"), t("no_u")]):
-                selected = (i == self.quit_index)
-                col = (255, 230, 120) if selected else (160, 160, 190)
-                prefix = "> " if selected else "  "
-                surf = self._txt(self.medium_font, prefix + label, col)
-                self.game_surface.blit(surf, (BASE_WIDTH // 2 - surf.get_width() // 2, 360 + i * 50))
+            draw_frame.draw_quit_confirm(self)
 
         # FPS counter (top-right) — refresh text ~4 Hz to avoid constant render
         if self.show_fps:
-            self._fps_timer = getattr(self, "_fps_timer", 0.0) + getattr(self, "dt", 0.016)
-            if self._fps_timer >= 0.25:
-                self._fps_timer = 0.0
-                self._fps_display = int(round(self.clock.get_fps()))
-            fps_surf = self.text_cache.get(
-                self.font, f"{getattr(self, '_fps_display', 0)} FPS", (120, 220, 120)
-            )
-            self.game_surface.blit(fps_surf, (BASE_WIDTH - fps_surf.get_width() - 130, 12))
+            draw_frame.draw_fps_counter(self)
 
-        if int(getattr(self, "phenix_flash", 0) or 0) > 0:
-            flash = getattr(self, "_phenix_flash_surf", None)
-            if flash is None or flash.get_size() != (BASE_WIDTH, BASE_HEIGHT):
-                flash = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
-                flash.fill((255, 210, 140))
-                self._phenix_flash_surf = flash
-            self.game_surface.blit(flash, (0, 0), special_flags=pygame.BLEND_RGB_ADD)
-            self.phenix_flash = 0
-
-        # CRT scanlines — multiply, same format as game_surface (no alpha blit)
-        if int(getattr(self, "scanlines", 0) or 0) > 0:
-            sc = self._ensure_scanline_surf()
-            if sc is not None:
-                self.game_surface.blit(sc, (0, 0), special_flags=pygame.BLEND_RGB_MULT)
+        draw_frame.draw_post_effects(self)
 
         # Toast last so menus / credits / hauts faits can show unlocks
         self._draw_cheat_message()
