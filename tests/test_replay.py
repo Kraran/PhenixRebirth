@@ -29,16 +29,22 @@ pytestmark = pytest.mark.skipif(
 with open(GOLDEN, encoding="utf-8") as fh:
     _GOLDEN = json.load(fh)
 
-# What was drawn (hash of the pixels, every 10 frames). Fonts and image scaling can
-# differ slightly between systems, so this check is made only on Linux like the rest.
+# What was drawn (hash of the pixels, every 10 frames). Optional: set PHENIX_PIXELS=1.
+# The hashes were made on the author's Linux machine. Image scaling / rotation can give
+# slightly different pixels on another CPU or library build (GitHub's runners differ on a
+# few frames of explosions or the boss, while the game state is identical), so this check
+# is not part of the default run: it is used locally when moving drawing code around.
+CHECK_PIXELS = bool(os.environ.get("PHENIX_PIXELS"))
 GOLDEN_PIXELS = os.path.join(os.path.dirname(__file__), "golden_pixels.json")
-with open(GOLDEN_PIXELS, encoding="utf-8") as fh:
-    _GOLDEN_PIXELS = json.load(fh)
+_GOLDEN_PIXELS = {}
+if CHECK_PIXELS:
+    with open(GOLDEN_PIXELS, encoding="utf-8") as fh:
+        _GOLDEN_PIXELS = json.load(fh)
 
 
 @pytest.mark.parametrize("name", sorted(replay.SCENARIOS))
 def test_replay_matches_golden(name):
-    pixels = []
+    pixels = [] if CHECK_PIXELS else None
     got = replay.run_scenario(name, pixels_out=pixels, **replay.SCENARIOS[name])
     want = _GOLDEN[name]
     assert len(got) == len(want), f"{name}: {len(got)} samples, expected {len(want)}"
@@ -47,6 +53,8 @@ def test_replay_matches_golden(name):
             f"{name}: gameplay differs from frame {i * replay.SAMPLE_EVERY} "
             f"(got {a}, expected {b})"
         )
+    if not CHECK_PIXELS:
+        return
     want_px = _GOLDEN_PIXELS[name]
     assert len(pixels) == len(want_px), f"{name}: {len(pixels)} images, expected {len(want_px)}"
     for i, (a, b) in enumerate(zip(pixels, want_px)):
