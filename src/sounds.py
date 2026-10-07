@@ -154,6 +154,8 @@ class SoundManager:
                 length = float(r.stdout.strip())
                 if length > 1.0:
                     return length
+        except FileNotFoundError:
+            pass  # ffprobe not installed: expected, try the next method
         except Exception:
             log_exc("sounds._probe_duration")
         try:
@@ -163,6 +165,8 @@ class SoundManager:
                 length = float(info.info.length)
                 if length > 1.0:
                     return length
+        except ImportError:
+            pass  # mutagen not installed: expected, the built-in lengths are used
         except Exception:
             log_exc("sounds._probe_duration")
         return None
