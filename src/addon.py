@@ -11,6 +11,7 @@ import ctypes
 from ctypes import wintypes
 
 from settings import project_root, user_data_dir
+from errlog import log_exc
 
 # XInput wButtons — shared read, does not steal the pad from MAME.
 _XI_BACK = 0x0020
@@ -160,7 +161,7 @@ def spectrum_input_tick(prev):
         for vk in held - target:
             _key_set(vk, False)
     except Exception:
-        pass
+        log_exc("addon.spectrum_input_tick")
     return {"held": target, "start": start, "seq": keep}
 
 
@@ -174,7 +175,7 @@ def c64_input_tick(prev, pid=0):
         try:
             _send_f5_to_pid(pid)
         except Exception:
-            pass
+            log_exc("addon.c64_input_tick")
     return {"start": start}
 
 
@@ -189,7 +190,7 @@ def _send_f5_to_pid(pid):
             user32.ShowWindow(hwnd, 9)
             user32.SetForegroundWindow(hwnd)
         except Exception:
-            pass
+            log_exc("addon._send_f5_to_pid")
     # F5 scancode 0x3F. Scan code, not virtual key: RawInput/win32 both see it.
     extra = ctypes.c_size_t(0)
     class KEYBDINPUT(ctypes.Structure):
@@ -372,7 +373,7 @@ def find_spectrum_pheenix():
                     if low.endswith(".z80") and ("pheenix" in low or "phoenix" in low):
                         found.append(os.path.join(sub, fn))
             except Exception:
-                pass
+                log_exc("addon.find_spectrum_pheenix")
     if not found:
         return None
     for fp in found:
@@ -417,7 +418,7 @@ def find_c64_eagle():
                     if low.endswith(".prg") and "eagle" in low:
                         found.append(os.path.join(sub, fn))
             except Exception:
-                pass
+                log_exc("addon.find_c64_eagle")
     if not found:
         return None
     for fp in found:
@@ -445,7 +446,7 @@ def _find_media(folders, exts, needles, avoid=()):
                 try:
                     scan.extend(os.path.join(name, fn) for fn in os.listdir(sub))
                 except Exception:
-                    pass
+                    log_exc("addon._find_media")
         for rel in scan:
             base = os.path.basename(rel).lower()
             if not base.endswith(exts):
@@ -1233,7 +1234,7 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
             logf.write(" ".join(base) + "\n")
             logf.flush()
         except Exception:
-            pass
+            log_exc("addon.launch")
         proc = subprocess.Popen(
             base,
             cwd=root,
@@ -1248,11 +1249,11 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
         try:
             proc.wait()
         except Exception:
-            pass
+            log_exc("addon.launch")
         try:
             logf.close()
         except Exception:
-            pass
+            log_exc("addon.launch")
         return True
     return proc
 
@@ -1270,4 +1271,4 @@ def focus_pygame_window():
         user32.ShowWindow(hwnd, 9)
         user32.SetForegroundWindow(hwnd)
     except Exception:
-        pass
+        log_exc("addon.focus_pygame_window")

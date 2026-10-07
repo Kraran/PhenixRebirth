@@ -15,6 +15,7 @@ import colorsys
 from settings import *
 
 from settings import asset_path
+from errlog import log_exc
 SHIP_PATH = asset_path("sprites", "player_ship.png")
 SHIP_PHOENIX_PATHS = {
     "argent": asset_path("sprites", "player_ship.png"),
@@ -382,7 +383,7 @@ class Player:
                         shoot_pressed = True
                         break
             except Exception:
-                pass
+                log_exc("player.update")
         elif not _ai:
             scheme = getattr(self, "input_scheme", "solo")
             if scheme == "kb1":
@@ -555,7 +556,7 @@ class Player:
             if hasattr(joy, "rumble"):
                 joy.rumble(low, high, int(duration_ms))
         except Exception:
-            pass
+            log_exc("player.rumble")
 
     def stop_rumble(self):
         joy = getattr(self, "_joy", None)
@@ -565,7 +566,7 @@ class Player:
             if hasattr(joy, "stop_rumble"):
                 joy.stop_rumble()
         except Exception:
-            pass
+            log_exc("player.stop_rumble")
 
     def destroy_bullet(self, result=None, index=None):
         """Remove one shot (index) or all. result: 'valid' | 'neutral' | None."""
@@ -642,7 +643,7 @@ class Player:
                 try:
                     self.sounds.play("phenix_activate", x=self.x)
                 except Exception:
-                    pass
+                    log_exc("player.try_activate_phenix")
             return True
         level = int(self.phenix_gauge)
         self.phenix_start_level = level

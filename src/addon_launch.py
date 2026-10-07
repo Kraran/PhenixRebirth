@@ -8,6 +8,7 @@ import pygame
 
 import addon as mame_addon
 from desktop_cover import hide_cover, show_cover
+from errlog import log_exc
 
 
 def launch_addon(game):
@@ -29,21 +30,21 @@ def launch_addon(game):
         pygame.mixer.music.stop()
         pygame.mixer.stop()
     except Exception:
-        pass
+        log_exc("addon_launch.launch_addon")
     try:
         game.sounds._current_music = None
         game.sounds._fading_out = False
         game.sounds._pending_music = None
     except Exception:
-        pass
+        log_exc("addon_launch.launch_addon")
     try:
         game._release_joystick_for_mame()
     except Exception:
-        pass
+        log_exc("addon_launch.launch_addon")
     try:
         show_cover()
     except Exception:
-        pass
+        log_exc("addon_launch.launch_addon")
     proc = None
     try:
         proc = mame_addon.launch(sid, wait=False, monitor_index=mon_i, width=mon_w, height=mon_h)
@@ -52,11 +53,11 @@ def launch_addon(game):
     try:
         pygame.time.wait(700)
     except Exception:
-        pass
+        log_exc("addon_launch.launch_addon")
     try:
         hide_cover()
     except Exception:
-        pass
+        log_exc("addon_launch.launch_addon")
     if proc is not None:
         try:
             game._wait_mame_quit(proc, sid)
@@ -64,45 +65,45 @@ def launch_addon(game):
             try:
                 proc.wait()
             except Exception:
-                pass
+                log_exc("addon_launch.launch_addon")
         try:
             getattr(proc, "_phenix_log", None) and proc._phenix_log.close()
         except Exception:
-            pass
+            log_exc("addon_launch.launch_addon")
     try:
         show_cover()
     except Exception:
-        pass
+        log_exc("addon_launch.launch_addon")
     try:
         game._wait_mame_pad_idle()
     except Exception:
-        pass
+        log_exc("addon_launch.launch_addon")
     pygame.event.clear()
     try:
         mame_addon.focus_pygame_window()
     except Exception:
-        pass
+        log_exc("addon_launch.launch_addon")
     try:
         pygame.display.flip()
     except Exception:
-        pass
+        log_exc("addon_launch.launch_addon")
     try:
         pygame.time.wait(180)
     except Exception:
-        pass
+        log_exc("addon_launch.launch_addon")
     try:
         hide_cover()
     except Exception:
-        pass
+        log_exc("addon_launch.launch_addon")
     try:
         if getattr(game, "menu_screen", "") == "addon":
             game.sounds.play_music("nostalgie_elise")
         else:
             game.sounds.play_music("menu")
     except Exception:
-        pass
+        log_exc("addon_launch.launch_addon")
     try:
         game._rebind_joystick()
     except Exception:
-        pass
+        log_exc("addon_launch.launch_addon")
     game.input_grace = 0.4

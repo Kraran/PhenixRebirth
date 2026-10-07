@@ -8,6 +8,7 @@ and behave exactly as before; Game.update() calls them in the same order.
 import pygame
 
 from settings import BASE_HEIGHT, SCREEN_SHAKE_DECAY
+from errlog import log_exc
 
 
 def tick_housekeeping(game):
@@ -39,7 +40,7 @@ def tick_housekeeping(game):
         try:
             pygame.key.set_repeat(220, 45) if want_repeat else pygame.key.set_repeat(0)
         except Exception:
-            pass
+            log_exc("update_idle.tick_housekeeping")
     if game.cheat_msg_timer > 0:
         game.cheat_msg_timer = max(0.0, game.cheat_msg_timer - game.dt)
     if game._hs_joy_cooldown > 0:
@@ -57,7 +58,7 @@ def tick_housekeeping(game):
                 game._hs_cycle_letter(-1 if ay > 0 else 1)
                 game._hs_joy_cooldown = 0.22
         except Exception:
-            pass
+            log_exc("update_idle.tick_housekeeping")
 
 
 def tick_menu_or_gameover(game):

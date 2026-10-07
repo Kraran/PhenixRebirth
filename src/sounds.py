@@ -16,6 +16,7 @@ import os
 import math
 
 from settings import asset_path, BASE_WIDTH
+from errlog import log_exc
 SOUND_DIR = asset_path("sounds")
 MUSIC_DIR = asset_path("music")
 
@@ -65,7 +66,7 @@ class SoundManager:
                 pygame.mixer.set_num_channels(24)
                 pygame.mixer.set_reserved(1)
             except Exception:
-                pass
+                log_exc("sounds.__init__")
             for name, vol in [
                 ("shoot", 0.45),
                 ("explosion", 0.65),
@@ -154,7 +155,7 @@ class SoundManager:
                 if length > 1.0:
                     return length
         except Exception:
-            pass
+            log_exc("sounds._probe_duration")
         try:
             import mutagen
             info = mutagen.File(path)
@@ -163,7 +164,7 @@ class SoundManager:
                 if length > 1.0:
                     return length
         except Exception:
-            pass
+            log_exc("sounds._probe_duration")
         return None
 
     def _register_extra_music(self):
@@ -228,7 +229,7 @@ class SoundManager:
             else:
                 pygame.mixer.music.unpause()
         except Exception:
-            pass
+            log_exc("sounds.pause_music")
 
     def play_direct(self, key, loops=0):
         """Immediate play (jukebox): no crossfade, optional one-shot."""
@@ -239,7 +240,7 @@ class SoundManager:
         try:
             pygame.mixer.music.stop()
         except Exception:
-            pass
+            log_exc("sounds.play_direct")
         self._fading_out = False
         self._pending_music = None
         self._end_fading = False
@@ -313,7 +314,7 @@ class SoundManager:
             try:
                 pygame.mixer.music.set_volume(self._music_out())
             except Exception:
-                pass
+                log_exc("sounds.set_music_volume")
 
     def play(self, name, volume=None, x=None):
         """Play SFX. Optional x (screen px) pans L/R; volume 0..1 overrides base."""
@@ -378,7 +379,7 @@ class SoundManager:
                 try:
                     self._electric_channel.stop()
                 except Exception:
-                    pass
+                    log_exc("sounds.play_electric")
                 self._electric_channel = None
             return
         snd = self.sounds.get("electric")
@@ -514,7 +515,7 @@ class SoundManager:
                 try:
                     pygame.mixer.music.set_volume(self._music_out())
                 except Exception:
-                    pass
+                    log_exc("sounds._tick_duck")
         else:
             self._duck = cur
 
@@ -523,7 +524,7 @@ class SoundManager:
         try:
             self._tick_duck(dt)
         except Exception:
-            pass
+            log_exc("sounds.update")
         if not self._fading_out:
             return
         self._fade_timer -= dt
@@ -532,5 +533,5 @@ class SoundManager:
         try:
             pygame.mixer.music.stop()
         except Exception:
-            pass
+            log_exc("sounds.update")
         self._finish_fade()

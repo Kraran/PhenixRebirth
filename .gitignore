@@ -6,6 +6,8 @@ achievements.json
 *.json.tmp
 *.json.corrupt
 boot.log
+errors.log
+errors.log.old
 dist/
 build/
 *.zip

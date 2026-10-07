@@ -13,6 +13,7 @@ from settings import asset_path
 import math
 import random
 from settings import *
+from errlog import log_exc
 
 class EnemyBullet:
     def __init__(self, x, y, stage=1):
@@ -55,7 +56,7 @@ def _whiten_surf(src):
         out.fill((255, 255, 255, 255), special_flags=pygame.BLEND_RGB_MAX)
         arr_ok = True
     except Exception:
-        pass
+        log_exc("enemy._whiten_surf")
     if not arr_ok:
         out = src.copy()
         for y in range(h):

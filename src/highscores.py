@@ -12,6 +12,7 @@ import os
 
 from safe_io import atomic_write_json, backup_unreadable
 from settings import user_data_dir
+from errlog import log_exc
 HS_FILE = os.path.join(user_data_dir(), "highscores.json")
 MAX_ENTRIES = 15
 
@@ -59,8 +60,10 @@ def load_highscores():
             if cleaned:
                 cleaned.sort(key=lambda x: x["score"], reverse=True)
                 return cleaned[:MAX_ENTRIES]
+    except FileNotFoundError:
+        pass  # first launch: no file yet
     except Exception:
-        pass
+        log_exc("highscores.load_highscores")
     # First launch or empty/invalid file (keep a copy of an unreadable file first)
     backup_unreadable(HS_FILE)
     scores = default_highscores()

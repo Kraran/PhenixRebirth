@@ -14,6 +14,7 @@ import os
 import random
 from settings import *
 from settings import asset_path
+from errlog import log_exc
 
 class ArmorCell:
     def __init__(self, x, y, w, h, color, color_dark, tile=None):
@@ -66,7 +67,7 @@ class SaucerDecoration:
             try:
                 frames.append(pygame.image.load(fp).convert_alpha())
             except Exception:
-                pass
+                log_exc("boss.load_dish_frames")
         cls._dish_l = frames
         cls._dish_r = [pygame.transform.flip(f, True, False) for f in frames]
 
@@ -295,7 +296,7 @@ class BossCore:
                     continue
                 frames.append(pygame.image.load(path).convert_alpha())
             except Exception:
-                pass
+                log_exc("boss._load_images")
         if not frames:
             path = asset_path("sprites", "boss_core.png")
             try:
@@ -457,7 +458,7 @@ class BossSaucer:
                 with open(meta_path, "r", encoding="utf-8") as f:
                     meta.update(json.load(f))
             except Exception:
-                pass
+                log_exc("boss._load_hull")
             cls._hull_img = img
             cls._hull_meta = meta
             return img, meta
@@ -1108,7 +1109,7 @@ class BossSaucer:
         try:
             hull = hull.convert_alpha()
         except Exception:
-            pass
+            log_exc("boss._ensure_hull_cache")
         self._hull_cache = hull
         self._hull_sig = sig
         return hull
@@ -1166,7 +1167,7 @@ class BossSaucer:
             try:
                 src = src.convert_alpha()
             except Exception:
-                pass
+                log_exc("boss._ensure_band_src")
             self._band_src_levels.append(src)
         self._band_layer = pygame.Surface((bw, th), pygame.SRCALPHA)
         self._band_src_key = key

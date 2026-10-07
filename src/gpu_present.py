@@ -14,6 +14,7 @@ from __future__ import annotations
 import pygame
 
 from settings import BASE_WIDTH, BASE_HEIGHT
+from errlog import log_exc
 
 
 class GpuPresenter:
@@ -43,7 +44,7 @@ class GpuPresenter:
         try:
             pygame.display.set_caption(title)
         except Exception:
-            pass
+            log_exc("gpu_present.set_title")
 
     def present(self, game_surface, dest_rect, left_surf=None, right_surf=None,
                 bezel_key=None, shake=(0, 0)):
