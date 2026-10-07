@@ -9,6 +9,7 @@ import os
 import pygame
 
 from settings import asset_path
+from errlog import log_exc
 
 
 def ach_icon(game, kind, unlocked):
@@ -83,7 +84,7 @@ def ach_icon(game, kind, unlocked):
         if r.width > 1 and r.height > 1:
             raw = raw.subsurface(r).copy()
     except Exception:
-        pass
+        log_exc("ach_helpers.ach_icon")
     # Cap source size — a full-res morph frame would hitch the GPU path
     if raw.get_width() > 96 or raw.get_height() > 96:
         s = 96.0 / max(raw.get_width(), raw.get_height())

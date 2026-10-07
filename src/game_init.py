@@ -23,6 +23,7 @@ from starfield import Starfield
 from story import StoryHub
 from text_cache import TextCache
 from user_settings import load_user_settings
+from errlog import log_exc
 
 
 def init_display(game):
@@ -80,7 +81,7 @@ def init_display(game):
         try:
             game.game_surface = game.game_surface.convert()
         except Exception:
-            pass
+            log_exc("game_init.init_display")
     except Exception:
         try:
             game.game_surface = pygame.Surface((BASE_WIDTH, BASE_HEIGHT)).convert()
@@ -92,7 +93,7 @@ def init_display(game):
     try:
         pygame.display.set_caption(f"Phenix Rebirth  [{game.fps_target} Hz]")
     except Exception:
-        pass
+        log_exc("game_init.init_display")
 
 
 def init_run_state(game):
@@ -241,7 +242,7 @@ def init_fonts_and_logo(game):
                         )
                     game.logo_frames.append(img)
                 except Exception:
-                    pass
+                    log_exc("game_init.init_fonts_and_logo")
 
 
 def init_effects_state(game):
@@ -388,7 +389,7 @@ def init_audio_and_layout(game, soft):
     try:
         pygame.key.set_repeat(220, 45)
     except Exception:
-        pass
+        log_exc("game_init.init_audio_and_layout")
 
     if not soft or not getattr(game, "sounds", None):
         game.sounds = SoundManager()

@@ -11,6 +11,7 @@ import pygame
 from safe_io import atomic_write_json, backup_unreadable
 from settings import BASE_WIDTH, BASE_HEIGHT, asset_path, user_data_dir
 from i18n import t
+from errlog import log_exc
 
 
 PANES = ("log", "hangar", "map")
@@ -174,7 +175,7 @@ class StoryHub:
         try:
             atomic_write_json(_story_path(), self.state)
         except Exception:
-            pass
+            log_exc("story.save")
 
     def _ensure_art(self):
         if self._loaded_img:

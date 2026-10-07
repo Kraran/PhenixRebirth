@@ -13,6 +13,7 @@ import math
 from settings import *
 
 from settings import asset_path
+from errlog import log_exc
 NEBULA_DIR = asset_path("sprites", "nebulae")
 PLANET_DIR = asset_path("sprites", "planets")
 
@@ -114,7 +115,7 @@ class Star:
                 try:
                     s = s.convert()
                 except Exception:
-                    pass
+                    log_exc("starfield._stamp")
                 s.fill(color)
             else:
                 d = size * 2 + 1
@@ -123,7 +124,7 @@ class Star:
                 try:
                     s = s.convert_alpha()
                 except Exception:
-                    pass
+                    log_exc("starfield._stamp")
         except Exception:
             s = pygame.Surface((max(1, size * 2 + 1), max(1, size * 2 + 1)))
             s.fill(color)
@@ -307,7 +308,7 @@ class Comet:
                     img = pygame.image.load(fp).convert_alpha()
                     frames.append(img)
                 except Exception:
-                    pass
+                    log_exc("starfield._load")
         cls._frames = frames
         return frames
 

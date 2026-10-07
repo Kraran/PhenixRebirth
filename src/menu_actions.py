@@ -9,6 +9,7 @@ from highscores import load_highscores, reset_highscores
 from i18n import LANG_CODES, set_lang
 from ingame_music import cycle as ingame_cycle
 from settings import BASE_HEIGHT
+from errlog import log_exc
 
 
 def menu_adjust(game, direction):
@@ -208,12 +209,12 @@ def menu_confirm(game):
         try:
             game.save_settings()
         except Exception:
-            pass
+            log_exc("menu_actions.menu_confirm")
         if two_p and slot == 1 and getattr(game, "play_mode", "solo") == "coop":
             try:
                 game._play_ship_welcome()
             except Exception:
-                pass
+                log_exc("menu_actions.menu_confirm")
             game._fade_to("open_select_p2")
         else:
             game._queue_after_welcome(

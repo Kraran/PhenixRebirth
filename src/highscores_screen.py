@@ -10,6 +10,7 @@ import pygame
 from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
 from i18n import t
 from highscores import load_highscores
+from errlog import log_exc
 
 
 def hs_ship_icon(game, sid, tint=None):
@@ -46,7 +47,7 @@ def hs_ship_icon(game, sid, tint=None):
         if r.width > 1 and r.height > 1:
             raw = raw.subsurface(r).copy()
     except Exception:
-        pass
+        log_exc("highscores_screen.hs_ship_icon")
     h = 22
     w = max(8, int(raw.get_width() * h / max(1, raw.get_height())))
     cache[key] = pygame.transform.smoothscale(raw, (w, h))

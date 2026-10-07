@@ -10,6 +10,7 @@ import os
 
 from settings import BASE_WIDTH, asset_path
 from i18n import t, t_help, t_list
+from errlog import log_exc
 
 
 def build_help_icons(game):
@@ -38,7 +39,7 @@ def build_help_icons(game):
             cw = max(1, int(core_img.get_width() * scale))
             boss_frames.append(pygame.transform.smoothscale(core_img, (cw, ch)))
         except Exception:
-            pass
+            log_exc("help_screen.build_help_icons")
     if not boss_frames:
         try:
             core_img = pygame.image.load(asset_path("sprites", "boss_core.png")).convert_alpha()
@@ -86,7 +87,7 @@ def build_help_icons(game):
                     frames.append(pygame.transform.smoothscale(img, (pw, ph)))
                     break
                 except Exception:
-                    pass
+                    log_exc("help_screen.build_help_icons")
     game.help_icons["phenix_frames"] = frames
     game.help_icons["phenix"] = frames[0] if frames else None
     try:

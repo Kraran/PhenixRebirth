@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from errlog import log_exc
 
 # Exact TIT2 currently in the soundtrack MP3s (read 2026-09-18).
 KNOWN_TIT2 = {
@@ -44,7 +45,7 @@ def _decode_id3_text(raw):
         if enc == 3:
             return data.split(b"\x00", 1)[0].decode("utf-8", "replace").strip()
     except Exception:
-        pass
+        log_exc("mp3_title._decode_id3_text")
     return data.decode("latin-1", "replace").replace("\x00", "").strip()
 
 

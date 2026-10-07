@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 
 from safe_io import atomic_write_json, backup_unreadable
 from settings import user_data_dir
+from errlog import log_exc
 
 ACH_FILE = os.path.join(user_data_dir(), "achievements.json")
 
@@ -111,7 +112,7 @@ def load_achievements():
                 try:
                     progress[str(k)] = max(0, int(v))
                 except Exception:
-                    pass
+                    log_exc("achievements.load_achievements")
         if isinstance(tiers, dict):
             for k, v in tiers.items():
                 if v in TIER_ORDER:

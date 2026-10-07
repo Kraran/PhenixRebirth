@@ -77,6 +77,7 @@ import menu_actions
 from settings import user_data_dir, asset_path, project_root
 from user_settings import SETTINGS_FILE, load_user_settings, save_user_settings
 from text_cache import TextCache
+from errlog import log_exc
 
 
 class _AddonClip:
@@ -142,7 +143,7 @@ class _AddonClip:
             try:
                 self._proc.kill()
             except Exception:
-                pass
+                log_exc("game._read")
             if not self._alive:
                 break
 
@@ -165,7 +166,7 @@ class _AddonClip:
             try:
                 proc.kill()
             except Exception:
-                pass
+                log_exc("game.close")
 
 
 def _ffmpeg_exe():
@@ -175,12 +176,12 @@ def _ffmpeg_exe():
     try:
         roots.append(os.path.join(project_root(), "bin"))
     except Exception:
-        pass
+        log_exc("game._ffmpeg_exe")
     roots.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bin"))
     try:
         roots.append(os.path.join(user_data_dir(), "bin"))
     except Exception:
-        pass
+        log_exc("game._ffmpeg_exe")
     for root in roots:
         for name in names:
             fp = os.path.join(root, name)
@@ -232,7 +233,7 @@ class Game:
         try:
             self.sounds.play_music(want)
         except Exception:
-            pass
+            log_exc("game._tick_ingame_music")
 
     def _update_music(self):
         """Menu / attract / optional in-game menu theme. Off silences everything."""
@@ -286,14 +287,14 @@ class Game:
         try:
             self.sounds.stop_music()
         except Exception:
-            pass
+            log_exc("game._open_jukebox")
 
     def _leave_jukebox_audio(self):
         self._juke_stop_video()
         try:
             self.sounds.stop_music()
         except Exception:
-            pass
+            log_exc("game._leave_jukebox_audio")
         self.juke_paused = False
 
     def _close_jukebox(self):
@@ -316,7 +317,7 @@ class Game:
                     self._ach_icon(kind, True)
                     self._ach_icon(kind, False)
             except Exception:
-                pass
+                log_exc("game._extra_enter")
         elif screen == "jukebox":
             self._open_jukebox()
         else:
@@ -346,7 +347,7 @@ class Game:
             try:
                 self.sounds.stop_music()
             except Exception:
-                pass
+                log_exc("game._juke_play_or_pause")
             return
         if kind == "video":
             from intro import _frame_list, AUDIO_PATH, INTRO_FPS
@@ -437,7 +438,7 @@ class Game:
                     try:
                         self.sounds.stop_music()
                     except Exception:
-                        pass
+                        log_exc("game._update_jukebox")
                     break
             return
         if self.juke_paused:
@@ -646,14 +647,14 @@ class Game:
         try:
             self.sounds.play("shield_zap", volume=0.28, x=ship.x)
         except Exception:
-            pass
+            log_exc("game._shield_absorb")
         try:
             if getattr(ship, "_joy", None) is None and getattr(self, "joystick", None):
                 ship._joy = self.joystick
             ship.rumble_level = int(getattr(self, "rumble_level", 3))
             ship.rumble(0.40, 0.70, 140)
         except Exception:
-            pass
+            log_exc("game._shield_absorb")
 
 
     def _hitstop(self, sec=0.032):
@@ -876,7 +877,7 @@ class Game:
                 if r.width > 1 and r.height > 1:
                     raw = raw.subsurface(r).copy()
             except Exception:
-                pass
+                log_exc("game._coop_icon_surf")
             th = 16
             tw = max(10, int(raw.get_width() * th / max(1, raw.get_height())))
             icon = pygame.transform.smoothscale(raw, (tw, th))
@@ -897,7 +898,7 @@ class Game:
                 if r.width > 1 and r.height > 1:
                     raw = raw.subsurface(r).copy()
             except Exception:
-                pass
+                log_exc("game._vet_icon_surf")
             th = 16
             tw = max(10, int(raw.get_width() * th / max(1, raw.get_height())))
             icon = pygame.transform.smoothscale(raw, (tw, th))
@@ -1068,7 +1069,7 @@ class Game:
             try:
                 self.sounds.play_vo(key, volume=0.90)
             except Exception:
-                pass
+                log_exc("game._play_ship_welcome")
 
 
     def _quit_app(self):
@@ -1079,7 +1080,7 @@ class Game:
         try:
             pygame.mixer.music.fadeout(400)
         except Exception:
-            pass
+            log_exc("game._quit_app")
         self.FADE_SEC = 0.32
         self._fade_to("exit")
 
@@ -1228,7 +1229,7 @@ class Game:
         try:
             self.sounds.play_vo(f"level{n}", volume=0.88)
         except Exception:
-            pass
+            log_exc("game._play_level_vo")
 
     def _start_arrive_intro(self):
         """New run: fly in from below (same speed as stage transitions) and play stage VO."""
@@ -1253,7 +1254,7 @@ class Game:
         try:
             self._play_ship_welcome()
         except Exception:
-            pass
+            log_exc("game._queue_after_welcome")
         if not (hasattr(self, "sounds") and self.sounds.vo_is_busy()):
             self._flush_after_welcome()
 
@@ -1343,7 +1344,7 @@ class Game:
             try:
                 self.player.end_phenix(grant_invuln=True, keep_gauge=True)
             except Exception:
-                pass
+                log_exc("game._apply_slot")
 
     def _save_current_slot(self):
         if not self.hotseat:
@@ -1573,7 +1574,7 @@ class Game:
         try:
             pygame.key.set_repeat(0)
         except Exception:
-            pass
+            log_exc("game._start_coop")
 
     def _sync_special_gauges(self):
         """Both coop/hot-seat ships share the chosen hull rules."""
@@ -1711,7 +1712,7 @@ class Game:
             try:
                 story.apply_result(spec.get("id"), score, bool(cleared))
             except Exception:
-                pass
+                log_exc("game._end_adventure")
         self.adventure = None
         self.started = False
         self.game_over = False
@@ -1725,11 +1726,11 @@ class Game:
         try:
             self.sounds.play_electric(False)
         except Exception:
-            pass
+            log_exc("game._end_adventure")
         try:
             self.sounds.play_music("menu", fade_ms=getattr(self.sounds, "MENU_RETURN_MS", 900))
         except Exception:
-            pass
+            log_exc("game._end_adventure")
 
     def _setup_stage(self, stage):
         """Load content for stage (1-5 cycle) with speed scaling + difficulty.
@@ -1838,7 +1839,7 @@ class Game:
             try:
                 self.sounds.play_vo("gameover_vo", volume=0.92)
             except Exception:
-                pass
+                log_exc("game._start_gameover_card")
 
     def _tick_gameover_card(self):
         self.go_card_t = float(getattr(self, "go_card_t", 0.0)) + self.dt
@@ -1895,7 +1896,7 @@ class Game:
                 try:
                     ship.stop_rumble()
                 except Exception:
-                    pass
+                    log_exc("game._stop_go_rumble")
 
     def _skip_gameover_card(self):
         if getattr(self, "go_card_t", 0.0) >= 1.0:
@@ -2359,7 +2360,7 @@ class Game:
                             prim = bool(mi.dwFlags & MONITORINFOF_PRIMARY)
                             rects.append((w, h, x, y, prim))
                     except Exception:
-                        pass
+                        log_exc("game._query_monitors_raw._cb")
                     return 1
 
                 cb = MONITORENUMPROC(_cb)
@@ -2409,15 +2410,15 @@ class Game:
         try:
             self._invalidate_present_cache()
         except Exception:
-            pass
+            log_exc("game._reset_video")
         try:
             pygame.display.quit()
         except Exception:
-            pass
+            log_exc("game._reset_video")
         try:
             pygame.display.init()
         except Exception:
-            pass
+            log_exc("game._reset_video")
 
     def _open_display(self):
         """Create the display surface once (or recreate on Options change)."""
@@ -2428,7 +2429,7 @@ class Game:
         try:
             pygame.event.pump()
         except Exception:
-            pass
+            log_exc("game._refocus_game_window")
         if os.name != "nt":
             return
         try:
@@ -2453,7 +2454,7 @@ class Game:
         try:
             pygame.joystick.init()
         except Exception:
-            pass
+            log_exc("game._rebind_joystick")
         self.joystick = None
         self.joysticks = []
         try:
@@ -2480,7 +2481,7 @@ class Game:
             elif getattr(self, "player", None) is not None:
                 self.player._joy = self.joystick
         except Exception:
-            pass
+            log_exc("game._rebind_joystick")
 
     def _bind_gpu(self):
         """(Re)bind the SDL2 GPU presenter to the current window."""
@@ -2508,7 +2509,7 @@ class Game:
             if gpu is not None:
                 gpu.set_title(title)
         except Exception:
-            pass
+            log_exc("game._update_caption")
 
     def apply_display_mode(self):
         """Apply window/fullscreen/borderless from Options (safe recreate)."""
@@ -2532,7 +2533,7 @@ class Game:
             pygame.display.set_caption(f"Phenix Rebirth  [{getattr(self, 'fps_target', 60)} Hz]")
             pygame.mouse.set_visible(self.display_mode == "window")
         except Exception:
-            pass
+            log_exc("game.apply_display_mode")
 
         self._scaled_cache = None
         self._scaled_cache_size = None
@@ -2541,7 +2542,7 @@ class Game:
         try:
             self._invalidate_present_cache()
         except Exception:
-            pass
+            log_exc("game.apply_display_mode")
         try:
             self._layout_viewport()
         except Exception as e:
@@ -2550,7 +2551,7 @@ class Game:
             if getattr(self, "game_surface", None) is not None:
                 self.game_surface = self.game_surface.convert()
         except Exception:
-            pass
+            log_exc("game.apply_display_mode")
         try:
             if getattr(self, "bezel_active", False):
                 self._ensure_bezel_cache()
@@ -2692,7 +2693,7 @@ class Game:
             down = bool(keys[pygame.K_DOWN] or keys[pygame.K_s])
             up = bool(keys[pygame.K_UP] or keys[pygame.K_w] or keys[pygame.K_z])
         except Exception:
-            pass
+            log_exc("game._credits_scroll_axis")
         joy = getattr(self, "joystick", None)
         if joy is not None:
             try:
@@ -2709,7 +2710,7 @@ class Game:
                     elif ay < -0.45:
                         up = True
             except Exception:
-                pass
+                log_exc("game._credits_scroll_axis")
         if up and not down:
             return 1
         if down and not up:
@@ -2726,7 +2727,7 @@ class Game:
             if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
                 v += 1.0
         except Exception:
-            pass
+            log_exc("game._credits_x_axis")
         joy = getattr(self, "joystick", None)
         if joy is not None:
             try:
@@ -2741,7 +2742,7 @@ class Game:
                     if abs(raw) > 0.18:
                         v += max(-1.0, min(1.0, raw))
             except Exception:
-                pass
+                log_exc("game._credits_x_axis")
         return max(-1.0, min(1.0, v))
 
     def _focus_option(self, name):
@@ -3013,7 +3014,7 @@ class Game:
                     if val:
                         return val
             except Exception:
-                pass
+                log_exc("game._read_season_force")
         if user and user.get("season_force"):
             return str(user.get("season_force") or "").lower()
         return str(getattr(self, "season_force", "") or "").lower()
@@ -3075,7 +3076,7 @@ class Game:
                     try:
                         corners[key] = pygame.image.load(fp).convert_alpha()
                     except Exception:
-                        pass
+                        log_exc("game._season_load_corners")
             setattr(self, cache, corners)
         return corners
 
@@ -3237,7 +3238,7 @@ class Game:
             try:
                 self._rebuild_life_icon()
             except Exception:
-                pass
+                log_exc("game._start_attract")
         # Phoenix: pre-fill gauge on stages 2–5. Shield starts ready.
         if sid != "shield" and self.stage != 1:
             roll = random.random()
@@ -3303,7 +3304,7 @@ class Game:
                 self.starfield.draw(self.game_surface)
             self._flip_frame(0, 0)
         except Exception:
-            pass
+            log_exc("game._paint_menu_frame")
 
     def _quit_to_menu(self):
         """Leave current run, return to main menu (keep settings)."""
@@ -3315,7 +3316,7 @@ class Game:
                 self.story.apply_result(self.adventure.get("id"), int(self.score), cleared)
                 toast = self.story.toast
             except Exception:
-                pass
+                log_exc("game._quit_to_menu")
             self.adventure = None
             back_story = True
         saved = (self.input_mode, self.display_mode, self.sfx_volume, self.music_volume,
@@ -3349,7 +3350,7 @@ class Game:
         try:
             self.sounds.play_music("menu", fade_ms=getattr(self.sounds, "MENU_RETURN_MS", 900))
         except Exception:
-            pass
+            log_exc("game._quit_to_menu")
         self._paint_menu_frame()
 
     def _return_from_gameover(self):
@@ -3390,27 +3391,27 @@ class Game:
                 try:
                     spec = mame_addon.spectrum_input_tick(spec)
                 except Exception:
-                    pass
+                    log_exc("game._wait_mame_quit")
             try:
                 if mame_addon.xinput_quit_combo():
                     try:
                         show_cover()
                     except Exception:
-                        pass
+                        log_exc("game._wait_mame_quit")
                     try:
                         proc.terminate()
                     except Exception:
-                        pass
+                        log_exc("game._wait_mame_quit")
                     pygame.time.wait(250)
                     if proc.poll() is None:
                         try:
                             proc.kill()
                         except Exception:
-                            pass
+                            log_exc("game._wait_mame_quit")
                     self._wait_mame_pad_idle()
                     break
             except Exception:
-                pass
+                log_exc("game._wait_mame_quit")
             pygame.time.wait(32)
 
     def _release_joystick_for_mame(self):
@@ -3421,14 +3422,14 @@ class Game:
                 try:
                     js.quit()
                 except Exception:
-                    pass
+                    log_exc("game._release_joystick_for_mame")
             setattr(self, attr, None)
         extra = getattr(self, "joysticks", None) or []
         for js in extra:
             try:
                 js.quit()
             except Exception:
-                pass
+                log_exc("game._release_joystick_for_mame")
         self.joysticks = []
 
     def _launch_addon(self):
@@ -3506,7 +3507,7 @@ class Game:
             try:
                 pygame.event.clear()
             except Exception:
-                pass
+                log_exc("game.handle_events")
             events = []
         for event in events:
             if event.type == pygame.QUIT:
@@ -3815,7 +3816,7 @@ class Game:
                     with open(log, "a", encoding="utf-8") as fh:
                         fh.write(tb + "\n")
                 except Exception:
-                    pass
+                    log_exc("game.run")
                 self.running = False
 
         pygame.quit()

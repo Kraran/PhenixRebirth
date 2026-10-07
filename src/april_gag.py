@@ -8,6 +8,7 @@ import math
 
 from explosion import Explosion
 from settings import BASE_HEIGHT, BASE_WIDTH
+from errlog import log_exc
 
 
 def update_april_gag(game, dt):
@@ -78,7 +79,7 @@ def update_april_gag(game, dt):
                 try:
                     game.sounds.play("explosion")
                 except Exception:
-                    pass
+                    log_exc("april_gag.update_april_gag")
     elif st == "boom":
         game.april_ox = 9999
         alive = False

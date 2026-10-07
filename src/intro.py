@@ -7,6 +7,7 @@ import time
 import pygame
 
 from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
+from errlog import log_exc
 
 INTRO_FPS = 24.0
 FADE_SEC = 0.80
@@ -77,7 +78,7 @@ def play_intro(game):
     try:
         pygame.mixer.music.stop()
     except Exception:
-        pass
+        log_exc("intro.play_intro")
     vol = float(getattr(game, "music_volume", 0.4) or 0.4)
     if os.path.isfile(AUDIO_PATH):
         try:
@@ -85,7 +86,7 @@ def play_intro(game):
             pygame.mixer.music.set_volume(max(0.0, min(1.0, vol)))
             pygame.mixer.music.play(0)
         except Exception:
-            pass
+            log_exc("intro.play_intro")
 
     n = len(frames)
     duration = n / INTRO_FPS
@@ -133,7 +134,7 @@ def play_intro(game):
             try:
                 pygame.mixer.music.stop()
             except Exception:
-                pass
+                log_exc("intro.play_intro._fade_hold")
         end = time.perf_counter() + seconds
         while game.running and time.perf_counter() < end:
             for event in pygame.event.get():
@@ -158,7 +159,7 @@ def play_intro(game):
                     game.joystick = pygame.joystick.Joystick(event.device_index)
                     game.joystick.init()
                 except Exception:
-                    pass
+                    log_exc("intro.play_intro")
             if _wants_skip(event):
                 skipped = True
                 break
@@ -169,7 +170,7 @@ def play_intro(game):
             try:
                 pygame.mixer.music.set_volume(max(0.0, vol * (remain / FADE_SEC)))
             except Exception:
-                pass
+                log_exc("intro.play_intro")
         if idx != last:
             last = idx
             nxt = idx + 1
@@ -189,6 +190,6 @@ def play_intro(game):
     try:
         pygame.mixer.music.stop()
     except Exception:
-        pass
+        log_exc("intro.play_intro")
     pygame.event.clear()
     return True

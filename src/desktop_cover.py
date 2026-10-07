@@ -5,6 +5,7 @@ crashes CPython 3.13 on Win64).
 from __future__ import annotations
 
 import os
+from errlog import log_exc
 
 _hwnd = None
 _brush = None
@@ -33,7 +34,7 @@ def show_cover():
     try:
         hide_cover()
     except Exception:
-        pass
+        log_exc("desktop_cover.show_cover")
     try:
         import ctypes
 
@@ -110,5 +111,5 @@ def hide_cover():
         if _hwnd:
             ctypes.windll.user32.DestroyWindow(_hwnd)
     except Exception:
-        pass
+        log_exc("desktop_cover.hide_cover")
     _hwnd = None

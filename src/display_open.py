@@ -8,6 +8,7 @@ import pygame
 
 from desktop_cover import hide_cover, show_cover
 from settings import BASE_HEIGHT, BASE_WIDTH, detect_refresh_rate
+from errlog import log_exc
 
 
 def open_display(game):
@@ -19,7 +20,7 @@ def open_display(game):
                 game.screen.fill((0, 0, 0))
                 pygame.display.flip()
         except Exception:
-            pass
+            log_exc("display_open.open_display")
         show_cover()
         game._reset_video()
     try:
@@ -52,7 +53,7 @@ def open_display(game):
             import os
             os.environ["SDL_RENDER_VSYNC"] = "1" if want_vs else "0"
         except Exception:
-            pass
+            log_exc("display_open.open_display._set")
         import warnings
         def _mode(vs):
             with warnings.catch_warnings():
@@ -83,7 +84,7 @@ def open_display(game):
         os.environ["SDL_VIDEO_WINDOW_POS"] = f"{px},{py}"
         os.environ["SDL_VIDEO_CENTERED"] = "0"
     except Exception:
-        pass
+        log_exc("display_open.open_display")
 
     want_bezel = (
         mode == "fullscreen"
@@ -151,12 +152,12 @@ def open_display(game):
     try:
         pygame.mouse.set_visible(game.display_mode == "window")
     except Exception:
-        pass
+        log_exc("display_open.open_display")
     try:
         if getattr(game, "game_surface", None) is not None:
             game.game_surface = game.game_surface.convert()
     except Exception:
-        pass
+        log_exc("display_open.open_display")
     game._bind_gpu()
     game._update_caption()
     try:
@@ -164,13 +165,13 @@ def open_display(game):
             game.screen.fill((0, 0, 0))
             pygame.display.flip()
     except Exception:
-        pass
+        log_exc("display_open.open_display")
     hide_cover()
     try:
         pygame.event.clear()
         pygame.event.pump()
     except Exception:
-        pass
+        log_exc("display_open.open_display")
     game._refocus_game_window()
     game._rebind_joystick()
     try:
@@ -180,8 +181,8 @@ def open_display(game):
         _settings.FPS_TARGET = game.fps_target
         print("panel:", game.panel_hz, "Hz  cap:", game.fps_target, "Hz  vsync:", getattr(game, "vsync_mode", "?"))
     except Exception:
-        pass
+        log_exc("display_open.open_display")
     try:
         pygame.event.clear()
     except Exception:
-        pass
+        log_exc("display_open.open_display")
