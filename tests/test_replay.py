@@ -29,14 +29,28 @@ pytestmark = pytest.mark.skipif(
 with open(GOLDEN, encoding="utf-8") as fh:
     _GOLDEN = json.load(fh)
 
+# What was drawn (hash of the pixels, every 10 frames). Fonts and image scaling can
+# differ slightly between systems, so this check is made only on Linux like the rest.
+GOLDEN_PIXELS = os.path.join(os.path.dirname(__file__), "golden_pixels.json")
+with open(GOLDEN_PIXELS, encoding="utf-8") as fh:
+    _GOLDEN_PIXELS = json.load(fh)
+
 
 @pytest.mark.parametrize("name", sorted(replay.SCENARIOS))
 def test_replay_matches_golden(name):
-    got = replay.run_scenario(name, **replay.SCENARIOS[name])
+    pixels = []
+    got = replay.run_scenario(name, pixels_out=pixels, **replay.SCENARIOS[name])
     want = _GOLDEN[name]
     assert len(got) == len(want), f"{name}: {len(got)} samples, expected {len(want)}"
     for i, (a, b) in enumerate(zip(got, want)):
         assert a == b, (
             f"{name}: gameplay differs from frame {i * replay.SAMPLE_EVERY} "
+            f"(got {a}, expected {b})"
+        )
+    want_px = _GOLDEN_PIXELS[name]
+    assert len(pixels) == len(want_px), f"{name}: {len(pixels)} images, expected {len(want_px)}"
+    for i, (a, b) in enumerate(zip(pixels, want_px)):
+        assert a == b, (
+            f"{name}: the picture differs from frame {i * replay.SAMPLE_EVERY} "
             f"(got {a}, expected {b})"
         )

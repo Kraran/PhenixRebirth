@@ -36,6 +36,28 @@ class _Keys:
 SIDE_EFFECTS = {"quit": 0, "addon": 0}
 
 
+class _FakeClock:
+    """The FPS counter reads the real clock: replace it by a constant one."""
+
+    def tick(self, *a):
+        return 16
+
+    def get_fps(self):
+        return 60.0
+
+    def get_time(self):
+        return 16
+
+    def get_rawtime(self):
+        return 16
+
+
+def pixel_hash(g):
+    """Hash of what the game drew this frame (logical canvas + window)."""
+    crc = zlib.crc32(pygame.image.tobytes(g.game_surface, "RGB"))
+    return "%08x" % zlib.crc32(pygame.image.tobytes(g.screen, "RGB"), crc)
+
+
 def _frozen_datetime():
     """The game changes its decor on 1 April, Halloween and Christmas: freeze the date."""
     import datetime as _dt
@@ -238,8 +260,11 @@ def _new_game(seed):
 
 
 def run_scenario(name, frames, setup, events=None, stage_jumps=None, god=False,
-                 screens=None, menu_keys=False, fuzz=None):
+                 screens=None, menu_keys=False, fuzz=None, pixels_out=None):
     """Return the list of fingerprints for one scripted game.
+
+    pixels_out: optional list that receives, every SAMPLE_EVERY frames, a hash of
+    the pixels drawn (game canvas and window).
 
     fuzz = dict(seed=, every=, joy=): every `every` frames a pseudo-random input
     event is posted (keyboard, and gamepad buttons / hat / sticks when joy=True).
@@ -270,6 +295,10 @@ def run_scenario(name, frames, setup, events=None, stage_jumps=None, god=False,
 
     real_dt = game_module.datetime
     game_module.datetime = _frozen_datetime()
+    # boss.py derives an animation phase from id(self) (a memory address): fix it.
+    import boss as boss_module
+
+    boss_module.id = lambda obj: 3
     real_methods = (Game._quit_app, Game._launch_addon)
     SIDE_EFFECTS["quit"] = SIDE_EFFECTS["addon"] = 0
     Game._quit_app = lambda self: SIDE_EFFECTS.__setitem__("quit", SIDE_EFFECTS["quit"] + 1)
@@ -278,12 +307,16 @@ def run_scenario(name, frames, setup, events=None, stage_jumps=None, god=False,
     fuzz_release = []
     errors = []
     g = _new_game(hash_seed(name))
+    g.clock = _FakeClock()
     clock = {"frame": 0}
     real_ticks, real_pressed = pygame.time.get_ticks, pygame.key.get_pressed
     # Audio runs in real time (even on the dummy driver): whether a voice-over or a
     # track is "still playing" would depend on the machine speed, not on the frame.
     from sounds import SoundManager
     real_audio = (SoundManager.vo_is_busy, SoundManager.music_busy, SoundManager.music_pos_sec)
+    real_music = (pygame.mixer.music.get_pos, pygame.mixer.music.get_busy)
+    pygame.mixer.music.get_pos = lambda: -1      # the "listen to a full track" achievement
+    pygame.mixer.music.get_busy = lambda: False  # reads it: real-time, so not reproducible
     SoundManager.vo_is_busy = lambda self: False
     SoundManager.music_busy = lambda self: False
     SoundManager.music_pos_sec = lambda self: 0.0
@@ -339,12 +372,16 @@ def run_scenario(name, frames, setup, events=None, stage_jumps=None, god=False,
                 g.draw()
             if f % SAMPLE_EVERY == 0:
                 out.append(fingerprint(g))
+                if pixels_out is not None:
+                    pixels_out.append(pixel_hash(g))
         if fuzz_rng is not None:
             out.append("errors:%s" % (errors,))
     finally:
         pygame.time.get_ticks, pygame.key.get_pressed = real_ticks, real_pressed
         SoundManager.vo_is_busy, SoundManager.music_busy, SoundManager.music_pos_sec = real_audio
+        pygame.mixer.music.get_pos, pygame.mixer.music.get_busy = real_music
         game_module.datetime = real_dt
+        del boss_module.id
         Game._quit_app, Game._launch_addon = real_methods
         g.running = False
     return out
@@ -437,6 +474,37 @@ SCENARIOS = {
                 1760: pygame.K_RETURN, 1820: pygame.K_RETURN, 1880: pygame.K_RETURN,
                 1940: pygame.K_RETURN, 2000: pygame.K_RETURN, 2060: pygame.K_RETURN},
     ),
+    # HUD extras: FPS counter, CRT lines, extra-life flash, cheat banner, boss flags
+    "hud_extras": dict(
+        frames=900, setup=_solo("phoenix"),
+        screens={
+            5: {"show_fps": True, "scanlines": 2, "used_cheat": True, "difficulty": "veteran",
+                "bosses_defeated": 3},
+            300: {"bosses_defeated": 12, "life_flash_timer": 0.9, "life_flash_index": 0,
+                  "scanlines": 3, "difficulty": "novice"},
+            320: {"life_flash_timer": 0.7},
+        },
+    ),
+    # pause menu, pause options and the "reset high scores" question, drawn while paused
+    "pause_menus": dict(
+        frames=700, setup=_solo("phoenix"), god=True,
+        screens={
+            100: {"paused": True, "pause_options": False, "pause_index": 1},
+            200: {"pause_options": True, "menu_screen": "options", "menu_index": 2},
+            300: {"menu_index": 5},
+            400: {"menu_screen": "reset_confirm", "menu_index": 1},
+            500: {"menu_index": 0},
+            600: {"paused": False, "pause_options": False},
+        },
+    ),
+    "menu_extras": dict(
+        frames=600, setup=_nothing,
+        screens={
+            5: {"gamepad_detected": True, "input_mode": "gamepad", "show_fps": True, "scanlines": 1},
+            200: {"menu_screen": "options", "menu_index": 3},
+            400: {"menu_screen": "main", "gamepad_detected": False},
+        },
+    ),
     # random keyboard + gamepad events through menus, options, pause, game over
     "fuzz_menu": dict(frames=3600, setup=_nothing, fuzz=dict(seed=1, every=6, joy=True, jump_every=90)),
     "fuzz_solo": dict(frames=3600, setup=_solo("phoenix"), fuzz=dict(seed=2, every=9, joy=True, jump_every=110)),
@@ -457,7 +525,15 @@ SCENARIOS = {
 
 
 def run_all():
-    return {name: run_scenario(name, **cfg) for name, cfg in SCENARIOS.items()}
+    return run_all_with_pixels()[0]
+
+
+def run_all_with_pixels():
+    states, pixels = {}, {}
+    for name, cfg in SCENARIOS.items():
+        pixels[name] = []
+        states[name] = run_scenario(name, pixels_out=pixels[name], **cfg)
+    return states, pixels
 
 
 if __name__ == "__main__":
@@ -466,6 +542,10 @@ if __name__ == "__main__":
     import conftest  # noqa: F401  (headless setup, temp user dir)
 
     target = sys.argv[1] if len(sys.argv) > 1 else os.path.join(here, "golden_replay.json")
+    pix_target = sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.path.dirname(target), "golden_pixels.json")
+    states, pixels = run_all_with_pixels()
     with open(target, "w", encoding="utf-8") as fh:
-        json.dump(run_all(), fh, indent=0)
-    print("written:", target)
+        json.dump(states, fh, indent=0)
+    with open(pix_target, "w", encoding="utf-8") as fh:
+        json.dump(pixels, fh, indent=0)
+    print("written:", target, pix_target)
