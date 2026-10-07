@@ -18,3 +18,5 @@ addon/mame/*.exe
 addon/mame/*.dll
 addon/mame/roms/*.zip
 
+bench_profile.txt
+probe_result.txt

@@ -2254,6 +2254,27 @@ class Game:
                 self._present_game_scaled(vr, vr.x + shake_x, vr.y + shake_y)
         pygame.display.flip()
 
+    def _present_overwrites_screen(self, shake_x, shake_y):
+        """True si la copie du canevas recouvre l'écran en entier (chemin SCALED,
+        sans bordures ni secousse, mêmes dimensions, canevas opaque) : le
+        remplissage noir de draw() serait aussitôt écrasé, on l'évite."""
+        if shake_x or shake_y or self.bezel_active:
+            return False
+        gpu = getattr(self, "_gpu", None)
+        if gpu is None or not gpu.active or getattr(self, "_gpu_backend", "") != "scaled":
+            return False
+        scr, gs = self.screen, self.game_surface
+        if scr is None or gs is None:
+            return False
+        # mise en page à jour (sinon bezel_active peut changer dans _flip_frame)
+        if getattr(self, "_present_size", None) != scr.get_size():
+            return False
+        if scr.get_size() != gs.get_size():
+            return False
+        if gs.get_flags() & pygame.SRCALPHA or gs.get_colorkey() is not None or gs.get_alpha() not in (None, 255):
+            return False
+        return True
+
     def _present_game_scaled(self, vr, dest_x, dest_y):
         """Scale logical canvas into the window game band."""
         if vr.width == BASE_WIDTH and vr.height == BASE_HEIGHT:
@@ -3761,7 +3782,8 @@ class Game:
 
         draw_frame.draw_hotseat_overlays(self)
         
-        self.screen.fill((0, 0, 0))
+        if not self._present_overwrites_screen(shake_x, shake_y):
+            self.screen.fill((0, 0, 0))
 
         # Pause overlay
         if self.paused and self.started and not self.game_over:
