@@ -59,6 +59,8 @@ from intro import play_intro
 import help_screen
 import achievements_screen
 import ship_select_screen
+import highscores_screen
+import credits_screen
 
 from settings import user_data_dir, asset_path, project_root
 SETTINGS_FILE = os.path.join(user_data_dir(), "settings.json")
@@ -1620,86 +1622,11 @@ class Game:
 
     def _hs_ship_icon(self, sid, tint=None):
         """Tiny hull for the high-score table — same visual height after crop."""
-        cache = getattr(self, "_hs_ship_icons", None)
-        if cache is None:
-            cache = self._hs_ship_icons = {}
-        key_sid = "shield" if sid == "shield" else "phoenix"
-        if key_sid == "shield":
-            tn = tint if tint in ("red", "green", "violet") else "red"
-            files = {
-                "red": "player_ship_shield.png",
-                "green": "player_ship_shield_green.png",
-                "violet": "player_ship_shield_violet.png",
-            }
-        else:
-            tn = tint if tint in ("argent", "blue", "gold") else "argent"
-            files = {
-                "argent": "player_ship.png",
-                "blue": "player_ship_blue.png",
-                "gold": "player_ship_gold.png",
-            }
-        key = key_sid + "_" + tn
-        if key in cache:
-            return cache[key]
-        path = asset_path("sprites", files[tn])
-        try:
-            raw = pygame.image.load(path).convert_alpha()
-        except Exception:
-            raw = pygame.Surface((12, 18), pygame.SRCALPHA)
-            pygame.draw.polygon(raw, (200, 200, 220), [(6, 0), (12, 18), (0, 18)])
-        try:
-            r = raw.get_bounding_rect(min_alpha=24)
-            if r.width > 1 and r.height > 1:
-                raw = raw.subsurface(r).copy()
-        except Exception:
-            pass
-        h = 22
-        w = max(8, int(raw.get_width() * h / max(1, raw.get_height())))
-        cache[key] = pygame.transform.smoothscale(raw, (w, h))
-        return cache[key]
+        return highscores_screen.hs_ship_icon(self, sid, tint)
 
     def _draw_hs_row(self, surface, y, rank, name, score, col, score_right_x=None, coop=False, ship=None, ship2=None, veteran=False, tint=None):
         """Draw one high-score line: rank aligned on '.', score right-aligned."""
-        if score_right_x is None:
-            score_right_x = BASE_WIDTH // 2 + 160
-        # Rank + dot (right-align rank digits against the dot)
-        rank_s = f"{rank:>2}"
-        dot = "."
-        rank_surf = self._txt(self.font, rank_s, col)
-        dot_surf = self._txt(self.font, dot, col)
-        # Fixed column for the '.' so all ranks align
-        dot_x = BASE_WIDTH // 2 - 120
-        surface.blit(rank_surf, (dot_x - rank_surf.get_width(), y))
-        surface.blit(dot_surf, (dot_x, y))
-        # Name
-        name_s = name if name else "---"
-        name_surf = self._txt(self.font, f" {name_s}", col)
-        surface.blit(name_surf, (dot_x + dot_surf.get_width() + 6, y))
-        # Score right-aligned (or dashes)
-        if score is None:
-            sc_s = "—"
-        else:
-            sc_s = self.format_score(score)
-        sc_surf = self._txt(self.font, sc_s, col)
-        surface.blit(sc_surf, (score_right_x - sc_surf.get_width(), y))
-        ix = score_right_x + 10
-        if score is not None:
-            ids = []
-            if ship in ("phoenix", "shield"):
-                ids.append(ship)
-            elif not coop:
-                ids = ["phoenix"]
-            line_h = self.font.get_height()
-            for sid in ids:
-                icon = self._hs_ship_icon(sid, tint)
-                iy = y + (line_h - icon.get_height()) // 2
-                surface.blit(icon, (ix, iy))
-                ix += icon.get_width() + 3
-        if coop:
-            self._draw_coop_mark(surface, ix + 4, y)
-            ix += 22
-        if veteran:
-            self._draw_vet_mark(surface, ix + 4, y)
+        return highscores_screen.draw_hs_row(self, surface, y, rank, name, score, col, score_right_x, coop, ship, ship2, veteran, tint)
 
     def difficulty_speed_mult(self):
 
@@ -3944,27 +3871,7 @@ class Game:
 
     def _credits_layout(self):
         """Cached credits lines + row heights (language / logo size)."""
-        logo_h = self.logo_frames[0].get_height() if self.logo_frames else 56
-        lang = get_lang()
-        pack = getattr(self, "_credits_layout_cache", None)
-        if pack and pack[0] == lang and pack[1] == logo_h:
-            return pack[2], pack[3], pack[4]
-        lines = get_credits_lines()
-        heights = []
-        for kind, _ in lines:
-            if kind == "title":
-                heights.append(logo_h + 28)
-            elif kind == "header":
-                heights.append(46)
-            elif kind == "blank":
-                heights.append(40)
-            elif kind == "sub":
-                heights.append(36)
-            else:
-                heights.append(34)
-        total = sum(heights)
-        self._credits_layout_cache = (lang, logo_h, lines, heights, total)
-        return lines, heights, total
+        return credits_screen.credits_layout(self)
 
     def _tick_stars(self, follow=False):
         """Starfield step with comet rules (cycle / menu)."""
@@ -6650,76 +6557,13 @@ class Game:
                 self.game_surface.blit(status, (BASE_WIDTH // 2 - status.get_width() // 2, status_y))
             
             elif self.menu_screen == "highscores":
-                hdr = self._txt(self.big_font, t("high_scores"), (255, 120, 255))
-                self.game_surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 50))
-                entries = self.hs_entries if self.hs_entries else load_highscores()
-                base_y = 140
-                score_right = BASE_WIDTH // 2 + 170
-                for i in range(15):
-                    rank = i + 1
-                    if i < len(entries):
-                        self._draw_hs_row(
-                            self.game_surface, base_y + i * 28, rank,
-                            entries[i]["name"], entries[i]["score"],
-                            (200, 200, 230), score_right,
-                            coop=bool(entries[i].get("coop")),
-                            ship=entries[i].get("ship"),
-                            ship2=entries[i].get("ship2"),
-                            veteran=bool(entries[i].get("veteran")),
-                            tint=entries[i].get("tint"),
-                        )
-                    else:
-                        self._draw_hs_row(
-                            self.game_surface, base_y + i * 28, rank,
-                            "---", None, (100, 100, 120), score_right,
-                        )
-                back = self._txt(self.font, t("ach_hint_hs"), (255, 220, 100))
-                self.game_surface.blit(back, (BASE_WIDTH // 2 - back.get_width() // 2, BASE_HEIGHT - 60))
-                self._draw_cheat_message()
+                highscores_screen.draw_highscores(self)
 
             elif self.menu_screen == "achievements":
                 self._draw_achievements(self.game_surface)
             
             elif self.menu_screen == "credits":
-                credits_lines, heights, total_h = self._credits_layout()
-                y0 = self.credits_scroll
-                if y0 < -total_h:
-                    if getattr(self, "credits_from_start", False):
-                        self._unlock_ach_meta("credits_watch")
-                    self.credits_scroll = float(BASE_HEIGHT)
-                    self.credits_from_start = True
-                    y0 = self.credits_scroll
-                elif y0 > BASE_HEIGHT + 40:
-                    self.credits_scroll = float(-total_h)
-                    self.credits_from_start = False
-                    y0 = self.credits_scroll
-                y = y0
-                mid = BASE_WIDTH // 2 + int(round(getattr(self, "credits_x", 0.0)))
-                logo_h = self.logo_frames[0].get_height() if self.logo_frames else 56
-                for i, (kind, line) in enumerate(credits_lines):
-                    h = heights[i]
-                    if -logo_h < y < BASE_HEIGHT + 20 and kind != "blank":
-                        if kind == "title":
-                            if self.logo_frames:
-                                img = self.logo_frames[self.logo_index % len(self.logo_frames)]
-                                self.game_surface.blit(
-                                    img, (mid - img.get_width() // 2, int(y))
-                                )
-                            else:
-                                surf = self._txt(self.big_font, line, (255, 120, 255))
-                                self.game_surface.blit(
-                                    surf, (mid - surf.get_width() // 2, int(y))
-                                )
-                        elif kind == "header":
-                            surf = self._txt(self.medium_font, line, (255, 200, 120))
-                            self.game_surface.blit(surf, (mid - surf.get_width() // 2, int(y)))
-                        elif kind == "sub":
-                            surf = self._txt(self.font, line, (180, 160, 220))
-                            self.game_surface.blit(surf, (mid - surf.get_width() // 2, int(y)))
-                        else:
-                            surf = self._txt(self.font, line, (200, 200, 230))
-                            self.game_surface.blit(surf, (mid - surf.get_width() // 2, int(y)))
-                    y += h
+                credits_screen.draw_credits(self)
             
             elif self.menu_screen == "reset_confirm":
                 hdr = self._txt(self.medium_font, t("reset_hs_title"), (255, 120, 100))
