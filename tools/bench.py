@@ -109,6 +109,8 @@ def run_profile(args, g, run_frame, new_rec, settings, replay, root):
 
 
 def main():
+    import machine_check
+    mach_before = machine_check.measure()
     args = parse_args()
     if args.mute:
         os.environ["SDL_AUDIODRIVER"] = "dummy"
@@ -245,6 +247,7 @@ def main():
             print("Le jeu s'est fermé pendant le test.")
             break
 
+    mach_after = machine_check.measure()
     info = [
         "Phenix Rebirth - benchmark de fluidité",
         "Date        : %s" % time.strftime("%Y-%m-%d %H:%M:%S"),
@@ -257,8 +260,14 @@ def main():
             args.mode, g.screen.get_size(), args.vsync, args.monitor,
             getattr(g, "panel_hz", "?"), getattr(g, "_gpu_backend", "?")),
         "Son         : %s" % ("coupé" if args.mute else "actif"),
+        "Alimentation: %s" % (machine_check.power_plan() or "?"),
+        machine_check.describe("PC avant   ", mach_before),
+        machine_check.describe("PC après   ", mach_after),
         "",
     ]
+    warn = machine_check.drift_warning(mach_before, mach_after)
+    if warn:
+        info.insert(-1, warn)
     lines = list(info)
     head = "%-17s %6s | %5s %5s | %5s %5s %5s | %5s | %5s %5s | %6s %6s %6s %6s %5s | %6s" % (
         "Partie", "images", "logiq", "p99", "dessin", "p99", "max", "copie", "flip", "p99",

@@ -6,7 +6,7 @@ N'utilise PAS le jeu : seulement pygame. Chaque variante tourne dans un
 processus séparé (le pilote de rendu SDL ne peut pas changer en cours de route).
 L'écran clignote quelques secondes, c'est normal.
 
-    python tools\\probe_present.py            (environ 40 secondes)
+    python tools\\probe_present.py            (environ 2 minutes)
     python tools\\probe_present.py --quick    (vérification du script)
 
 Résultat affiché et écrit dans probe_result.txt (à la racine du projet).
@@ -75,12 +75,6 @@ def worker(spec):
             fill_s.append((t2 - t1) * 1000)
             blit.append((t3 - t2) * 1000)
             flip.append((t4 - t3) * 1000)
-    # vitesse brute de la mémoire : copie de 5 Mo en Python
-    src = bytearray(CANVAS[0] * CANVAS[1] * 4)
-    t0 = pc()
-    for _ in range(50):
-        dst = bytes(src)
-    mem_ms = (pc() - t0) / 50 * 1000
     print("RESULT " + json.dumps({
         "name": spec["name"],
         "screen": list(screen.get_size()),
@@ -90,7 +84,6 @@ def worker(spec):
         "bitsize": screen.get_bitsize(),
         "blit": _stats(blit), "flip": _stats(flip),
         "fill_screen": _stats(fill_s), "fill_canvas": _stats(fill_c),
-        "mem_copy_ms": mem_ms,
     }))
     pygame.quit()
 
@@ -103,8 +96,6 @@ def variants(quick):
          "env": {"SDL_RENDER_DRIVER": "direct3d11"}},
         {"name": "SCALED plein écran, rendu direct3d (9)", "size": CANVAS, "flags": sc,
          "env": {"SDL_RENDER_DRIVER": "direct3d"}},
-        {"name": "SCALED plein écran, rendu opengl", "size": CANVAS, "flags": sc,
-         "env": {"SDL_RENDER_DRIVER": "opengl"}},
         {"name": "SCALED plein écran, rendu logiciel", "size": CANVAS, "flags": sc,
          "env": {"SDL_RENDER_DRIVER": "software"}},
         {"name": "SCALED fenêtre 1707x720", "size": CANVAS, "flags": ["SCALED", "DOUBLEBUF"]},
@@ -120,47 +111,77 @@ def variants(quick):
     return out
 
 
-def run_all(quick):
-    lines = []
-    results = []
-    for spec in variants(quick):
-        cmd = [sys.executable, os.path.abspath(__file__), "--worker", json.dumps(spec)]
-        try:
-            p = subprocess.run(cmd, capture_output=True, text=True, timeout=90, cwd=ROOT)
-        except subprocess.TimeoutExpired:
-            results.append((spec["name"], None, "trop long"))
-            continue
-        res = None
-        for ln in p.stdout.splitlines():
-            if ln.startswith("RESULT "):
-                res = json.loads(ln[7:])
-        if res is None:
-            err = (p.stderr.strip().splitlines() or ["(pas de message)"])[-1]
-            results.append((spec["name"], None, err[:90]))
-        else:
-            results.append((spec["name"], res, ""))
+def _median(v):
+    v = sorted(v)
+    return v[len(v) // 2]
 
+
+def run_all(quick):
+    import machine_check
+
+    rounds = 1 if quick else 3
+    specs = variants(quick)
+    runs = {sp["name"]: [] for sp in specs}
+    errors = {}
+    mach_before = machine_check.measure()
+    for _round in range(rounds):          # passes entrelacées : le bruit ponctuel touche toutes les variantes
+        for spec in specs:
+            cmd = [sys.executable, os.path.abspath(__file__), "--worker", json.dumps(spec)]
+            try:
+                p = subprocess.run(cmd, capture_output=True, text=True, timeout=40, cwd=ROOT)
+            except subprocess.TimeoutExpired:
+                errors[spec["name"]] = "trop long (variante abandonnée)"
+                continue
+            res = None
+            for ln in p.stdout.splitlines():
+                if ln.startswith("RESULT "):
+                    res = json.loads(ln[7:])
+            if res is None:
+                err = (p.stderr.strip().splitlines() or ["(pas de message)"])[-1]
+                errors[spec["name"]] = err[:90]
+            else:
+                runs[spec["name"]].append(res)
+    mach_after = machine_check.measure()
+
+    lines = []
     lines.append("Phenix Rebirth - sonde d'affichage")
     lines.append("Date    : " + time.strftime("%Y-%m-%d %H:%M:%S"))
     lines.append("Système : " + platform.platform())
     lines.append("CPU     : " + platform.processor())
     lines.append("Python  : " + sys.version.split()[0])
+    lines.append("Alimentation : " + (machine_check.power_plan() or "?"))
+    lines.append(machine_check.describe("PC avant", mach_before))
+    lines.append(machine_check.describe("PC après", mach_after))
+    warn = machine_check.drift_warning(mach_before, mach_after)
+    if warn:
+        lines.append(warn)
     lines.append("")
-    lines.append("%-46s | %-12s | blit moy p99 | flip moy p99 | fill écran | fill canevas" % ("Variante", "écran"))
-    lines.append("-" * 120)
-    for name, r, err in results:
-        if r is None:
-            lines.append("%-46s | ECHEC : %s" % (name, err))
+    lines.append("Valeurs = médiane de %d passes (moyenne par passe), p99 = pire des passes." % rounds)
+    lines.append("%-46s | %-10s | blit moy  p99 | flip moy  p99 | fill écran | fill canevas" % ("Variante", "écran"))
+    lines.append("-" * 118)
+    first = None
+    for spec in specs:
+        name = spec["name"]
+        rs = runs[name]
+        if not rs:
+            lines.append("%-46s | ECHEC : %s" % (name, errors.get(name, "?")))
             continue
-        lines.append("%-46s | %-12s | %5.2f %5.2f | %5.2f %5.2f | %5.2f      | %5.2f" % (
-            name, "x".join(str(x) for x in r["screen"]),
-            r["blit"]["mean"], r["blit"]["p99"], r["flip"]["mean"], r["flip"]["p99"],
-            r["fill_screen"]["mean"], r["fill_canvas"]["mean"]))
+        first = first or rs[0]
+
+        def med(k, f="mean"):
+            return _median([r[k][f] for r in rs])
+
+        def worst(k):
+            return max(r[k]["p99"] for r in rs)
+
+        lines.append("%-46s | %-10s | %6.2f %6.2f | %6.2f %6.2f | %6.2f     | %6.2f" % (
+            name, "x".join(str(x) for x in rs[0]["screen"]),
+            med("blit"), worst("blit"), med("flip"), worst("flip"),
+            med("fill_screen"), med("fill_canvas")))
     lines.append("")
-    first = next((r for _n, r, _e in results if r), None)
     if first:
-        lines.append("pilote vidéo : %s   format canevas = écran : %s (%d bits)   copie mémoire 5 Mo : %.2f ms" % (
-            first["driver"], first["same_format"], first["bitsize"], first["mem_copy_ms"]))
+        lines.append("pilote vidéo : %s   format canevas = écran : %s (%d bits)" % (
+            first["driver"], first["same_format"], first["bitsize"]))
     lines.append("Durées en millisecondes. Budget : 144 Hz = 6,94 ms   120 Hz = 8,33 ms.")
     text = "\n".join(lines)
     print(text)
@@ -180,7 +201,7 @@ def main():
     if a.worker:
         worker(json.loads(a.worker))
         return
-    print("Sonde d'affichage : l'écran va clignoter plusieurs fois, ne touche à rien (~40 s)...")
+    print("Sonde d'affichage : l'écran va clignoter plusieurs fois, ne touche à rien (~2 minutes)...")
     run_all(a.quick)
 
 
