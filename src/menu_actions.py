@@ -122,7 +122,7 @@ def menu_adjust(game, direction):
         game.save_settings()
         game._open_display()
     elif key == "hz":
-        caps = [60, 75, 120]
+        caps = [60, 75, 120, 144]
         cur = int(getattr(game, "fps_cap", 120) or 120)
         i = caps.index(cur) if cur in caps else 2
         game.fps_cap = caps[(i + direction) % len(caps)]

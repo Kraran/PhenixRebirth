@@ -83,6 +83,15 @@ def run_profile(args, g, run_frame, new_rec, settings, replay, root):
         out.append("=== %s (%d images) ===" % (title, n))
         keep = [l[:150] for l in txt.split("\n") if l.strip()][1:]
         out.extend(keep)
+        # qui appelle les 2 opérations les plus fréquentes (blit / fill) ?
+        for op in ("'blit'", "'fill'"):
+            for key, val in stats.stats.items():
+                if key[2].startswith("<method " + op):
+                    callers = sorted(val[4].items(), key=lambda kv: -kv[1][2])[:6]
+                    out.append("  appelants de %s (appels / par image / temps) :" % op.strip("'"))
+                    for (fn, line, name), (cc, nc, tt, ct) in callers:
+                        out.append("    %6d %5.1f %7.3f s  %s:%d(%s)" % (
+                            nc, nc / float(n), tt, os.path.basename(fn), line, name))
         out.append("")
 
     section("Menu titre", False)

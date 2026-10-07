@@ -27,7 +27,7 @@ def load_user_settings():
         "monitor_index": 0,
         "gpu_present": True,  # SDL2 GPU upscale (falls back to CPU)
         "vsync_mode": "adaptive",  # on | adaptive | off
-        "fps_cap": 120,  # 60 | 75 | 120
+        "fps_cap": 120,  # 60 | 75 | 120 | 144
         "audio_mix": "sfx",
         "ingame_music": "none",
         "season_force": "",  # "" | xmas | halloween — title overlay test

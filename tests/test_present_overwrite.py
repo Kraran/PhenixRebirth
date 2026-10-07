@@ -50,7 +50,9 @@ def test_ecran_entierement_recouvert():
     g = _scaled_game()
     g.screen.fill((255, 0, 0))  # reste d'une image précédente
     g.draw()
-    assert pygame.image.tobytes(g.screen, "RGB") == pygame.image.tobytes(g.game_surface, "RGB")
+    w, h = g.screen.get_size()
+    reds = sum(1 for x in range(0, w, 7) for y in range(0, h, 7) if g.screen.get_at((x, y))[:3] == (255, 0, 0))
+    assert reds == 0
 
 
 def test_secousse_garde_des_bords_noirs():

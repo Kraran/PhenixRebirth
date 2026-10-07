@@ -48,7 +48,7 @@ def init_display(game):
             game.fps_cap = int(early.get("fps_cap", 120) or 120)
         except Exception:
             game.fps_cap = 120
-        if game.fps_cap not in (60, 75, 120):
+        if game.fps_cap not in (60, 75, 120, 144):
             game.fps_cap = 120
     except Exception:
         game.monitor_index = 0
