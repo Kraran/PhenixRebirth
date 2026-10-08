@@ -325,7 +325,9 @@ class InvaderFormation:
                 e.x += dx
         self.steps += 1
         if self.sounds:
-            self.sounds.play("invader_step_%d" % step_pitch_index(self.interval()))
+            lo = min(e.x - e.width / 2 for e in alive)
+            hi = max(e.x + e.width / 2 for e in alive)
+            self.sounds.play("invader_step_%d" % step_pitch_index(self.interval()), x=(lo + hi) / 2)     # centre of the group
         if max(e.y + e.height / 2 for e in alive) >= INVASION_Y:
             self.invaded = True
 
@@ -409,7 +411,7 @@ class InvaderFormation:
             if self.saucer_timer <= 0 and len(self.living()) > 1:
                 self.mothership = Mothership(random.choice((-1, 1)))
                 if self.sounds:
-                    self.sounds.play("saucer_pass")
+                    self.sounds.play_voice("saucer_pass", x=self.mothership.x)
                 self.saucer_timer = random.uniform(*SAUCER_GAP)
 
     def draw(self, surface):

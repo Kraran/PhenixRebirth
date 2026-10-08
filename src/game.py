@@ -3660,8 +3660,19 @@ class Game:
                 input_events.on_joy_axis(self, event)
 
     # --- Simulation step ---
+    def _sync_invader_voices(self):
+        """The saucer sound belongs to the saucer on screen: it follows it (stereo), waits while the game is
+        paused and stops when the saucer is gone or the game is no longer running the invasion."""
+        f = getattr(self, "formation", None)
+        m = getattr(f, "mothership", None)
+        running = (bool(getattr(self, "adventure", None)) and self.started and not self.game_over
+                   and self.stage_transition is None)
+        here = m is not None and m.alive and not m.dying and running
+        self.sounds.follow_voice("saucer_pass", x=getattr(m, "x", None), alive=here, paused=bool(self.paused))
+
     def update(self):
         update_idle.tick_housekeeping(self)
+        self._sync_invader_voices()
         
         if self.game_over and getattr(self, "hs_phase", None) == "card":
             self.sounds.play_electric(False)

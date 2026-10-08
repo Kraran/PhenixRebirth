@@ -46,6 +46,7 @@ class SoundManager:
         self.PAUSE_OUT = 0.40
         self.pause_duck = False
         self._base_volumes = {}
+        self._voices = {}       # long sounds that follow something on screen (name -> channel)
         self._current_music = None  # "menu" | "gameover" | "credits" | None
         self._fading_out = False
         self._pending_music = None
@@ -323,15 +324,50 @@ class SoundManager:
     def play(self, name, volume=None, x=None):
         """Play SFX. Optional x (screen px) pans L/R; volume 0..1 overrides base."""
         if not self.enabled or getattr(self, "sfx_muted", False):
-            return
+            return None
         snd = self.sounds.get(name)
         if not snd:
-            return
+            return None
         if volume is not None:
             gain = max(0.0, min(1.0, float(volume))) * self.master_volume
         else:
             gain = self._base_volumes.get(name, 0.5) * self.master_volume
-        self._play_on_channel(snd, gain, x=x)
+        return self._play_on_channel(snd, gain, x=x)
+
+    def play_voice(self, name, x=None):
+        """Play a long sound that `follow_voice` will keep in step with what it belongs to."""
+        ch = self.play(name, x=x)
+        if ch is not None:
+            self._voices[name] = ch
+
+    def follow_voice(self, name, x=None, alive=True, paused=False, fade_ms=150):
+        """Every frame: pan the voice to x, hold it while the game is paused, cut it when its source is gone.
+        True while the voice is still sounding."""
+        ch = self._voices.get(name)
+        snd = self.sounds.get(name)
+        if ch is None or snd is None:
+            return False
+        try:
+            busy = ch.get_busy() and ch.get_sound() is snd
+        except Exception:
+            busy = False
+        if not busy:
+            self._voices.pop(name, None)
+            return False
+        try:
+            if not alive:
+                self._voices.pop(name, None)
+                snd.fadeout(int(fade_ms))
+                return False
+            if paused:
+                ch.pause()
+                return True
+            ch.unpause()
+            left, right = self._pan_lr(x, self._base_volumes.get(name, 0.5) * self.master_volume)
+            ch.set_volume(left, right)
+        except Exception:
+            log_exc("sounds.follow_voice")
+        return True
 
     def play_vo(self, name, volume=None):
         """Announcer: reserved channel, never stolen by SFX."""

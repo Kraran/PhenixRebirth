@@ -138,6 +138,9 @@ def test_the_saucer_passage_plays_the_sound_once_and_a_hit_cuts_it(run):
         def play(self, name, **k):
             played.append(name)
 
+        def play_voice(self, name, **k):
+            played.append(name)
+
         def stop_sfx(self, name, *a, **k):
             played.append("stop:" + name)
 
@@ -173,3 +176,169 @@ def test_repeating_a_sound_does_not_click_at_the_join():
     ramp = [i / 4000.0 for i in range(4000)]                                # a saw: the worst join
     out = syn.undulating(ramp, 4000, 4000, 6.0, wobble=0.0, tremolo=0.0, fade_in=0.01, fade_out=0.01)
     assert max(abs(b - a) for a, b in zip(out, out[1:])) < 0.2
+
+
+# ------------------------------------------------------------------ stereo
+class FakeSound:
+    def __init__(self):
+        self.faded = []
+
+    def fadeout(self, ms):
+        self.faded.append(ms)
+
+
+class FakeChannel:
+    def __init__(self, snd):
+        self.snd, self.busy, self.paused, self.vols = snd, True, False, []
+
+    def get_busy(self):
+        return self.busy
+
+    def get_sound(self):
+        return self.snd
+
+    def pause(self):
+        self.paused = True
+
+    def unpause(self):
+        self.paused = False
+
+    def set_volume(self, left, right):
+        self.vols.append((left, right))
+
+
+def _voice(run):
+    snd = run.game.sounds
+    fake = FakeSound()
+    snd.sounds["saucer_pass"] = fake
+    ch = FakeChannel(fake)
+    snd._voices["saucer_pass"] = ch
+    return snd, fake, ch
+
+
+def test_the_steps_are_panned_on_the_centre_of_the_group(run):
+    f = _formation(run)
+    heard = []
+
+    class Spy:
+        def play(self, name, x=None, **k):
+            heard.append(x)
+
+    f.sounds = Spy()
+    f._step()
+    assert heard[-1] == pytest.approx((min(e.x - e.width / 2 for e in f.enemies)
+                                       + max(e.x + e.width / 2 for e in f.enemies)) / 2)
+    assert abs(heard[-1] - 640) < 30                                         # the grid starts in the middle
+    for e in f.enemies:
+        if e.col >= 3:
+            e.alive = False                                                  # only the left of the grid is left
+    f._step()
+    assert heard[-1] < 450
+    for _ in range(8):
+        f._step()
+    assert len(heard) == 10 and heard[-1] > heard[1]                          # the group moved right: so does the sound
+
+
+def test_the_saucer_sound_follows_the_saucer_from_left_to_right(run):
+    snd, fake, ch = _voice(run)
+    pans = []
+    for x in (0, 320, 640, 960, 1280):
+        snd.follow_voice("saucer_pass", x=x)
+        pans.append(ch.vols[-1])
+    lefts = [l for l, r in pans]
+    rights = [r for l, r in pans]
+    assert lefts == sorted(lefts, reverse=True) and rights == sorted(rights)
+    assert lefts[0] > rights[0] and rights[-1] > lefts[-1]
+    assert pans[2][0] == pytest.approx(pans[2][1], rel=0.05)                 # centred in the middle
+    assert not ch.paused and not fake.faded
+
+
+def test_the_saucer_voice_waits_while_paused_and_goes_on_after(run):
+    snd, fake, ch = _voice(run)
+    snd.follow_voice("saucer_pass", x=500, paused=True)
+    assert ch.paused
+    snd.follow_voice("saucer_pass", x=500, paused=False)
+    assert not ch.paused
+
+
+def test_the_saucer_voice_is_cut_when_its_source_is_gone(run):
+    snd, fake, ch = _voice(run)
+    assert snd.follow_voice("saucer_pass", x=500, alive=False) is False
+    assert fake.faded and "saucer_pass" not in snd._voices
+    assert snd.follow_voice("saucer_pass", x=500) is False                    # nothing left to follow
+
+
+def test_a_voice_that_finished_is_forgotten_not_cut(run):
+    snd, fake, ch = _voice(run)
+    ch.busy = False
+    assert snd.follow_voice("saucer_pass", x=500) is False and not fake.faded
+    assert "saucer_pass" not in snd._voices
+
+
+def test_a_channel_reused_for_another_sound_is_not_touched(run):
+    snd, fake, ch = _voice(run)
+    ch.snd = FakeSound()                                                    # the channel plays something else now
+    assert snd.follow_voice("saucer_pass", x=500, alive=False) is False
+    assert not fake.faded and not ch.snd.faded
+
+
+# ------------------------------------------------------------------ never a saucer sound without a saucer
+def _sounding(run):
+    g, f = _playing(run)
+    snd, fake, ch = _voice(run)
+    f.mothership = inv.Mothership(1)
+    f.mothership.x = 300
+    return g, f, snd, fake, ch
+
+
+def test_the_sound_goes_on_while_the_saucer_is_there(run):
+    g, f, snd, fake, ch = _sounding(run)
+    g._sync_invader_voices()
+    assert not fake.faded and not ch.paused and ch.vols
+    f.mothership.x = 1000
+    g._sync_invader_voices()
+    assert ch.vols[-1][1] > ch.vols[-1][0]                                  # now on the right
+
+
+@pytest.mark.parametrize("what", ["gone", "dying", "transition", "game_over", "menu"])
+def test_the_sound_stops_as_soon_as_the_saucer_is_not_there(run, what):
+    g, f, snd, fake, ch = _sounding(run)
+    if what == "gone":
+        f.mothership = None
+    elif what == "dying":
+        f.mothership.kill()
+    elif what == "transition":
+        g.stage_transition = "fly_up"
+    elif what == "game_over":
+        g.game_over = True
+    else:
+        g.started = False
+    g._sync_invader_voices()
+    assert fake.faded
+
+
+def test_pausing_the_game_pauses_the_sound(run):
+    g, f, snd, fake, ch = _sounding(run)
+    g.paused = True
+    g._sync_invader_voices()
+    assert ch.paused and not fake.faded
+    g.paused = False
+    g._sync_invader_voices()
+    assert not ch.paused
+
+
+def test_the_sync_runs_every_frame_even_when_paused_or_in_a_menu(run):
+    g, f, snd, fake, ch = _sounding(run)
+    g.paused = True
+    run.frames(2)
+    assert ch.paused
+    g.paused = False
+    g.started = False
+    run.frames(2)
+    assert fake.faded
+
+
+def test_a_mission_with_no_invasion_has_no_voice_to_follow(run):
+    g = run.game
+    g.sounds.follow_voice("saucer_pass", x=None, alive=False)               # nothing playing: nothing happens
+    run.frames(3)
