@@ -22,9 +22,9 @@ SAVE_VERSION = 3
 SLOT_COUNT = 3
 MODES = ("normal", "veteran")
 NAME_MAX = 12
-# A failed mission (Normal mode) costs up to this share of the mission's best score,
-# the less you scored the more you pay. Veteran: a failure is a permanent death.
-PENALTY_RATE = 0.5
+# A failed mission (Normal mode) gains nothing and costs this share of the credits held.
+# Veteran: a failure is a permanent death.
+PENALTY_RATE = 0.20
 NAME_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- "
 
 # Dome (Shield bubble): seconds. 2.0 s / 5.0 s is the arcade Shield.
@@ -585,22 +585,17 @@ def buy(state, sid):
 
 
 # ----------------------------------------------------------------- results
-def failure_penalty(score, target):
-    """Points lost after a failed mission: PENALTY_RATE of the mission's best score
-    (`target`) when you scored nothing, falling to 0 as you get closer to it."""
-    target = int(_num(target, 0))
-    if target <= 0:
-        return 0
-    score = max(0, int(_num(score, 0)))
-    worst = round(target * PENALTY_RATE)
-    return int(round(worst * (1.0 - min(1.0, score / float(target)))))
+def failure_penalty(credits):
+    """Points lost after a failed mission in Normal mode: PENALTY_RATE of the credits held."""
+    credits = max(0, int(_num(credits, 0)))
+    return int(credits * PENALTY_RATE + 0.5)
 
 
-def record_result(state, mission_id, score, cleared, target=0):
+def record_result(state, mission_id, score, cleared):
     """Apply the end of a mission.
 
     Cleared: the score is banked as hangar credits, unlock flags and journal line.
-    Failed, Normal mode: nothing is gained and a penalty is paid (never below 0 credits).
+    Failed, Normal mode: nothing is gained and 20 % of the credits held are lost.
     Failed, Veteran mode: the pilot falls, the save becomes a memorial.
 
     Returns {"score", "cleared", "first", "lost", "fallen"}. The journal stores a
@@ -613,8 +608,8 @@ def record_result(state, mission_id, score, cleared, target=0):
             state["fallen"] = True
             res["fallen"] = True
         else:
-            credits = int(state.get("credits", 0))
-            res["lost"] = min(credits, failure_penalty(score, target))
+            credits = max(0, int(state.get("credits", 0)))
+            res["lost"] = failure_penalty(credits)
             state["credits"] = credits - res["lost"]
         return res
     state["credits"] = int(state.get("credits", 0)) + score

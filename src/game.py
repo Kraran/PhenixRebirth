@@ -1713,15 +1713,8 @@ class Game:
         self.input_grace = 0.35
         self.shake_amount = 0.0
         self._setup_stage(1)
-        self.adventure["target"] = self._adventure_target()
         self._rebuild_life_icon()
         self._start_arrive_intro()
-
-    def _adventure_target(self):
-        """Best score of the mission's wave: the scale of the penalty after a failure."""
-        if self.boss_saucer is not None:
-            return int(self._boss_points())
-        return sum(int(self._enemy_points(getattr(e, "stage", 1))) for e in self.formation.enemies)
 
     def _end_adventure(self, cleared):
         """Bank the run into the hangar and return to the mission map."""
@@ -1730,7 +1723,7 @@ class Game:
         story = getattr(self, "story", None)
         if story is not None:
             try:
-                story.apply_result(spec.get("id"), score, bool(cleared), spec.get("target") or 0)
+                story.apply_result(spec.get("id"), score, bool(cleared))
             except Exception:
                 log_exc("game._end_adventure")
         self.adventure = None
@@ -3367,8 +3360,7 @@ class Game:
             story_slot = self.story.slot_no
             try:
                 cleared = self.stage_transition == "fly_up"
-                self.story.apply_result(self.adventure.get("id"), int(self.score), cleared,
-                                        self.adventure.get("target") or 0)
+                self.story.apply_result(self.adventure.get("id"), int(self.score), cleared)
                 toast = self.story.toast
             except Exception:
                 log_exc("game._quit_to_menu")

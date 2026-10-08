@@ -99,28 +99,36 @@ def test_clear_banks_points_and_unlocks():
     assert st["credits"] == 110 and len(st["log"]) == 1
 
 
-def test_failure_in_normal_mode_gains_nothing_and_costs_a_penalty():
+def test_failure_in_normal_mode_gains_nothing_and_loses_20_percent():
     st = ss.default_state()
     st["credits"] = 500
-    res = ss.record_result(st, "ch1_sortie", 60, False, target=240)
-    assert res["cleared"] is False and res["lost"] == 90 and res["fallen"] is False
-    assert st["credits"] == 410                           # the 60 points are not banked
+    res = ss.record_result(st, "ch1_sortie", 60, False)
+    assert res["cleared"] is False and res["lost"] == 100 and res["fallen"] is False
+    assert st["credits"] == 400                           # the 60 points are not banked
     assert not ss.flag(st, "ch1_speed_80") and st["cleared"] == [] and st["log"] == []
 
 
-def test_penalty_is_smaller_the_higher_the_score():
-    pens = [ss.failure_penalty(sc, 240) for sc in (0, 60, 120, 180, 240, 999)]
-    assert pens == [120, 90, 60, 30, 0, 0]
-    assert pens == sorted(pens, reverse=True)
-    assert ss.failure_penalty(50, 0) == 0 and ss.failure_penalty(50, None) == 0
+def test_penalty_is_a_fifth_of_the_credits():
+    assert [ss.failure_penalty(c) for c in (0, 1, 2, 3, 10, 100, 1250, 999)] == [0, 0, 0, 1, 2, 20, 250, 200]
+    assert ss.failure_penalty(None) == 0 and ss.failure_penalty(-50) == 0
+
+
+def test_the_score_of_a_failed_run_does_not_change_the_penalty():
+    a, b = ss.default_state(), ss.default_state()
+    a["credits"] = b["credits"] = 1000
+    ss.record_result(a, "ch1_sortie", 0, False)
+    ss.record_result(b, "ch1_sortie", 9999, False)
+    assert a["credits"] == b["credits"] == 800
 
 
 def test_credits_never_go_below_zero():
     st = ss.default_state()
-    st["credits"] = 40
-    res = ss.record_result(st, "ch1_sortie", 0, False, target=240)
-    assert res["lost"] == 40 and st["credits"] == 0
-    res = ss.record_result(st, "ch1_sortie", 0, False, target=240)
+    st["credits"] = 4
+    for _ in range(6):
+        ss.record_result(st, "ch1_sortie", 0, False)
+    assert st["credits"] >= 0
+    st["credits"] = 0
+    res = ss.record_result(st, "ch1_sortie", 0, False)
     assert res["lost"] == 0 and st["credits"] == 0
 
 
@@ -128,7 +136,7 @@ def test_failure_in_veteran_mode_is_a_permanent_death():
     st = ss.default_state()
     st["mode"] = "veteran"
     st["credits"] = 500
-    res = ss.record_result(st, "ch1_sortie", 100, False, target=240)
+    res = ss.record_result(st, "ch1_sortie", 100, False)
     assert res["fallen"] is True and res["lost"] == 0
     assert st["fallen"] is True and st["credits"] == 500   # nothing banked, nothing paid
     # a veteran who clears the mission lives on

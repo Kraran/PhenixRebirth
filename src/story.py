@@ -329,9 +329,9 @@ class StoryHub:
         }
         return spec
 
-    def apply_result(self, mission_id, score, cleared, target=0):
+    def apply_result(self, mission_id, score, cleared):
         """End of a mission: credits, penalty or fall (see story_state.record_result)."""
-        res = ss.record_result(self.state, mission_id, score, cleared, target)
+        res = ss.record_result(self.state, mission_id, score, cleared)
         if res["cleared"]:
             self.toast = t("story_clear").format(pts=res["score"])
         elif res["fallen"]:

@@ -312,27 +312,17 @@ def _start_mission(g, slot, name="NOVA", mode="normal", credits=0):
     g._begin_adventure(g.story._launch_selected())
 
 
-def test_mission_knows_its_best_score(run):
-    g = run.game
-    _start_mission(g, 1)
-    n = len(g.formation.enemies)
-    assert n > 0 and g.adventure["target"] == n * g._enemy_points(1)
-
-
-def test_failed_mission_in_normal_mode_pays_the_penalty(run):
+def test_failed_mission_in_normal_mode_loses_a_fifth_of_the_credits(run):
     g = run.game
     _start_mission(g, 1, credits=1000)
-    g.score = 0
-    target = g.adventure["target"]
+    g.score = 130                                         # what you scored does not matter
     g._end_adventure(False)
     assert g.menu_screen == "story_hub" and g.story.screen == "hub" and g.story.pane == "map"
-    lost = 1000 - g.story.state["credits"]
-    assert lost == ss.failure_penalty(0, target)
-    assert lost > 0
-    assert str(lost) in g.story.toast
+    assert g.story.state["credits"] == 800
+    assert "200" in g.story.toast
     again = StoryHub()
     again.open_slot(1)
-    assert again.state["credits"] == 1000 - lost          # saved in the slot
+    assert again.state["credits"] == 800                  # saved in the slot
 
 
 def test_failed_veteran_mission_ends_the_adventure(run):
@@ -363,7 +353,7 @@ def test_quitting_a_normal_mission_pays_the_penalty_and_returns_to_the_map(run):
     run.frames(10)
     g._quit_to_menu()
     assert g.story.screen == "hub" and g.story.pane == "map" and g.story.slot_no == 1
-    assert g.story.state["credits"] < 1000
+    assert g.story.state["credits"] == 800
     assert ss.slot_summary(1)["fallen"] is False
 
 
