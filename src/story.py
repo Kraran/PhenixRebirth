@@ -18,6 +18,33 @@ from story_state import MISSIONS, SHOP, log_text
 PANES = ("log", "hangar", "map")
 
 
+def _cap_top(font, cy):
+    """Top y at which to blit text so its capital letters are centred on `cy`.
+
+    A text surface is taller than its letters (room for accents and descenders),
+    so centring the surface makes the letters look too high or too low. This
+    centres the capitals instead, the same way for every string of that font.
+    """
+    try:
+        cap = font.metrics("H")[0][3]
+    except Exception:
+        cap = int(font.get_height() * 0.7)
+    return int(round(cy - (font.get_ascent() - cap / 2.0)))
+
+
+def _text(surface, font, text, color, cy, left=None, right=None, centerx=None):
+    """Draw one line, vertically centred on `cy`, anchored left, right or centre."""
+    img = font.render(text, True, color)
+    if left is not None:
+        x = left
+    elif right is not None:
+        x = right - img.get_width()
+    else:
+        x = centerx - img.get_width() // 2
+    surface.blit(img, (x, _cap_top(font, cy)))
+    return img
+
+
 class StoryHub:
     """Three-pane hub. Left = log, center = hangar, right = map."""
 
@@ -178,17 +205,12 @@ class StoryHub:
         else:
             self._draw_log(surface, font, small)
 
-        if self.toast and self.pane == "map":
-            toast = small.render(self.toast, True, (255, 220, 120))
-            surface.blit(toast, (BASE_WIDTH // 2 - toast.get_width() // 2, 48))
-
         hint_key = {
             "hangar": "story_hint",
             "map": "story_hint_map",
             "log": "story_hint_log",
         }[self.pane]
-        hint = small.render(t(hint_key), True, (140, 140, 170))
-        surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 36))
+        cx = BASE_WIDTH // 2
         tabs = "  ".join(
             ("> " if p == self.pane else "  ") + t({
                 "log": "story_tab_log",
@@ -197,8 +219,8 @@ class StoryHub:
             }[p])
             for p in PANES
         )
-        tab = small.render(tabs, True, (160, 170, 200))
-        surface.blit(tab, (BASE_WIDTH // 2 - tab.get_width() // 2, BASE_HEIGHT - 58))
+        _text(surface, small, tabs, (160, 170, 200), BASE_HEIGHT - 62, centerx=cx)
+        _text(surface, small, t(hint_key), (140, 140, 170), BASE_HEIGHT - 24, centerx=cx)
 
     def _draw_log(self, surface, font, small):
         box = pygame.Rect(80, 78, BASE_WIDTH - 160, BASE_HEIGHT - 168)
@@ -206,28 +228,26 @@ class StoryHub:
         pygame.draw.rect(surface, (70, 90, 130), box, 2, border_radius=10)
         log = self.state.get("log") or []
         if not log:
-            s = font.render(t("story_log_empty"), True, (160, 170, 200))
-            surface.blit(s, (box.centerx - s.get_width() // 2, box.centery - s.get_height() // 2))
+            _text(surface, font, t("story_log_empty"), (160, 170, 200), box.centery, centerx=box.centerx)
             return
-        y = box.y + 16
+        cy = box.y + 34
         for line in log[-14:]:
-            s = small.render(log_text(line, t), True, (200, 200, 220))
-            surface.blit(s, (box.x + 24, y))
-            y += 26
+            _text(surface, small, log_text(line, t), (200, 200, 220), cy, left=box.x + 24)
+            cy += 36
 
     def _draw_map(self, surface, font, medium, small):
         box = pygame.Rect(70, 78, BASE_WIDTH - 140, BASE_HEIGHT - 168)
         pygame.draw.rect(surface, (16, 18, 28), box, border_radius=10)
         pygame.draw.rect(surface, (70, 90, 130), box, 2, border_radius=10)
-        cap = small.render(t("story_ch1"), True, (255, 170, 80))
-        surface.blit(cap, (box.x + 16, box.y + 10))
-        y = box.y + 36
+        _text(surface, small, t("story_ch1"), (255, 170, 80), box.y + 28, left=box.x + 16)
+        y = box.y + 52
         for i, mission in enumerate(MISSIONS):
             open_ = self.mission_open(mission)
             playable = self.mission_playable(mission)
             done = mission["id"] in (self.state.get("cleared") or [])
             focus = i == self.map_index
-            row = pygame.Rect(box.x + 12, y, box.w - 24, 52)
+            # the focused row is taller: title line + one line for the blurb
+            row = pygame.Rect(box.x + 12, y, box.w - 24, 76 if focus else 40)
             if focus:
                 pygame.draw.rect(surface, (36, 32, 22), row, border_radius=6)
                 pygame.draw.rect(surface, (255, 210, 80), row, 2, border_radius=6)
@@ -247,13 +267,14 @@ class StoryHub:
                 col = (180, 180, 140) if focus else (150, 150, 160)
                 mark = "> " if focus else "  "
                 state = t("story_soon")
-            line = f"{mark}{t(mission['title'])}"
-            surface.blit(small.render(line, True, col), (row.x + 10, row.y + 6))
-            surface.blit(small.render(state, True, col), (row.right - 160, row.y + 6))
+            cy = row.y + 20
+            _text(surface, small, f"{mark}{t(mission['title'])}", col, cy, left=row.x + 10)
+            _text(surface, small, state, col, cy, right=row.right - 14)
             if focus:
-                blurb = small.render(t(mission["blurb"]), True, (170, 175, 195))
-                surface.blit(blurb, (row.x + 28, row.y + 28))
-            y += 56
+                _text(surface, small, t(mission["blurb"]), (170, 175, 195), cy + 34, left=row.x + 28)
+            y += row.h + 4
+        if self.toast:
+            _text(surface, small, self.toast, (255, 220, 120), box.bottom - 30, centerx=box.centerx)
 
     def _draw_hangar(self, surface, font, medium, small):
         slots = self.state.get("slots") or []
@@ -270,16 +291,13 @@ class StoryHub:
             pygame.draw.rect(surface, (16, 18, 28), r, border_radius=12)
             pygame.draw.rect(surface, border, r, 3 if focus else 2, border_radius=12)
             label = t("ship_shield") if sl.get("id") == "shield" else t("ship_phoenix")
-            cap = small.render(f"SLOT {i + 1}  {label}", True, border)
-            surface.blit(cap, (r.x + 16, r.y + 8))
+            _text(surface, small, f"SLOT {i + 1}  {label}", border, r.y + 26, left=r.x + 16)
             img = self._ships.get(sl.get("id"))
             if owned and img is not None:
-                surface.blit(img, (r.centerx - img.get_width() // 2, r.y + 36))
+                surface.blit(img, (r.centerx - img.get_width() // 2, r.y + 48))
             else:
-                lock = medium.render("[X]", True, (140, 140, 150))
-                surface.blit(lock, (r.centerx - lock.get_width() // 2, r.centery - 8))
-                dim = small.render(t("story_phoenix_locked"), True, (140, 140, 160))
-                surface.blit(dim, (r.centerx - dim.get_width() // 2, r.bottom - 24))
+                _text(surface, medium, "[X]", (140, 140, 150), r.y + 78, centerx=r.centerx)
+                _text(surface, small, t("story_phoenix_locked"), (140, 140, 160), r.bottom - 26, centerx=r.centerx)
 
         sl = slots[sel] if 0 <= sel < len(slots) else (slots[0] if slots else {})
         self._draw_stats(surface, sl, small, y0 + slot_h + 8)
@@ -290,8 +308,8 @@ class StoryHub:
     def _draw_stats(self, surface, sl, small, y):
         owned = bool(sl.get("owned"))
         dome = bool(sl.get("dome"))
-        dur = int(sl.get("dome_dur") or 0) / 60.0
-        cd = int(sl.get("dome_cd") or 300) / 60.0
+        dur = float(sl.get("dome_dur") or 0)
+        cd = float(sl.get("dome_cd") or 5.0)
         dome_val = t("story_offline")
         if dome:
             dome_val = f"{dur:.1f}s / {cd:.0f}s"
@@ -304,27 +322,24 @@ class StoryHub:
         w = 220
         x = (BASE_WIDTH - (w * 4 + 16 * 3)) // 2
         for i, (lab, val) in enumerate(cells):
-            r = pygame.Rect(x + i * (w + 16), y, w, 58)
+            r = pygame.Rect(x + i * (w + 16), y, w, 76)
             pygame.draw.rect(surface, (16, 18, 28), r, border_radius=8)
             pygame.draw.rect(surface, (60, 70, 90), r, 1, border_radius=8)
-            a = small.render(lab, True, (150, 155, 175))
             col = (255, 90, 80) if (i == 2 and not dome) else (220, 220, 235)
             if not owned:
                 val = "—"
-            b = small.render(str(val), True, col)
-            surface.blit(a, (r.centerx - a.get_width() // 2, r.y + 6))
-            surface.blit(b, (r.centerx - b.get_width() // 2, r.y + 28))
+            _text(surface, small, lab, (150, 155, 175), r.y + 22, centerx=r.centerx)
+            _text(surface, small, str(val), col, r.y + 54, centerx=r.centerx)
 
     def _draw_shop(self, surface, small):
-        box = pygame.Rect(70, 292, BASE_WIDTH - 140, 330)
+        box = pygame.Rect(70, 300, BASE_WIDTH - 140, 336)
         pygame.draw.rect(surface, (16, 18, 28), box, border_radius=10)
         pygame.draw.rect(surface, (180, 120, 50), box, 2, border_radius=10)
-        cap = small.render(t("story_workshop"), True, (255, 160, 70))
-        surface.blit(cap, (box.x + 16, box.y + 6))
+        _text(surface, small, t("story_workshop"), (255, 160, 70), box.y + 26, left=box.x + 16)
         flags = self.state.get("flags") or {}
         window = 7
         start = max(0, min(self.shop_index - 3, len(SHOP) - window))
-        y = box.y + 28
+        y = box.y + 46
         for i in range(start, min(len(SHOP), start + window)):
             sid, label, cost, need = SHOP[i]
             locked = bool(need) and not flags.get(need)
@@ -336,8 +351,6 @@ class StoryHub:
             col = (100, 100, 110) if locked else ((255, 230, 140) if focus else (200, 200, 210))
             mark = "> " if focus else "  "
             extra = self._shop_extra(sid, cost, locked)
-            line = f"{mark}{t(label)}"
-            surface.blit(small.render(line, True, col), (row.x + 8, row.y + 8))
-            extra_s = small.render(extra, True, col)
-            surface.blit(extra_s, (row.right - extra_s.get_width() - 12, row.y + 8))
+            _text(surface, small, f"{mark}{t(label)}", col, row.centery, left=row.x + 8)
+            _text(surface, small, extra, col, row.centery, right=row.right - 12)
             y += 40

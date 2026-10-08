@@ -1734,6 +1734,8 @@ class Game:
         self.quit_confirm = False
         self.stage_transition = None
         self.boss_saucer = None
+        self.explosions = []        # the menu would redraw them frozen (nothing updates them there)
+        self.shake_amount = 0.0
         self.menu_screen = "story_hub"
         self.input_grace = 0.4
         try:

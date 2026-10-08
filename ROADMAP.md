@@ -9,6 +9,8 @@ Current release: **v1.4.5**
   The old draft `story.json` is no longer read; start a new adventure
 - Dome time and recharge are saved in seconds (no longer tied to 60 Hz)
 - The adventure journal follows the language chosen in Options
+- Adventure menus: texts are now centred inside their boxes (hangar, workshop, mission map, journal)
+- No more frozen explosion pieces on the menu after an adventure mission
 
 ### Planned for 1.5.0 (Adventure, 3 acts)
 
