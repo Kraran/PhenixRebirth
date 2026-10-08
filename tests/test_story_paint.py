@@ -336,13 +336,13 @@ def test_the_hangar_draws_the_shield_in_its_colour(run):
     hub.pane = "hangar"
     hub._ensure_art()
     for key, rgb in (("shield_red", (4, 5, 6)), ("shield_violet", (1, 2, 3)), ("shield_green", (7, 8, 9))):
-        marker = pygame.Surface((150, 90))
+        marker = pygame.Surface((60, 60))
         marker.fill(rgb)
-        hub._ships[key] = marker                                      # a plain block per colour: easy to find
+        hub._portraits[key] = marker                                     # a plain block per colour: easy to find
     surf = pygame.Surface((1280, 720))
     g = run.game
     hub.draw(surf, g.font, g.medium_font, g.font)
-    assert tuple(surf.get_at((398, 150)))[:3] == (1, 2, 3)           # the middle of the first slot
+    assert tuple(surf.get_at((400, 110)))[:3] == (1, 2, 3)           # the middle of the first hull
 
 
 def _launch(g, st, mission_id):

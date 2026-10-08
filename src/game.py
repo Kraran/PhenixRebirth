@@ -1708,7 +1708,7 @@ class Game:
         self.formation = EnemyFormation()
         self.stage_transition = None
         self.life_thresholds = []
-        loadout = self.story.loadout() if getattr(self, "story", None) else {}
+        loadout = self.story.loadout(spec.get("ship")) if getattr(self, "story", None) else {}
         sid = loadout.get("ship_id") or "shield"
         tint = loadout.get("tint") or "red"
         self.ship_id = sid

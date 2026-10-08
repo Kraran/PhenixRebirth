@@ -864,9 +864,14 @@ def _hull_tint(sid, tint):
     return tint if tint in ("argent", "blue", "gold") else "argent"
 
 
-def loadout(state):
-    """Hull the mission actually launches. Locked Phoenix falls back to Shield."""
+def loadout(state, force_ship=None):
+    """Hull the mission actually launches: the selected one, unless the mission imposes a hull
+    (`force_ship`) the pilot owns. A hull not owned yet falls back to the first one owned."""
     slot = selected_slot(state) or {}
+    if force_ship:
+        forced = next((sl for sl in state.get("slots") or [] if sl.get("id") == force_ship and sl.get("owned")), None)
+        if forced is not None:
+            slot = forced
     if not slot.get("owned"):
         slots = state.get("slots") or []
         slot = next((s for s in slots if s.get("owned")), slot)
@@ -883,6 +888,20 @@ def loadout(state):
         "wall": slot.get("wall") or "instant",
         "phenix_pct": phenix_cap(slot),
     }
+
+
+def jump_to_act2(state):
+    """The ACT2 cheat: the save of a pilot who has just finished Act 1 (every Act 1 mission won)."""
+    flags = state.setdefault("flags", {})
+    cleared = state.setdefault("cleared", [])
+    for mission in MISSIONS:
+        if mission_in_act(mission, 1) and mission.get("playable") is not False:
+            for name in mission.get("unlock") or []:
+                flags[name] = True
+            if mission["id"] not in cleared:
+                cleared.append(mission["id"])
+    flags["act2"] = True
+    state["act"] = 2
 
 
 def mission_waves(mission):
