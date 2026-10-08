@@ -386,6 +386,41 @@ def flag(state, name):
     return bool((state.get("flags") or {}).get(name))
 
 
+# ------------------------------------------------------------------- intro
+# The story told before the first mission: (picture in assets/story, text key).
+# The first three slides are the same for everybody. The last one depends on the mode:
+# in Veteran mode Professor Kamarasov died before finishing the quantum anchor.
+INTRO_SLIDES = [
+    ("huygens", "story_intro_1"),
+    ("huygens_destroyed", "story_intro_2"),
+    ("phobos", "story_intro_3"),
+]
+INTRO_LAST = {
+    "normal": ("kamarasov", "story_intro_4"),
+    "veteran": ("kamarasov_veteran", "story_intro_4v"),
+}
+INTRO_FLAG = "intro_seen"
+
+
+def intro_slides(mode):
+    """The slides to show for `mode`: a list of (picture name, text key)."""
+    return INTRO_SLIDES + [INTRO_LAST.get(mode, INTRO_LAST["normal"])]
+
+
+def intro_lines(translate, key, name):
+    """Text of one slide as a list of lines ("" = a pause). {name} becomes the pilot's name."""
+    text = str(translate(key)).replace("{name}", clean_name(name) or "?")
+    return text.split("\n")
+
+
+def intro_seen(state):
+    return flag(state, INTRO_FLAG)
+
+
+def mark_intro_seen(state):
+    state.setdefault("flags", {})[INTRO_FLAG] = True
+
+
 def selected_slot(state):
     slots = state.get("slots") or []
     i = int(state.get("selected_slot", 0))

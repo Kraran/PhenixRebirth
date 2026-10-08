@@ -9,7 +9,7 @@ hangar credits.
 """
 import pygame
 from settings import BASE_WIDTH, BASE_HEIGHT, asset_path
-from i18n import t
+from i18n import t, get_lang
 from errlog import log_exc
 import story_state as ss
 from story_state import MISSIONS, SHOP, log_text
@@ -60,13 +60,22 @@ def _text(surface, font, text, color, cy, left=None, right=None, centerx=None):
     return img
 
 
+# Intro slides (credits-style scroll over a picture)
+INTRO_TEXT_W = 860          # width of the scrolling text
+INTRO_SPEED = 46.0          # px per second (about the speed of the credits)
+INTRO_DELAY = 0.8           # the picture shows alone for a moment before the text rises
+INTRO_FADE = 0.7            # fade in from black at each slide
+INTRO_LOCK = 0.4            # a key pressed right at the start of a slide does not skip it
+INTRO_END_Y = BASE_HEIGHT - 96    # where the last line comes to rest
+
+
 class StoryHub:
     """Three-pane hub. Left = log, center = hangar, right = map."""
 
     def __init__(self):
         self.slot_no = None            # save slot (1..3) being played; None before one is opened
         self.state = ss.default_state()
-        self.screen = "slots"          # slots | delete | name | mode | hub
+        self.screen = "slots"          # slots | delete | name | mode | intro | hub
         self.sel = 0                   # slot cursor on the slot list (0..2)
         self.col = 0                   # 0 = the slot, 1 = its DELETE button
         self.del_yes = False
@@ -82,6 +91,45 @@ class StoryHub:
         self.toast = ""
         self._ships = {}
         self._loaded_img = False
+        self.intro_slides = []         # [(picture, text key)] of the intro being shown
+        self.intro_index = 0
+        self.intro_t = 0.0             # seconds since the current slide appeared
+        self._intro_bg = {}
+        self._intro_blocks = {}
+        self._intro_mask = None
+
+    # --- intro ---
+    def start_intro(self):
+        """Show the story slides (new adventure, or a save that never saw them)."""
+        self.intro_slides = ss.intro_slides(self.state.get("mode"))
+        self.intro_index = 0
+        self.intro_t = 0.0
+        self.screen = "intro"
+
+    def _maybe_intro(self):
+        if not ss.intro_seen(self.state):
+            self.start_intro()
+
+    def _intro_next(self):
+        if self.intro_t < INTRO_LOCK:
+            return
+        if self.intro_index + 1 < len(self.intro_slides):
+            self.intro_index += 1
+            self.intro_t = 0.0
+        else:
+            self._end_intro()
+
+    def _end_intro(self):
+        """Last slide done, or skipped: remember it and go to the hangar."""
+        ss.mark_intro_seen(self.state)
+        self.save()
+        self.screen = "hub"
+        self.pane = "hangar"
+        self.zone = "slots"
+
+    def update(self, dt):
+        if self.screen == "intro":
+            self.intro_t += max(0.0, min(0.25, float(dt)))
 
     # --- save slots ---
     def open_slots(self):
@@ -245,6 +293,9 @@ class StoryHub:
                 self.msg = t("story_slot_fallen_msg")
             else:
                 self.open_slot(self.sel + 1)
+                self._maybe_intro()
+        elif self.screen == "intro":
+            self._intro_next()
         elif self.screen == "delete":
             if self.del_yes:
                 ss.delete_slot(self.sel + 1)
@@ -263,6 +314,7 @@ class StoryHub:
             slot = self.sel + 1
             ss.create_slot(slot, self.new_name, ss.MODES[self.mode_index])
             self.open_slot(slot)
+            self.start_intro()
         return None
 
     def back(self):
@@ -274,6 +326,8 @@ class StoryHub:
             self.msg = ""
         elif self.screen == "mode":
             self.screen = "name"
+        elif self.screen == "intro":
+            self._end_intro()
         else:
             return False
         return True
@@ -380,6 +434,9 @@ class StoryHub:
     # --- draw ---
     def draw(self, surface, font, medium, small):
         self._ensure_art()
+        if self.screen == "intro":
+            self._draw_intro(surface, font, small)
+            return
         if self.screen != "hub":
             self._draw_gate(surface, font, medium, small)
             return
@@ -417,6 +474,112 @@ class StoryHub:
         )
         _text(surface, small, tabs, (160, 170, 200), BASE_HEIGHT - 62, centerx=cx)
         _text(surface, small, t(hint_key), (140, 140, 170), BASE_HEIGHT - 24, centerx=cx)
+
+    # --- intro ---
+    def _intro_picture(self, name):
+        img = self._intro_bg.get(name)
+        if img is None:
+            img = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+            try:
+                raw = pygame.image.load(asset_path("story", name + ".jpg")).convert()
+                scale = max(BASE_WIDTH / raw.get_width(), BASE_HEIGHT / raw.get_height())
+                size = (int(round(raw.get_width() * scale)), int(round(raw.get_height() * scale)))
+                big = pygame.transform.smoothscale(raw, size)
+                img.blit(big, ((BASE_WIDTH - size[0]) // 2, (BASE_HEIGHT - size[1]) // 2))
+                shade = pygame.Surface(img.get_size())
+                shade.set_alpha(70)
+                img.blit(shade, (0, 0))          # a little darker so the text reads
+            except Exception:
+                log_exc("story._intro_picture")
+            self._intro_bg[name] = img
+        return img
+
+    def _intro_block(self, font):
+        """The whole text of the current slide as one tall transparent picture (cached)."""
+        key = (self.intro_index, get_lang(), self.state.get("name"), self.state.get("mode"), id(font))
+        hit = self._intro_blocks.get(key)
+        if hit is not None:
+            return hit
+        _pic, text_key = self.intro_slides[self.intro_index]
+        rows = []                                  # (text, height); text None = a pause
+        pitch = font.get_linesize() + 12
+        for line in ss.intro_lines(t, text_key, self.state.get("name")):
+            if not line:
+                rows.append((None, pitch // 2))
+            else:
+                rows.extend((piece, pitch) for piece in _wrap(font, line, INTRO_TEXT_W))
+        height = sum(h for _txt, h in rows)
+        block = pygame.Surface((INTRO_TEXT_W, max(1, height)), pygame.SRCALPHA)
+        y = 0
+        for txt, h in rows:
+            if txt:
+                shadow = font.render(txt, True, (0, 0, 0))
+                img = font.render(txt, True, (230, 232, 244))
+                x = (INTRO_TEXT_W - img.get_width()) // 2
+                block.blit(shadow, (x + 2, y + 2))
+                block.blit(img, (x, y))
+            y += h
+        if len(self._intro_blocks) > 16:
+            self._intro_blocks.clear()
+        self._intro_blocks[key] = (block, height)
+        return block, height
+
+    def _intro_fade_mask(self):
+        """White picture whose alpha fades at the top and bottom edges (text slides in and out softly)."""
+        if self._intro_mask is None:
+            mask = pygame.Surface((INTRO_TEXT_W, BASE_HEIGHT), pygame.SRCALPHA)
+            for y in range(BASE_HEIGHT):
+                if y < 90:
+                    a = y / 90.0
+                elif y > INTRO_END_Y:
+                    a = max(0.0, 1.0 - (y - INTRO_END_Y) / 52.0)
+                else:
+                    a = 1.0
+                pygame.draw.line(mask, (255, 255, 255, int(255 * a)), (0, y), (INTRO_TEXT_W, y))
+            self._intro_mask = mask
+        return self._intro_mask
+
+    def intro_finished_scrolling(self, text_height):
+        """True once the text has risen to its resting place."""
+        return self._intro_top(text_height) <= self._intro_rest(text_height)
+
+    @staticmethod
+    def _intro_rest(text_height):
+        return min((BASE_HEIGHT - text_height) // 2, INTRO_END_Y - text_height)
+
+    def _intro_top(self, text_height):
+        rising = BASE_HEIGHT - INTRO_SPEED * max(0.0, self.intro_t - INTRO_DELAY)
+        return max(self._intro_rest(text_height), rising)
+
+    def _draw_intro(self, surface, font, small):
+        pic, _key = self.intro_slides[self.intro_index]
+        surface.blit(self._intro_picture(pic), (0, 0))
+        cx = BASE_WIDTH // 2
+        band = pygame.Surface((INTRO_TEXT_W + 120, BASE_HEIGHT), pygame.SRCALPHA)
+        band.fill((0, 0, 0, 120))
+        surface.blit(band, (cx - band.get_width() // 2, 0))
+
+        block, height = self._intro_block(font)
+        top = self._intro_top(height)
+        view = pygame.Surface((INTRO_TEXT_W, BASE_HEIGHT), pygame.SRCALPHA)
+        view.blit(block, (0, top))
+        view.blit(self._intro_fade_mask(), (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+        surface.blit(view, (cx - INTRO_TEXT_W // 2, 0))
+
+        done = self.intro_finished_scrolling(height)
+        last = self.intro_index + 1 >= len(self.intro_slides)
+        blink = done and (pygame.time.get_ticks() // 500) % 2 == 0
+        col = (255, 220, 120) if blink else ((235, 235, 245) if done else (140, 145, 170))
+        _text(surface, small, t("story_intro_last" if last else "story_intro_hint"), col,
+              BASE_HEIGHT - 24, centerx=cx)
+        _text(surface, small, f"{self.intro_index + 1} / {len(self.intro_slides)}", (140, 145, 170),
+              28, right=BASE_WIDTH - 40)
+
+        fade = 1.0 - min(1.0, self.intro_t / INTRO_FADE)
+        if fade > 0:
+            black = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+            black.set_alpha(int(255 * fade))
+            surface.blit(black, (0, 0))
 
     # --- slot list, name, mode, delete ---
     def _draw_gate(self, surface, font, medium, small):

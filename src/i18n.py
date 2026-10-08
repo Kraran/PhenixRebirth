@@ -3121,8 +3121,10 @@ _ADVENTURE_TEXTS = {
     "story_mode_veteran": ("VETERAN", "VETERAN"),
     "story_mode_normal_d": ("Echec : retour a l'atelier, sans gain et 20 % de tes points perdus.",
                             "Failure: back to the workshop, no gain and 20% of your points lost."),
-    "story_mode_veteran_d": ("Mort definitive : un seul essai, pas de seconde chance.",
-                             "Permanent death: one try, no second chance."),
+    "story_mode_veteran_d": ("Ancrage quantique inachevé : si tu tombes, c'est définitif.",
+                             "Quantum anchor unfinished: if you fall, it is for good."),
+    "story_intro_hint": ("A/Entrée  suite   B/Échap  passer", "A/Enter  next   B/Esc  skip"),
+    "story_intro_last": ("A/Entrée  commencer   B/Échap  passer", "A/Enter  start   B/Esc  skip"),
     "story_mode_hint": ("Gauche / Droite  choisir   A/Entree  commencer   B/Esc  retour",
                         "Left / Right  choose   A/Enter  start   B/Esc  back"),
     "story_pilot": ("PILOTE", "PILOT"),
@@ -3141,6 +3143,88 @@ _ADVENTURE_TEXTS = {
     "story_delete_hint": ("Gauche / Droite  choisir   A/Entree  valider   B/Esc  annuler",
                           "Left / Right  choose   A/Enter  confirm   B/Esc  cancel"),
 }
+# Intro of the Adventure (French first; the other languages show the same text until translated).
+# "\n" ends a line, an empty line is a pause; {name} is the pilot's name.
+_INTRO_FR = {
+    "story_intro_1": (
+        "Tout a commencé le 1er juin 2169 par le silence.\n"
+        "\n"
+        "À 11 h 42, les communications avec la station scientifique avancée TR-01 Huygens, "
+        "sur Triton, en orbite de Neptune, ont brutalement cessé.\n"
+        "\n"
+        "Pas de signal de détresse.\n"
+        "Pas d'alerte.\n"
+        "\n"
+        "La transmission a été coupée en pleine conversation sur la qualité des rations alimentaires…"
+    ),
+    "story_intro_2": (
+        "On ne le savait pas encore, mais c'était la première rencontre de l'humanité "
+        "avec une espèce intelligente extraterrestre.\n"
+        "\n"
+        "91 personnes vivaient sur la station Huygens. 91 hommes et femmes, "
+        "morts dans la destruction soudaine de leur habitat…\n"
+        "\n"
+        "Dans les mois qui ont suivi, toutes les bases humaines des systèmes extérieurs "
+        "ont été détruites par ceux que nous allions appeler les Avioïdes. "
+        "Des centaines de milliers de morts en quelques semaines. "
+        "L'EDF (Earth Defense Force) a été balayée.\n"
+        "\n"
+        "Pas de langage.\n"
+        "Pas de communication.\n"
+        "Aucune revendication.\n"
+        "\n"
+        "Uniquement des attaques, et la destruction méthodique et systématique "
+        "de tout ce qui est humain."
+    ),
+    "story_intro_3": (
+        "Sans Mars, les Avioïdes nous auraient balayés et l'humanité n'existerait plus.\n"
+        "\n"
+        "Mars, avec l'aide de Grok 294.5, la super-intelligence qui dirige la planète, "
+        "avait construit un nouveau type de vaisseau de combat : les chasseurs EDF42-Shield, "
+        "que tout le monde appelle simplement Shield.\n"
+        "\n"
+        "Grâce à eux, et à une poignée de pilotes prêts à mourir, "
+        "les Avioïdes ont été contenus… un moment.\n"
+        "\n"
+        "Mais petit à petit, les Shields ont tous été détruits, "
+        "les uns après les autres, par des hordes infinies d'ennemis."
+    ),
+    "story_intro_4": (
+        "Aujourd'hui, deux ans après la destruction de la station Huygens, "
+        "le dernier Shield a été détruit et je suis le seul pilote de Shield encore en vie.\n"
+        "\n"
+        "Je me rends sur Phobos, dans une station de recherche où, paraît-il, "
+        "il reste un prototype de Shield. C'est celui qui sert au professeur Kamarasov "
+        "pour ses recherches sur l'intrication quantique macroscopique.\n"
+        "\n"
+        "Kamarasov et Grok 294.5 ont équipé l'EDF-Shield-NX01 de leur dispositif fabuleux : "
+        "l'ancrage quantique. Quand le Shield-NX01 est détruit, son double quantique "
+        "réapparaît à la base, avec son pilote ! Chaque mission rend la suite moins périlleuse.\n"
+        "\n"
+        "L'espoir renaît. À bord de ce prototype à peine capable de voler, "
+        "je peux renverser le cours de l'histoire, moi, {name}, j'en suis maintenant certain."
+    ),
+    "story_intro_4v": (
+        "Aujourd'hui, deux ans après la destruction de la station Huygens, "
+        "le dernier Shield a été détruit et je suis le seul pilote de Shield encore en vie.\n"
+        "\n"
+        "Je me rends sur Phobos, dans une station de recherche où il reste un prototype de Shield, "
+        "l'EDF-Shield-NX01. Le professeur Kamarasov y travaillait sur l'intrication quantique "
+        "macroscopique, avec Grok 294.5.\n"
+        "\n"
+        "Mais un drone espion avioïde s'était glissé dans la station. "
+        "Le professeur Kamarasov a été tué avant d'avoir pu finaliser son invention.\n"
+        "\n"
+        "L'ancrage quantique n'a jamais été terminé. Si le NX01 est détruit, "
+        "il ne reviendra pas. Et son pilote non plus.\n"
+        "\n"
+        "Il y a peu d'espoir. Mais à bord de ce prototype à peine capable de voler, "
+        "je peux encore renverser le cours de l'histoire, moi, {name}, j'en suis maintenant certain."
+    ),
+}
+for _k, _v in _INTRO_FR.items():
+    _ADVENTURE_TEXTS[_k] = (_v, _v)
+
 for _k, (_fr, _en) in _ADVENTURE_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}
     T[_k]["fr"] = _fr

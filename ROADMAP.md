@@ -18,6 +18,11 @@ Current release: **v1.4.5**
   edge rule (slowdown, then death if you stay too long). The dome becomes a series of quests (Act 2).
   Prices: 300 / 800 / 2000 / 1000. The Phenix slot shows as empty and cannot be selected in Act 1.
   Saves from the earlier draft are converted (speed steps move down, dome back offline)
+- Adventure intro: after the name and the mode, 4 slides (Huygens, its destruction, Phobos, Kamarasov)
+  scroll like the credits over a picture. Action button = next slide, B / Esc = skip. Shown once per
+  adventure. Veteran mode has its own last slide: Professor Kamarasov died before finishing the
+  quantum anchor. The last sentence carries the pilot's name. French text first (other languages
+  show the same text until translated)
 
 ### Planned for 1.5.0 (Adventure, 3 acts)
 
