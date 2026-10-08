@@ -259,6 +259,49 @@ MISSIONS = [
         "grant_hull": "phoenix",
         "log": "story_log_ph5",
     },
+
+    # Act 2: the paint series. Three optional missions, flown in order; when the third is won the
+    # paint shop opens for ONE change of colour. The whole series can be flown again (harder each
+    # time, like the Bestiary sorties) to earn another change. `waves` are the level-1 stages.
+    {
+        "id": "paint_1",
+        "acts": (2,),
+        "paint": 1,
+        "title": "story_m_pt1",
+        "blurb": "story_m_pt1_b",
+        "need": "act2",
+        "content": 1,
+        "waves": [6, 7],
+        "speed": 1.0,
+        "unlock": [],
+        "log": "story_log_pt1",
+    },
+    {
+        "id": "paint_2",
+        "acts": (2,),
+        "paint": 2,
+        "title": "story_m_pt2",
+        "blurb": "story_m_pt2_b",
+        "need": "act2",
+        "content": 3,
+        "waves": [8, 9],
+        "speed": 1.0,
+        "unlock": [],
+        "log": "story_log_pt2",
+    },
+    {
+        "id": "paint_3",
+        "acts": (2,),
+        "paint": 3,
+        "title": "story_m_pt3",
+        "blurb": "story_m_pt3_b",
+        "need": "act2",
+        "content": 1,
+        "waves": [6, 7, 8, 9],
+        "speed": 1.0,
+        "unlock": [],
+        "log": "story_log_pt3",
+    },
 ]
 
 
@@ -393,6 +436,70 @@ def hunt_stage(mission, level):
     return max(1, int(_num((mission or {}).get("content"), 1))) + 5 * (max(1, int(_num(level, 1))) - 1)
 
 
+# ---------------------------------------------------------------- paint series
+# Three optional missions of Act 2. The third one opens the paint shop for ONE change of colour of the
+# Shield. The series can be flown again, as a whole only, to earn another change; each pass is harder.
+PAINT_TINTS = ("red", "green", "violet")
+PAINT_STEPS = 3
+
+
+def paint_state(state):
+    """The paint series of a save, cleaned: {"step": 0..2 missions won in this pass, "runs": passes
+    finished, "token": a colour change is waiting}."""
+    data = state.get("paint")
+    if not isinstance(data, dict):
+        data = {}
+    return {
+        "step": max(0, min(PAINT_STEPS - 1, int(_num(data.get("step"), 0)))),
+        "runs": max(0, int(_num(data.get("runs"), 0))),
+        "token": bool(data.get("token")),
+    }
+
+
+def is_paint(mission):
+    return bool(mission and mission.get("paint"))
+
+
+def paint_level(state):
+    """Level of the paint series: 1 at first, one more after each full pass (1, 2, 3...)."""
+    return 1 + paint_state(state)["runs"]
+
+
+def paint_waves(mission, level):
+    """Arcade stages of a paint mission at `level`: every wave comes 5 stages later per level."""
+    shift = 5 * (max(1, int(_num(level, 1))) - 1)
+    return [w + shift for w in mission_waves(mission)]
+
+
+def mission_level(state, mission):
+    """The level shown for a mission (hunts and the paint series), or None for the others."""
+    if is_hunt(mission):
+        return hunt_level(state, mission["id"])
+    if is_paint(mission):
+        return paint_level(state)
+    return None
+
+
+def mission_done(state, mission):
+    """Has the mission been won (for a paint mission: in the pass under way)?"""
+    if is_paint(mission):
+        return paint_state(state)["step"] >= int(mission["paint"])
+    return bool(mission) and mission.get("id") in (state.get("cleared") or [])
+
+
+def paint_change(state, tint):
+    """Spend the waiting colour change on the Shield. False when there is none, the colour is not
+    one of the three, or it is the colour the Shield already wears (nothing is spent then)."""
+    shield = next((sl for sl in state.get("slots") or [] if sl.get("id") == "shield"), None)
+    if shield is None or tint not in PAINT_TINTS or not paint_state(state)["token"]:
+        return False
+    if (shield.get("tint") or "red") == tint:
+        return False
+    shield["tint"] = tint
+    state["paint"] = dict(paint_state(state), token=False)
+    return True
+
+
 def record_mission_kills(state, mission_id, kills):
     """Add the enemies destroyed during one run to the total of a hunt mission."""
     if not is_hunt(mission_by_id(mission_id)) or not isinstance(kills, dict):
@@ -441,6 +548,7 @@ def default_state():
         "bestiary": {},          # enemies destroyed so far, by kind
         "mission_kills": {},     # enemies destroyed in all the runs of a hunt mission, by mission id
         "mission_clears": {},    # how many times a hunt mission was won (its level is one more)
+        "paint": {"step": 0, "runs": 0, "token": False},   # the Act 2 paint series (see paint_state)
     }
 
 
@@ -507,6 +615,8 @@ def migrate_state(data):
         for mid, n in data["mission_clears"].items():
             if isinstance(mid, str) and is_hunt(mission_by_id(mid)):
                 base["mission_clears"][mid] = max(0, int(_num(n, 0)))
+    if isinstance(data.get("paint"), dict):
+        base["paint"] = paint_state(data)
     if isinstance(data.get("mission_kills"), dict):
         for mid, n in data["mission_kills"].items():
             if isinstance(mid, str) and is_hunt(mission_by_id(mid)):
@@ -746,6 +856,13 @@ def selected_slot(state):
     return None
 
 
+def _hull_tint(sid, tint):
+    """Colour a hull flies with: the Shield wears red / green / violet, the Phenix argent."""
+    if sid == "shield":
+        return tint if tint in PAINT_TINTS else "red"
+    return tint if tint in ("argent", "blue", "gold") else "argent"
+
+
 def loadout(state):
     """Hull the mission actually launches. Locked Phoenix falls back to Shield."""
     slot = selected_slot(state) or {}
@@ -756,7 +873,7 @@ def loadout(state):
     fallback_speed = SPEED_START if sid == "shield" else 60
     return {
         "ship_id": sid,
-        "tint": slot.get("tint") or ("red" if sid == "shield" else "argent"),
+        "tint": _hull_tint(sid, slot.get("tint")),
         "lives": max(1, int(_num(slot.get("lives"), 1) or 1)),
         "speed_pct": max(SPEED_START, min(100, int(_num(slot.get("speed"), fallback_speed) or fallback_speed))),
         "dome": bool(slot.get("dome")),
@@ -795,6 +912,8 @@ def mission_open(state, mission):
     need = mission.get("need")
     if need and not flag(state, need):
         return False
+    if is_paint(mission) and paint_state(state)["step"] < int(mission["paint"]) - 1:
+        return False                       # the paint series is flown in order
     return True
 
 
@@ -810,6 +929,8 @@ def mission_playable(state, mission, cheat=False):
         return False
     if mission.get("once") and mission.get("id") in (state.get("cleared") or []):
         return False                       # a story mission is flown once; hunts stay replayable
+    if is_paint(mission) and paint_state(state)["step"] != int(mission["paint"]) - 1:
+        return False                       # only the next mission of the pass; a won one waits for the next pass
     return True
 
 
@@ -999,6 +1120,7 @@ SHOP = [(u[0], u[1], u[2], u[3]) for u in UPGRADES if u[6] == 1]
 
 
 # What the workshop sells for the Phenix (Act 2): the same hull upgrades, no dome, plus its own gauge.
+PAINT_ROW = ("paint", "story_shop_paint", 0, None)
 PHENIX_SHOP_IDS = ("speed_80", "lives_2", "wall_slow", "phenix_cap_80")
 
 
@@ -1007,7 +1129,10 @@ def shop_for(state):
     slot = selected_slot(state) or {}
     if slot.get("id") == "phoenix":
         return [(u[0], u[1], u[2], u[3]) for sid in PHENIX_SHOP_IDS for u in UPGRADES if u[0] == sid]
-    return list(SHOP)
+    rows = list(SHOP)
+    if int(_num(state.get("act"), 1)) >= 2:
+        rows.append(PAINT_ROW)                 # the paint shop: free, but one change per finished series
+    return rows
 
 
 def act_caps(state):
@@ -1091,6 +1216,14 @@ def record_result(state, mission_id, score, cleared, kills=None):
         return res
     state["credits"] = int(state.get("credits", 0)) + score
     mission = next((m for m in MISSIONS if m["id"] == mission_id), None)
+    if is_paint(mission):
+        paint = paint_state(state)
+        if paint["step"] == int(mission["paint"]) - 1:        # in order only (the cheat can fly any)
+            paint["step"] += 1
+            if paint["step"] >= PAINT_STEPS:                  # the pass is done: one colour change, a harder series
+                paint.update(step=0, runs=paint["runs"] + 1, token=True)
+                res["paint"] = True
+            state["paint"] = paint
     if is_hunt(mission):
         state["mission_clears"] = dict(state.get("mission_clears") or {})
         # the level before this win is also the number of wins after it
@@ -1123,13 +1256,13 @@ def journal_entries(state):
     enemies destroyed in all the runs of that mission (only once there is something to count).
     """
     out = [{"intro": True}]
-    hunts = {m["log"]: m["id"] for m in MISSIONS if is_hunt(m) and m.get("log")}
+    hunts = {m["log"]: m["id"] for m in MISSIONS if (is_hunt(m) or is_paint(m)) and m.get("log")}
     for entry in state.get("log") or []:
         out.append(entry)
         key = entry.get("key") if isinstance(entry, dict) else None
         mission_id = hunts.get(key)
         if mission_id:
-            out.append({"level": hunt_level(state, mission_id), "mission": mission_id})
+            out.append({"level": mission_level(state, mission_by_id(mission_id)), "mission": mission_id})
         if mission_id and mission_total_kills(state, mission_id) > 0:
             out.append({"kills": mission_total_kills(state, mission_id), "mission": mission_id})
     return out
