@@ -540,9 +540,8 @@ class StoryHub:
             if level > 1:                         # a won sortie comes back faster, like the next arcade cycle
                 spec["waves"] = [ss.hunt_stage(mission, level)]
         if ss.is_paint(mission):
-            level = ss.paint_level(self.state)
-            spec["level"] = level
-            spec["waves"] = ss.paint_waves(mission, level)     # the series climbs by 5 stages each pass
+            spec["level"] = ss.invader_level(self.state, mission)
+            spec["invaders"] = True               # a Space Invaders grid, three levels harder each pass
         if mission.get("swarm"):
             spec["swarm"] = True                  # the four enemies together, replaced as they fall
             spec["stage"] = int(mission.get("stage") or 11)

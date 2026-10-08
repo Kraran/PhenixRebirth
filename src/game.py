@@ -38,6 +38,7 @@ from settings import *
 from settings import stage_content, stage_speed_mult
 from player import Player, recolor_phenix_frames
 from enemy import EnemyFormation, BigBird, Enemy
+from invaders import InvaderFormation
 from boss import BossSaucer
 from explosion import Explosion, TeslaCoilFx
 from starfield import Starfield
@@ -1794,6 +1795,15 @@ class Game:
             self.stage = number
             content = stage_content(number)
             mult = float(adv.get("speed") or 1.0) * stage_speed_mult(number) * self.difficulty_speed_mult()
+        elif adv and adv.get("invaders"):
+            # the paint missions: a Space Invaders grid whose level (1, 2, 3...) sets its pace
+            self.stage = 1
+            mult = float(adv.get("speed") or 1.0) * self.difficulty_speed_mult()
+            self.formation = InvaderFormation(level=int(adv.get("level") or 1), speed_mult=mult)
+            self.formation.sounds = self.sounds
+            self.formation.font = self.font
+            self.boss_saucer = None
+            return
         elif adv and adv.get("swarm"):
             # the swarm mission: all four enemies at once, at the speed of one arcade level
             number = int(adv.get("stage") or 11)
@@ -1806,6 +1816,8 @@ class Game:
         else:
             content = stage_content(stage)
             mult = stage_speed_mult(stage) * self.difficulty_speed_mult()
+        if isinstance(self.formation, InvaderFormation):
+            self.formation = EnemyFormation()            # back to the ordinary grids
         self.formation.enemies = []
         self.formation.bullets = []
         self.formation.swarm = None
@@ -3760,6 +3772,7 @@ class Game:
             return
         
         # Player bullet(s) vs Enemies / Boss
+        update_play.player_bullets_vs_mothership(self)
         update_play.player_bullets_vs_enemies(self)
 
         # Unbroken saucer brick hits the bottom of the screen → game over

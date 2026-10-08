@@ -91,13 +91,21 @@ def test_the_level_goes_up_with_each_finished_pass():
     assert ss.paint_level(st) == 4                                    # a part of a pass does not count
 
 
-def test_the_waves_climb_five_stages_per_level():
-    bases = {m: ss.mission_waves(_mission(m)) for m in PAINT}
-    assert bases == {"paint_1": [6, 7], "paint_2": [8, 9], "paint_3": [6, 7, 8, 9]}
-    assert ss.paint_waves(_mission("paint_1"), 1) == [6, 7]
-    assert ss.paint_waves(_mission("paint_1"), 2) == [11, 12]
-    assert ss.paint_waves(_mission("paint_3"), 3) == [16, 17, 18, 19]
-    assert ss.paint_waves(_mission("paint_2"), "x") == [8, 9]
+def test_the_levels_of_the_series_are_1_2_3_then_4_5_6():
+    st = _act2()
+    levels = []
+    for _ in range(3):
+        levels.append([ss.invader_level(st, _mission(m)) for m in PAINT])
+        _pass(st)
+    assert levels == [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+    assert [ss.mission_level(st, _mission(m)) for m in PAINT] == [10, 11, 12]
+    assert ss.invader_level(st, None) == 1 + 3 * 3                    # a damaged call does not crash
+
+
+def test_the_paint_missions_are_invasions_not_arcade_waves():
+    for m in PAINT:
+        mission = _mission(m)
+        assert mission["invaders"] is True and ss.mission_waves(mission) == [] and not mission.get("swarm")
 
 
 def test_only_hunts_and_paint_show_a_level():
@@ -177,9 +185,9 @@ def test_the_journal_follows_the_series_with_its_level():
     st = _act2()
     _pass(st)
     lines = [ss.log_text(e, t) for e in ss.journal_entries(st)[1:]]
-    assert lines == [t("story_log_pt1"), t("story_log_level").format(n=2),
-                     t("story_log_pt2"), t("story_log_level").format(n=2),
-                     t("story_log_pt3"), t("story_log_level").format(n=2)]
+    assert lines == [t("story_log_pt1"), t("story_log_level").format(n=4),
+                     t("story_log_pt2"), t("story_log_level").format(n=5),
+                     t("story_log_pt3"), t("story_log_level").format(n=6)]
 
 
 # ------------------------------------------------------------------ hub and game
@@ -231,11 +239,11 @@ def test_the_map_shows_the_series_with_its_level(run):
     hub.map_index = ids.index("paint_1")
     shown = _texts(hub, run)
     row = [x for x in shown if t("story_m_pt1") in x]
-    assert row and row[0].endswith(t("story_level").format(n=2))
+    assert row and row[0].endswith(t("story_level").format(n=4))
     hub.map_index = ids.index("paint_3")
     shown = _texts(hub, run)
     row = [x for x in shown if t("story_m_pt3") in x]
-    assert not row or not row[0].endswith(t("story_level").format(n=1))  # the whole series shares one level
+    assert row and t("story_level").format(n=6) not in row[0]         # a locked mission shows no level yet
     assert t("story_locked") in shown                                    # the next missions wait their turn
 
 
@@ -347,21 +355,48 @@ def _launch(g, st, mission_id):
     return spec
 
 
-def test_the_first_pass_flies_the_base_stages(run):
+def test_the_first_pass_flies_invaders_of_level_1_2_3(run):
+    from invaders import InvaderFormation
     g = run.game
-    spec = _launch(g, _act2(), "paint_1")
-    assert spec["level"] == 1 and spec["waves"] == [6, 7] and g.stage == 6
-    assert {round(e.speed_mult, 6) for e in g.formation.enemies} == {round(1.1 * g.difficulty_speed_mult(), 6)}
+    st = _act2()
+    for mid, level in (("paint_1", 1), ("paint_2", 2), ("paint_3", 3)):
+        spec = _launch(g, st, mid)
+        _win(st, mid)
+        assert spec["level"] == level and spec["invaders"] is True and "waves" not in spec
+        assert isinstance(g.formation, InvaderFormation) and g.formation.level == level
+        assert len(g.formation.enemies) == 44
 
 
-def test_the_second_pass_is_five_stages_harder(run):
+def test_the_second_pass_flies_levels_4_5_6(run):
     g = run.game
     st = _act2()
     _pass(st)
-    spec = _launch(g, st, "paint_1")
-    assert spec["level"] == 2 and spec["waves"] == [11, 12] and g.stage == 11
-    assert {e.stage for e in g.formation.enemies} == {1}
-    assert {round(e.speed_mult, 6) for e in g.formation.enemies} == {round(1.2 * g.difficulty_speed_mult(), 6)}
+    for mid, level in (("paint_1", 4), ("paint_2", 5), ("paint_3", 6)):
+        spec = _launch(g, st, mid)
+        _win(st, mid)
+        assert spec["level"] == level and g.formation.level == level
+
+
+def test_a_hunt_after_a_paint_mission_gets_the_ordinary_grid_back(run):
+    from enemy import EnemyFormation
+    from invaders import InvaderFormation
+    g = run.game
+    st = _act2()
+    _launch(g, st, "paint_1")
+    assert isinstance(g.formation, InvaderFormation)
+    g._end_adventure(False)
+    _launch(g, st, "ch1_sortie")
+    assert type(g.formation) is EnemyFormation and g.formation.enemies
+
+
+def test_an_arcade_game_after_an_invasion_does_not_keep_the_invaders(run):
+    from enemy import EnemyFormation
+    g = run.game
+    _launch(g, _act2(), "paint_1")
+    g._end_adventure(False)
+    assert g.adventure is None
+    g._setup_stage(1)                                  # what a new arcade game does first
+    assert type(g.formation) is EnemyFormation and g.formation.enemies
 
 
 def test_the_hud_shows_the_level_of_the_series(run):
@@ -371,7 +406,9 @@ def test_the_hud_shows_the_level_of_the_series(run):
     st = _act2()
     _pass(st)
     _pass(st)
-    _launch(g, st, "paint_1")
+    _win(st, "paint_1")
+    _win(st, "paint_2")
+    _launch(g, st, "paint_3")
     seen = []
     orig = tc_mod.TextCache.get
 
@@ -384,7 +421,7 @@ def test_the_hud_shows_the_level_of_the_series(run):
         run.frames(2, 1 / 60)
     finally:
         tc_mod.TextCache.get = orig
-    assert any(t("story_level").format(n=3) in x for x in seen)
+    assert any(t("story_level").format(n=9) in x for x in seen)
 
 
 def test_a_won_pass_in_the_game_opens_the_paint_shop(run):

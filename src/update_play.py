@@ -346,11 +346,30 @@ def player_bullets_vs_enemies(game):
             break
 
 
+def player_bullets_vs_mothership(game):
+    """Space Invaders missions: the miniature saucer. A shot is worth 500..1000 points, by how centred it is."""
+    form = game.formation
+    mother = getattr(form, "mothership", None)
+    if mother is None or not mother.alive or mother.dying:
+        return
+    for ship in game._ships():
+        for shot_i, bullet_rect in ship.get_bullet_rects():
+            if bullet_rect.colliderect(mother.get_hitbox()):
+                ship.destroy_bullet("valid", index=shot_i)
+                pts = form.mothership_hit(bullet_rect.centerx)
+                game._add_score(ship, pts)
+                game.explosions.append(game._boom(mother.x, mother.y, kind="gameover"))
+                game.shake_amount = 8.0
+                game.sounds.play("explosion_big", x=mother.x)
+                return
+
+
 def boss_floor_check(game):
-    """Unbroken saucer touching the bottom of the screen kills the ship(s)."""
-    if (game.boss_saucer is not None and game.boss_saucer.alive
-            and game.stage_transition is None
-            and game.boss_saucer.touches_floor(BASE_HEIGHT)):
+    """Unbroken saucer touching the bottom of the screen, or an invader reaching the ship's line, kills the ship(s)."""
+    invaded = bool(getattr(game.formation, "invaded", False))
+    if (((game.boss_saucer is not None and game.boss_saucer.alive
+            and game.boss_saucer.touches_floor(BASE_HEIGHT)) or invaded)
+            and game.stage_transition is None):
         for ship in game._ships():
             if not ship.alive or ship.dying:
                 continue

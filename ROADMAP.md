@@ -57,10 +57,15 @@ Current release: **v1.4.5**
   level 16), the relay (18-19), the approach (16-19) and the awakening (16-20, boss). The last one hands
   over the Phenix: slot 2 of the hangar opens, with its own workshop (speed 80 %, lives 2, walls, and the
   Phenix gauge 60 % -> 80 %: the Phenix form lasts 60 % of the arcade one at first)
-- Adventure, Act 2 paint series: three optional missions (levels 6-7, 8-9, then 6-9), flown in order. Winning
-  the third opens the paint shop in the Shield workshop for ONE change of colour (red, green or violet).
-  The series can be flown again, as a whole only, to earn another change; each pass is five levels
-  harder (the level, 1, 2, 3..., is shown on the map, in the journal and on screen)
+- Adventure, Act 2 paint series: three optional missions flown in order, each a Space Invaders clone with our
+  own enemies: 4 rows of 11 (bottom to top: blue birds, khaki birds, gargoyles, dark gargoyles, all animated)
+  march in step from side to side and drop one line together when a wall is touched, then turn back; the
+  march speeds up as the grid empties. Now and then a miniature of the boss saucer crosses the top: 500 to 1000
+  points, the more centred the killing shot, the more it pays (it does not have to be killed to win). An enemy
+  reaching the ship's line ends the run. The three missions are levels 1, 2, 3 (faster and lower each time);
+  flown again as a whole series (to change colour again) they are levels 4, 5, 6, then 7, 8, 9, and so on.
+  Winning the third opens the paint shop in the Shield workshop for ONE change of colour (red, green, violet).
+  The level is shown on the map, in the journal and on screen
 - Adventure, gateway to Act 2: a full run of arcade levels 11 to 15 (wave counter on screen). The death of
   the boss starts Act 2 (the save shows ACT 2). The mission map scrolls now that it is longer
 
