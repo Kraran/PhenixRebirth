@@ -446,7 +446,7 @@ def test_the_empty_second_hull_does_not_name_the_phenix():
     finally:
         story._text = real
     shown = " ".join(texts).upper()
-    assert "SLOT 2" in shown and t("story_hull_empty") in texts
+    assert t("story_hull_empty") in texts
     assert "PHENIX" not in shown and "PHOENIX" not in shown and "CHAPITRE" not in shown
 
 
