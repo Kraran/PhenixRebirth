@@ -159,6 +159,15 @@ def on_keydown(game, event):
         )
         if not arrow and getattr(game, "input_grace", 0) > 0:
             return
+        story = getattr(game, "story", None)
+        if game.menu_screen == "story_hub" and story is not None:
+            # Adventure name entry: typed letters must not act as menu keys (W A S D Z Q ...)
+            if story.type_key(event):
+                game._reset_menu_idle()
+                return
+            if event.key == pygame.K_DELETE:
+                story.key_delete()
+                return
         if game.menu_screen == "help":
             game._reset_menu_idle()
         elif game.menu_screen == "credits":

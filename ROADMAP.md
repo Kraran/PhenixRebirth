@@ -11,10 +11,12 @@ Current release: **v1.4.5**
 - The adventure journal follows the language chosen in Options
 - Adventure menus: texts are now centred inside their boxes (hangar, workshop, mission map, journal)
 - No more frozen explosion pieces on the menu after an adventure mission
+- Adventure start: slot list (3 saves with pilot name, act, date and mode), pilot name entry, Normal / Veteran choice
 
 ### Planned for 1.5.0 (Adventure, 3 acts)
 
-- 3 save slots (name, date, act), name entry with keyboard or gamepad, Normal / Veteran mode
+- Done: 3 save slots (name, date, act, mode), name entry with keyboard or gamepad (on-screen
+  keyboard), Normal / Veteran choice, delete with confirmation. The Veteran rules themselves come with the failure rules
 - Failed mission: back to the workshop, no gain, a penalty that is higher when the score was low;
   Veteran = permanent death
 - Act 1: weak Shield upgraded to about 80 % of the arcade ship

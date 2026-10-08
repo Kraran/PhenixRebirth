@@ -3135,6 +3135,46 @@ def get_credits_lines():
         ("blank", ""),
     ]
 
+# Adventure save slots, pilot name and mode. French first: every other language shows
+# the English text until it is translated (move a key into T above when translating).
+_ADVENTURE_TEXTS = {
+    "story_gate_title": ("CHOISIS UNE SAUVEGARDE", "SELECT A SAVE"),
+    "story_slot_empty": ("VIDE - NOUVELLE AVENTURE", "EMPTY - NEW ADVENTURE"),
+    "story_slot_damaged": ("SAUVEGARDE ILLISIBLE", "UNREADABLE SAVE"),
+    "story_slot_act": ("ACTE {n}", "ACT {n}"),
+    "story_slot_delete": ("SUPPRIMER", "DELETE"),
+    "story_slot_fallen": ("TOMBE AU COMBAT", "FALLEN IN BATTLE"),
+    "story_slot_fallen_msg": ("Cette aventure est terminee. Supprime-la pour liberer la place.",
+                              "This adventure is over. Delete it to free the slot."),
+    "story_slot_damaged_msg": ("Fichier abime : supprime-le pour recommencer.",
+                               "Damaged file: delete it to start over."),
+    "story_gate_hint": ("Haut / Bas  choisir   A/Entree  ouvrir   Droite  supprimer   B/Esc  retour",
+                        "Up / Down  choose   A/Enter  open   Right  delete   B/Esc  back"),
+    "story_name_title": ("NOM DU PILOTE", "PILOT NAME"),
+    "story_name_hint": ("Tape ton nom ou choisis les lettres   OK  valider   B/Esc  annuler",
+                        "Type your name or pick letters   OK  confirm   B/Esc  cancel"),
+    "story_name_empty": ("Entre au moins une lettre.", "Enter at least one letter."),
+    "story_mode_title": ("CHOIX DU MODE", "CHOOSE A MODE"),
+    "story_mode_normal": ("NORMAL", "NORMAL"),
+    "story_mode_veteran": ("VETERAN", "VETERAN"),
+    "story_mode_normal_d": ("Echec : retour a l'atelier, sans gain et avec une penalite.",
+                            "Failure: back to the workshop, no gain and a penalty."),
+    "story_mode_veteran_d": ("Mort definitive : un seul essai, pas de seconde chance.",
+                             "Permanent death: one try, no second chance."),
+    "story_mode_hint": ("Gauche / Droite  choisir   A/Entree  commencer   B/Esc  retour",
+                        "Left / Right  choose   A/Enter  start   B/Esc  back"),
+    "story_pilot": ("PILOTE", "PILOT"),
+    "story_delete_title": ("SUPPRIMER CETTE AVENTURE ?", "DELETE THIS ADVENTURE?"),
+    "story_delete_warn": ("Cette action est definitive.", "This cannot be undone."),
+    "story_yes": ("OUI", "YES"),
+    "story_no": ("NON", "NO"),
+    "story_delete_hint": ("Gauche / Droite  choisir   A/Entree  valider   B/Esc  annuler",
+                          "Left / Right  choose   A/Enter  confirm   B/Esc  cancel"),
+}
+for _k, (_fr, _en) in _ADVENTURE_TEXTS.items():
+    T[_k] = {_code: _en for _code in LANG_CODES}
+    T[_k]["fr"] = _fr
+
 _lang = "fr"
 
 def set_lang(code):

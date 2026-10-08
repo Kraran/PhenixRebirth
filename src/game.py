@@ -3355,7 +3355,9 @@ class Game:
         """Leave current run, return to main menu (keep settings)."""
         back_story = False
         toast = ""
+        story_slot = None
         if getattr(self, "adventure", None) and getattr(self, "story", None):
+            story_slot = self.story.slot_no
             try:
                 cleared = self.stage_transition == "fly_up"
                 self.story.apply_result(self.adventure.get("id"), int(self.score), cleared)
@@ -3382,6 +3384,8 @@ class Game:
             self.menu_screen = "story_hub"
             self.menu_index = 1
             if getattr(self, "story", None):
+                if story_slot:
+                    self.story.open_slot(story_slot)   # the new Game forgot the open slot; the result is already saved
                 self.story.pane = "map"
                 self.story.toast = toast
         else:
@@ -3500,6 +3504,8 @@ class Game:
                 self.menu_screen = "main"
                 self.menu_index = 0
         elif self.menu_screen == "story_hub":
+            if getattr(self, "story", None) and self.story.back():
+                return              # one step back inside the Adventure (hangar -> slot list ...)
             self.menu_screen = "main"
             self.menu_index = 1
         elif self.menu_screen == "addon":

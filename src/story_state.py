@@ -13,6 +13,7 @@ depend on the frame rate. Version 2 files stored them in frames at 60 Hz.
 import json
 import os
 import time
+import unicodedata
 
 from safe_io import atomic_write_json, backup_unreadable
 from settings import user_data_dir
@@ -20,6 +21,8 @@ from settings import user_data_dir
 SAVE_VERSION = 3
 SLOT_COUNT = 3
 MODES = ("normal", "veteran")
+NAME_MAX = 12
+NAME_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- "
 
 # Dome (Shield bubble): seconds. 2.0 s / 5.0 s is the arcade Shield.
 DOME_DUR_START = 1.0
@@ -109,6 +112,7 @@ def default_state():
         "act": 1,
         "name": "",
         "mode": "normal",
+        "fallen": False,
         "saved_at": "",
         "credits": 0,
         "flags": {"bestiary_s1": True},
@@ -160,6 +164,7 @@ def migrate_state(data):
         base["name"] = data["name"]
     if data.get("mode") in MODES:
         base["mode"] = data["mode"]
+    base["fallen"] = bool(data.get("fallen"))
     if isinstance(data.get("saved_at"), str):
         base["saved_at"] = data["saved_at"]
     flags = dict(base["flags"])
@@ -188,26 +193,155 @@ def migrate_state(data):
     return base
 
 
+def read_state(path):
+    """Read one slot file without touching it. Returns (state, status).
+
+    status is "missing" (no file), "ok", or "damaged" (not readable; state is None).
+    """
+    if not os.path.isfile(path):
+        return None, "missing"
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        state = migrate_state(data)
+    except Exception:
+        return None, "damaged"
+    if state is None:
+        return None, "damaged"
+    return state, "ok"
+
+
 def load_state(path):
     """Read one slot. Returns a state, or None when missing or unreadable.
 
     An unreadable file is set aside (backup_unreadable) so it is never lost.
     """
-    if not os.path.isfile(path):
-        return None
-    try:
-        with open(path, encoding="utf-8") as f:
-            data = json.load(f)
-        return migrate_state(data)
-    except Exception:
+    state, status = read_state(path)
+    if status == "damaged":
         backup_unreadable(path)
-        return None
+    return state
 
 
 def save_state(path, state):
     state["version"] = SAVE_VERSION
     state["saved_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
     atomic_write_json(path, state)
+
+
+# -------------------------------------------------------------- save slots
+def format_date(saved_at):
+    """'2026-10-08T11:21:05' -> '08/10/2026' ('' when unknown)."""
+    try:
+        y, m, d = str(saved_at)[:10].split("-")
+        return "%02d/%02d/%04d" % (int(d), int(m), int(y))
+    except (ValueError, TypeError):
+        return ""
+
+
+def slot_summary(slot):
+    """What the slot list shows for slot 1..SLOT_COUNT."""
+    state, status = read_state(story_path(slot))
+    info = {"slot": slot, "status": status, "name": "", "mode": "normal",
+            "act": 1, "date": "", "fallen": False}
+    if state is not None:
+        info.update(name=state.get("name") or "", mode=state.get("mode", "normal"),
+                    act=int(_num(state.get("act"), 1)), date=format_date(state.get("saved_at")),
+                    fallen=bool(state.get("fallen")))
+    return info
+
+
+def all_summaries():
+    return [slot_summary(i) for i in range(1, SLOT_COUNT + 1)]
+
+
+def clean_char(ch):
+    """One typed character -> an allowed upper-case character, or ''."""
+    if not ch:
+        return ""
+    ch = unicodedata.normalize("NFKD", ch)
+    ch = "".join(c for c in ch if not unicodedata.combining(c)).upper()
+    return ch if len(ch) == 1 and ch in NAME_CHARS else ""
+
+
+def clean_name(raw):
+    """A pilot name as stored: allowed characters only, single spaces, at most NAME_MAX."""
+    chars = "".join(clean_char(c) for c in str(raw or ""))
+    return " ".join(chars.split())[:NAME_MAX].strip()
+
+
+def create_slot(slot, name, mode):
+    """Start a new adventure in `slot` and save it. Returns the new state."""
+    state = default_state()
+    state["name"] = clean_name(name)
+    state["mode"] = mode if mode in MODES else "normal"
+    save_state(story_path(slot), state)
+    return state
+
+
+def delete_slot(slot):
+    """Remove the save file of `slot`. True when a file was removed."""
+    try:
+        os.remove(story_path(slot))
+        return True
+    except OSError:
+        return False
+
+
+# Name entry: an on-screen keyboard, so the pad can do everything the keyboard does.
+KEY_ROWS = [
+    list("ABCDEFGHIJ"),
+    list("KLMNOPQRST"),
+    list("UVWXYZ0123"),
+    ["4", "5", "6", "7", "8", "9", "-", "SPACE", "DEL", "OK"],
+]
+
+
+class NameEntry:
+    """Pilot name being typed: text, plus a cursor on the on-screen keyboard."""
+
+    def __init__(self, text=""):
+        self.text = clean_name(text)
+        self.row = 0
+        self.col = 0
+
+    @property
+    def token(self):
+        return KEY_ROWS[self.row][self.col]
+
+    @property
+    def name(self):
+        return clean_name(self.text)
+
+    def move(self, dx, dy):
+        self.row = (self.row + dy) % len(KEY_ROWS)
+        self.col = (self.col + dx) % len(KEY_ROWS[self.row])
+
+    def type_char(self, ch):
+        """A character typed on the real keyboard. True when it was accepted."""
+        c = clean_char(ch)
+        if not c or len(self.text) >= NAME_MAX:
+            return False
+        if c == " " and (not self.text or self.text.endswith(" ")):
+            return False
+        self.text += c
+        return True
+
+    def backspace(self):
+        self.text = self.text[:-1]
+
+    def press(self):
+        """Validate the key under the cursor. Returns "ok" when the name is final,
+        "empty" when OK was pressed with no name, else None."""
+        tok = self.token
+        if tok == "OK":
+            return "ok" if self.name else "empty"
+        if tok == "DEL":
+            self.backspace()
+        elif tok == "SPACE":
+            self.type_char(" ")
+        else:
+            self.type_char(tok)
+        return None
 
 
 # ------------------------------------------------------------------ queries

@@ -151,8 +151,7 @@ def menu_confirm(game):
             if not getattr(game, "story", None):
                 from story import StoryHub
                 game.story = StoryHub()
-            game.story.pane = "hangar"
-            game.story.zone = "slots"
+            game.story.open_slots()
             game.menu_screen = "story_hub"
             game.menu_idle = 0.0
         elif game.menu_index == 2:
