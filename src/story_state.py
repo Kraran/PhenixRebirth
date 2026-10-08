@@ -598,12 +598,13 @@ def mission_open(state, mission):
     return True
 
 
-def mission_playable(state, mission):
-    if not mission_open(state, mission):
+def mission_playable(state, mission, cheat=False):
+    """Can this mission be launched? `cheat` (the UNLK code) skips every unlock rule."""
+    if not mission:
         return False
     if mission.get("playable") is False or int(mission.get("content") or 0) <= 0:
         return False
-    return True
+    return True if cheat else mission_open(state, mission)
 
 
 # ---------------------------------------------------------------- workshop
