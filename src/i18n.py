@@ -3330,16 +3330,22 @@ _ADVENTURE_TEXTS.update({
     "story_stat_phenix": ("PHENIX", "PHENIX"),
     # --- Act 2: the paint series and the paint shop (draft texts, to be reviewed)
     "story_m_pt1": ("Peinture I : l'échantillon", "Paint I: the sample"),
-    "story_m_pt1_b": ("Optionnelle (1/3). Bleus et Kakis. Les trois missions ouvrent l'atelier de peinture.",
-                      "Optional (1/3). Blues and Khakis. All three missions open the paint shop."),
+    "story_m_pt1_b": ("Optionnelle (1/3). Une grille d'ennemis descend vers toi, façon Space Invaders. "
+                      "Les trois missions ouvrent l'atelier de peinture.",
+                      "Optional (1/3). A grid of enemies marches down on you, Space Invaders style. "
+                      "All three missions open the paint shop."),
     "story_log_pt1": ("Peinture I — l'échantillon est récupéré.", "Paint I — the sample is recovered."),
     "story_m_pt2": ("Peinture II : le mélange", "Paint II: the mix"),
-    "story_m_pt2_b": ("Optionnelle (2/3). Gargouilles et Gargouilles sombres.",
-                      "Optional (2/3). Gargoyles and Dark Gargoyles."),
+    "story_m_pt2_b": ("Optionnelle (2/3). Même invasion, en plus rapide. La soucoupe vaut 500 à 1000 PTS : "
+                      "vise bien au centre.",
+                      "Optional (2/3). The same invasion, faster. The saucer is worth 500 to 1000 PTS: "
+                      "aim for the middle."),
     "story_log_pt2": ("Peinture II — le mélange est prêt.", "Paint II — the mix is ready."),
     "story_m_pt3": ("Peinture III : la cuve", "Paint III: the vat"),
-    "story_m_pt3_b": ("Optionnelle (3/3). Quatre vagues. La série peut être refaite en entier, en plus dur.",
-                      "Optional (3/3). Four waves. The whole series can be flown again, harder."),
+    "story_m_pt3_b": ("Optionnelle (3/3). L'invasion la plus rapide de la série. "
+                      "La série peut être refaite en entier, en plus dur.",
+                      "Optional (3/3). The fastest invasion of the series. "
+                      "The whole series can be flown again, harder."),
     "story_log_pt3": ("Peinture III — l'atelier de peinture est ouvert.", "Paint III — the paint shop is open."),
     "story_shop_paint": ("Atelier de peinture", "Paint shop"),
     "story_paint_ready": ("1 CHANGEMENT", "1 CHANGE"),

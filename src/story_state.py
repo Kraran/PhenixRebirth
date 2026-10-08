@@ -262,7 +262,8 @@ MISSIONS = [
 
     # Act 2: the paint series. Three optional missions, flown in order; when the third is won the
     # paint shop opens for ONE change of colour. The whole series can be flown again (harder each
-    # time, like the Bestiary sorties) to earn another change. `waves` are the level-1 stages.
+    # time, like the Bestiary sorties) to earn another change. Each one is a Space Invaders grid (`invaders`)
+    # whose level is 1, 2, 3 in the first pass, then 4, 5, 6, and so on.
     {
         "id": "paint_1",
         "acts": (2,),
@@ -271,7 +272,7 @@ MISSIONS = [
         "blurb": "story_m_pt1_b",
         "need": "act2",
         "content": 1,
-        "waves": [6, 7],
+        "invaders": True,
         "speed": 1.0,
         "unlock": [],
         "log": "story_log_pt1",
@@ -284,7 +285,7 @@ MISSIONS = [
         "blurb": "story_m_pt2_b",
         "need": "act2",
         "content": 3,
-        "waves": [8, 9],
+        "invaders": True,
         "speed": 1.0,
         "unlock": [],
         "log": "story_log_pt2",
@@ -297,7 +298,7 @@ MISSIONS = [
         "blurb": "story_m_pt3_b",
         "need": "act2",
         "content": 1,
-        "waves": [6, 7, 8, 9],
+        "invaders": True,
         "speed": 1.0,
         "unlock": [],
         "log": "story_log_pt3",
@@ -461,14 +462,14 @@ def is_paint(mission):
 
 
 def paint_level(state):
-    """Level of the paint series: 1 at first, one more after each full pass (1, 2, 3...)."""
+    """The pass of the paint series: 1 at first, one more after each full pass (1, 2, 3...)."""
     return 1 + paint_state(state)["runs"]
 
 
-def paint_waves(mission, level):
-    """Arcade stages of a paint mission at `level`: every wave comes 5 stages later per level."""
-    shift = 5 * (max(1, int(_num(level, 1))) - 1)
-    return [w + shift for w in mission_waves(mission)]
+def invader_level(state, mission):
+    """Level of the Space Invaders grid of a paint mission: 1, 2, 3 in the first pass, 4, 5, 6 in the
+    next one, and so on (three levels per pass)."""
+    return PAINT_STEPS * paint_state(state)["runs"] + max(1, int(_num((mission or {}).get("paint"), 1)))
 
 
 def mission_level(state, mission):
@@ -476,7 +477,7 @@ def mission_level(state, mission):
     if is_hunt(mission):
         return hunt_level(state, mission["id"])
     if is_paint(mission):
-        return paint_level(state)
+        return invader_level(state, mission)
     return None
 
 
