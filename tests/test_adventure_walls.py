@@ -139,14 +139,14 @@ def test_act1_mission_after_the_workshop(run):
     g = run.game
     st = ss.default_state()
     st["credits"] = 99999
-    st["flags"].update(ch1_speed=True, ch1_life_2=True, ch1_wall=True)
+    st["flags"].update(ch1_speed=True, ch1_life_2=True, ch1_wall=True, dome_online=True)
     for sid, *_ in ss.SHOP:
         assert ss.buy(st, sid)
     g.story.state = st
     g.story.map_index = 0
     g._begin_adventure(g.story._launch_selected())
     p = g.player
-    assert (p.lives, p.adventure_wall, p.adventure_dome) == (2, "slow", False)
+    assert (p.lives, p.adventure_wall, p.adventure_dome) == (2, "slow", True)   # the workshop now sells the dome
     assert p.speed == pytest.approx(PLAYER_SPEED * 0.80)
 
 

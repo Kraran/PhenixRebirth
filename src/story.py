@@ -478,6 +478,9 @@ class StoryHub:
         waves = ss.mission_waves(mission)
         if waves:
             spec["waves"] = waves                 # several waves in a row, at the speed of their level
+        if mission.get("swarm"):
+            spec["swarm"] = True                  # the four enemies together, replaced as they fall
+            spec["stage"] = int(mission.get("stage") or 11)
         return spec
 
     def apply_result(self, mission_id, score, cleared, kills=None):
@@ -485,6 +488,8 @@ class StoryHub:
         res = ss.record_result(self.state, mission_id, score, cleared, kills)
         if res["cleared"]:
             self.toast = t("story_clear").format(pts=res["score"])
+            if res.get("act"):
+                self.toast = t("story_act_start").format(n=res["act"])
         elif res["fallen"]:
             self.toast = t("story_fell_msg").format(name=self.state.get("name") or "")
         elif res["lost"]:
@@ -889,7 +894,20 @@ class StoryHub:
         pygame.draw.rect(surface, (70, 90, 130), box, 2, border_radius=10)
         _text(surface, small, t("story_ch1"), (255, 170, 80), box.y + 28, left=box.x + 16)
         y = box.y + 52
+        # the list scrolls: rows from `first` on, so that the focused one (taller) always fits
+        room = box.bottom - 44 - y
+        focus_i = max(0, min(len(MISSIONS) - 1, self.map_index))
+        first = 0
+        while first < focus_i and sum(40 + 4 for _ in range(first, focus_i)) + 76 + 4 > room:
+            first += 1
+        if first > 0:
+            _text(surface, small, "^", (180, 180, 200), box.y + 28, right=box.right - 20)
         for i, mission in enumerate(MISSIONS):
+            if i < first:
+                continue
+            if y + (76 if i == focus_i else 40) > box.bottom - 44:
+                _text(surface, small, "v", (180, 180, 200), box.bottom - 56, right=box.right - 20)
+                break
             open_ = self.mission_open(mission)
             playable = self.mission_playable(mission)
             done = mission["id"] in (self.state.get("cleared") or [])

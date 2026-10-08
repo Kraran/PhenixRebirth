@@ -67,6 +67,14 @@ def _whiten_surf(src):
     return out
 
 
+# The swarm mission mixes the four enemies and keeps replacing the ones that fall.
+# Counts are the enemies of one normal screen (13 / 22 / 7 / 10), by content stage.
+SWARM_NORMAL_COUNT = {1: 13, 2: 22, 3: 7, 4: 10}
+SWARM_SCREENS = 3                 # each kind comes SWARM_SCREENS times its normal count in all
+SWARM_ON_SCREEN_SHARE = 1.0       # share of a normal screen shown at once (1.0 = a full screen)
+SWARM_REFILL_DELAY = 0.35         # seconds between two arrivals of the same kind
+
+
 class Enemy:
     def __init__(self, x, y, formation_index=0, stage=1):
         self.x = float(x)
@@ -351,9 +359,11 @@ class EnemyFormation:
         self.time = 0.0
         self.stage = stage
         self.sounds = None  # set by Game
+        self.swarm = None   # state of the swarm mission, None in every other wave
         self.spawn_stage(stage)
 
     def spawn_stage(self, stage, speed_mult=1.0):
+        self.swarm = None
         self.stage = stage
         self.speed_mult = speed_mult
         self.enemies = []
@@ -405,8 +415,123 @@ class EnemyFormation:
                 self.enemies.append(e)
                 idx += 1
 
+    # --- swarm mission: the four enemies together, replaced as they fall ---
+    @staticmethod
+    def swarm_on_screen(kind):
+        return max(1, int(round(SWARM_NORMAL_COUNT[kind] * SWARM_ON_SCREEN_SHARE)))
+
+    @staticmethod
+    def swarm_total(kind):
+        return SWARM_NORMAL_COUNT[kind] * SWARM_SCREENS
+
+    def _swarm_bird_slots(self):
+        """Formation seats of both bird kinds, in reading order, kinds spread evenly among them."""
+        n1, n2 = self.swarm_on_screen(1), self.swarm_on_screen(2)
+        total = n1 + n2
+        per_row, rows_y, spacing = 9, (110, 165, 220, 275), 95
+        slots = []
+        for i in range(total):
+            row, col = divmod(i, per_row)
+            in_row = min(per_row, total - row * per_row)
+            x = (BASE_WIDTH - (in_row - 1) * spacing) // 2 + col * spacing
+            slots.append((x, rows_y[min(row, len(rows_y) - 1)]))
+        kinds, blue = [], 0
+        for i in range(total):                   # Bresenham: blue birds evenly among the khaki ones
+            want = ((i + 1) * n1) // total
+            if want > blue:
+                kinds.append(1)
+                blue = want
+            else:
+                kinds.append(2)
+        return [(x, y, k) for (x, y), k in zip(slots, kinds)]
+
+    def spawn_swarm(self, speed_mult=1.0):
+        """Start the swarm: a full screen of every kind, the rest waits to come in."""
+        self.stage = 2                           # the drift of the khaki formation
+        self.speed_mult = speed_mult
+        self.enemies = []
+        self.bullets = []
+        self.offset_x = 0.0
+        self.direction = 1
+        self.time = 0.0
+        self.speed = ENEMY_SPEED * 1.15 * speed_mult
+        self.swarm = {
+            "mult": speed_mult,
+            "reserve": {k: self.swarm_total(k) - self.swarm_on_screen(k) for k in (1, 2, 3, 4)},
+            "wait": {k: 0.0 for k in (1, 2, 3, 4)},
+            "slots": self._swarm_bird_slots(),
+            "next_index": 0,
+        }
+        for slot_i, (x, y, kind) in enumerate(self.swarm["slots"]):
+            self._swarm_add_bird(slot_i, kind, arriving=False)
+        for kind in (3, 4):
+            for _ in range(self.swarm_on_screen(kind)):
+                self._swarm_add_gargoyle(kind, arriving=False)
+
+    def _swarm_index(self):
+        i = self.swarm["next_index"]
+        self.swarm["next_index"] = i + 1
+        return i
+
+    def _swarm_add_bird(self, slot_i, kind, arriving):
+        x, y, _ = self.swarm["slots"][slot_i]
+        e = Enemy(x, y, formation_index=self._swarm_index(), stage=kind)
+        e.speed_mult = self.swarm["mult"]
+        e.swarm_slot = slot_i
+        if arriving:                              # comes in from the top and flies to its seat
+            e.state = "returning"
+            e.x = x + self.offset_x
+            e.y = -40.0
+            e.rect.center = (int(e.x), int(e.y))
+        self.enemies.append(e)
+        return e
+
+    def _swarm_add_gargoyle(self, kind, arriving):
+        if arriving:
+            x, y = random.uniform(120, BASE_WIDTH - 120), -50.0
+        else:
+            x, y = random.uniform(80, BASE_WIDTH - 80), random.uniform(80, 320)
+        b = BigBird(x, y, formation_index=self._swarm_index(), stage=kind)
+        mult = self.swarm["mult"]
+        b.speed_mult = mult
+        b.vx *= mult
+        b.vy *= mult
+        if arriving:
+            b.state = "enter"                     # glides down to the roaming zone first
+        self.enemies.append(b)
+        return b
+
+    def _refill_swarm(self, dt):
+        """Replace the fallen, kind by kind, until the reserve of that kind is empty."""
+        sw = self.swarm
+        for kind in (1, 2, 3, 4):
+            sw["wait"][kind] = max(0.0, sw["wait"][kind] - dt)
+            if sw["reserve"][kind] <= 0 or sw["wait"][kind] > 0:
+                continue
+            alive = [e for e in self.enemies if e.alive and not e.dying and e.stage == kind]
+            if len(alive) >= self.swarm_on_screen(kind):
+                continue
+            if kind <= 2:
+                taken = {getattr(e, "swarm_slot", -1) for e in self.enemies if e.alive and e.stage == kind}
+                free = [i for i, (_, _, k) in enumerate(sw["slots"]) if k == kind and i not in taken]
+                if not free:
+                    continue
+                self._swarm_add_bird(free[0], kind, arriving=True)
+            else:
+                self._swarm_add_gargoyle(kind, arriving=True)
+            sw["reserve"][kind] -= 1
+            sw["wait"][kind] = SWARM_REFILL_DELAY
+
+    def swarm_remaining(self):
+        """Enemies still to be destroyed to win the swarm mission (on screen + waiting)."""
+        if not self.swarm:
+            return 0
+        return sum(self.swarm["reserve"].values()) + sum(1 for e in self.enemies if e.alive and not e.dying)
+
     def update(self, dt, player_x):
         self.time += dt
+        if self.swarm:
+            self._refill_swarm(dt)
         
         self.offset_x += self.direction * self.speed * dt
         if self.offset_x > 170:
@@ -430,17 +555,18 @@ class EnemyFormation:
                 if random.random() < ENEMY_DIVE_CHANCE:
                     enemy.start_dive(player_x)
             
+            kind = enemy.stage if self.swarm else self.stage      # a swarm mixes kinds
             if isinstance(enemy, BigBird):
-                max_shots = 5 if self.stage >= 4 else 4
-                chance = ENEMY_SHOOT_CHANCE * (4.5 if self.stage >= 4 else 4.0)
-            elif self.stage >= 2:
+                max_shots = 5 if kind >= 4 else 4
+                chance = ENEMY_SHOOT_CHANCE * (4.5 if kind >= 4 else 4.0)
+            elif kind >= 2:
                 max_shots = 2
                 chance = ENEMY_SHOOT_CHANCE * 1.5
             else:
                 max_shots = 1
                 chance = ENEMY_SHOOT_CHANCE
             
-            if enemy.can_shoot() and enemy.state not in ("returning",):
+            if enemy.can_shoot() and enemy.state not in ("returning", "enter"):
                 owned = sum(1 for b in self.bullets if b.alive and getattr(b, "owner_id", None) == id(enemy))
                 if owned >= max_shots:
                     continue
@@ -449,7 +575,7 @@ class EnemyFormation:
                 
                 if random.random() < chance:
                     by = enemy.y + (20 if isinstance(enemy, BigBird) else 14)
-                    bullet = EnemyBullet(enemy.x, by, stage=self.stage)
+                    bullet = EnemyBullet(enemy.x, by, stage=kind)
                     bullet.owner_id = id(enemy)
                     self.bullets.append(bullet)
                     enemy.did_shoot()
@@ -479,6 +605,8 @@ class EnemyFormation:
         return [e for e in self.enemies if e.alive and not e.dying]
 
     def all_dead(self):
+        if self.swarm and any(n > 0 for n in self.swarm["reserve"].values()):
+            return False                         # more are still on their way in
         return not any(e.alive for e in self.enemies)
 
 
@@ -726,6 +854,11 @@ class BigBird:
                 self.vx = random.choice([-1, 1]) * random.uniform(90, 150)
                 self.vy = random.uniform(30, 80)  # descend un peu en entrant
                 self.dir_timer = random.uniform(0.8, 1.6)
+        elif self.state == "enter":
+            # swarm replacement: glide in from above the screen, then roam as usual
+            self.y += 150.0 * dt
+            if self.y >= 80.0:
+                self.state = "roam"
         else:
             self.dir_timer -= dt
             if self.dir_timer <= 0:

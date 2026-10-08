@@ -1791,6 +1791,12 @@ class Game:
             self.stage = number
             content = stage_content(number)
             mult = float(adv.get("speed") or 1.0) * stage_speed_mult(number) * self.difficulty_speed_mult()
+        elif adv and adv.get("swarm"):
+            # the swarm mission: all four enemies at once, at the speed of one arcade level
+            number = int(adv.get("stage") or 11)
+            self.stage = number
+            content = 0
+            mult = float(adv.get("speed") or 1.0) * stage_speed_mult(number) * self.difficulty_speed_mult()
         elif adv:
             content = int(adv.get("content") or 1)
             mult = float(adv.get("speed") or 1.0) * self.difficulty_speed_mult()
@@ -1799,8 +1805,12 @@ class Game:
             mult = stage_speed_mult(stage) * self.difficulty_speed_mult()
         self.formation.enemies = []
         self.formation.bullets = []
+        self.formation.swarm = None
         self.boss_saucer = None
-        if content == 5:
+        if content == 0:
+            self.formation.spawn_swarm(speed_mult=mult)
+            self.formation.sounds = self.sounds
+        elif content == 5:
             self.boss_saucer = BossSaucer()
             # Scale boss descend/shoot lightly with mult
             self.boss_saucer.descend_speed *= mult
