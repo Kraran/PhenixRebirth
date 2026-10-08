@@ -1,6 +1,20 @@
 # Roadmap — Phenix Rebirth
 Current release: **v1.4.4**
 
+## Unreleased (next version)
+
+- 144 Hz option (Options: 60 / 75 / 120 / 144) with an exact frame limiter
+  (60 / 75 / 120 / 144 images per second instead of about 62 / 77 / 125 / 166)
+- Smoother fullscreen on ultrawide screens: bezels no longer rebuilt every frame,
+  the frame is drawn straight onto the screen (no 5 MB copy) and the redundant clear is gone
+- No more stutter when a haut-fait progresses: achievements are saved in the background
+- Title menu no longer rescans the Add-on (MAME) folders on every frame
+- Explosions look the same at any refresh rate (60 / 75 / 120 / 144 Hz)
+- Safer saves: settings, high scores, achievements and story are written atomically
+  (a crash or power cut can no longer leave a truncated file); an unreadable file is kept as `.corrupt`
+- `errors.log` next to the game records unexpected errors that used to be silent
+- Developer tools: `tools/bench.py` (smoothness benchmark, `--profile`) and `tools/probe_present.py`
+
 ## Done in 1.4.4
 
 - Starfield comet update
