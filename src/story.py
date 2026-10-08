@@ -22,7 +22,7 @@ PANES = ("bestiary", "log", "hangar", "map")
 CHEAT_UNLOCK = "UNLK"          # typed on the mission map: play any mission, save nothing
 PORTRAIT_H = 124                 # height of a hull portrait in the hangar (the ship select screen uses 168)
 GREY_MULT = (80, 80, 90, 160)    # the dimming of the ship select screen for the hull that is not chosen
-CHEAT_ACT2 = "ACT2"            # typed on the mission map: go straight to Act 2, save nothing
+CHEAT_ACT2 = "2222"            # typed on the mission map: go straight to Act 2, save nothing
 LOG_ROWS = 12                  # journal lines shown at once
 
 

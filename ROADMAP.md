@@ -65,7 +65,7 @@ Current release: **v1.4.5**
   slight bob for the chosen one, the other one dimmed the same way), without the Phenix / dome animations.
   The chosen hull flies every mission (the map shows "SHIP: ..."); a mission can impose a hull later
   (`ship` field of a mission, none uses it yet)
-- Adventure, cheat code ACT2 on the mission map: jumps to Act 2 (every Act 1 mission counts as won, the Phenix
+- Adventure, cheat code 2222 on the mission map: jumps to Act 2 (every Act 1 mission counts as won, the Phenix
   is not given). Nothing is saved any more afterwards (red banner, like UNLK); reloading the slot goes back
   to the real save
 - Adventure, gateway to Act 2: a full run of arcade levels 11 to 15 (wave counter on screen). The death of
