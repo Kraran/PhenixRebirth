@@ -191,7 +191,7 @@ def test_missions_open_and_playable():
     assert not ss.mission_open(st, by_id["best_s2"])
     ss.record_result(st, "ch1_sortie", 0, True)
     assert ss.mission_playable(st, by_id["best_s2"])
-    ss.record_result(st, "ch1_gate", 0, True)            # unlocks the teaser
+    st["flags"]["act2"] = True                           # the end of Act 1 opens the teaser
     assert ss.mission_open(st, by_id["ch2_tease"])
     assert not ss.mission_playable(st, by_id["ch2_tease"])
     assert not ss.mission_open(st, None)

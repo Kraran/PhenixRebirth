@@ -38,6 +38,12 @@ Current release: **v1.4.5**
 - Adventure cheat UNLK (typed on the mission map): every mission can be played without unlocking it.
   While it is on, nothing is saved (a red banner says so); loading the save again starts clean
 
+- Adventure, dome series (Act 1): four chained missions after the Bestiary sorties. Each one flies three
+  waves in a row of one enemy kind at the speed of arcade levels 1 / 6 / 11 (Blues), 2 / 7 / 12 (Khakis),
+  3 / 8 / 13 (Gargoyles) and 4 / 9 / 14 (Dark Gargoyles). Clearing one opens the next; a cleared one
+  cannot be flown again (the four Bestiary sorties stay replayable). The old "chapter relief" mission is
+  replaced by this series
+
 ### Planned for 1.5.0 (Adventure, 3 acts)
 
 - Done: 3 save slots (name, date, act, mode), name entry with keyboard or gamepad (on-screen

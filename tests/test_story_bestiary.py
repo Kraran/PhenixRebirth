@@ -425,7 +425,7 @@ def test_the_four_bestiary_missions_are_hunts_each_with_its_enemy():
     hunts = [m for m in ss.MISSIONS if ss.is_hunt(m)]
     assert [m["id"] for m in hunts] == list(HUNTS)
     assert [ss.enemy_kind(m["content"]) for m in hunts] == ["bird1", "bird2", "garg3", "garg4"]
-    assert not ss.is_hunt(ss.mission_by_id("ch1_gate")) and not ss.is_hunt(ss.mission_by_id("ch2_tease"))
+    assert not ss.is_hunt(ss.mission_by_id("dome_1")) and not ss.is_hunt(ss.mission_by_id("ch2_tease"))
     assert not ss.is_hunt(None) and not ss.is_hunt(ss.mission_by_id("nope"))
 
 
@@ -461,7 +461,7 @@ def test_each_hunt_keeps_its_own_total():
 
 def test_only_hunts_keep_a_total_and_odd_kills_are_ignored():
     st = ss.create_slot(1, "NOVA", "normal")
-    ss.record_result(st, "ch1_gate", 100, True, {"bird1": 13})
+    ss.record_result(st, "dome_1", 100, True, {"bird1": 13})
     assert st["mission_kills"] == {}                      # not a hunt
     assert ss.encounters(st, "bird1") == 13               # the Bestiary still counts them
     ss.record_result(st, "ch1_sortie", 0, False, {"bird1": -3, "dragon": 9, "bird2": "x"})
@@ -500,7 +500,7 @@ def test_no_kills_no_total_line_and_the_gate_has_none():
     ss.record_result(st, "best_s2", 100, True, {"bird2": 4})
     ss.record_result(st, "best_s3", 100, True, {"garg3": 2})
     ss.record_result(st, "best_s4", 100, True, {"garg4": 1})
-    ss.record_result(st, "ch1_gate", 100, True, {"bird1": 9})
+    ss.record_result(st, "dome_1", 100, True, {"bird1": 9})
     kills = [e for e in ss.journal_entries(st) if isinstance(e, dict) and "kills" in e]
     assert [(e["mission"], e["kills"]) for e in kills] == [("best_s2", 4), ("best_s3", 2), ("best_s4", 1)]
 
@@ -514,7 +514,7 @@ def test_the_totals_survive_save_and_load_and_old_saves_start_at_zero(tmp_path):
     old = ss.migrate_state({"version": 4, "name": "OLD", "cleared": ["ch1_sortie"],
                             "log": [{"key": "story_log_sortie"}], "bestiary": {"bird1": 40}})
     assert old["mission_kills"] == {} and ss.journal_entries(old)[-1] == {"key": "story_log_sortie"}
-    odd = ss.migrate_state({"version": 4, "mission_kills": {"ch1_sortie": "x", "ch1_gate": 5, "ghost": 3, 7: 1}})
+    odd = ss.migrate_state({"version": 4, "mission_kills": {"ch1_sortie": "x", "dome_1": 5, "ghost": 3, 7: 1}})
     assert odd["mission_kills"] == {"ch1_sortie": 0}
 
 

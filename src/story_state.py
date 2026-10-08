@@ -92,21 +92,61 @@ MISSIONS = [
         "unlock": ["bestiary_s4"],
         "log": "story_log_best4",
     },
+    # The dome series: each mission opens the next one and can be flown only once.
+    # `waves` are arcade stage numbers (1, 6, 11 = the same wave at 1.0x, 1.1x, 1.2x speed).
     {
-        "id": "ch1_gate",
-        "title": "story_m_gate",
-        "blurb": "story_m_gate_b",
+        "id": "dome_1",
+        "title": "story_m_dome1",
+        "blurb": "story_m_dome1_b",
         "need": "bestiary_s4",
         "content": 1,
-        "speed": 1.15,
-        "unlock": ["ch1_clear"],
-        "log": "story_log_gate",
+        "waves": [1, 6, 11],
+        "speed": 1.0,
+        "once": True,
+        "unlock": ["dome_s1"],
+        "log": "story_log_dome1",
+    },
+    {
+        "id": "dome_2",
+        "title": "story_m_dome2",
+        "blurb": "story_m_dome2_b",
+        "need": "dome_s1",
+        "content": 2,
+        "waves": [2, 7, 12],
+        "speed": 1.0,
+        "once": True,
+        "unlock": ["dome_s2"],
+        "log": "story_log_dome2",
+    },
+    {
+        "id": "dome_3",
+        "title": "story_m_dome3",
+        "blurb": "story_m_dome3_b",
+        "need": "dome_s2",
+        "content": 3,
+        "waves": [3, 8, 13],
+        "speed": 1.0,
+        "once": True,
+        "unlock": ["dome_s3"],
+        "log": "story_log_dome3",
+    },
+    {
+        "id": "dome_4",
+        "title": "story_m_dome4",
+        "blurb": "story_m_dome4_b",
+        "need": "dome_s3",
+        "content": 4,
+        "waves": [4, 9, 14],
+        "speed": 1.0,
+        "once": True,
+        "unlock": ["dome_s4"],
+        "log": "story_log_dome4",
     },
     {
         "id": "ch2_tease",
         "title": "story_m_ch2",
         "blurb": "story_m_ch2_b",
-        "need": "ch1_clear",
+        "need": "act2",
         "content": 0,
         "speed": 1.0,
         "unlock": [],
@@ -589,6 +629,14 @@ def loadout(state):
     }
 
 
+def mission_waves(mission):
+    """Arcade stage numbers a mission flies one after the other (empty: one wave of `content`)."""
+    waves = (mission or {}).get("waves")
+    if not isinstance(waves, (list, tuple)):
+        return []
+    return [max(1, int(_num(w, 1))) for w in waves]
+
+
 def mission_open(state, mission):
     if not mission:
         return False
@@ -604,7 +652,13 @@ def mission_playable(state, mission, cheat=False):
         return False
     if mission.get("playable") is False or int(mission.get("content") or 0) <= 0:
         return False
-    return True if cheat else mission_open(state, mission)
+    if cheat:
+        return True
+    if not mission_open(state, mission):
+        return False
+    if mission.get("once") and mission.get("id") in (state.get("cleared") or []):
+        return False                       # a story mission is flown once; hunts stay replayable
+    return True
 
 
 # ---------------------------------------------------------------- workshop

@@ -82,15 +82,17 @@ def tick_fly_up(game):
     game._tick_stars(follow=True)
     if all((not s.alive) or s.y < -80 for s in game._ships()):
         if getattr(game, "adventure", None):
-            game._end_adventure(True)
-            return
-        game.stage += 1
-        game._note_scalable("stage2", game.stage, absolute=True)
-        if game.stage > 1 and (game.stage - 1) % 5 == 0:
-            game._note_scalable("loop")
-        if game.stage >= 21:
-            game._note_scalable("boldly_go", game.stage, absolute=True)
-        game._setup_stage(game.stage)
+            if not game._next_adventure_wave():
+                game._end_adventure(True)
+                return
+        else:
+            game.stage += 1
+            game._note_scalable("stage2", game.stage, absolute=True)
+            if game.stage > 1 and (game.stage - 1) % 5 == 0:
+                game._note_scalable("loop")
+            if game.stage >= 21:
+                game._note_scalable("boldly_go", game.stage, absolute=True)
+            game._setup_stage(game.stage)
         for ship in game._ships():
             ship.y = BASE_HEIGHT + 60
             hw = float(getattr(ship, "width", 60) or 60) * 0.5

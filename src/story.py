@@ -475,6 +475,9 @@ class StoryHub:
             "speed": float(mission.get("speed") or 1.0),
             "dome": bool(self.loadout().get("dome")),
         }
+        waves = ss.mission_waves(mission)
+        if waves:
+            spec["waves"] = waves                 # several waves in a row, at the speed of their level
         return spec
 
     def apply_result(self, mission_id, score, cleared, kills=None):
@@ -916,7 +919,7 @@ class StoryHub:
             _text(surface, small, f"{mark}{t(mission['title'])}", col, cy, left=row.x + 10)
             _text(surface, small, state, col, cy, right=row.right - 14)
             if focus:
-                _text(surface, small, t(mission["blurb"]), (170, 175, 195), cy + 34, left=row.x + 28)
+                _text_fit(surface, small, t(mission["blurb"]), (170, 175, 195), cy + 34, row.x + 28, row.w - 40)
             y += row.h + 4
         if self.toast:
             _text(surface, small, self.toast, (255, 220, 120), box.bottom - 30, centerx=box.centerx)
