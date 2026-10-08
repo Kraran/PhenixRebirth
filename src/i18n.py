@@ -3101,6 +3101,7 @@ def get_credits_lines():
 _ADVENTURE_TEXTS = {
     "story_gate_title": ("CHOISIS UNE SAUVEGARDE", "SELECT A SAVE"),
     "story_slot_empty": ("VIDE - NOUVELLE AVENTURE", "EMPTY - NEW ADVENTURE"),
+    "story_hull_empty": ("VIDE", "EMPTY"),
     "story_slot_damaged": ("SAUVEGARDE ILLISIBLE", "UNREADABLE SAVE"),
     "story_slot_act": ("ACTE {n}", "ACT {n}"),
     "story_slot_delete": ("SUPPRIMER", "DELETE"),

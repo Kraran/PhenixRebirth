@@ -283,7 +283,7 @@ def test_quitting_a_mission_keeps_the_open_slot(run):
     run.frames(10)
     g._quit_to_menu()
     assert g.menu_screen == "story_hub"
-    assert g.story.slot_no == 2 and g.story.screen == "hub" and g.story.pane == "map"
+    assert g.story.slot_no == 2 and g.story.screen == "hub" and g.story.pane == "hangar"
     assert g.story.state["name"] == "NOVA"
     assert os.path.isfile(ss.story_path(2))
 
@@ -337,24 +337,40 @@ def test_failed_veteran_mission_ends_the_adventure(run):
     assert g.story.screen == "slots" and g.story.msg
 
 
-def test_quitting_a_veteran_mission_counts_as_a_fall(run):
+def test_quitting_a_veteran_mission_changes_nothing(run):
     g = run.game
-    _start_mission(g, 3, name="ZED", mode="veteran")
+    _start_mission(g, 3, name="ZED", mode="veteran", credits=300)
     run.frames(10)
+    g.score = 500
     g._quit_to_menu()
-    assert g.menu_screen == "story_hub" and g.story.screen == "slots"
-    assert ss.slot_summary(3)["fallen"] is True
-    assert "ZED" in g.story.msg
+    assert g.menu_screen == "story_hub" and g.story.screen == "hub" and g.story.pane == "hangar"
+    assert g.story.slot_no == 3 and g.story.state["credits"] == 300
+    assert ss.slot_summary(3)["fallen"] is False
+    assert g.story.state["cleared"] == []
 
 
-def test_quitting_a_normal_mission_pays_the_penalty_and_returns_to_the_map(run):
+def test_quitting_a_normal_mission_changes_nothing_and_returns_to_the_hangar(run):
     g = run.game
     _start_mission(g, 1, credits=1000)
     run.frames(10)
+    g.score = 400                                         # points of the abandoned run are not kept
     g._quit_to_menu()
-    assert g.story.screen == "hub" and g.story.pane == "map" and g.story.slot_no == 1
-    assert g.story.state["credits"] == 800
-    assert ss.slot_summary(1)["fallen"] is False
+    assert g.story.screen == "hub" and g.story.pane == "hangar" and g.story.slot_no == 1
+    assert g.story.state["credits"] == 1000
+    assert g.story.state["cleared"] == [] and g.story.state["log"] == []
+    again = StoryHub()
+    again.open_slot(1)
+    assert again.state["credits"] == 1000
+
+
+def test_quitting_after_the_win_still_banks_the_mission(run):
+    g = run.game
+    _start_mission(g, 1, credits=10)
+    run.frames(5)
+    g.score = 150
+    g.stage_transition = "fly_up"
+    g._quit_to_menu()
+    assert g.story.state["credits"] == 160 and "ch1_sortie" in g.story.state["cleared"]
 
 
 def test_cleared_mission_still_banks_the_score(run):
@@ -363,3 +379,63 @@ def test_cleared_mission_still_banks_the_score(run):
     g.score = 150
     g._end_adventure(True)
     assert g.story.state["credits"] == 160 and "ch1_sortie" in g.story.state["cleared"]
+
+
+# ------------------------------------------------------------ hangar: the Phenix slot
+def _hub_in_hangar(slot=1):
+    ss.create_slot(slot, "NOVA", "normal")
+    hub = StoryHub()
+    hub.open_slot(slot)
+    return hub
+
+
+def test_the_second_hull_cannot_be_selected_in_act_1():
+    hub = _hub_in_hangar()
+    assert hub.pane == "hangar" and hub.zone == "slots"
+    hub.nav_h(1)                                          # right: goes to the next screen, not slot 2
+    assert hub.state["selected_slot"] == 0
+    assert hub.pane == "map"
+
+
+def test_a_bad_selected_slot_is_reset_when_the_hangar_opens():
+    st = ss.create_slot(1, "NOVA", "normal")
+    st["selected_slot"] = 1                               # hull not owned
+    ss.save_state(ss.story_path(1), st)
+    hub = StoryHub()
+    hub.open_slot(1)
+    assert hub.state["selected_slot"] == 0
+
+
+def test_the_second_hull_can_be_selected_once_owned():
+    st = ss.create_slot(1, "NOVA", "normal")
+    st["slots"][1]["owned"] = True                        # what the later acts will do
+    ss.save_state(ss.story_path(1), st)
+    hub = StoryHub()
+    hub.open_slot(1)
+    hub.nav_h(1)
+    assert hub.state["selected_slot"] == 1 and hub.pane == "hangar"
+
+
+def test_the_empty_second_hull_does_not_name_the_phenix():
+    import pygame
+    from i18n import t
+    pygame.font.init()
+    hub = _hub_in_hangar()
+    texts = []
+
+    def spy(surface, font, text, *a, **k):
+        texts.append(str(text))
+        return font.render(str(text), True, (255, 255, 255))
+
+    import story
+    real = story._text
+    story._text = spy
+    try:
+        surf = pygame.Surface((1280, 720))
+        font = pygame.font.SysFont("dejavusans,arial,sans", 24, bold=True)
+        hub._draw_hangar(surf, font, font, font)
+    finally:
+        story._text = real
+    shown = " ".join(texts).upper()
+    assert "SLOT 2" in shown and t("story_hull_empty") in texts
+    assert "PHENIX" not in shown and "PHOENIX" not in shown and "CHAPITRE" not in shown

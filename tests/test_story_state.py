@@ -84,9 +84,9 @@ def test_buy_needs_flag_credits_and_order():
     assert ss.upgrade_note(st, "dome_lat") == "story_need_dome"
     assert ss.upgrade_note(st, "wall_slow") is None    # no dome needed any more
     assert ss.upgrade_note(st, "wall_immune") == "story_need_prev"
-    st["credits"] = 399
-    assert ss.buy(st, "speed_60") is False and st["credits"] == 399
-    st["credits"] = 400
+    st["credits"] = 299
+    assert ss.buy(st, "speed_60") is False and st["credits"] == 299
+    st["credits"] = 300
     assert ss.buy(st, "speed_60") is True and st["credits"] == 0
     assert ss.buy(st, "no_such_upgrade") is False
 
@@ -292,3 +292,8 @@ def test_each_slot_has_its_own_file():
     paths = {ss.story_path(i) for i in range(1, ss.SLOT_COUNT + 1)}
     assert len(paths) == 3
     assert all(os.path.basename(p) == "story_%d.json" % (i + 1) for i, p in enumerate(sorted(paths)))
+
+
+def test_act1_workshop_prices():
+    assert [(row[0], row[2]) for row in ss.SHOP] == [
+        ("speed_60", 300), ("speed_80", 800), ("lives_2", 2000), ("wall_slow", 1000)]

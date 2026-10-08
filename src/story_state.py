@@ -573,9 +573,9 @@ def _st_wall_immune(slot):
 # `act` is the act whose workshop sells it. Only Act 1 is built so far: the dome comes with
 # its own series of quests (nothing sets "dome_online" yet), the rest is for Acts 2 and 3.
 UPGRADES = [
-    ("speed_60", "story_shop_speed60", 400, "ch1_speed", _up_speed_60, _st_speed_60, 1),
-    ("speed_80", "story_shop_speed80", 700, "ch1_speed", _up_speed_80, _st_speed_80, 1),
-    ("lives_2", "story_shop_lives2", 600, "ch1_life_2", _up_lives_2, _st_lives_2, 1),
+    ("speed_60", "story_shop_speed60", 300, "ch1_speed", _up_speed_60, _st_speed_60, 1),
+    ("speed_80", "story_shop_speed80", 800, "ch1_speed", _up_speed_80, _st_speed_80, 1),
+    ("lives_2", "story_shop_lives2", 2000, "ch1_life_2", _up_lives_2, _st_lives_2, 1),
     ("wall_slow", "story_shop_wall_slow", 1000, "ch1_wall", _up_wall_slow, _st_wall_slow, 1),
     ("speed_100", "story_shop_speed100", 1000, "ch3_open", _up_speed_100, _st_speed_100, 3),
     ("lives_3", "story_shop_lives3", 900, "ch3_open", _up_lives_3, _st_lives_3, 3),
