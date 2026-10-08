@@ -38,6 +38,7 @@ from settings import *
 from settings import stage_content, stage_speed_mult
 from player import Player, recolor_phenix_frames
 from enemy import EnemyFormation, BigBird, Enemy
+import invaders
 from invaders import InvaderFormation
 from boss import BossSaucer
 from explosion import Explosion, TeslaCoilFx
@@ -1752,6 +1753,7 @@ class Game:
     def _end_adventure(self, cleared):
         """Bank the run into the hangar and return to the mission map."""
         spec = getattr(self, "adventure", None) or {}
+        self.sounds.stop_sfx("saucer_pass", 150)
         score = int(getattr(self, "score", 0) or 0)
         story = getattr(self, "story", None)
         if story is not None:
@@ -1802,6 +1804,7 @@ class Game:
             self.formation = InvaderFormation(level=int(adv.get("level") or 1), speed_mult=mult)
             self.formation.sounds = self.sounds
             self.formation.font = self.font
+            self.sounds.prepare_invader_sfx(invaders.STEP_PITCHES, invaders.STEP_PITCH_GAP, invaders.SAUCER_PASS)
             self.boss_saucer = None
             return
         elif adv and adv.get("swarm"):
@@ -3414,6 +3417,7 @@ class Game:
 
     def _quit_to_menu(self):
         """Leave current run, return to main menu (keep settings)."""
+        self.sounds.stop_sfx("saucer_pass", 150)
         back_story = False
         toast = ""
         story_slot = None

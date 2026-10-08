@@ -46,6 +46,10 @@ SAUCER_Y = 88
 SAUCER_W, SAUCER_H = 52, 37
 SAUCER_HIT_W = 44                     # the width over which a shot counts as centred
 SAUCER_MIN, SAUCER_MAX = 500, 1000
+SAUCER_PASS = (BASE_WIDTH + 1.5 * SAUCER_W) / SAUCER_SPEED     # seconds the saucer takes to cross the screen
+STEP_PITCHES = 11                     # the step sound exists in this many pitches...
+STEP_PITCH_GAP = 0.025                # ...each this much higher (a fraction of the pitch) than the one before
+STEP_PITCH_PER_SPEED = 0.03           # a march twice as fast as the first one: 3 % higher
 
 _CACHE = {}
 
@@ -122,6 +126,14 @@ def saucer_image():
 def level_interval(level):
     """Seconds between two steps with the whole grid alive."""
     return max(MIN_INTERVAL, BASE_INTERVAL * LEVEL_INTERVAL ** (max(1, int(level)) - 1))
+
+
+def step_pitch_index(interval):
+    """Which pitch of the step sound for a march with `interval` seconds between two steps: the first pace of
+    level 1 is the plain sound, a faster march is very slightly higher (never more than a quarter higher)."""
+    speed = BASE_INTERVAL / max(0.001, float(interval))
+    k = round(STEP_PITCH_PER_SPEED * (speed - 1.0) / STEP_PITCH_GAP)
+    return max(0, min(STEP_PITCHES - 1, int(k)))
 
 
 def level_start_y(level):
@@ -312,6 +324,8 @@ class InvaderFormation:
             for e in self.enemies:
                 e.x += dx
         self.steps += 1
+        if self.sounds:
+            self.sounds.play("invader_step_%d" % step_pitch_index(self.interval()))
         if max(e.y + e.height / 2 for e in alive) >= INVASION_Y:
             self.invaded = True
 
@@ -346,6 +360,8 @@ class InvaderFormation:
             return 0
         pts = saucer_points(shot_x, m.x)
         m.kill()
+        if self.sounds:
+            self.sounds.stop_sfx("saucer_pass", 150)
         self.popups.append([m.x, m.y, str(pts), 0.0])
         return pts
 
@@ -392,6 +408,8 @@ class InvaderFormation:
             self.saucer_timer -= dt
             if self.saucer_timer <= 0 and len(self.living()) > 1:
                 self.mothership = Mothership(random.choice((-1, 1)))
+                if self.sounds:
+                    self.sounds.play("saucer_pass")
                 self.saucer_timer = random.uniform(*SAUCER_GAP)
 
     def draw(self, surface):

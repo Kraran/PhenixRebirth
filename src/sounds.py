@@ -440,6 +440,48 @@ class SoundManager:
             except Exception:
                 self._finish_fade()
 
+    # --- Space Invaders missions: sounds made from two short wavs ---
+    def prepare_invader_sfx(self, pitches, pitch_step, saucer_seconds):
+        """Build (once) the steps of the invaders, `pitches` copies each `pitch_step` higher than the one before,
+        and the passage of the saucer, the short saucer sound waved to last `saucer_seconds`."""
+        if not self.enabled:
+            return
+        key = (int(pitches), round(float(pitch_step), 4), round(float(saucer_seconds), 2))
+        if getattr(self, "_invader_sfx_key", None) == key:
+            return
+        try:
+            import sfx_synth
+            init = pygame.mixer.get_init()
+            if not init or init[1] != -16:
+                return
+            freq, _size, chans = init
+            chans = max(1, int(chans))
+            step, rate = sfx_synth.read_wav(os.path.join(SOUND_DIR, "invader_step.wav"))
+            for i in range(int(pitches)):
+                data = sfx_synth.resample(step, rate, freq, 1.0 + pitch_step * i)
+                snd = pygame.mixer.Sound(buffer=sfx_synth.to_pcm(data, chans))
+                snd.set_volume(1.0)
+                self.sounds["invader_step_%d" % i] = snd
+                self._base_volumes["invader_step_%d" % i] = 0.40
+            saucer, rate = sfx_synth.read_wav(os.path.join(SOUND_DIR, "saucer.wav"))
+            data = sfx_synth.undulating(saucer, rate, freq, float(saucer_seconds))
+            snd = pygame.mixer.Sound(buffer=sfx_synth.to_pcm(data, chans))
+            snd.set_volume(1.0)
+            self.sounds["saucer_pass"] = snd
+            self._base_volumes["saucer_pass"] = 0.50
+            self._invader_sfx_key = key
+        except Exception:
+            log_exc("sounds.prepare_invader_sfx")
+
+    def stop_sfx(self, name, fade_ms=200):
+        """Cut a long sound (the saucer) short, softly."""
+        snd = self.sounds.get(name)
+        if snd is not None:
+            try:
+                snd.fadeout(int(fade_ms))
+            except Exception:
+                log_exc("sounds.stop_sfx")
+
     def stop_music(self):
         """Fade out to silence (e.g. entering gameplay)."""
         self._loop_wait = 0.0

@@ -65,6 +65,8 @@ Current release: **v1.4.5**
   reaching the ship's line ends the run. The three missions are levels 1, 2, 3 (faster and lower each time);
   flown again as a whole series (to change colour again) they are levels 4, 5, 6, then 7, 8, 9, and so on.
   The 2nd and 3rd missions of a pass start one and two lines (grid rows) lower; the wings flap at a steady pace.
+  Sounds: a step sound for every march step (very slightly higher the faster the march) and the saucer sound,
+  waved to last as long as the saucer takes to cross the screen.
   Winning the third opens the paint shop in the Shield workshop for ONE change of colour (red, green, violet).
   The level is shown on the map, in the journal and on screen
 - Adventure, hangar: the two hulls are drawn like the ship select screen (portrait in a frame, gold frame and
