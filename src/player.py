@@ -460,6 +460,9 @@ class Player:
                     self.phenix_gauge = float(self.phenix_min_gauge)
                     self.combo_streak = 0
                 self.edge_timer += dt
+                if self.uses_shield and wall == "instant":
+                    # Adventure hangar: touching the edge kills at once.
+                    self.edge_timer = max(self.edge_timer, self.EDGE_KILL_TIME)
                 self.edge_flash = min(1.0, self.edge_timer / 0.25)
                 self.edge_flash = 1.0
                 if self.slowdown_timer <= 0:
@@ -503,7 +506,7 @@ class Player:
 
     def _check_edge_kill(self):
         wall = getattr(self, "adventure_wall", None)
-        shield_dies = self.uses_shield and wall == "instant"
+        shield_dies = self.uses_shield and wall in ("instant", "slow")
         if self.edge_timer >= self.EDGE_KILL_TIME and self.alive and not self.dying:
             if self.invulnerable <= 0 and not self.is_phenix and (not self.uses_shield or shield_dies):
                 self.hit()

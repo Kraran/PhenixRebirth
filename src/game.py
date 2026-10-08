@@ -1698,7 +1698,7 @@ class Game:
         self.player.pid = 1
         self.player.lives = int(loadout.get("lives") or 1)
         self.player.infinite_lives = False
-        pct = int(loadout.get("speed_pct") or 60)
+        pct = int(loadout.get("speed_pct") or 40)
         self.player.speed = PLAYER_SPEED * (pct / 100.0)
         dome = bool(loadout.get("dome"))
         self.player.adventure_dome = dome

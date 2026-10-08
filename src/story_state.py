@@ -6,9 +6,11 @@ screen: the default hangar, the mission list, the workshop upgrades, what a
 mission result changes, and how a save slot is read, migrated and written.
 `story.py` only draws these things and handles the menu input.
 
-Save file: one JSON per slot (story_1.json ... story_3.json), version 3.
+Save file: one JSON per slot (story_1.json ... story_3.json), version 4.
 Durations (dome time and recharge) are stored in SECONDS, so they do not
 depend on the frame rate. Version 2 files stored them in frames at 60 Hz.
+Version 4 is the Act 1 hangar: the Shield starts at 40 % speed with one life,
+no dome and deadly walls (see ACT_CAPS and UPGRADES).
 """
 import json
 import os
@@ -18,7 +20,7 @@ import unicodedata
 from safe_io import atomic_write_json, backup_unreadable
 from settings import user_data_dir
 
-SAVE_VERSION = 3
+SAVE_VERSION = 4
 SLOT_COUNT = 3
 MODES = ("normal", "veteran")
 NAME_MAX = 12
@@ -26,6 +28,12 @@ NAME_MAX = 12
 # Veteran: a failure is a permanent death.
 PENALTY_RATE = 0.20
 NAME_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- "
+
+# Speed steps (% of the arcade ship) and what each act allows the workshop to reach.
+SPEED_START = 40
+ACT_CAPS = {
+    1: {"speed": 80, "lives": 2},      # Act 1: about 80 % of the arcade ship, no dome
+}
 
 # Dome (Shield bubble): seconds. 2.0 s / 5.0 s is the arcade Shield.
 DOME_DUR_START = 1.0
@@ -47,7 +55,7 @@ MISSIONS = [
         "need": None,
         "content": 1,
         "speed": 1.0,
-        "unlock": ["ch1_sortie", "ch1_speed_80"],
+        "unlock": ["ch1_sortie", "ch1_speed"],
         "log": "story_log_sortie",
     },
     {
@@ -67,7 +75,7 @@ MISSIONS = [
         "need": "bestiary_s2",
         "content": 3,
         "speed": 1.0,
-        "unlock": ["bestiary_s3"],
+        "unlock": ["bestiary_s3", "ch1_wall"],
         "log": "story_log_best3",
     },
     {
@@ -87,7 +95,7 @@ MISSIONS = [
         "need": "bestiary_s4",
         "content": 1,
         "speed": 1.15,
-        "unlock": ["ch1_clear", "dome_online"],
+        "unlock": ["ch1_clear"],
         "log": "story_log_gate",
     },
     {
@@ -123,7 +131,7 @@ def default_state():
         "slots": [
             {
                 "id": "shield", "owned": True, "tint": "red",
-                "lives": 1, "speed": 60, "dome": False,
+                "lives": 1, "speed": SPEED_START, "dome": False,
                 "dome_dur": DOME_DUR_START, "dome_cd": DOME_CD_START,
                 "wall": "instant",
             },
@@ -146,6 +154,23 @@ def _num(value, default):
         return float(value)
     except (TypeError, ValueError):
         return default
+
+
+def _to_act1_hangar(sl):
+    """Version 3 -> 4 for one saved hull: the speed ladder moved down one step
+    (60/80/100 became 40/60/80), lives stop at 2, the dome is not part of Act 1 and
+    the "slow" wall (harmless) becomes the arcade rule."""
+    speed = int(_num(sl.get("speed"), 60))
+    if "speed" in sl:
+        sl["speed"] = {60: 40, 80: 60, 100: 80}.get(speed, max(SPEED_START, min(80, speed)))
+    if "lives" in sl:
+        sl["lives"] = max(1, min(2, int(_num(sl.get("lives"), 1))))
+    if sl.get("id") == "shield":
+        sl["dome"] = False
+        sl["dome_dur"] = DOME_DUR_START
+        sl["dome_cd"] = DOME_CD_START
+        if sl.get("wall") == "immune":
+            sl["wall"] = "slow"
 
 
 def migrate_state(data):
@@ -189,9 +214,18 @@ def migrate_state(data):
                     for key in ("dome_dur", "dome_cd"):
                         if key in sl:
                             sl[key] = _num(sl[key], 0.0) / 60.0
+                if old_version < 4:
+                    _to_act1_hangar(sl)
                 proto.update(sl)
             merged.append(proto)
         base["slots"] = merged
+    if old_version < 4:
+        flags = base["flags"]
+        if flags.pop("ch1_speed_80", False):
+            flags["ch1_speed"] = True
+        if flags.get("bestiary_s3"):
+            flags["ch1_wall"] = True
+        flags.pop("dome_online", None)
     base["version"] = SAVE_VERSION
     return base
 
@@ -367,11 +401,12 @@ def loadout(state):
         slots = state.get("slots") or []
         slot = next((s for s in slots if s.get("owned")), slot)
     sid = slot.get("id") if slot.get("id") in ("shield", "phoenix") else "shield"
+    fallback_speed = SPEED_START if sid == "shield" else 60
     return {
         "ship_id": sid,
         "tint": slot.get("tint") or ("red" if sid == "shield" else "argent"),
         "lives": max(1, int(_num(slot.get("lives"), 1) or 1)),
-        "speed_pct": max(40, min(100, int(_num(slot.get("speed"), 60) or 60))),
+        "speed_pct": max(SPEED_START, min(100, int(_num(slot.get("speed"), fallback_speed) or fallback_speed))),
         "dome": bool(slot.get("dome")),
         "dome_dur": _num(slot.get("dome_dur"), DOME_DUR_START) or DOME_DUR_START,
         "dome_cd": _num(slot.get("dome_cd"), DOME_CD_START) or DOME_CD_START,
@@ -409,12 +444,16 @@ def _step_to(slot, field, default, minimum, target):
     return True
 
 
+def _up_speed_60(slot):
+    return _step_to(slot, "speed", SPEED_START, _NO_MIN, 60)
+
+
 def _up_speed_80(slot):
-    return _step_to(slot, "speed", 60, _NO_MIN, 80)
+    return _step_to(slot, "speed", SPEED_START, 60, 80)
 
 
 def _up_speed_100(slot):
-    return _step_to(slot, "speed", 60, 80, 100)
+    return _step_to(slot, "speed", SPEED_START, 80, 100)
 
 
 def _up_lives_2(slot):
@@ -449,29 +488,38 @@ def _up_dome_lat(slot):
 
 
 def _up_wall_slow(slot):
-    if not slot.get("dome") or slot.get("wall") != "instant":
+    """Walls: touching the edge kills at once -> the arcade rule (slowdown, then death)."""
+    if slot.get("wall") != "instant":
         return False
     slot["wall"] = "slow"
     return True
 
 
 def _up_wall_immune(slot):
-    if not slot.get("dome") or slot.get("wall") != "slow":
+    if slot.get("wall") != "slow":
         return False
     slot["wall"] = "immune"
     return True
 
 
 def _speed(slot):
-    return int(_num(slot.get("speed"), 60))
+    return int(_num(slot.get("speed"), SPEED_START))
 
 
 def _lives(slot):
     return int(_num(slot.get("lives"), 1))
 
 
+def _st_speed_60(slot):
+    return "owned" if _speed(slot) >= 60 else None
+
+
 def _st_speed_80(slot):
-    return "owned" if _speed(slot) >= 80 else None
+    if _speed(slot) >= 80:
+        return "owned"
+    if _speed(slot) < 60:
+        return "need_prev"
+    return None
 
 
 def _st_speed_100(slot):
@@ -510,11 +558,7 @@ def _st_dome_lat(slot):
 
 
 def _st_wall_slow(slot):
-    if slot.get("wall") in ("slow", "immune"):
-        return "owned"
-    if not slot.get("dome"):
-        return "need_dome"
-    return None
+    return "owned" if slot.get("wall") in ("slow", "immune") else None
 
 
 def _st_wall_immune(slot):
@@ -525,20 +569,28 @@ def _st_wall_immune(slot):
     return None
 
 
-# id, i18n label, cost, flag required, apply(slot) -> bool, status(slot) -> str|None
+# id, i18n label, cost, flag required, apply(slot) -> bool, status(slot) -> str|None, act
+# `act` is the act whose workshop sells it. Only Act 1 is built so far: the dome comes with
+# its own series of quests (nothing sets "dome_online" yet), the rest is for Acts 2 and 3.
 UPGRADES = [
-    ("speed_80", "story_shop_speed80", 400, "ch1_speed_80", _up_speed_80, _st_speed_80),
-    ("speed_100", "story_shop_speed100", 700, "ch1_speed_80", _up_speed_100, _st_speed_100),
-    ("lives_2", "story_shop_lives2", 600, "ch1_life_2", _up_lives_2, _st_lives_2),
-    ("lives_3", "story_shop_lives3", 900, "ch1_life_2", _up_lives_3, _st_lives_3),
-    ("dome_dur", "story_shop_dome", 800, "dome_online", _up_dome_dur, _st_dome_dur),
-    ("dome_lat", "story_shop_latency", 800, "dome_online", _up_dome_lat, _st_dome_lat),
-    ("wall_slow", "story_shop_wall_slow", 1000, "dome_online", _up_wall_slow, _st_wall_slow),
-    ("wall_immune", "story_shop_wall_immune", 1400, "dome_online", _up_wall_immune, _st_wall_immune),
+    ("speed_60", "story_shop_speed60", 400, "ch1_speed", _up_speed_60, _st_speed_60, 1),
+    ("speed_80", "story_shop_speed80", 700, "ch1_speed", _up_speed_80, _st_speed_80, 1),
+    ("lives_2", "story_shop_lives2", 600, "ch1_life_2", _up_lives_2, _st_lives_2, 1),
+    ("wall_slow", "story_shop_wall_slow", 1000, "ch1_wall", _up_wall_slow, _st_wall_slow, 1),
+    ("speed_100", "story_shop_speed100", 1000, "ch3_open", _up_speed_100, _st_speed_100, 3),
+    ("lives_3", "story_shop_lives3", 900, "ch3_open", _up_lives_3, _st_lives_3, 3),
+    ("dome_dur", "story_shop_dome", 800, "dome_online", _up_dome_dur, _st_dome_dur, 2),
+    ("dome_lat", "story_shop_latency", 800, "dome_online", _up_dome_lat, _st_dome_lat, 2),
+    ("wall_immune", "story_shop_wall_immune", 1400, "ch3_open", _up_wall_immune, _st_wall_immune, 3),
 ]
 
-# id, i18n label, cost, flag required before the row is buyable
-SHOP = [(u[0], u[1], u[2], u[3]) for u in UPGRADES]
+# What the workshop shows in Act 1: id, i18n label, cost, flag required before it is buyable
+SHOP = [(u[0], u[1], u[2], u[3]) for u in UPGRADES if u[6] == 1]
+
+
+def act_caps(state):
+    """Highest speed and lives the workshop of the current act allows."""
+    return ACT_CAPS.get(int(_num(state.get("act"), 1)), ACT_CAPS[1])
 
 _STATUS_KEYS = {
     "owned": "story_owned",

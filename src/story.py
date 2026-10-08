@@ -609,12 +609,12 @@ class StoryHub:
         dome = bool(sl.get("dome"))
         dur = float(sl.get("dome_dur") or 0)
         cd = float(sl.get("dome_cd") or 5.0)
-        dome_val = t("story_offline")
+        dome_val = t("story_locked")
         if dome:
             dome_val = f"{dur:.1f}s / {cd:.0f}s"
         cells = [
-            (t("story_stat_lives"), f"{sl.get('lives', 1)}/3"),
-            (t("story_stat_speed"), f"{sl.get('speed', 60)}%"),
+            (t("story_stat_lives"), f"{sl.get('lives', 1)}/{ss.act_caps(self.state)['lives']}"),
+            (t("story_stat_speed"), f"{sl.get('speed', ss.SPEED_START)}%"),
             (t("story_stat_dome"), dome_val),
             (t("story_stat_wall"), t("story_wall_" + str(sl.get("wall", "instant")))),
         ]
@@ -624,7 +624,7 @@ class StoryHub:
             r = pygame.Rect(x + i * (w + 16), y, w, 76)
             pygame.draw.rect(surface, (16, 18, 28), r, border_radius=8)
             pygame.draw.rect(surface, (60, 70, 90), r, 1, border_radius=8)
-            col = (255, 90, 80) if (i == 2 and not dome) else (220, 220, 235)
+            col = (110, 115, 135) if (i == 2 and not dome) else (220, 220, 235)
             if not owned:
                 val = "—"
             _text(surface, small, lab, (150, 155, 175), r.y + 22, centerx=r.centerx)

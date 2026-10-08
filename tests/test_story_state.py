@@ -11,7 +11,7 @@ from i18n import t
 def _state(**flags):
     st = ss.default_state()
     st["credits"] = 100000
-    for name in ("ch1_speed_80", "ch1_life_2", "dome_online"):
+    for name in ("ch1_speed", "ch1_life_2", "ch1_wall", "ch3_open", "dome_online"):
         st["flags"][name] = flags.get(name, True)
     return st
 
@@ -24,7 +24,7 @@ def test_default_hangar_is_the_weak_shield():
     st = ss.default_state()
     lo = ss.loadout(st)
     assert lo["ship_id"] == "shield"
-    assert (lo["lives"], lo["speed_pct"], lo["dome"]) == (1, 60, False)
+    assert (lo["lives"], lo["speed_pct"], lo["dome"]) == (1, 40, False)
     assert (lo["dome_dur"], lo["dome_cd"]) == (1.0, 5.0)
     assert lo["wall"] == "instant"
     assert st["version"] == ss.SAVE_VERSION
@@ -37,18 +37,31 @@ def test_locked_phoenix_falls_back_to_shield():
     assert ss.loadout(st)["ship_id"] == "shield"
 
 
-def test_workshop_full_run_reaches_the_current_caps():
+def test_act1_workshop_reaches_80_percent_two_lives_and_the_slow_wall():
     st = _state()
-    for sid in ("speed_80", "speed_100", "lives_2", "lives_3", "dome_dur", "dome_dur",
-                "dome_dur", "dome_lat", "dome_lat", "wall_slow", "wall_immune"):
+    assert [row[0] for row in ss.SHOP] == ["speed_60", "speed_80", "lives_2", "wall_slow"]
+    for sid, *_ in ss.SHOP:
+        assert ss.buy(st, sid), sid
+    lo = ss.loadout(st)
+    assert (lo["lives"], lo["speed_pct"], lo["dome"], lo["wall"]) == (2, 80, False, "slow")
+    caps = ss.act_caps(st)
+    assert (caps["speed"], caps["lives"]) == (80, 2)
+    # everything the Act 1 workshop sells is bought: nothing more to buy
+    for sid, *_ in ss.SHOP:
+        assert ss.buy(st, sid) is False
+        assert ss.upgrade_note(st, sid) == "story_owned"
+    # the dome is NOT part of Act 1: it stays offline and unsold
+    assert st["slots"][0]["dome"] is False
+
+
+def test_later_acts_upgrades_finish_the_ship():
+    st = _state()
+    for sid in ("speed_60", "speed_80", "lives_2", "wall_slow", "speed_100", "lives_3",
+                "dome_dur", "dome_dur", "dome_dur", "dome_lat", "dome_lat", "wall_immune"):
         assert ss.buy(st, sid), sid
     lo = ss.loadout(st)
     assert (lo["lives"], lo["speed_pct"], lo["dome"]) == (3, 100, True)
     assert (lo["dome_dur"], lo["dome_cd"], lo["wall"]) == (2.0, 3.0, "immune")
-    # everything is bought: nothing more to buy
-    for sid, *_ in ss.SHOP:
-        assert ss.buy(st, sid) is False
-        assert ss.upgrade_note(st, sid) == "story_owned"
 
 
 def test_dome_steps_are_half_second_and_one_second():
@@ -60,32 +73,48 @@ def test_dome_steps_are_half_second_and_one_second():
 
 
 def test_buy_needs_flag_credits_and_order():
-    st = _state(ch1_speed_80=False)
-    assert ss.upgrade_note(st, "speed_80") == "story_locked"
-    assert ss.buy(st, "speed_80") is False
+    st = _state(ch1_speed=False)
+    assert ss.upgrade_note(st, "speed_60") == "story_locked"
+    assert ss.buy(st, "speed_60") is False
     st = _state()
+    assert ss.upgrade_note(st, "speed_80") == "story_need_prev"
+    assert ss.buy(st, "speed_80") is False             # 60 % first
     assert ss.upgrade_note(st, "speed_100") == "story_need_prev"
-    assert ss.buy(st, "speed_100") is False            # 80 % first
     assert ss.upgrade_note(st, "lives_3") == "story_need_prev"
     assert ss.upgrade_note(st, "dome_lat") == "story_need_dome"
-    assert ss.upgrade_note(st, "wall_slow") == "story_need_dome"
+    assert ss.upgrade_note(st, "wall_slow") is None    # no dome needed any more
     assert ss.upgrade_note(st, "wall_immune") == "story_need_prev"
     st["credits"] = 399
-    assert ss.buy(st, "speed_80") is False and st["credits"] == 399
+    assert ss.buy(st, "speed_60") is False and st["credits"] == 399
     st["credits"] = 400
-    assert ss.buy(st, "speed_80") is True and st["credits"] == 0
+    assert ss.buy(st, "speed_60") is True and st["credits"] == 0
     assert ss.buy(st, "no_such_upgrade") is False
+
+
+def test_each_act1_upgrade_waits_for_its_story_flag():
+    for sid, flag_name in (("speed_60", "ch1_speed"), ("lives_2", "ch1_life_2"), ("wall_slow", "ch1_wall")):
+        st = _state(**{flag_name: False})
+        assert ss.upgrade_note(st, sid) == "story_locked"
+        assert ss.buy(st, sid) is False
+
+
+def test_the_wall_upgrade_only_goes_instant_then_slow():
+    st = _state()
+    assert _ship(st)["wall"] == "instant"
+    assert ss.buy(st, "wall_slow") and _ship(st)["wall"] == "slow"
+    assert ss.buy(st, "wall_slow") is False
+    assert ss.buy(st, "wall_immune") and _ship(st)["wall"] == "immune"
 
 
 def test_buy_refuses_a_hull_that_is_not_owned():
     st = _state()
     st["selected_slot"] = 1                              # Phoenix, locked
-    assert ss.buy(st, "speed_80") is False
+    assert ss.buy(st, "speed_60") is False
 
 
 def test_note_price_row_has_no_note():
     st = _state()
-    assert ss.upgrade_note(st, "speed_80") is None
+    assert ss.upgrade_note(st, "speed_60") is None
 
 
 def test_clear_banks_points_and_unlocks():
@@ -93,7 +122,7 @@ def test_clear_banks_points_and_unlocks():
     res = ss.record_result(st, "ch1_sortie", 100, True)
     assert res["first"] is True and res["lost"] == 0 and res["fallen"] is False
     assert st["credits"] == 100
-    assert ss.flag(st, "ch1_speed_80") and st["cleared"] == ["ch1_sortie"]
+    assert ss.flag(st, "ch1_speed") and st["cleared"] == ["ch1_sortie"]
     # clearing again: points, but no second journal line
     assert ss.record_result(st, "ch1_sortie", 10, True)["first"] is False
     assert st["credits"] == 110 and len(st["log"]) == 1
@@ -105,7 +134,7 @@ def test_failure_in_normal_mode_gains_nothing_and_loses_20_percent():
     res = ss.record_result(st, "ch1_sortie", 60, False)
     assert res["cleared"] is False and res["lost"] == 100 and res["fallen"] is False
     assert st["credits"] == 400                           # the 60 points are not banked
-    assert not ss.flag(st, "ch1_speed_80") and st["cleared"] == [] and st["log"] == []
+    assert not ss.flag(st, "ch1_speed") and st["cleared"] == [] and st["log"] == []
 
 
 def test_penalty_is_a_fifth_of_the_credits():
@@ -169,21 +198,42 @@ def test_missions_open_and_playable():
 
 
 # ---------------------------------------------------------------- save files
-def test_v2_save_is_migrated_to_seconds_and_keeps_the_player_progress():
+def test_v2_save_is_migrated_to_seconds_then_to_the_act1_hangar():
     v2 = {
         "version": 2, "chapter": 1, "credits": 777,
         "flags": {"bestiary_s1": True, "ch1_speed_80": True},
         "cleared": ["ch1_sortie"], "log": ["old line"], "selected_slot": 0,
-        "slots": [{"id": "shield", "owned": True, "lives": 2, "speed": 80, "dome": True,
-                   "dome_dur": 90, "dome_cd": 240, "wall": "slow"}],
+        "slots": [{"id": "shield", "owned": True, "lives": 3, "speed": 80, "dome": True,
+                   "dome_dur": 90, "dome_cd": 240, "wall": "immune"}],
     }
     st = ss.migrate_state(v2)
-    assert st["version"] == 3 and st["act"] == 1 and st["mode"] == "normal"
+    assert st["version"] == ss.SAVE_VERSION and st["act"] == 1 and st["mode"] == "normal"
     assert st["credits"] == 777 and st["cleared"] == ["ch1_sortie"] and st["log"] == ["old line"]
-    assert _ship(st)["dome_dur"] == 1.5 and _ship(st)["dome_cd"] == 4.0
-    assert _ship(st)["lives"] == 2 and _ship(st)["wall"] == "slow"
+    ship = _ship(st)
+    # speed ladder 60/80/100 -> 40/60/80, lives stop at 2, the dome goes back offline
+    assert (ship["speed"], ship["lives"], ship["wall"]) == (60, 2, "slow")
+    assert (ship["dome"], ship["dome_dur"], ship["dome_cd"]) == (False, 1.0, 5.0)
     assert len(st["slots"]) == 1                          # same merge rule as before
-    assert ss.flag(st, "ch1_speed_80") and ss.flag(st, "bestiary_s1")
+    assert ss.flag(st, "ch1_speed") and ss.flag(st, "bestiary_s1")
+    assert "ch1_speed_80" not in st["flags"]
+
+
+def test_v3_save_moves_down_one_speed_step_and_keeps_the_wall_rule():
+    def v3(speed, wall):
+        return {"version": 3, "slots": [{"id": "shield", "owned": True, "speed": speed,
+                                         "lives": 1, "wall": wall}]}
+    assert [_ship(ss.migrate_state(v3(sp, "instant")))["speed"] for sp in (60, 80, 100)] == [40, 60, 80]
+    assert _ship(ss.migrate_state(v3(60, "instant")))["wall"] == "instant"
+    assert _ship(ss.migrate_state(v3(60, "slow")))["wall"] == "slow"
+
+
+def test_v3_flags_become_act1_flags():
+    st = ss.migrate_state({"version": 3, "flags": {"ch1_speed_80": True, "bestiary_s3": True,
+                                                   "dome_online": True}})
+    assert ss.flag(st, "ch1_speed") and ss.flag(st, "ch1_wall")
+    assert not ss.flag(st, "dome_online")
+    none = ss.migrate_state({"version": 3, "flags": {}})
+    assert not ss.flag(none, "ch1_speed") and not ss.flag(none, "ch1_wall")
 
 
 def test_v2_slot_without_dome_times_keeps_the_defaults():
@@ -193,11 +243,16 @@ def test_v2_slot_without_dome_times_keeps_the_defaults():
     assert _ship(st)["dome_dur"] == 1.0 and _ship(st)["dome_cd"] == 5.0
 
 
-def test_v3_save_is_not_converted_twice():
-    st = ss.default_state()
-    st["slots"][0].update(dome=True, dome_dur=1.5, dome_cd=4.0)
+def test_a_current_save_is_not_converted_twice():
+    st = _state()
+    ss.buy(st, "speed_60")
+    ss.buy(st, "speed_80")
+    st["slots"][0].update(dome=True, dome_dur=1.5, dome_cd=4.0)    # as the later dome quests will do
     again = ss.migrate_state(json.loads(json.dumps(st)))
+    assert again["slots"][0]["speed"] == 80
+    assert again["slots"][0]["dome"] is True
     assert again["slots"][0]["dome_dur"] == 1.5 and again["slots"][0]["dome_cd"] == 4.0
+    assert ss.flag(again, "ch1_speed")
 
 
 def test_migrate_ignores_garbage():
@@ -211,7 +266,7 @@ def test_damaged_numbers_do_not_crash_the_loadout():
     st = ss.default_state()
     st["slots"][0].update(lives="abc", speed=None, dome_dur="x", dome_cd=[], dome=True)
     lo = ss.loadout(st)
-    assert (lo["lives"], lo["speed_pct"], lo["dome_dur"], lo["dome_cd"]) == (1, 60, 1.0, 5.0)
+    assert (lo["lives"], lo["speed_pct"], lo["dome_dur"], lo["dome_cd"]) == (1, 40, 1.0, 5.0)
 
 
 def test_save_and_load_roundtrip(tmp_path):
