@@ -1,134 +1,29 @@
 """
 Story / Adventure hub — Hangar, Mission map, Mission log.
 
-Arcade loop never imports combat rules from here. This module owns the
-pre-run screens, story.json, chapter-1 mission list and hangar shop.
-Points earned in a mission are hangar credits.
+Arcade loop never imports combat rules from here. This module draws the
+pre-run screens and handles their input; the rules and the save data
+(hangar, shop, missions, story_N.json) live in story_state.py, which has no
+drawing code and is tested on its own. Points earned in a mission are
+hangar credits.
 """
-import json
-import os
 import pygame
-from safe_io import atomic_write_json, backup_unreadable
-from settings import BASE_WIDTH, BASE_HEIGHT, asset_path, user_data_dir
+from settings import BASE_WIDTH, BASE_HEIGHT, asset_path
 from i18n import t
 from errlog import log_exc
+import story_state as ss
+from story_state import MISSIONS, SHOP, log_text
 
 
 PANES = ("log", "hangar", "map")
-
-# id, i18n, cost, flag required before the row is buyable
-SHOP = [
-    ("speed_80", "story_shop_speed80", 400, "ch1_speed_80"),
-    ("speed_100", "story_shop_speed100", 700, "ch1_speed_80"),
-    ("lives_2", "story_shop_lives2", 600, "ch1_life_2"),
-    ("lives_3", "story_shop_lives3", 900, "ch1_life_2"),
-    ("dome_dur", "story_shop_dome", 800, "dome_online"),
-    ("dome_lat", "story_shop_latency", 800, "dome_online"),
-    ("wall_slow", "story_shop_wall_slow", 1000, "dome_online"),
-    ("wall_immune", "story_shop_wall_immune", 1400, "dome_online"),
-]
-
-# Chapter 1: main sorties are stage-1 birds only.
-# Other hulls are met (and unlocked) in Bestiary nodes.
-# Phoenix hull is not granted here — end of chapter 2.
-MISSIONS = [
-    {
-        "id": "ch1_sortie",
-        "title": "story_m_sortie",
-        "blurb": "story_m_sortie_b",
-        "need": None,
-        "content": 1,
-        "speed": 1.0,
-        "unlock": ["ch1_sortie", "ch1_speed_80"],
-        "log": "story_log_sortie",
-    },
-    {
-        "id": "best_s2",
-        "title": "story_m_best2",
-        "blurb": "story_m_best2_b",
-        "need": "ch1_sortie",
-        "content": 2,
-        "speed": 1.0,
-        "unlock": ["bestiary_s2", "ch1_life_2"],
-        "log": "story_log_best2",
-    },
-    {
-        "id": "best_s3",
-        "title": "story_m_best3",
-        "blurb": "story_m_best3_b",
-        "need": "bestiary_s2",
-        "content": 3,
-        "speed": 1.0,
-        "unlock": ["bestiary_s3"],
-        "log": "story_log_best3",
-    },
-    {
-        "id": "best_s4",
-        "title": "story_m_best4",
-        "blurb": "story_m_best4_b",
-        "need": "bestiary_s3",
-        "content": 4,
-        "speed": 1.0,
-        "unlock": ["bestiary_s4"],
-        "log": "story_log_best4",
-    },
-    {
-        "id": "ch1_gate",
-        "title": "story_m_gate",
-        "blurb": "story_m_gate_b",
-        "need": "bestiary_s4",
-        "content": 1,
-        "speed": 1.15,
-        "unlock": ["ch1_clear", "dome_online"],
-        "log": "story_log_gate",
-    },
-    {
-        "id": "ch2_tease",
-        "title": "story_m_ch2",
-        "blurb": "story_m_ch2_b",
-        "need": "ch1_clear",
-        "content": 0,
-        "speed": 1.0,
-        "unlock": [],
-        "log": "",
-        "playable": False,
-    },
-]
-
-
-def _story_path():
-    return os.path.join(user_data_dir(), "story.json")
-
-
-def default_state():
-    return {
-        "version": 2,
-        "chapter": 1,
-        "credits": 0,
-        "flags": {"bestiary_s1": True},
-        "cleared": [],
-        "slots": [
-            {
-                "id": "shield", "owned": True, "tint": "red",
-                "lives": 1, "speed": 60, "dome": False,
-                "dome_dur": 60, "dome_cd": 300, "wall": "instant",
-            },
-            {
-                "id": "phoenix", "owned": False, "tint": "argent",
-                "lives": 1, "speed": 60, "phenix": False,
-                "phenix_cap": 60, "wall": "instant",
-            },
-        ],
-        "selected_slot": 0,
-        "log": [],
-    }
 
 
 class StoryHub:
     """Three-pane hub. Left = log, center = hangar, right = map."""
 
-    def __init__(self):
-        self.state = default_state()
+    def __init__(self, slot=1):
+        self.slot_no = int(slot)
+        self.state = ss.default_state()
         self.load()
         self.pane = "hangar"
         self.zone = "slots"   # slots | shop
@@ -139,41 +34,13 @@ class StoryHub:
         self._loaded_img = False
 
     def load(self):
-        path = _story_path()
-        if not os.path.isfile(path):
-            return
-        try:
-            with open(path, encoding="utf-8") as f:
-                data = json.load(f)
-            if not isinstance(data, dict):
-                return
-            base = default_state()
-            for key in ("version", "chapter", "credits", "selected_slot"):
-                if key in data:
-                    base[key] = data[key]
-            flags = dict(base["flags"])
-            if isinstance(data.get("flags"), dict):
-                flags.update(data["flags"])
-            base["flags"] = flags
-            if isinstance(data.get("cleared"), list):
-                base["cleared"] = list(data["cleared"])
-            if isinstance(data.get("log"), list):
-                base["log"] = list(data["log"])
-            if isinstance(data.get("slots"), list) and data["slots"]:
-                merged = []
-                for i, sl in enumerate(data["slots"][:2]):
-                    proto = dict(base["slots"][i] if i < len(base["slots"]) else {})
-                    if isinstance(sl, dict):
-                        proto.update(sl)
-                    merged.append(proto)
-                base["slots"] = merged
-            self.state = base
-        except Exception:
-            backup_unreadable(path)
+        state = ss.load_state(ss.story_path(self.slot_no))
+        if state is not None:
+            self.state = state
 
     def save(self):
         try:
-            atomic_write_json(_story_path(), self.state)
+            ss.save_state(ss.story_path(self.slot_no), self.state)
         except Exception:
             log_exc("story.save")
 
@@ -195,32 +62,14 @@ class StoryHub:
                 self._ships[key] = None
 
     def flag(self, name):
-        return bool((self.state.get("flags") or {}).get(name))
+        return ss.flag(self.state, name)
 
     def _slot(self):
-        slots = self.state.get("slots") or []
-        i = int(self.state.get("selected_slot", 0))
-        if 0 <= i < len(slots):
-            return slots[i]
-        return None
+        return ss.selected_slot(self.state)
 
     def loadout(self):
         """Hull the mission actually launches. Locked Phoenix falls back to Shield."""
-        slot = self._slot() or {}
-        if not slot.get("owned"):
-            slots = self.state.get("slots") or []
-            slot = next((s for s in slots if s.get("owned")), slot)
-        sid = slot.get("id") if slot.get("id") in ("shield", "phoenix") else "shield"
-        return {
-            "ship_id": sid,
-            "tint": slot.get("tint") or ("red" if sid == "shield" else "argent"),
-            "lives": max(1, int(slot.get("lives") or 1)),
-            "speed_pct": max(40, min(100, int(slot.get("speed") or 60))),
-            "dome": bool(slot.get("dome")),
-            "dome_dur": int(slot.get("dome_dur") or 60),
-            "dome_cd": int(slot.get("dome_cd") or 300),
-            "wall": slot.get("wall") or "instant",
-        }
+        return ss.loadout(self.state)
 
     def _mission(self, index=None):
         i = self.map_index if index is None else index
@@ -229,19 +78,10 @@ class StoryHub:
         return None
 
     def mission_open(self, mission):
-        if not mission:
-            return False
-        need = mission.get("need")
-        if need and not self.flag(need):
-            return False
-        return True
+        return ss.mission_open(self.state, mission)
 
     def mission_playable(self, mission):
-        if not self.mission_open(mission):
-            return False
-        if mission.get("playable") is False or int(mission.get("content") or 0) <= 0:
-            return False
-        return True
+        return ss.mission_playable(self.state, mission)
 
     # --- input ---
     def nav_h(self, direction):
@@ -300,125 +140,24 @@ class StoryHub:
 
     def apply_result(self, mission_id, score, cleared):
         """Bank points. Unlock flags and log only on a clear."""
-        score = max(0, int(score or 0))
-        self.state["credits"] = int(self.state.get("credits", 0)) + score
-        mission = next((m for m in MISSIONS if m["id"] == mission_id), None)
-        if cleared and mission:
-            flags = self.state.setdefault("flags", {})
-            for name in mission.get("unlock") or []:
-                flags[name] = True
-            cleared_ids = self.state.setdefault("cleared", [])
-            first = mission_id not in cleared_ids
-            if first:
-                cleared_ids.append(mission_id)
-                line = t(mission.get("log") or "story_log_clear")
-                self.state.setdefault("log", []).append(line)
-            self.toast = t("story_clear").format(pts=score)
+        res = ss.record_result(self.state, mission_id, score, cleared)
+        if res["cleared"] and any(m["id"] == mission_id for m in MISSIONS):
+            self.toast = t("story_clear").format(pts=res["score"])
         else:
-            self.toast = t("story_fail").format(pts=score)
+            self.toast = t("story_fail").format(pts=res["score"])
         self.pane = "map"
         self.save()
 
     def _buy(self, row):
-        sid, _label, cost, need = row
-        flags = self.state.get("flags") or {}
-        if need and not flags.get(need):
+        if not ss.buy(self.state, row[0]):
             return False
-        slot = self._slot()
-        if slot is None or not slot.get("owned"):
-            return False
-        if int(self.state.get("credits", 0)) < cost:
-            return False
-        if not self._apply_upgrade(slot, sid):
-            return False
-        self.state["credits"] = int(self.state.get("credits", 0)) - cost
         self.save()
         return True
 
-    def _apply_upgrade(self, slot, sid):
-        speed = int(slot.get("speed", 60))
-        lives = int(slot.get("lives", 1))
-        if sid == "speed_80":
-            if speed >= 80:
-                return False
-            slot["speed"] = 80
-            return True
-        if sid == "speed_100":
-            if speed < 80 or speed >= 100:
-                return False
-            slot["speed"] = 100
-            return True
-        if sid == "lives_2":
-            if lives >= 2:
-                return False
-            slot["lives"] = 2
-            return True
-        if sid == "lives_3":
-            if lives < 2 or lives >= 3:
-                return False
-            slot["lives"] = 3
-            return True
-        if sid == "dome_dur":
-            if not slot.get("dome"):
-                slot["dome"] = True
-                slot["dome_dur"] = 60
-                slot["dome_cd"] = int(slot.get("dome_cd") or 300)
-                return True
-            dur = int(slot.get("dome_dur") or 60)
-            if dur >= 120:
-                return False
-            slot["dome_dur"] = min(120, dur + 30)
-            return True
-        if sid == "dome_lat":
-            if not slot.get("dome"):
-                return False
-            cd = int(slot.get("dome_cd") or 300)
-            if cd <= 180:
-                return False
-            slot["dome_cd"] = max(180, cd - 60)
-            return True
-        if sid == "wall_slow":
-            if not slot.get("dome") or slot.get("wall") != "instant":
-                return False
-            slot["wall"] = "slow"
-            return True
-        if sid == "wall_immune":
-            if not slot.get("dome") or slot.get("wall") != "slow":
-                return False
-            slot["wall"] = "immune"
-            return True
-        return False
-
     def _shop_extra(self, sid, cost, locked):
-        if locked:
-            return t("story_locked")
-        slot = self._slot() or {}
-        if sid == "speed_80" and int(slot.get("speed", 60)) >= 80:
-            return t("story_owned")
-        if sid == "speed_100" and int(slot.get("speed", 60)) >= 100:
-            return t("story_owned")
-        if sid == "speed_100" and int(slot.get("speed", 60)) < 80:
-            return t("story_need_prev")
-        if sid == "lives_2" and int(slot.get("lives", 1)) >= 2:
-            return t("story_owned")
-        if sid == "lives_3" and int(slot.get("lives", 1)) >= 3:
-            return t("story_owned")
-        if sid == "lives_3" and int(slot.get("lives", 1)) < 2:
-            return t("story_need_prev")
-        if sid == "dome_dur" and slot.get("dome") and int(slot.get("dome_dur") or 0) >= 120:
-            return t("story_owned")
-        if sid == "dome_lat" and not slot.get("dome"):
-            return t("story_need_dome")
-        if sid == "dome_lat" and int(slot.get("dome_cd") or 300) <= 180:
-            return t("story_owned")
-        if sid == "wall_slow" and slot.get("wall") in ("slow", "immune"):
-            return t("story_owned")
-        if sid == "wall_slow" and not slot.get("dome"):
-            return t("story_need_dome")
-        if sid == "wall_immune" and slot.get("wall") == "immune":
-            return t("story_owned")
-        if sid == "wall_immune" and slot.get("wall") != "slow":
-            return t("story_need_prev")
+        key = ss.upgrade_note(self.state, sid)
+        if key:
+            return t(key)
         return f"{cost} PTS"
 
     # --- draw ---
@@ -472,7 +211,7 @@ class StoryHub:
             return
         y = box.y + 16
         for line in log[-14:]:
-            s = small.render(str(line), True, (200, 200, 220))
+            s = small.render(log_text(line, t), True, (200, 200, 220))
             surface.blit(s, (box.x + 24, y))
             y += 26
 

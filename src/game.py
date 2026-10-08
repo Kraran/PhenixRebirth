@@ -1705,8 +1705,8 @@ class Game:
         self.player.adventure_wall = loadout.get("wall") or "instant"
         self.adventure["dome"] = dome
         if sid == "shield":
-            self.player.SHIELD_DURATION = max(0.4, int(loadout.get("dome_dur") or 60) / 60.0)
-            self.player.SHIELD_COOLDOWN = max(1.5, int(loadout.get("dome_cd") or 300) / 60.0)
+            self.player.SHIELD_DURATION = max(0.4, float(loadout.get("dome_dur") or 1.0))
+            self.player.SHIELD_COOLDOWN = max(1.5, float(loadout.get("dome_cd") or 5.0))
             if not dome:
                 self.player.phenix_gauge = 0.0
                 self.player.phenix_cooldown = 9999.0
