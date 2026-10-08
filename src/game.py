@@ -8,6 +8,7 @@ Play modes: solo, hot-seat (alternating), coop (simultaneous). Options cover
 controls, autofire, volumes, session audio mix, rumble, display, GPU present,
 VSync, refresh cap, bezels, FPS counter, CRT scanlines and language.
 Cheats on the high-score menu: LVL2–LVL5, LIVE, PHEN.
+v1.4.5 — 144 Hz option, smoother fullscreen, safer saves, errors.log.
 v1.4.4 — Adventure chapter 1 (Shield, broken dome, bestiary, hangar credits).
 Arcade loop is unchanged. Seasonal title, April gag, comet stay.
 

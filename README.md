@@ -1,6 +1,6 @@
 # Phenix Rebirth
 
-**Version 1.4.4**
+**Version 1.4.5**
 
 A modern, ultra-responsive PC remake of the classic arcade shooter **Phoenix** (1978 / 1980).
 
@@ -93,7 +93,7 @@ Persisted in `settings.json` (created at runtime, **not** shipped in the repo):
 - SFX & music volume, rumble, autofire
 - Language (13 locales)
 - FPS counter, scanlines OFF / 1 / 2 / 3
-- GPU render, VSync, refresh cap (60 / 75 / 120)
+- GPU render, VSync, refresh cap (60 / 75 / 120 / 144)
 - Bezel style (fullscreen ultrawide)
 - Reset high scores
 - Focused-option help panel on the Options screen

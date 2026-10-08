@@ -1,7 +1,7 @@
 # Roadmap — Phenix Rebirth
-Current release: **v1.4.4**
+Current release: **v1.4.5**
 
-## Unreleased (next version)
+## Done in 1.4.5
 
 - 144 Hz option (Options: 60 / 75 / 120 / 144) with an exact frame limiter
   (60 / 75 / 120 / 144 images per second instead of about 62 / 77 / 125 / 166)
