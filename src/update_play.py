@@ -300,7 +300,7 @@ def player_bullets_vs_enemies(game):
                     enemy.kill()
                     game._hitstop()
                     ship.destroy_bullet("valid", index=shot_i)
-                    game._add_score(ship, game._enemy_points(getattr(enemy, "stage", 3)))
+                    game._add_score(ship, game._enemy_kill_points(enemy))
                     game._note_bird_kill()
                     if getattr(enemy, "diving", False):
                         game._note_scalable("butcher")
@@ -315,7 +315,7 @@ def player_bullets_vs_enemies(game):
                     enemy.kill()
                     game._hitstop()
                     ship.destroy_bullet("valid", index=shot_i)
-                    game._add_score(ship, game._enemy_points(getattr(enemy, "stage", 3)))
+                    game._add_score(ship, game._enemy_kill_points(enemy))
                     game._note_bird_kill()
                     if getattr(enemy, "diving", False):
                         game._note_scalable("butcher")
@@ -330,7 +330,7 @@ def player_bullets_vs_enemies(game):
                     enemy.kill()
                     game._hitstop()
                     ship.destroy_bullet("valid", index=shot_i)
-                    game._add_score(ship, game._enemy_points(getattr(enemy, "stage", 1)))
+                    game._add_score(ship, game._enemy_kill_points(enemy))
                     game._note_bird_kill()
                     if getattr(enemy, "diving", False):
                         game._note_scalable("butcher")
@@ -448,7 +448,7 @@ def enemy_attacks_vs_players(game):
                 if ship.is_phenix:
                     game.shake_amount = max(game.shake_amount, 8.0)
                     if getattr(ship, "uses_shield", False):
-                        game._add_score(ship, game._enemy_points(getattr(enemy, "stage", 1)))
+                        game._add_score(ship, game._enemy_kill_points(enemy))
                         game._note_bird_kill()
                         if getattr(enemy, "diving", False):
                             game._note_scalable("butcher")

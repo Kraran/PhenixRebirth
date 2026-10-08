@@ -24,6 +24,10 @@ Current release: **v1.4.5**
   quantum anchor. The last sentence carries the pilot's name. Up / Down (or the pad) change the
   scroll speed smoothly, as in the credits. The journal always starts with "Watch the introduction
   again". French text first (other languages show the same text until translated)
+- Adventure Bestiary: a new screen left of the journal. Each enemy shows up once you have destroyed
+  one (picture), then at 3 (picture twice as big), 5 (animated), 10 (presentation text) and 20
+  (every such enemy is worth +10 points, the Veteran bonus of the arcade game). Enemies destroyed
+  count even when you lose a mission, but not when you leave one by choice
 
 ### Planned for 1.5.0 (Adventure, 3 acts)
 

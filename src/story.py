@@ -12,10 +12,11 @@ from settings import BASE_WIDTH, BASE_HEIGHT, asset_path
 from i18n import t, get_lang
 from errlog import log_exc
 import story_state as ss
+import bestiary_art
 from story_state import MISSIONS, SHOP, log_text
 
 
-PANES = ("log", "hangar", "map")
+PANES = ("bestiary", "log", "hangar", "map")
 
 
 def _cap_top(font, cy):
@@ -101,6 +102,8 @@ class StoryHub:
         self.intro_speed = 0.0         # current rising speed (px/s), eased
         self.intro_return = "hangar"   # pane to go back to when the intro ends
         self.log_index = 0             # cursor in the journal (0 = "watch the intro again")
+        self.best_index = 0            # cursor in the Bestiary list
+        self.anim_t = 0.0              # seconds, drives the Bestiary animation
         self._intro_bg = {}
         self._intro_blocks = {}
         self._intro_mask = None
@@ -144,6 +147,7 @@ class StoryHub:
 
     def update(self, dt, scroll=0):
         """Time passes. `scroll` is the speed control of the intro: +1 faster (Down), -1 back (Up)."""
+        self.anim_t += max(0.0, min(0.25, float(dt)))
         if self.screen != "intro":
             return
         dt = max(0.0, min(0.25, float(dt)))
@@ -394,6 +398,10 @@ class StoryHub:
         if self.pane == "log":
             self.log_index = max(0, min(len(self.log_entries()) - 1, self.log_index + direction))
             return
+        if self.pane == "bestiary":
+            n = len(ss.bestiary_entries(self.state))
+            self.best_index = max(0, min(max(0, n - 1), self.best_index + direction))
+            return
         if self.pane != "hangar":
             return
         if self.zone == "slots" and direction > 0:
@@ -433,9 +441,9 @@ class StoryHub:
         }
         return spec
 
-    def apply_result(self, mission_id, score, cleared):
+    def apply_result(self, mission_id, score, cleared, kills=None):
         """End of a mission: credits, penalty or fall (see story_state.record_result)."""
-        res = ss.record_result(self.state, mission_id, score, cleared)
+        res = ss.record_result(self.state, mission_id, score, cleared, kills)
         if res["cleared"]:
             self.toast = t("story_clear").format(pts=res["score"])
         elif res["fallen"]:
@@ -490,6 +498,7 @@ class StoryHub:
             "hangar": t("story_hangar"),
             "map": t("story_map"),
             "log": t("story_log"),
+            "bestiary": t("story_best"),
         }[self.pane]
         ts = medium.render(title, True, (255, 150, 70))
         surface.blit(ts, (BASE_WIDTH // 2 - ts.get_width() // 2, 18))
@@ -501,6 +510,8 @@ class StoryHub:
             self._draw_hangar(surface, font, medium, small)
         elif self.pane == "map":
             self._draw_map(surface, font, medium, small)
+        elif self.pane == "bestiary":
+            self._draw_bestiary(surface, font, medium, small)
         else:
             self._draw_log(surface, font, small)
 
@@ -508,10 +519,12 @@ class StoryHub:
             "hangar": "story_hint",
             "map": "story_hint_map",
             "log": "story_hint_log",
+            "bestiary": "story_hint_best",
         }[self.pane]
         cx = BASE_WIDTH // 2
         tabs = "  ".join(
             ("> " if p == self.pane else "  ") + t({
+                "bestiary": "story_tab_best",
                 "log": "story_tab_log",
                 "hangar": "story_tab_hangar",
                 "map": "story_tab_map",
@@ -758,6 +771,62 @@ class StoryHub:
                 col = (235, 235, 245) if focus else (200, 200, 220)
             _text(surface, small, ("> " if focus else "  ") + text, col, y, left=box.x + 24)
             y += step
+
+    def bestiary_picture(self, kind, count):
+        """The picture of an enemy met `count` times: small, then 2x, then animated (also 2x)."""
+        tiers = ss.best_tiers(count)
+        img = bestiary_art.animated(kind, self.anim_t) if tiers["anim"] else bestiary_art.still(kind)
+        if tiers["zoom"]:
+            img = pygame.transform.scale(img, (img.get_width() * 2, img.get_height() * 2))
+        return img
+
+    def _draw_bestiary(self, surface, font, medium, small):
+        """Left: the enemies met so far. Right: what the pilot has learned about the selected one."""
+        box = pygame.Rect(70, 78, BASE_WIDTH - 140, BASE_HEIGHT - 168)
+        pygame.draw.rect(surface, (16, 18, 28), box, border_radius=10)
+        pygame.draw.rect(surface, (70, 90, 130), box, 2, border_radius=10)
+        entries = ss.bestiary_entries(self.state)
+        if not entries:
+            _text(surface, font, t("story_best_empty"), (160, 170, 200), box.centery, centerx=box.centerx)
+            return
+        self.best_index = max(0, min(len(entries) - 1, self.best_index))
+
+        list_w = 340
+        y = box.y + 30
+        for i, (entry, count) in enumerate(entries):
+            focus = i == self.best_index
+            row = pygame.Rect(box.x + 12, y - 24, list_w, 48)
+            if focus:
+                pygame.draw.rect(surface, (40, 36, 20), row, border_radius=6)
+                pygame.draw.rect(surface, (255, 210, 80), row, 2, border_radius=6)
+            col = (255, 230, 140) if focus else (200, 200, 215)
+            _text(surface, small, ("> " if focus else "  ") + t(entry["name"]), col, y, left=row.x + 10)
+            y += 56
+        pygame.draw.line(surface, (60, 70, 100), (box.x + list_w + 24, box.y + 16),
+                         (box.x + list_w + 24, box.bottom - 16), 1)
+
+        entry, count = entries[self.best_index]
+        tiers = ss.best_tiers(count)
+        panel = pygame.Rect(box.x + list_w + 44, box.y + 16, box.w - list_w - 64, box.h - 32)
+        cx = panel.centerx
+
+        # picture: 1 kill = small, 3 = twice as big, 5 = animated
+        frame = pygame.Rect(panel.x, panel.y, panel.w, 210)
+        pygame.draw.rect(surface, (8, 10, 18), frame, border_radius=8)
+        pygame.draw.rect(surface, (50, 60, 90), frame, 1, border_radius=8)
+        img = self.bestiary_picture(entry["id"], count)
+        surface.blit(img, (frame.centerx - img.get_width() // 2, frame.centery - img.get_height() // 2))
+
+        _text(surface, medium, t(entry["name"]), (255, 170, 80), frame.bottom + 36, centerx=cx)
+        _text(surface, small, t("story_best_count").format(n=count), (150, 155, 180), frame.bottom + 76, centerx=cx)
+        line_y = frame.bottom + 116
+        if tiers["text"]:
+            for line in _wrap(small, t(entry["text"]), panel.w - 40):
+                _text(surface, small, line, (215, 218, 232), line_y, centerx=cx)
+                line_y += 36
+        if tiers["bonus"]:
+            _text(surface, small, t("story_best_bonus").format(pts=ss.BESTIARY_BONUS), (255, 215, 90),
+                  panel.bottom - 14, centerx=cx)
 
     def _draw_map(self, surface, font, medium, small):
         box = pygame.Rect(70, 78, BASE_WIDTH - 140, BASE_HEIGHT - 168)

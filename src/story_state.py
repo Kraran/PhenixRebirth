@@ -18,7 +18,7 @@ import time
 import unicodedata
 
 from safe_io import atomic_write_json, backup_unreadable
-from settings import user_data_dir
+from settings import user_data_dir, ENEMY_VETERAN_BONUS
 
 SAVE_VERSION = 4
 SLOT_COUNT = 3
@@ -112,6 +112,83 @@ MISSIONS = [
 ]
 
 
+# ---------------------------------------------------------------- bestiary
+# The enemies of the Adventure, in the order they are listed. `stage` is the content stage
+# that spawns them. An entry shows up in the Bestiary once the pilot has destroyed one.
+BESTIARY = [
+    {"id": "bird1", "stage": 1, "name": "story_b_bird1", "text": "story_b_bird1_t"},
+    {"id": "bird2", "stage": 2, "name": "story_b_bird2", "text": "story_b_bird2_t"},
+    {"id": "garg3", "stage": 3, "name": "story_b_garg3", "text": "story_b_garg3_t"},
+    {"id": "garg4", "stage": 4, "name": "story_b_garg4", "text": "story_b_garg4_t"},
+]
+# What each tier shows, by number of enemies of that kind destroyed.
+BEST_SEEN = 1        # the picture
+BEST_ZOOM = 3        # the picture twice as big
+BEST_ANIM = 5        # the picture animated
+BEST_TEXT = 10       # the presentation text
+BEST_BONUS = 20      # each such enemy is worth more points (same bonus as Veteran difficulty)
+BESTIARY_BONUS = ENEMY_VETERAN_BONUS
+
+
+def enemy_kind(stage):
+    """Bestiary id of an enemy spawned by content stage `stage`."""
+    stage = int(_num(stage, 1))
+    if stage >= 4:
+        return "garg4"
+    if stage == 3:
+        return "garg3"
+    return "bird2" if stage == 2 else "bird1"
+
+
+def encounters(state, kind):
+    """How many enemies of this kind the pilot has destroyed so far (saved total)."""
+    data = state.get("bestiary")
+    if not isinstance(data, dict):
+        return 0
+    return max(0, int(_num(data.get(kind), 0)))
+
+
+def best_tiers(count):
+    """What an entry shows after `count` enemies destroyed."""
+    count = int(_num(count, 0))
+    return {
+        "seen": count >= BEST_SEEN,
+        "zoom": count >= BEST_ZOOM,
+        "anim": count >= BEST_ANIM,
+        "text": count >= BEST_TEXT,
+        "bonus": count >= BEST_BONUS,
+    }
+
+
+def bestiary_entries(state):
+    """The entries the pilot has unlocked, as (entry, count), in listing order."""
+    out = []
+    for entry in BESTIARY:
+        n = encounters(state, entry["id"])
+        if n >= BEST_SEEN:
+            out.append((entry, n))
+    return out
+
+
+def kill_bonus(state, kind, run_kills):
+    """Extra points for a kill: BESTIARY_BONUS once 20 of that kind are down (saved + this run)."""
+    total = encounters(state, kind) + max(0, int(_num(run_kills, 0)))
+    return BESTIARY_BONUS if total >= BEST_BONUS else 0
+
+
+def record_kills(state, kills):
+    """Add the enemies destroyed during a mission ({kind: n}) to the Bestiary."""
+    if not isinstance(kills, dict):
+        return
+    data = state.get("bestiary")
+    if not isinstance(data, dict):
+        data = state["bestiary"] = {}
+    known = {e["id"] for e in BESTIARY}
+    for kind, n in kills.items():
+        if kind in known:
+            data[kind] = encounters(state, kind) + max(0, int(_num(n, 0)))
+
+
 # ---------------------------------------------------------------- save data
 def story_path(slot=1):
     return os.path.join(user_data_dir(), "story_%d.json" % int(slot))
@@ -143,6 +220,7 @@ def default_state():
         ],
         "selected_slot": 0,
         "log": [],
+        "bestiary": {},          # enemies destroyed so far, by kind
     }
 
 
@@ -203,6 +281,8 @@ def migrate_state(data):
         base["cleared"] = list(data["cleared"])
     if isinstance(data.get("log"), list):
         base["log"] = list(data["log"])
+    if isinstance(data.get("bestiary"), dict):
+        record_kills(base, {k: v for k, v in data["bestiary"].items()})
     if isinstance(data.get("slots"), list) and data["slots"]:
         merged = []
         for i, sl in enumerate(data["slots"][:2]):
@@ -678,18 +758,20 @@ def failure_penalty(credits):
     return int(credits * PENALTY_RATE + 0.5)
 
 
-def record_result(state, mission_id, score, cleared):
+def record_result(state, mission_id, score, cleared, kills=None):
     """Apply the end of a mission.
 
     Cleared: the score is banked as hangar credits, unlock flags and journal line.
     Failed, Normal mode: nothing is gained and 20 % of the credits held are lost.
     Failed, Veteran mode: the pilot falls, the save becomes a memorial.
+    `kills` ({kind: n}, the enemies destroyed) always goes into the Bestiary, win or lose.
 
     Returns {"score", "cleared", "first", "lost", "fallen"}. The journal stores a
     text KEY, not the translated text, so it follows the player's language.
     """
     score = max(0, int(score or 0))
     res = {"score": score, "cleared": bool(cleared), "first": False, "lost": 0, "fallen": False}
+    record_kills(state, kills)            # the enemies met count whatever the outcome
     if not cleared:
         if state.get("mode") == "veteran":
             state["fallen"] = True
