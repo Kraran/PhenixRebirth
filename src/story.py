@@ -329,15 +329,37 @@ class StoryHub:
         }
         return spec
 
-    def apply_result(self, mission_id, score, cleared):
-        """Bank points. Unlock flags and log only on a clear."""
-        res = ss.record_result(self.state, mission_id, score, cleared)
-        if res["cleared"] and any(m["id"] == mission_id for m in MISSIONS):
+    def apply_result(self, mission_id, score, cleared, target=0):
+        """End of a mission: credits, penalty or fall (see story_state.record_result)."""
+        res = ss.record_result(self.state, mission_id, score, cleared, target)
+        if res["cleared"]:
             self.toast = t("story_clear").format(pts=res["score"])
+        elif res["fallen"]:
+            self.toast = t("story_fell_msg").format(name=self.state.get("name") or "")
+        elif res["lost"]:
+            self.toast = t("story_fail_pen").format(pts=res["lost"])
         else:
-            self.toast = t("story_fail").format(pts=res["score"])
+            self.toast = t("story_fail_none")
         self.pane = "map"
         self.save()
+        if res["fallen"]:
+            self._show_fall()
+
+    def _show_fall(self):
+        """A fallen Veteran goes back to the slot list, where the save is now a memorial."""
+        msg = self.toast
+        self.open_slots()
+        self.msg = msg
+
+    def resume(self, slot_no, toast=""):
+        """Back from a mission in a new Game object: reload the slot from disk."""
+        self.open_slot(slot_no)
+        if self.state.get("fallen"):
+            self.toast = toast
+            self._show_fall()
+        else:
+            self.pane = "map"
+            self.toast = toast
 
     def _buy(self, row):
         if not ss.buy(self.state, row[0]):

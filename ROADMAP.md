@@ -12,13 +12,15 @@ Current release: **v1.4.5**
 - Adventure menus: texts are now centred inside their boxes (hangar, workshop, mission map, journal)
 - No more frozen explosion pieces on the menu after an adventure mission
 - Adventure start: slot list (3 saves with pilot name, act, date and mode), pilot name entry, Normal / Veteran choice
+- Adventure failure rules: no points for a failed mission, a penalty instead; Veteran mode has permanent death
 
 ### Planned for 1.5.0 (Adventure, 3 acts)
 
 - Done: 3 save slots (name, date, act, mode), name entry with keyboard or gamepad (on-screen
-  keyboard), Normal / Veteran choice, delete with confirmation. The Veteran rules themselves come with the failure rules
-- Failed mission: back to the workshop, no gain, a penalty that is higher when the score was low;
-  Veteran = permanent death
+  keyboard), Normal / Veteran choice, delete with confirmation
+- Done: failed mission = back to the workshop, no gain, and a penalty (half of the wave's best
+  score when you scored nothing, less as your score rises, credits never below 0);
+  Veteran = permanent death (the save becomes a memorial). Quitting a mission counts as a failure
 - Act 1: weak Shield upgraded to about 80 % of the arcade ship
 - Act 2: quests to obtain the Phenix (boss at the end) and first upgrades
 - Act 3: both ships up to 100 %, epic final quest

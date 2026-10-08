@@ -300,3 +300,76 @@ def test_mission_result_is_saved_in_the_open_slot(run):
     back = StoryHub()
     back.open_slot(1)
     assert back.state["credits"] == 777 and "ch1_sortie" in back.state["cleared"]
+
+
+# ------------------------------------------------------------ failure rules in the game
+def _start_mission(g, slot, name="NOVA", mode="normal", credits=0):
+    st = ss.create_slot(slot, name, mode)
+    st["credits"] = credits
+    ss.save_state(ss.story_path(slot), st)
+    g.story.open_slot(slot)
+    g.story.map_index = 0
+    g._begin_adventure(g.story._launch_selected())
+
+
+def test_mission_knows_its_best_score(run):
+    g = run.game
+    _start_mission(g, 1)
+    n = len(g.formation.enemies)
+    assert n > 0 and g.adventure["target"] == n * g._enemy_points(1)
+
+
+def test_failed_mission_in_normal_mode_pays_the_penalty(run):
+    g = run.game
+    _start_mission(g, 1, credits=1000)
+    g.score = 0
+    target = g.adventure["target"]
+    g._end_adventure(False)
+    assert g.menu_screen == "story_hub" and g.story.screen == "hub" and g.story.pane == "map"
+    lost = 1000 - g.story.state["credits"]
+    assert lost == ss.failure_penalty(0, target)
+    assert lost > 0
+    assert str(lost) in g.story.toast
+    again = StoryHub()
+    again.open_slot(1)
+    assert again.state["credits"] == 1000 - lost          # saved in the slot
+
+
+def test_failed_veteran_mission_ends_the_adventure(run):
+    g = run.game
+    _start_mission(g, 2, name="ZED", mode="veteran", credits=300)
+    g._end_adventure(False)
+    assert g.menu_screen == "story_hub" and g.story.screen == "slots"
+    assert "ZED" in g.story.msg
+    assert g.story.summaries[1]["fallen"] is True
+    g.story.sel = 1
+    g.story.confirm()                                     # a memorial cannot be reopened
+    assert g.story.screen == "slots" and g.story.msg
+
+
+def test_quitting_a_veteran_mission_counts_as_a_fall(run):
+    g = run.game
+    _start_mission(g, 3, name="ZED", mode="veteran")
+    run.frames(10)
+    g._quit_to_menu()
+    assert g.menu_screen == "story_hub" and g.story.screen == "slots"
+    assert ss.slot_summary(3)["fallen"] is True
+    assert "ZED" in g.story.msg
+
+
+def test_quitting_a_normal_mission_pays_the_penalty_and_returns_to_the_map(run):
+    g = run.game
+    _start_mission(g, 1, credits=1000)
+    run.frames(10)
+    g._quit_to_menu()
+    assert g.story.screen == "hub" and g.story.pane == "map" and g.story.slot_no == 1
+    assert g.story.state["credits"] < 1000
+    assert ss.slot_summary(1)["fallen"] is False
+
+
+def test_cleared_mission_still_banks_the_score(run):
+    g = run.game
+    _start_mission(g, 1, credits=10)
+    g.score = 150
+    g._end_adventure(True)
+    assert g.story.state["credits"] == 160 and "ch1_sortie" in g.story.state["cleared"]

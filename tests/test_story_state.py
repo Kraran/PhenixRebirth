@@ -88,18 +88,54 @@ def test_note_price_row_has_no_note():
     assert ss.upgrade_note(st, "speed_80") is None
 
 
-def test_result_banks_points_even_on_failure_but_unlocks_only_on_clear():
+def test_clear_banks_points_and_unlocks():
     st = ss.default_state()
-    res = ss.record_result(st, "ch1_sortie", 250, False)
-    assert res == {"score": 250, "cleared": False, "first": False}
-    assert st["credits"] == 250
-    assert not ss.flag(st, "ch1_speed_80") and st["cleared"] == [] and st["log"] == []
     res = ss.record_result(st, "ch1_sortie", 100, True)
-    assert res["first"] is True and st["credits"] == 350
+    assert res["first"] is True and res["lost"] == 0 and res["fallen"] is False
+    assert st["credits"] == 100
     assert ss.flag(st, "ch1_speed_80") and st["cleared"] == ["ch1_sortie"]
     # clearing again: points, but no second journal line
     assert ss.record_result(st, "ch1_sortie", 10, True)["first"] is False
-    assert len(st["log"]) == 1
+    assert st["credits"] == 110 and len(st["log"]) == 1
+
+
+def test_failure_in_normal_mode_gains_nothing_and_costs_a_penalty():
+    st = ss.default_state()
+    st["credits"] = 500
+    res = ss.record_result(st, "ch1_sortie", 60, False, target=240)
+    assert res["cleared"] is False and res["lost"] == 90 and res["fallen"] is False
+    assert st["credits"] == 410                           # the 60 points are not banked
+    assert not ss.flag(st, "ch1_speed_80") and st["cleared"] == [] and st["log"] == []
+
+
+def test_penalty_is_smaller_the_higher_the_score():
+    pens = [ss.failure_penalty(sc, 240) for sc in (0, 60, 120, 180, 240, 999)]
+    assert pens == [120, 90, 60, 30, 0, 0]
+    assert pens == sorted(pens, reverse=True)
+    assert ss.failure_penalty(50, 0) == 0 and ss.failure_penalty(50, None) == 0
+
+
+def test_credits_never_go_below_zero():
+    st = ss.default_state()
+    st["credits"] = 40
+    res = ss.record_result(st, "ch1_sortie", 0, False, target=240)
+    assert res["lost"] == 40 and st["credits"] == 0
+    res = ss.record_result(st, "ch1_sortie", 0, False, target=240)
+    assert res["lost"] == 0 and st["credits"] == 0
+
+
+def test_failure_in_veteran_mode_is_a_permanent_death():
+    st = ss.default_state()
+    st["mode"] = "veteran"
+    st["credits"] = 500
+    res = ss.record_result(st, "ch1_sortie", 100, False, target=240)
+    assert res["fallen"] is True and res["lost"] == 0
+    assert st["fallen"] is True and st["credits"] == 500   # nothing banked, nothing paid
+    # a veteran who clears the mission lives on
+    live = ss.default_state()
+    live["mode"] = "veteran"
+    ss.record_result(live, "ch1_sortie", 100, True)
+    assert live["fallen"] is False
 
 
 def test_journal_stores_a_key_and_follows_the_language():
