@@ -111,16 +111,38 @@ def frames_for(kind):
     return _CACHE[key]
 
 
-def saucer_image():
+SAUCER_BLINK = 0.25                   # seconds per position of the lights under the saucer
+
+
+def _saucer_frame(lit):
+    """The miniature saucer, bright on purpose: the old dark boss sprite was lost against the night sky (and
+    under the score), so a shot could kill it unseen. `lit` picks which of the two light sets is on."""
+    w, h = SAUCER_W, SAUCER_H
+    img = pygame.Surface((w, h), pygame.SRCALPHA)
+    halo = pygame.Surface((w, h), pygame.SRCALPHA)
+    pygame.draw.ellipse(halo, (255, 70, 90, 70), pygame.Rect(0, 8, w, h - 10))
+    img.blit(halo, (0, 0))
+    pygame.draw.ellipse(img, (255, 235, 240), pygame.Rect(w // 2 - 13, 2, 26, 22))              # glass dome
+    pygame.draw.ellipse(img, (255, 150, 170), pygame.Rect(w // 2 - 11, 4, 22, 18))
+    pygame.draw.ellipse(img, (255, 255, 255), pygame.Rect(w // 2 - 7, 6, 8, 6))                 # its shine
+    body = pygame.Rect(1, 14, w - 2, 18)
+    pygame.draw.ellipse(img, (255, 235, 240), body)                                             # light rim
+    pygame.draw.ellipse(img, (225, 40, 70), body.inflate(-4, -4))                               # red hull
+    pygame.draw.ellipse(img, (255, 110, 120), pygame.Rect(8, 16, w - 16, 5))                    # top gleam
+    for i in range(5):
+        on = (i + lit) % 2 == 0
+        pygame.draw.circle(img, (255, 235, 90) if on else (110, 20, 40), (9 + i * 8, 24), 2)
+    return img
+
+
+def saucer_frames():
     if "saucer" not in _CACHE:
-        raw = _load("boss_saucer.png")
-        if raw is None:
-            img = pygame.Surface((SAUCER_W, SAUCER_H), pygame.SRCALPHA)
-            pygame.draw.ellipse(img, (150, 60, 50), img.get_rect())
-        else:
-            img = pygame.transform.smoothscale(raw, (SAUCER_W, SAUCER_H))
-        _CACHE["saucer"] = img
+        _CACHE["saucer"] = (_saucer_frame(0), _saucer_frame(1))
     return _CACHE["saucer"]
+
+
+def saucer_image(frame=0):
+    return saucer_frames()[frame % 2]
 
 
 def level_interval(level):
@@ -217,6 +239,7 @@ class Mothership:
     def __init__(self, direction):
         self.image = saucer_image()
         self.width, self.height = self.image.get_size()
+        self.age = 0.0
         self.direction = 1 if direction >= 0 else -1
         self.x = -self.width / 2 if self.direction > 0 else BASE_WIDTH + self.width / 2
         self.y = float(SAUCER_Y)
@@ -232,6 +255,7 @@ class Mothership:
             if self.death_timer >= 0.3:
                 self.alive = False
             return
+        self.age += dt
         self.x += self.direction * SAUCER_SPEED * dt
         if (self.direction > 0 and self.x > BASE_WIDTH + self.width) or \
                 (self.direction < 0 and self.x < -self.width):
@@ -242,18 +266,22 @@ class Mothership:
             self.dying = True
             self.death_timer = 0.0
 
+    def on_screen(self):
+        """A shot only counts on a saucer the player can see: its centre is inside the screen."""
+        return 0 <= self.x <= BASE_WIDTH
+
     def get_hitbox(self):
-        if not self.alive or self.dying:
+        if not self.alive or self.dying or not self.on_screen():
             return pygame.Rect(0, 0, 0, 0)
         return pygame.Rect(int(self.x - SAUCER_HIT_W / 2), int(self.y - self.height / 2), SAUCER_HIT_W, self.height)
 
     def draw(self, surface):
         if not self.alive:
             return
-        img = self.image
+        img = saucer_image(int(self.age / SAUCER_BLINK))
         if self.dying:
+            img = img.copy()            # never touch the shared picture: its fade would stay on every later saucer
             if int(self.death_timer * 20) % 2 == 0:
-                img = img.copy()
                 img.fill((255, 255, 255, 0), special_flags=pygame.BLEND_RGB_ADD)
             img.set_alpha(max(0, int(255 * (1.0 - self.death_timer / 0.3))))
         surface.blit(img, (int(self.x - self.width / 2), int(self.y - self.height / 2)))

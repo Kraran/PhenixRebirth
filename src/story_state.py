@@ -212,7 +212,7 @@ MISSIONS = [
         "need": "phenix_s1",
         "content": 1,
         "swarm": True,
-        "swarm_screens": 1,          # one normal screen of each kind in all (the dome swarm has 3)
+        "swarm_screens": 1,          # one normal screen of each kind in all (the dome swarm has 2)
         "stage": 16,
         "speed": 1.0,
         "once": True,

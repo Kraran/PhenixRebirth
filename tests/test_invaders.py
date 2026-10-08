@@ -1,6 +1,7 @@
 """Paint missions as a Space Invaders clone: the grid, its march, the shots, the saucer, the invasion."""
 import random
 
+import pygame
 import pytest
 
 import invaders as inv
@@ -554,3 +555,85 @@ def test_the_grid_is_drawn_whole(run):
     surf.fill((0, 0, 0))
     f.draw(surf)
     assert surf.get_at((100, inv.SAUCER_Y))[:3] != (0, 0, 0)
+
+
+# ------------------------------------------------------------------ the saucer must be seen
+def _opaque(img):
+    px = pygame.image.tobytes(img, "RGBA")
+    return [(px[i], px[i + 1], px[i + 2]) for i in range(0, len(px), 4) if px[i + 3] > 200]
+
+
+@pytest.mark.parametrize("frame", [0, 1])
+def test_the_saucer_is_bright_against_the_night_sky(run, frame):
+    pix = _opaque(inv.saucer_image(frame))
+    assert len(pix) > 600                                               # a solid body, not a few dots
+    bright = sum(1 for r, g, b in pix if max(r, g, b) >= 200)
+    assert bright / len(pix) > 0.85                                     # the old dark sprite had almost none
+    assert sum(r for r, g, b in pix) / len(pix) > 220                   # and it is red-ish, not grey
+
+
+def test_the_lights_of_the_saucer_blink(run):
+    a, b = inv.saucer_image(0), inv.saucer_image(1)
+    assert pygame.image.tobytes(a, "RGBA") != pygame.image.tobytes(b, "RGBA")
+    m = inv.Mothership(1)
+    m.x = 640
+    seen = set()
+    for t in range(0, 40):
+        m.age = t * 0.05
+        surf = pygame.Surface((1280, 720), pygame.SRCALPHA)
+        m.draw(surf)
+        seen.add(pygame.image.tobytes(surf, "RGBA"))
+    assert len(seen) == 2
+
+
+def test_the_saucer_is_drawn_bright_on_the_real_screen(run):
+    g, f = _playing(run)
+    f.mothership = inv.Mothership(1)
+    f.mothership.x = 900
+    f.mothership.direction = 0
+    g.shake_amount = 0
+    g._draw_canvas()
+    box = pygame.Rect(900 - 26, inv.SAUCER_Y - 18, 52, 37)
+    bright = sum(1 for x in range(box.left, box.right) for y in range(box.top, box.bottom)
+                 if max(g.game_surface.get_at((x, y))[:3]) >= 200)
+    assert bright > 500
+
+
+def test_a_dying_saucer_never_spoils_the_picture_of_the_next_ones(run):
+    """The fade-out used to be set on the one shared picture: after the first kill every saucer stayed
+    nearly see-through (a sound with no saucer to be seen)."""
+    reference = pygame.image.tobytes(inv.saucer_image(0), "RGBA")
+    for age in (0.0, 0.04, 0.08, 0.12, 0.2, 0.29):
+        m = inv.Mothership(1)
+        m.x = 300
+        m.kill()
+        m.death_timer = age
+        m.draw(pygame.Surface((1280, 720), pygame.SRCALPHA))
+        assert inv.saucer_image(0).get_alpha() in (None, 255)
+        assert pygame.image.tobytes(inv.saucer_image(0), "RGBA") == reference
+    fresh = pygame.Surface((1280, 720), pygame.SRCALPHA)
+    n = inv.Mothership(-1)
+    n.x = 640
+    n.draw(fresh)
+    ref = pygame.Surface((1280, 720), pygame.SRCALPHA)
+    ref.blit(inv.saucer_image(0), (int(640 - inv.SAUCER_W / 2), int(inv.SAUCER_Y - inv.SAUCER_H / 2)))
+    assert pygame.image.tobytes(fresh, "RGBA") == pygame.image.tobytes(ref, "RGBA")
+
+
+@pytest.mark.parametrize("d, x, hit", [(1, -26.0, False), (1, -1.0, False), (1, 0.0, True), (1, 640.0, True),
+                                       (-1, 1280.0, True), (-1, 1281.0, False), (-1, 1306.0, False)])
+def test_the_saucer_cannot_be_hit_before_it_is_on_the_screen(run, d, x, hit):
+    m = inv.Mothership(d)
+    m.x = x
+    assert (m.get_hitbox().width > 0) is hit and m.on_screen() is hit
+
+
+def test_a_shot_at_the_edge_does_not_kill_a_saucer_still_outside(run):
+    g, f = _playing(run)
+    f.mothership = inv.Mothership(1)
+    f.mothership.direction = 0
+    f.mothership.x = -10.0                                           # its hit box would reach x = 12
+    g.score = 0
+    _shoot_at(g, 8, f.mothership.y + 30)
+    run.frames(30)
+    assert f.mothership is not None and f.mothership.alive and not f.mothership.dying and g.score == 0

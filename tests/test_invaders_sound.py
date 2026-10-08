@@ -342,3 +342,49 @@ def test_a_mission_with_no_invasion_has_no_voice_to_follow(run):
     g = run.game
     g.sounds.follow_voice("saucer_pass", x=None, alive=False)               # nothing playing: nothing happens
     run.frames(3)
+
+
+# ------------------------------------------------------------------ both ways, sound included
+@pytest.mark.parametrize("d", [1, -1])
+def test_the_saucer_and_its_sound_cross_the_screen_both_ways(run, d, monkeypatch):
+    g, f = _playing(run)
+    snd, fake, ch = _voice(run)
+    started = []
+
+    def play_voice(name, x=None):
+        started.append(x)
+        snd._voices[name] = ch
+
+    monkeypatch.setattr(snd, "play_voice", play_voice)
+    monkeypatch.setattr(inv.random, "choice", lambda seq: d)
+    f.saucer_timer = 0.0
+    f.update(1 / 60, 640)
+    m = f.mothership
+    assert m is not None and m.direction == d and len(started) == 1
+    assert started[0] == m.x and (m.x < 0 if d > 0 else m.x > 1280)             # it comes from the side it goes away from
+    pans = []
+    for _ in range(60 * 10):
+        g._sync_invader_voices()
+        if f.mothership is None:
+            break
+        if 0 <= m.x <= 1280:
+            l, r = ch.vols[-1]
+            pans.append(r - l)
+        f.update(1 / 60, 640)
+        f.step_timer = -999.0
+    assert f.mothership is None                                                   # it left on the other side
+    g._sync_invader_voices()
+    assert fake.faded                                                             # and the sound went with it
+    assert pans == sorted(pans) if d > 0 else pans == sorted(pans, reverse=True)
+    assert (pans[0] < 0 < pans[-1]) if d > 0 else (pans[0] > 0 > pans[-1])        # the sound goes the same way
+
+
+def test_both_ways_do_happen(run):
+    sides = set()
+    for _ in range(60):
+        f = _formation(run)
+        f.saucer_timer = 0.0
+        f.step_timer = -999.0
+        f.update(1 / 60, 640)
+        sides.add(f.mothership.direction)
+    assert sides == {1, -1}

@@ -89,7 +89,7 @@ def test_the_phenix_swarm_is_smaller_than_the_dome_swarm(run):
     big = EnemyFormation()
     big.spawn_swarm(1.0)
     assert sum(f.swarm["reserve"].values()) < sum(big.swarm["reserve"].values()) / 2
-    assert ss.mission_by_id("dome_5").get("swarm_screens") is None
+    assert ss.mission_by_id("dome_5").get("swarm_screens") is None              # Dôme V: the default, twice
 
 
 def test_the_launch_of_the_phenix_swarm_carries_its_size(run):

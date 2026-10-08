@@ -39,8 +39,9 @@ def test_the_swarm_shows_a_third_of_a_normal_screen_of_each_kind_and_the_rest_wa
     assert SWARM_NORMAL_COUNT == {1: 13, 2: 22, 3: 7, 4: 10}      # the counts of the normal screens
     assert _kinds(form) == ON_SCREEN == {k: round(n / 3) for k, n in SWARM_NORMAL_COUNT.items()}
     assert sum(_kinds(form).values()) == 16                       # three times fewer at once than before (48)
-    assert form.swarm["reserve"] == {1: 35, 2: 59, 3: 19, 4: 27}  # still three times the normal count in all
-    assert form.swarm_remaining() == 3 * (13 + 22 + 7 + 10) == 156
+    assert form.swarm["reserve"] == {1: 22, 2: 37, 3: 12, 4: 17}  # twice the normal count in all (26 / 44 / 14 / 20)
+    assert form.swarm_remaining() == 2 * (13 + 22 + 7 + 10) == 104
+    assert SWARM_SCREENS == 2
     assert all(isinstance(e, Enemy) for e in form.enemies if e.stage in (1, 2))
     assert all(isinstance(e, BigBird) for e in form.enemies if e.stage in (3, 4))
     assert {e.speed_mult for e in form.enemies} == {1.2}
@@ -291,6 +292,7 @@ def test_the_swarm_mission_starts_at_level_eleven_with_a_third_of_the_screens(ru
     g = _launch(run.game, "dome_5")
     assert g.stage == 11 and g.formation.swarm is not None
     assert _kinds(g.formation) == ON_SCREEN
+    assert g.formation.swarm_remaining() == 104                    # Dôme V: twice the normal count of each enemy
     assert {round(e.speed_mult, 6) for e in g.formation.enemies} == {round(1.2 * g.difficulty_speed_mult(), 6)}
 
 

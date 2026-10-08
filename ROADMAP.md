@@ -45,7 +45,7 @@ Current release: **v1.4.5**
   replaced by this series
 
 - Adventure, Dome V "the swarm": the four enemies at once (levels 11 to 14, speed of level 11), each kind
-  replaced as it falls, up to three times its normal count in all (39 / 66 / 21 / 30), but only a third of
+  replaced as it falls, up to twice its normal count in all (26 / 44 / 14 / 20 = 104), but only a third of
   a normal screen at once (4 / 7 / 2 / 3 on screen). It is won when all of them are down; a counter shows how many are left. It brings the dome online and opens the
   first dome upgrade in the workshop
 - Adventure, levels of the Bestiary sorties: each victory raises the mission one level (1, 2, 3...). Level 2
@@ -69,6 +69,9 @@ Current release: **v1.4.5**
   waved to last as long as the saucer takes to cross the screen. Both are in stereo (the saucer by its position,
   the steps by the centre of the group); the saucer sound is tied to the saucer on screen (paused with the game,
   cut as soon as the saucer is gone).
+  The saucer is a bright sprite of its own (red hull, light dome, blinking lights; the dark boss picture was lost
+  on the sky), it crosses either way at random, can only be hit once its centre is on screen, and its fade-out no
+  longer alters the shared picture (that made every later saucer see-through: a sound with nothing to see).
   Winning the third opens the paint shop in the Shield workshop for ONE change of colour (red, green, violet).
   The level is shown on the map, in the journal and on screen
 - Adventure, hangar: the two hulls are drawn like the ship select screen (portrait in a frame, gold frame and
