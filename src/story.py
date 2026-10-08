@@ -13,7 +13,7 @@ from i18n import t, get_lang
 from errlog import log_exc
 import story_state as ss
 import bestiary_art
-from story_state import MISSIONS, SHOP, log_text
+from story_state import MISSIONS, SHOP, log_text   # noqa: F401  (re-exported for the tests)
 
 
 PANES = ("bestiary", "log", "hangar", "map")
@@ -248,10 +248,19 @@ class StoryHub:
         """Hull the mission actually launches. Locked Phoenix falls back to Shield."""
         return ss.loadout(self.state)
 
+    def missions(self):
+        """The missions of the map: those of the current act (every one under the UNLK cheat)."""
+        return ss.visible_missions(self.state, self.cheat_unlock)
+
+    def shop_rows(self):
+        """Workshop rows of the selected hull."""
+        return ss.shop_for(self.state)
+
     def _mission(self, index=None):
         i = self.map_index if index is None else index
-        if 0 <= i < len(MISSIONS):
-            return MISSIONS[i]
+        rows = self.missions()
+        if 0 <= i < len(rows):
+            return rows[i]
         return None
 
     def mission_open(self, mission):
@@ -293,8 +302,12 @@ class StoryHub:
         """Secret code typed on the mission map. Returns True when UNLK was just completed."""
         self.cheat_buf = (self.cheat_buf + str(ch).upper())[-len(CHEAT_UNLOCK):]
         if self.cheat_buf == CHEAT_UNLOCK and not self.cheat_unlock:
+            here = self._mission()
             self.cheat_unlock = True
             self.cheat_buf = ""
+            if here is not None:                  # the list now holds every mission: stay on the same one
+                ids = [m["id"] for m in self.missions()]
+                self.map_index = ids.index(here["id"]) if here["id"] in ids else 0
             self.toast = t("story_cheat_on")
             return True
         return False
@@ -427,7 +440,7 @@ class StoryHub:
 
     def _hub_nav_v(self, direction):
         if self.pane == "map":
-            self.map_index = max(0, min(len(MISSIONS) - 1, self.map_index + direction))
+            self.map_index = max(0, min(len(self.missions()) - 1, self.map_index + direction))
             self.toast = ""
             return
         if self.pane == "log":
@@ -449,7 +462,7 @@ class StoryHub:
             self.zone = "slots"
             return
         if self.zone == "shop":
-            self.shop_index = max(0, min(len(SHOP) - 1, self.shop_index + direction))
+            self.shop_index = max(0, min(len(self.shop_rows()) - 1, self.shop_index + direction))
 
     def _hub_confirm(self):
         """Shop buy, or a launch spec dict when a map node is confirmed."""
@@ -460,7 +473,8 @@ class StoryHub:
             return None
         if self.pane != "hangar" or self.zone != "shop":
             return None
-        self._buy(SHOP[self.shop_index])
+        rows = self.shop_rows()
+        self._buy(rows[max(0, min(len(rows) - 1, self.shop_index))])
         return None
 
     def _launch_selected(self):
@@ -494,7 +508,10 @@ class StoryHub:
         if res["cleared"]:
             self.toast = t("story_clear").format(pts=res["score"])
             if res.get("act"):
+                self.map_index = 0                   # a new act has a new map
                 self.toast = t("story_act_start").format(n=res["act"])
+            if res.get("hull") == "phoenix":
+                self.toast = t("story_phenix_gift")
         elif res["fallen"]:
             self.toast = t("story_fell_msg").format(name=self.state.get("name") or "")
         elif res["lost"]:
@@ -898,17 +915,20 @@ class StoryHub:
         box = pygame.Rect(70, 78, BASE_WIDTH - 140, BASE_HEIGHT - 168)
         pygame.draw.rect(surface, (16, 18, 28), box, border_radius=10)
         pygame.draw.rect(surface, (70, 90, 130), box, 2, border_radius=10)
-        _text(surface, small, t("story_ch1"), (255, 170, 80), box.y + 28, left=box.x + 16)
+        act = int(self.state.get("act") or 1)
+        _text(surface, small, t("story_ch2") if act >= 2 and not self.cheat_unlock else t("story_ch1"),
+              (255, 170, 80), box.y + 28, left=box.x + 16)
         y = box.y + 52
         # the list scrolls: rows from `first` on, so that the focused one (taller) always fits
         room = box.bottom - 44 - y
-        focus_i = max(0, min(len(MISSIONS) - 1, self.map_index))
+        missions = self.missions()
+        focus_i = max(0, min(len(missions) - 1, self.map_index))
         first = 0
         while first < focus_i and sum(40 + 4 for _ in range(first, focus_i)) + 76 + 4 > room:
             first += 1
         if first > 0:
             _text(surface, small, "^", (180, 180, 200), box.y + 28, right=box.right - 20)
-        for i, mission in enumerate(MISSIONS):
+        for i, mission in enumerate(missions):
             if i < first:
                 continue
             if y + (76 if i == focus_i else 40) > box.bottom - 44:
@@ -989,10 +1009,13 @@ class StoryHub:
         dome_val = t("story_locked")
         if dome:
             dome_val = f"{dur:.1f}s / {cd:.0f}s"
+        phenix = sl.get("id") == "phoenix"
+        if phenix:
+            dome_val = f"{ss.phenix_cap(sl)}%"
         cells = [
             (t("story_stat_lives"), f"{sl.get('lives', 1)}/{ss.act_caps(self.state)['lives']}"),
             (t("story_stat_speed"), f"{sl.get('speed', ss.SPEED_START)}%"),
-            (t("story_stat_dome"), dome_val),
+            (t("story_stat_phenix") if phenix else t("story_stat_dome"), dome_val),
             (t("story_stat_wall"), t("story_wall_" + str(sl.get("wall", "instant")))),
         ]
         w = 220
@@ -1001,7 +1024,7 @@ class StoryHub:
             r = pygame.Rect(x + i * (w + 16), y, w, 76)
             pygame.draw.rect(surface, (16, 18, 28), r, border_radius=8)
             pygame.draw.rect(surface, (60, 70, 90), r, 1, border_radius=8)
-            col = (110, 115, 135) if (i == 2 and not dome) else (220, 220, 235)
+            col = (110, 115, 135) if (i == 2 and not dome and not phenix) else (220, 220, 235)
             if not owned:
                 val = "—"
             _text(surface, small, lab, (150, 155, 175), r.y + 22, centerx=r.centerx)
@@ -1014,10 +1037,11 @@ class StoryHub:
         _text(surface, small, t("story_workshop"), (255, 160, 70), box.y + 26, left=box.x + 16)
         flags = self.state.get("flags") or {}
         window = 7
-        start = max(0, min(self.shop_index - 3, len(SHOP) - window))
+        rows = self.shop_rows()
+        start = max(0, min(self.shop_index - 3, len(rows) - window))
         y = box.y + 46
-        for i in range(start, min(len(SHOP), start + window)):
-            sid, label, cost, need = SHOP[i]
+        for i in range(start, min(len(rows), start + window)):
+            sid, label, cost, need = rows[i]
             locked = bool(need) and not flags.get(need)
             focus = self.zone == "shop" and i == self.shop_index
             row = pygame.Rect(box.x + 12, y, box.w - 24, 38)

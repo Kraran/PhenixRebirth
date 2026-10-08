@@ -128,17 +128,17 @@ def test_clear_banks_points_and_unlocks():
     assert st["credits"] == 110 and len(st["log"]) == 1
 
 
-def test_failure_in_normal_mode_gains_nothing_and_loses_20_percent():
+def test_failure_in_normal_mode_gains_nothing_and_loses_5_percent():
     st = ss.default_state()
     st["credits"] = 500
     res = ss.record_result(st, "ch1_sortie", 60, False)
-    assert res["cleared"] is False and res["lost"] == 100 and res["fallen"] is False
-    assert st["credits"] == 400                           # the 60 points are not banked
+    assert res["cleared"] is False and res["lost"] == 25 and res["fallen"] is False
+    assert st["credits"] == 475                           # the 60 points are not banked
     assert not ss.flag(st, "ch1_speed") and st["cleared"] == [] and st["log"] == []
 
 
-def test_penalty_is_a_fifth_of_the_credits():
-    assert [ss.failure_penalty(c) for c in (0, 1, 2, 3, 10, 100, 1250, 999)] == [0, 0, 0, 1, 2, 20, 250, 200]
+def test_penalty_is_a_twentieth_of_the_credits():
+    assert [ss.failure_penalty(c) for c in (0, 1, 2, 3, 10, 100, 1250, 999)] == [0, 0, 0, 0, 1, 5, 63, 50]
     assert ss.failure_penalty(None) == 0 and ss.failure_penalty(-50) == 0
 
 
@@ -147,7 +147,7 @@ def test_the_score_of_a_failed_run_does_not_change_the_penalty():
     a["credits"] = b["credits"] = 1000
     ss.record_result(a, "ch1_sortie", 0, False)
     ss.record_result(b, "ch1_sortie", 9999, False)
-    assert a["credits"] == b["credits"] == 800
+    assert a["credits"] == b["credits"] == 950
 
 
 def test_credits_never_go_below_zero():

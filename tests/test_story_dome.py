@@ -202,7 +202,7 @@ def test_dying_in_a_later_wave_fails_the_whole_mission(run):
     g.adventure["kills"] = {"bird1": 7}
     g._end_adventure(False)
     st = g.story.state
-    assert "dome_1" not in st["cleared"] and st["credits"] == 800      # -20 %
+    assert "dome_1" not in st["cleared"] and st["credits"] == 950      # -5 %
     assert ss.mission_playable(st, ss.mission_by_id("dome_1"))        # it can be tried again
     assert ss.encounters(st, "bird1") == 7
 
