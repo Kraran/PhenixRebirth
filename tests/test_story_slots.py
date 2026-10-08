@@ -126,8 +126,12 @@ def test_new_adventure_flow_with_the_pad_only():
     assert hub.screen == "mode" and hub.new_name == "AB"
     hub.nav_h(1)                                         # veteran
     hub.confirm()
-    assert hub.screen == "hub" and hub.slot_no == 1
+    assert hub.screen == "intro" and hub.slot_no == 1    # the story comes first
     assert hub.state["name"] == "AB" and hub.state["mode"] == "veteran"
+    for _ in range(len(hub.intro_slides)):               # A on every slide
+        hub.update(0.25); hub.update(0.25)
+        hub.confirm()
+    assert hub.screen == "hub" and ss.intro_seen(hub.state)
     assert ss.slot_summary(1)["status"] == "ok"
 
 
@@ -150,13 +154,16 @@ def test_back_walks_up_one_screen_at_a_time():
     assert ss.slot_summary(1)["status"] == "missing"                          # nothing created
     assert hub.back() is False                                                # leave the Adventure
     hub.confirm(); _type(hub, "NOVA"); hub._submit_name(); hub.confirm()
-    assert hub.screen == "hub"
+    assert hub.screen == "intro"
+    assert hub.back() and hub.screen == "hub"                                 # B skips the intro
     assert hub.back() and hub.screen == "slots"                               # hangar -> slot list
     assert hub.summaries[0]["name"] == "NOVA"                                 # list refreshed
 
 
 def test_resume_delete_and_refusals():
-    ss.create_slot(1, "NOVA", "normal")
+    seen = ss.create_slot(1, "NOVA", "normal")
+    ss.mark_intro_seen(seen)
+    ss.save_state(ss.story_path(1), seen)
     done = ss.create_slot(2, "ZED", "veteran"); done["fallen"] = True
     ss.save_state(ss.story_path(2), done)
     with open(ss.story_path(3), "w", encoding="utf-8") as f:
@@ -237,8 +244,10 @@ def test_keyboard_typing_does_not_trigger_menu_keys(run):
     assert g.story.screen == "mode" and g.story.new_name == "WASDZQ"
     _key(pygame.K_RIGHT); run.frames(2)
     _key(pygame.K_RETURN, "\r"); run.frames(2)
-    assert g.story.screen == "hub" and g.story.state["mode"] == "veteran"
+    assert g.story.screen == "intro" and g.story.state["mode"] == "veteran"
     assert ss.slot_summary(1)["name"] == "WASDZQ"
+    _key(pygame.K_ESCAPE); run.frames(2)                  # Esc skips the story
+    assert g.story.screen == "hub" and g.menu_screen == "story_hub"
 
 
 def test_escape_and_pad_back_leave_step_by_step(run):
@@ -439,3 +448,370 @@ def test_the_empty_second_hull_does_not_name_the_phenix():
     shown = " ".join(texts).upper()
     assert "SLOT 2" in shown and t("story_hull_empty") in texts
     assert "PHENIX" not in shown and "PHOENIX" not in shown and "CHAPITRE" not in shown
+
+
+# ------------------------------------------------------------ the story intro
+def _new_hub(mode_index=0, name="NOVA"):
+    ss.delete_slot(1)                                      # always start from an empty first slot
+    hub = StoryHub()
+    hub.open_slots()
+    hub.confirm(); _type(hub, name); hub._submit_name()
+    hub.mode_index = mode_index
+    hub.confirm()
+    assert hub.screen == "intro"
+    return hub
+
+
+def _wait(hub, seconds):
+    for _ in range(int(seconds / 0.25) + 1):
+        hub.update(0.25)
+
+
+def test_intro_has_four_slides_and_veteran_changes_only_the_last():
+    normal = ss.intro_slides("normal")
+    veteran = ss.intro_slides("veteran")
+    assert len(normal) == len(veteran) == 4
+    assert normal[:3] == veteran[:3]
+    assert normal[3] != veteran[3]
+    assert normal[3] == ("kamarasov", "story_intro_4")
+    assert veteran[3] == ("kamarasov_veteran", "story_intro_4v")
+    assert ss.intro_slides("godlike") == normal            # unknown mode: the Normal story
+
+
+def test_every_intro_picture_exists():
+    import os
+    from settings import asset_path
+    for mode in ss.MODES:
+        for pic, _key in ss.intro_slides(mode):
+            assert os.path.isfile(asset_path("story", pic + ".jpg")), pic
+
+
+def test_the_last_sentence_carries_the_pilot_name():
+    from i18n import t
+    for mode, must in (("normal", "j'en suis maintenant certain"), ("veteran", "j'en suis maintenant certain")):
+        key = ss.INTRO_LAST[mode][1]
+        lines = ss.intro_lines(t, key, "ZED")
+        assert "{name}" not in " ".join(lines)
+        assert lines[-1].endswith("moi, ZED, " + must + "."), lines[-1]
+
+
+def test_the_veteran_story_tells_how_kamarasov_died_and_the_normal_one_does_not():
+    from i18n import t
+    vet = " ".join(ss.intro_lines(t, "story_intro_4v", "ZED"))
+    nor = " ".join(ss.intro_lines(t, "story_intro_4", "ZED"))
+    assert "drone espion" in vet and "peu d'espoir" in vet
+    assert "drone" not in nor and "L'espoir renaît" in nor
+
+
+def test_intro_runs_after_the_mode_choice_with_the_right_story():
+    normal = _new_hub(0)
+    assert normal.intro_slides[-1][0] == "kamarasov"
+    vet = _new_hub(1, name="ZED")
+    assert vet.intro_slides[-1][0] == "kamarasov_veteran"
+    assert ss.intro_seen(vet.state) is False               # not seen until it is over
+
+
+def test_a_key_right_at_the_start_does_not_skip_a_slide():
+    hub = _new_hub()
+    hub.confirm()                                          # the same press that left the mode screen
+    assert hub.intro_index == 0
+    _wait(hub, 0.5)
+    hub.confirm()
+    assert hub.intro_index == 1 and hub.intro_t == 0.0
+
+
+def test_action_button_walks_the_slides_then_opens_the_hangar():
+    hub = _new_hub()
+    seen = []
+    for _ in range(10):
+        if hub.screen != "intro":
+            break
+        seen.append(hub.intro_index)
+        _wait(hub, 0.5)
+        hub.confirm()
+    assert seen == [0, 1, 2, 3]
+    assert hub.screen == "hub" and hub.pane == "hangar"
+    assert ss.intro_seen(hub.state)
+    assert ss.load_state(ss.story_path(1))["flags"]["intro_seen"] is True      # saved
+
+
+def test_back_skips_the_whole_intro_at_once():
+    hub = _new_hub()
+    assert hub.back() is True and hub.screen == "hub" and ss.intro_seen(hub.state)
+
+
+def test_the_intro_is_shown_once_per_adventure():
+    hub = _new_hub()
+    hub.back()
+    hub.open_slots()
+    hub.sel = 0
+    hub.confirm()                                          # reopen the slot
+    assert hub.screen == "hub"
+
+
+def test_a_save_that_never_saw_the_intro_plays_it_when_opened():
+    ss.create_slot(2, "OLD", "normal")                     # as if the game was closed during the intro
+    hub = StoryHub()
+    hub.open_slots()
+    hub.sel = 1
+    hub.confirm()
+    assert hub.screen == "intro" and hub.slot_no == 2
+
+
+def test_back_from_a_mission_does_not_replay_the_intro(run):
+    g = run.game
+    st = ss.create_slot(1, "NOVA", "normal")
+    ss.save_state(ss.story_path(1), st)                    # intro not marked on purpose
+    g.story.open_slot(1)
+    g.story.map_index = 0
+    g._begin_adventure(g.story._launch_selected())
+    run.frames(5)
+    g._quit_to_menu()
+    assert g.story.screen == "hub"
+
+
+def test_intro_scroll_rises_then_rests(run):
+    hub = _new_hub()
+    block_h = 900
+    assert hub._intro_top(block_h) == 720                  # starts below the screen
+    _wait(hub, 1.0)
+    assert 600 < hub._intro_top(block_h) < 720             # now rising
+    _wait(hub, 60)
+    assert hub.intro_finished_scrolling(block_h)
+    assert hub._intro_top(block_h) == 720 - 96 - block_h   # last line rests above the hint
+    small = 200
+    _wait(hub, 60)
+    assert hub._intro_top(small) == (720 - small) // 2     # a short text rests in the middle
+
+
+def test_every_slide_draws_in_both_modes(run):
+    import pygame
+    g = run.game
+    font = g.font
+    for mode_index in (0, 1):
+        hub = _new_hub(mode_index)
+        for i in range(len(hub.intro_slides)):
+            hub.intro_index = i
+            hub.intro_t = 0.0
+            surf = pygame.Surface((1280, 720))
+            hub.draw(surf, font, g.medium_font, font)       # fading in
+            hub.intro_t = 500.0
+            hub.draw(surf, font, g.medium_font, font)       # resting
+            assert surf.get_at((640, 360)) != (0, 0, 0, 255) or surf.get_at((100, 100)) != (0, 0, 0, 255)
+
+
+def test_the_text_comes_from_the_language_table():
+    from i18n import t, T, LANG_CODES
+    for key in ("story_intro_1", "story_intro_2", "story_intro_3", "story_intro_4", "story_intro_4v",
+                "story_intro_hint", "story_intro_last"):
+        assert set(T[key]) == set(LANG_CODES) and t(key)
+
+
+def test_the_game_loop_advances_the_intro_clock(run):
+    g = run.game
+    _open_adventure(g)
+    ss.delete_slot(1)
+    g.story.open_slots()
+    _key(pygame.K_RETURN, "\r"); run.frames(2)
+    for ch, k in (("n", pygame.K_n), ("o", pygame.K_o)):
+        _key(k, ch)
+    run.frames(2)
+    _key(pygame.K_RETURN, "\r"); run.frames(2)            # name -> mode
+    _key(pygame.K_RETURN, "\r"); run.frames(2)            # mode -> intro
+    assert g.story.screen == "intro"
+    _key(pygame.K_RETURN, "\r"); run.frames(2)
+    assert g.story.intro_index == 0                       # too early: the first press is ignored
+    before = g.story.intro_t
+    run.frames(60)
+    assert g.story.intro_t > before                       # the game loop runs the clock
+    _key(pygame.K_RETURN, "\r"); run.frames(2)
+    assert g.story.intro_index == 1
+
+
+# ------------------------------------------------------ intro speed control (like the credits)
+def _speed_after(scroll, seconds=1.5, start_wait=1.0):
+    hub = _new_hub()
+    for _ in range(int(start_wait / 0.05)):
+        hub.update(0.05)
+    pos0 = hub.intro_pos
+    for _ in range(int(seconds / 0.05)):
+        hub.update(0.05, scroll)
+    return hub, hub.intro_pos - pos0
+
+
+def test_down_makes_the_text_rise_faster_and_up_slows_or_reverses_it():
+    _h, normal = _speed_after(0)
+    _h, fast = _speed_after(+1)
+    _h, back = _speed_after(-1)
+    assert fast > normal * 2.0
+    assert back < 0 < normal                                # Up: the text goes back down
+
+
+def test_speed_changes_smoothly_not_in_one_jump():
+    hub = _new_hub()
+    for _ in range(40):
+        hub.update(0.05)                                    # normal speed reached
+    base = hub.intro_speed
+    hub.update(0.016, +1)
+    assert base < hub.intro_speed < 150.0                   # first frame: only a small step
+    for _ in range(100):
+        hub.update(0.016, +1)
+    assert abs(hub.intro_speed - 150.0) < 2.0               # holding Down reaches the fast speed
+    for _ in range(200):
+        hub.update(0.016, 0)
+    assert abs(hub.intro_speed - 46.0) < 2.0                # released: back to the normal speed
+
+
+def test_the_text_never_goes_below_its_start_nor_past_its_resting_place():
+    hub = _new_hub()
+    for _ in range(100):
+        hub.update(0.05, -1)                                # Up at the very start
+    assert hub.intro_pos == 0.0 and hub.intro_speed >= 0.0
+    hub._intro_limit = 500.0                                # as the drawing sets it for a text
+    for _ in range(400):
+        hub.update(0.05, +1)
+    assert hub.intro_pos == 500.0
+    hub.update(0.05, -1)
+    assert hub.intro_pos < 500.0                            # and it can go back at once
+
+
+def test_a_new_slide_starts_again_from_the_bottom():
+    hub = _new_hub()
+    for _ in range(100):
+        hub.update(0.05, +1)
+    assert hub.intro_pos > 0
+    hub.confirm()
+    assert hub.intro_index == 1 and hub.intro_pos == 0.0 and hub.intro_speed == 0.0
+
+
+def test_drawing_sets_the_limit_and_the_text_stops_at_rest(run):
+    import pygame
+    g = run.game
+    hub = _new_hub()
+    surf = pygame.Surface((1280, 720))
+    hub.draw(surf, g.font, g.medium_font, g.font)
+    assert hub._intro_limit is not None
+    for _ in range(2000):
+        hub.update(0.05, +1)
+    hub.draw(surf, g.font, g.medium_font, g.font)
+    block_h = hub._intro_block(g.font)[1]
+    assert hub.intro_finished_scrolling(block_h)
+    assert hub.intro_pos == hub._intro_limit
+
+
+def test_the_game_loop_feeds_the_speed_keys(run):
+    g = run.game
+    _open_adventure(g)
+    ss.delete_slot(1)
+    g.story.open_slots()
+    _key(pygame.K_RETURN, "\r"); run.frames(2)
+    _key(pygame.K_n, "n"); run.frames(2)
+    _key(pygame.K_RETURN, "\r"); run.frames(2)
+    _key(pygame.K_RETURN, "\r"); run.frames(2)
+    assert g.story.screen == "intro"
+    run.frames(70)
+    p0 = g.story.intro_pos
+    run.frames(60)
+    normal = g.story.intro_pos - p0
+    g._credits_scroll_axis = lambda: -1                    # Down held, as in the credits
+    p1 = g.story.intro_pos
+    run.frames(60)
+    fast = g.story.intro_pos - p1
+    assert fast > normal * 1.5
+    g._credits_scroll_axis = lambda: 1                     # Up held
+    p2 = g.story.intro_pos
+    run.frames(60)
+    assert g.story.intro_pos < p2
+
+
+# --------------------------------------------------------------- journal: watch the intro again
+def _hub_in_log(mode="normal", log=()):
+    st = ss.create_slot(1, "NOVA", mode)
+    ss.mark_intro_seen(st)
+    st["log"] = list(log)
+    ss.save_state(ss.story_path(1), st)
+    hub = StoryHub()
+    hub.open_slot(1)
+    hub.pane = "log"
+    return hub
+
+
+def test_the_journal_starts_with_the_intro_entry_even_when_nothing_happened():
+    hub = _hub_in_log()
+    entries = hub.log_entries()
+    assert len(entries) == 1 and entries[0] == {"intro": True}
+    hub = _hub_in_log(log=[{"key": "story_log_sortie"}, "old line"])
+    entries = hub.log_entries()
+    assert entries[0] == {"intro": True} and entries[1:] == [{"key": "story_log_sortie"}, "old line"]
+
+
+def test_new_journal_lines_come_after_the_intro_entry():
+    st = ss.create_slot(1, "NOVA", "normal")
+    ss.record_result(st, "ch1_sortie", 100, True)
+    hub = StoryHub()
+    hub.state = st
+    assert hub.log_entries()[0] == {"intro": True} and len(hub.log_entries()) == 2
+
+
+def test_the_cursor_moves_in_the_journal_and_stays_inside():
+    hub = _hub_in_log(log=[{"key": "story_log_sortie"}, {"key": "story_log_best2"}])
+    assert hub.log_index == 0
+    hub.nav_v(-1)
+    assert hub.log_index == 0
+    for _ in range(10):
+        hub.nav_v(1)
+    assert hub.log_index == 2
+
+
+def test_confirm_on_the_first_entry_replays_the_intro_then_returns_to_the_journal():
+    hub = _hub_in_log()
+    assert hub.confirm() is None
+    assert hub.screen == "intro" and hub.intro_index == 0
+    for _ in range(len(hub.intro_slides)):
+        _wait(hub, 0.5)
+        hub.confirm()
+    assert hub.screen == "hub" and hub.pane == "log"
+
+
+def test_skipping_a_replay_also_returns_to_the_journal():
+    hub = _hub_in_log()
+    hub.confirm()
+    assert hub.back() and hub.screen == "hub" and hub.pane == "log"
+
+
+def test_confirm_on_another_journal_line_does_nothing():
+    hub = _hub_in_log(log=[{"key": "story_log_sortie"}])
+    hub.nav_v(1)
+    hub.confirm()
+    assert hub.screen == "hub" and hub.pane == "log"
+
+
+def test_replay_uses_the_story_of_the_mode():
+    hub = _hub_in_log("veteran")
+    hub.confirm()
+    assert hub.intro_slides[-1][0] == "kamarasov_veteran"
+    hub = _hub_in_log("normal")
+    hub.confirm()
+    assert hub.intro_slides[-1][0] == "kamarasov"
+
+
+def test_a_new_intro_afterwards_goes_to_the_hangar_again():
+    hub = _hub_in_log()
+    hub.confirm(); hub.back()
+    assert hub.pane == "log"
+    hub.pane = "hangar"
+    hub.start_intro()
+    hub.back()
+    assert hub.pane == "hangar"
+
+
+def test_the_journal_draws_with_many_lines(run):
+    import pygame
+    g = run.game
+    hub = _hub_in_log(log=[{"key": "story_log_sortie"}] * 30)
+    for _ in range(25):
+        hub.nav_v(1)
+    surf = pygame.Surface((1280, 720))
+    hub.draw(surf, g.font, g.medium_font, g.font)
+    hub.log_index = 0
+    hub.draw(surf, g.font, g.medium_font, g.font)
