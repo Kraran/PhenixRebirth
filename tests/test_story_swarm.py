@@ -324,7 +324,7 @@ def test_dying_in_the_swarm_fails_it(run):
     g = _launch(run.game, "dome_5")
     g.story.state["credits"] = 500
     g._end_adventure(False)
-    assert "dome_5" not in g.story.state["cleared"] and g.story.state["credits"] == 400
+    assert "dome_5" not in g.story.state["cleared"] and g.story.state["credits"] == 475
     assert not ss.flag(g.story.state, "dome_online")
 
 
@@ -379,7 +379,7 @@ def test_the_mission_map_always_shows_the_selected_mission(run):
     from i18n import t
     hub = _open(bestiary_s4=True)
     hub.pane = "map"
-    assert len(ss.MISSIONS) >= 11
+    assert len(hub.missions()) >= 11
     seen = []
     real = story._text
 
@@ -390,14 +390,14 @@ def test_the_mission_map_always_shows_the_selected_mission(run):
     story._text = spy
     g = run.game
     try:
-        for i, m in enumerate(ss.MISSIONS):
+        for i, m in enumerate(hub.missions()):
             hub.map_index = i
             seen.clear()
             hub.draw(pygame.Surface((1280, 720)), g.font, g.medium_font, g.font)
             assert any(t(m["title"]) in s for s in seen), m["id"]
             if i == 0:
                 assert "^" not in seen and "v" in seen        # more below
-            if i == len(ss.MISSIONS) - 1:
+            if i == len(hub.missions()) - 1:
                 assert "^" in seen and "v" not in seen        # more above
     finally:
         story._text = real
@@ -417,7 +417,7 @@ def test_the_selected_row_never_leaves_the_frame(run):
     story._text_fit = spy
     g = run.game
     try:
-        for i in range(len(ss.MISSIONS)):
+        for i in range(len(hub.missions())):
             hub.map_index = i
             ys.clear()
             hub.draw(pygame.Surface((1280, 720)), g.font, g.medium_font, g.font)

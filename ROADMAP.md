@@ -12,7 +12,7 @@ Current release: **v1.4.5**
 - Adventure menus: texts are now centred inside their boxes (hangar, workshop, mission map, journal)
 - No more frozen explosion pieces on the menu after an adventure mission
 - Adventure start: slot list (3 saves with pilot name, act, date and mode), pilot name entry, Normal / Veteran choice
-- Adventure failure rules: a failed mission (death) gives no points and costs 20 % of your points; Veteran mode has permanent death. Quitting a mission by choice changes nothing
+- Adventure failure rules: a failed mission (death) gives no points and costs 5 % of your points; Veteran mode has permanent death. Quitting a mission by choice changes nothing
 - Act 1 hangar: the Shield starts slow (40 % speed), with one life, no dome, and dies the moment
   it touches the screen edge. The workshop sells speed 60 % then 80 %, a second life, and the arcade
   edge rule (slowdown, then death if you stay too long). The dome becomes a series of quests (Act 2).
@@ -51,6 +51,12 @@ Current release: **v1.4.5**
 - Adventure, levels of the Bestiary sorties: each victory raises the mission one level (1, 2, 3...). Level 2
   flies the same enemies as arcade level +5 (a little faster each time, no limit). The level is shown on
   the mission map, in the journal and on the screen during the mission. A lost run keeps the level
+- Adventure, Act 2: after the gateway the map changes (title "ACT 2"): the four Bestiary sorties stay (with their
+  level), the dome missions are gone, and a series of five missions appears, each one opened by the previous
+  and flown once only (arcade levels 16 and up, x1.3 speed): the signal (16-17), the jamming (the swarm at
+  level 16), the relay (18-19), the approach (16-19) and the awakening (16-20, boss). The last one hands
+  over the Phenix: slot 2 of the hangar opens, with its own workshop (speed 80 %, lives 2, walls, and the
+  Phenix gauge 60 % -> 80 %: the Phenix form lasts 60 % of the arcade one at first)
 - Adventure, gateway to Act 2: a full run of arcade levels 11 to 15 (wave counter on screen). The death of
   the boss starts Act 2 (the save shows ACT 2). The mission map scrolls now that it is longer
 
@@ -58,7 +64,7 @@ Current release: **v1.4.5**
 
 - Done: 3 save slots (name, date, act, mode), name entry with keyboard or gamepad (on-screen
   keyboard), Normal / Veteran choice, delete with confirmation
-- Done: failed mission = back to the workshop, no gain and 20 % of your points lost (rounded,
+- Done: failed mission = back to the workshop, no gain and 5 % of your points lost (rounded,
   never below 0); Veteran = permanent death (the save becomes a memorial).
   Quitting a mission by choice changes nothing (no gain, no loss, back to the hangar)
 - Act 1: weak Shield upgraded to about 80 % of the arcade ship. Done: the Act 1 hangar and workshop

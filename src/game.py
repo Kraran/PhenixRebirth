@@ -1720,6 +1720,9 @@ class Game:
         self.player.speed = PLAYER_SPEED * (pct / 100.0)
         dome = bool(loadout.get("dome"))
         self.player.adventure_dome = dome
+        if sid == "phoenix":
+            # the Phenix form lasts a share of the arcade one: 60 % at first, more after the workshop
+            self.player.phenix_sec_per_point *= max(0.1, int(loadout.get("phenix_pct") or 60) / 100.0)
         self.player.adventure_wall = loadout.get("wall") or "instant"
         self.adventure["dome"] = dome
         if sid == "shield":

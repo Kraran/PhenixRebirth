@@ -26,13 +26,14 @@ MODES = ("normal", "veteran")
 NAME_MAX = 12
 # A failed mission (Normal mode) gains nothing and costs this share of the credits held.
 # Veteran: a failure is a permanent death.
-PENALTY_RATE = 0.20
+PENALTY_RATE = 0.05
 NAME_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- "
 
 # Speed steps (% of the arcade ship) and what each act allows the workshop to reach.
 SPEED_START = 40
 ACT_CAPS = {
     1: {"speed": 80, "lives": 2},      # Act 1: about 80 % of the arcade ship, no dome
+    2: {"speed": 80, "lives": 2},      # Act 2: the same, and the Phenix joins the hangar
 }
 
 # Dome (Shield bubble): seconds. 2.0 s / 5.0 s is the arcade Shield.
@@ -96,6 +97,7 @@ MISSIONS = [
     # `waves` are arcade stage numbers (1, 6, 11 = the same wave at 1.0x, 1.1x, 1.2x speed).
     {
         "id": "dome_1",
+        "acts": (1,),
         "title": "story_m_dome1",
         "blurb": "story_m_dome1_b",
         "need": "bestiary_s4",
@@ -108,6 +110,7 @@ MISSIONS = [
     },
     {
         "id": "dome_2",
+        "acts": (1,),
         "title": "story_m_dome2",
         "blurb": "story_m_dome2_b",
         "need": "dome_s1",
@@ -120,6 +123,7 @@ MISSIONS = [
     },
     {
         "id": "dome_3",
+        "acts": (1,),
         "title": "story_m_dome3",
         "blurb": "story_m_dome3_b",
         "need": "dome_s2",
@@ -132,6 +136,7 @@ MISSIONS = [
     },
     {
         "id": "dome_4",
+        "acts": (1,),
         "title": "story_m_dome4",
         "blurb": "story_m_dome4_b",
         "need": "dome_s3",
@@ -145,6 +150,7 @@ MISSIONS = [
     {
         # all four enemies at once (levels 11 to 14), replaced as they fall; opens the dome
         "id": "dome_5",
+        "acts": (1,),
         "title": "story_m_dome5",
         "blurb": "story_m_dome5_b",
         "need": "dome_s4",
@@ -159,6 +165,7 @@ MISSIONS = [
     {
         # a full run of the arcade levels 11 to 15; the death of the boss starts Act 2
         "id": "act2_gate",
+        "acts": (1,),
         "title": "story_m_gate2",
         "blurb": "story_m_gate2_b",
         "need": "dome_s5",
@@ -172,6 +179,7 @@ MISSIONS = [
     },
     {
         "id": "ch2_tease",
+        "acts": (1,),
         "title": "story_m_ch2",
         "blurb": "story_m_ch2_b",
         "need": "act2",
@@ -180,6 +188,76 @@ MISSIONS = [
         "unlock": [],
         "log": "",
         "playable": False,
+    },
+    # Act 2: the Phenix series. Five chained missions, flown once each (arcade levels 16 and up,
+    # x1.3 speed). The last one hands over the Phenix and opens its workshop.
+    {
+        "id": "phenix_1",
+        "acts": (2,),
+        "title": "story_m_ph1",
+        "blurb": "story_m_ph1_b",
+        "need": "act2",
+        "content": 1,
+        "waves": [16, 17],
+        "speed": 1.0,
+        "once": True,
+        "unlock": ["phenix_s1"],
+        "log": "story_log_ph1",
+    },
+    {
+        "id": "phenix_2",
+        "acts": (2,),
+        "title": "story_m_ph2",
+        "blurb": "story_m_ph2_b",
+        "need": "phenix_s1",
+        "content": 1,
+        "swarm": True,
+        "stage": 16,
+        "speed": 1.0,
+        "once": True,
+        "unlock": ["phenix_s2"],
+        "log": "story_log_ph2",
+    },
+    {
+        "id": "phenix_3",
+        "acts": (2,),
+        "title": "story_m_ph3",
+        "blurb": "story_m_ph3_b",
+        "need": "phenix_s2",
+        "content": 3,
+        "waves": [18, 19],
+        "speed": 1.0,
+        "once": True,
+        "unlock": ["phenix_s3"],
+        "log": "story_log_ph3",
+    },
+    {
+        "id": "phenix_4",
+        "acts": (2,),
+        "title": "story_m_ph4",
+        "blurb": "story_m_ph4_b",
+        "need": "phenix_s3",
+        "content": 1,
+        "waves": [16, 17, 18, 19],
+        "speed": 1.0,
+        "once": True,
+        "unlock": ["phenix_s4"],
+        "log": "story_log_ph4",
+    },
+    {
+        # a full run of the arcade levels 16 to 20: the boss guards the Phenix
+        "id": "phenix_5",
+        "acts": (2,),
+        "title": "story_m_ph5",
+        "blurb": "story_m_ph5_b",
+        "need": "phenix_s4",
+        "content": 1,
+        "waves": [16, 17, 18, 19, 20],
+        "speed": 1.0,
+        "once": True,
+        "unlock": ["phenix_s5", "phenix_owned"],
+        "grant_hull": "phoenix",
+        "log": "story_log_ph5",
     },
 ]
 
@@ -651,6 +729,15 @@ def mark_intro_seen(state):
     state.setdefault("flags", {})[INTRO_FLAG] = True
 
 
+PHENIX_CAP_START = 60
+PHENIX_CAP_MAX = 100
+
+
+def phenix_cap(slot):
+    """Share (%) of the arcade Phenix form the pilot gets: 60 at first, 80 after the workshop, 100 in Act 3."""
+    return max(PHENIX_CAP_START, min(PHENIX_CAP_MAX, int(_num((slot or {}).get("phenix_cap"), PHENIX_CAP_START))))
+
+
 def selected_slot(state):
     slots = state.get("slots") or []
     i = int(state.get("selected_slot", 0))
@@ -676,6 +763,7 @@ def loadout(state):
         "dome_dur": _num(slot.get("dome_dur"), DOME_DUR_START) or DOME_DUR_START,
         "dome_cd": _num(slot.get("dome_cd"), DOME_CD_START) or DOME_CD_START,
         "wall": slot.get("wall") or "instant",
+        "phenix_pct": phenix_cap(slot),
     }
 
 
@@ -685,6 +773,20 @@ def mission_waves(mission):
     if not isinstance(waves, (list, tuple)):
         return []
     return [max(1, int(_num(w, 1))) for w in waves]
+
+
+def mission_in_act(mission, act):
+    """Is this mission on the map of act `act`? Missions without `acts` (the hunts) are on every map."""
+    acts = (mission or {}).get("acts")
+    return not acts or int(_num(act, 1)) in acts
+
+
+def visible_missions(state, cheat=False):
+    """The missions the map lists: those of the current act. The UNLK cheat lists every mission."""
+    if cheat:
+        return list(MISSIONS)
+    act = int(_num(state.get("act"), 1))
+    return [m for m in MISSIONS if mission_in_act(m, act)]
 
 
 def mission_open(state, mission):
@@ -759,8 +861,8 @@ def _up_dome_dur(slot):
 
 def _up_dome_on(slot):
     """The first dome upgrade: the Shield gets its dome (1 s, the shortest one)."""
-    if slot.get("dome"):
-        return False
+    if slot.get("dome") or slot.get("id") == "phoenix":
+        return False                          # the dome is the Shield's
     slot["dome"] = True
     slot["dome_dur"] = DOME_DUR_START
     slot["dome_cd"] = _num(slot.get("dome_cd"), DOME_CD_START) or DOME_CD_START
@@ -790,6 +892,18 @@ def _up_wall_immune(slot):
         return False
     slot["wall"] = "immune"
     return True
+
+
+def _up_cap_80(slot):
+    """Phenix only: the Phenix form lasts 80 % of the arcade one (60 % at first)."""
+    if slot.get("id") != "phoenix" or phenix_cap(slot) >= 80:
+        return False
+    slot["phenix_cap"] = 80
+    return True
+
+
+def _st_cap_80(slot):
+    return "owned" if phenix_cap(slot) >= 80 else None
 
 
 def _speed(slot):
@@ -872,6 +986,7 @@ UPGRADES = [
     ("lives_2", "story_shop_lives2", 2000, "ch1_life_2", _up_lives_2, _st_lives_2, 1),
     ("wall_slow", "story_shop_wall_slow", 1000, "ch1_wall", _up_wall_slow, _st_wall_slow, 1),
     ("dome_on", "story_shop_dome_on", 800, "dome_online", _up_dome_on, _st_dome_on, 1),
+    ("phenix_cap_80", "story_shop_phenix80", 1000, "phenix_owned", _up_cap_80, _st_cap_80, 2),
     ("speed_100", "story_shop_speed100", 1000, "ch3_open", _up_speed_100, _st_speed_100, 3),
     ("lives_3", "story_shop_lives3", 900, "ch3_open", _up_lives_3, _st_lives_3, 3),
     ("dome_dur", "story_shop_dome", 800, "dome_online", _up_dome_dur, _st_dome_dur, 2),
@@ -881,6 +996,18 @@ UPGRADES = [
 
 # What the workshop shows in Act 1: id, i18n label, cost, flag required before it is buyable
 SHOP = [(u[0], u[1], u[2], u[3]) for u in UPGRADES if u[6] == 1]
+
+
+# What the workshop sells for the Phenix (Act 2): the same hull upgrades, no dome, plus its own gauge.
+PHENIX_SHOP_IDS = ("speed_80", "lives_2", "wall_slow", "phenix_cap_80")
+
+
+def shop_for(state):
+    """Workshop rows of the selected hull: (id, label, cost, flag required)."""
+    slot = selected_slot(state) or {}
+    if slot.get("id") == "phoenix":
+        return [(u[0], u[1], u[2], u[3]) for sid in PHENIX_SHOP_IDS for u in UPGRADES if u[0] == sid]
+    return list(SHOP)
 
 
 def act_caps(state):
@@ -942,7 +1069,7 @@ def record_result(state, mission_id, score, cleared, kills=None):
     """Apply the end of a mission.
 
     Cleared: the score is banked as hangar credits, unlock flags and journal line.
-    Failed, Normal mode: nothing is gained and 20 % of the credits held are lost.
+    Failed, Normal mode: nothing is gained and 5 % of the credits held are lost.
     Failed, Veteran mode: the pilot falls, the save becomes a memorial.
     `kills` ({kind: n}, the enemies destroyed) always goes into the Bestiary, win or lose.
 
@@ -972,6 +1099,11 @@ def record_result(state, mission_id, score, cleared, kills=None):
         flags = state.setdefault("flags", {})
         for name in mission.get("unlock") or []:
             flags[name] = True
+        if mission.get("grant_hull"):
+            for sl in state.get("slots") or []:
+                if sl.get("id") == mission["grant_hull"] and not sl.get("owned"):
+                    sl["owned"] = True
+                    res["hull"] = mission["grant_hull"]
         act = int(_num(mission.get("act"), 0))
         if act > int(_num(state.get("act"), 1)):
             state["act"] = act                       # the end of an act starts the next one
