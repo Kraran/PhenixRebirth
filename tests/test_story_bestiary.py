@@ -480,9 +480,9 @@ def test_the_journal_shows_the_total_under_the_mission_line():
     ss.record_result(st, "ch1_sortie", 100, True, {"bird1": 7})
     entries = ss.journal_entries(st)
     assert [ss.log_text(e, t) for e in entries[1:]] == [
-        t("story_log_sortie"), t("story_log_kills").format(n=20),
-        t("story_log_best2"), t("story_log_kills").format(n=22)]
-    assert "20" in ss.log_text(entries[2], t)
+        t("story_log_sortie"), t("story_log_level").format(n=3), t("story_log_kills").format(n=20),
+        t("story_log_best2"), t("story_log_level").format(n=2), t("story_log_kills").format(n=22)]
+    assert "20" in ss.log_text(entries[3], t)
     assert st["log"] == [{"key": "story_log_sortie"}, {"key": "story_log_best2"}]   # saved lines unchanged
 
 
@@ -490,13 +490,13 @@ def test_the_journal_says_one_enemy_in_the_singular():
     from i18n import t
     st = ss.create_slot(1, "NOVA", "normal")
     ss.record_result(st, "ch1_sortie", 100, True, {"bird1": 1})
-    assert ss.log_text(ss.journal_entries(st)[2], t) == t("story_log_kill_1").format(n=1)
+    assert ss.log_text(ss.journal_entries(st)[3], t) == t("story_log_kill_1").format(n=1)
 
 
 def test_no_kills_no_total_line_and_the_gate_has_none():
     st = ss.create_slot(1, "NOVA", "normal")
     ss.record_result(st, "ch1_sortie", 100, True, {})
-    assert len(ss.journal_entries(st)) == 2
+    assert len(ss.journal_entries(st)) == 3               # intro, the line, the level (no kills line)
     ss.record_result(st, "best_s2", 100, True, {"bird2": 4})
     ss.record_result(st, "best_s3", 100, True, {"garg3": 2})
     ss.record_result(st, "best_s4", 100, True, {"garg4": 1})
@@ -513,7 +513,8 @@ def test_the_totals_survive_save_and_load_and_old_saves_start_at_zero(tmp_path):
     assert ss.load_state(path)["mission_kills"] == {"ch1_sortie": 13}
     old = ss.migrate_state({"version": 4, "name": "OLD", "cleared": ["ch1_sortie"],
                             "log": [{"key": "story_log_sortie"}], "bestiary": {"bird1": 40}})
-    assert old["mission_kills"] == {} and ss.journal_entries(old)[-1] == {"key": "story_log_sortie"}
+    assert old["mission_kills"] == {} and ss.journal_entries(old)[1:] == [{"key": "story_log_sortie"},
+                                                                          {"level": 2, "mission": "ch1_sortie"}]
     odd = ss.migrate_state({"version": 4, "mission_kills": {"ch1_sortie": "x", "dome_1": 5, "ghost": 3, 7: 1}})
     assert odd["mission_kills"] == {"ch1_sortie": 0}
 

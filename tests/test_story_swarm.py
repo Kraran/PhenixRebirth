@@ -10,6 +10,7 @@ from story import StoryHub
 from test_smoke import run  # noqa: F401  (fixture)
 
 KINDS = (1, 2, 3, 4)
+ON_SCREEN = {1: 4, 2: 7, 3: 2, 4: 3}       # a third of the normal screens: 13, 22, 7, 10
 
 
 @pytest.fixture(autouse=True)
@@ -33,11 +34,12 @@ def _swarm(mult=1.2):
 
 
 # ------------------------------------------------------------------ the formation
-def test_the_swarm_starts_with_a_full_screen_of_each_kind_and_the_rest_waiting():
+def test_the_swarm_shows_a_third_of_a_normal_screen_of_each_kind_and_the_rest_waits():
     form = _swarm()
     assert SWARM_NORMAL_COUNT == {1: 13, 2: 22, 3: 7, 4: 10}      # the counts of the normal screens
-    assert _kinds(form) == {1: 13, 2: 22, 3: 7, 4: 10}
-    assert form.swarm["reserve"] == {1: 26, 2: 44, 3: 14, 4: 20}  # three times the normal count in all
+    assert _kinds(form) == ON_SCREEN == {k: round(n / 3) for k, n in SWARM_NORMAL_COUNT.items()}
+    assert sum(_kinds(form).values()) == 16                       # three times fewer at once than before (48)
+    assert form.swarm["reserve"] == {1: 35, 2: 59, 3: 19, 4: 27}  # still three times the normal count in all
     assert form.swarm_remaining() == 3 * (13 + 22 + 7 + 10) == 156
     assert all(isinstance(e, Enemy) for e in form.enemies if e.stage in (1, 2))
     assert all(isinstance(e, BigBird) for e in form.enemies if e.stage in (3, 4))
@@ -48,7 +50,7 @@ def test_the_birds_sit_in_their_own_seats_inside_the_screen():
     form = _swarm()
     birds = [e for e in form.enemies if e.stage in (1, 2)]
     seats = {(e.start_x, e.start_y) for e in birds}
-    assert len(seats) == len(birds) == 35                          # nobody shares a seat
+    assert len(seats) == len(birds) == 11                          # nobody shares a seat
     assert all(170 + 20 <= e.start_x <= 1280 - 170 - 20 for e in birds)   # the drift keeps them on screen
     xs = sorted({e.start_x for e in birds if e.start_y == birds[0].start_y})
     assert all(b - a >= 90 for a, b in zip(xs, xs[1:]))            # a bird is 38 px wide: no overlap
@@ -66,8 +68,8 @@ def test_a_fallen_enemy_is_replaced_by_one_of_the_same_kind_coming_from_above():
         victim = next(e for e in form.enemies if e.stage == kind)
         victim.kill(flash=False)
         form.update(0.01, 640)
-        assert _kinds(form)[kind] == SWARM_NORMAL_COUNT[kind], kind
-        assert form.swarm["reserve"][kind] == (SWARM_SCREENS - 1) * SWARM_NORMAL_COUNT[kind] - 1
+        assert _kinds(form)[kind] == ON_SCREEN[kind], kind
+        assert form.swarm["reserve"][kind] == SWARM_SCREENS * SWARM_NORMAL_COUNT[kind] - ON_SCREEN[kind] - 1
         new = [e for e in form.enemies if e.stage == kind and e.alive][-1]
         assert new.y < 0, kind                                      # it comes in from the top
         assert new.state in ("returning", "enter")
@@ -89,14 +91,14 @@ def test_a_new_bird_takes_the_seat_that_was_freed():
 
 def test_arrivals_of_one_kind_are_spaced_out():
     form = _swarm()
-    for e in [e for e in form.enemies if e.stage == 1][:5]:
+    for e in [e for e in form.enemies if e.stage == 1][:3]:
         e.kill(flash=False)
     form.update(0.01, 640)
-    assert _kinds(form)[1] == 13 - 5 + 1                            # one at a time
+    assert _kinds(form)[1] == 4 - 3 + 1                             # one at a time
     form.update(0.01, 640)
-    assert _kinds(form)[1] == 13 - 5 + 1                            # the next one has to wait its turn
+    assert _kinds(form)[1] == 4 - 3 + 1                             # the next one has to wait its turn
     form.update(SWARM_REFILL_DELAY, 640)
-    assert _kinds(form)[1] == 13 - 5 + 2
+    assert _kinds(form)[1] == 4 - 3 + 2
 
 
 def test_a_gargoyle_glides_in_then_roams_and_does_not_shoot_while_entering(monkeypatch):
@@ -285,10 +287,10 @@ def _kill_all(g):
         e.kill(flash=False)
 
 
-def test_the_swarm_mission_starts_at_level_eleven_with_everything_on_screen(run):
+def test_the_swarm_mission_starts_at_level_eleven_with_a_third_of_the_screens(run):
     g = _launch(run.game, "dome_5")
     assert g.stage == 11 and g.formation.swarm is not None
-    assert _kinds(g.formation) == {1: 13, 2: 22, 3: 7, 4: 10}
+    assert _kinds(g.formation) == ON_SCREEN
     assert {round(e.speed_mult, 6) for e in g.formation.enemies} == {round(1.2 * g.difficulty_speed_mult(), 6)}
 
 

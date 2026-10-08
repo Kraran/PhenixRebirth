@@ -478,6 +478,11 @@ class StoryHub:
         waves = ss.mission_waves(mission)
         if waves:
             spec["waves"] = waves                 # several waves in a row, at the speed of their level
+        if mission.get("hunt"):
+            level = ss.hunt_level(self.state, mission["id"])
+            spec["level"] = level
+            if level > 1:                         # a won sortie comes back faster, like the next arcade cycle
+                spec["waves"] = [ss.hunt_stage(mission, level)]
         if mission.get("swarm"):
             spec["swarm"] = True                  # the four enemies together, replaced as they fall
             spec["stage"] = int(mission.get("stage") or 11)
@@ -548,7 +553,8 @@ class StoryHub:
         surface.blit(ts, (BASE_WIDTH // 2 - ts.get_width() // 2, 18))
 
         if self.cheat_unlock:
-            _text(surface, small, t("story_cheat_banner"), (255, 70, 70), 36, right=BASE_WIDTH - 60)
+            # small, top left above the pilot name: the title, the credits and the FPS counter own the rest
+            _text_fit(surface, small, t("story_cheat_banner"), (255, 70, 70), 11, 80, 330, scale=0.7)
         if self.state.get("name"):
             mode = t("story_mode_" + str(self.state.get("mode", "normal")))
             _text(surface, small, f"{self.state['name']}  -  {mode}", (170, 175, 195), 36, left=80)
@@ -812,7 +818,7 @@ class StoryHub:
             if isinstance(entry, dict) and entry.get("intro"):
                 text = t("story_log_intro")
                 col = (255, 230, 140) if focus else (255, 190, 90)
-            elif isinstance(entry, dict) and "kills" in entry:
+            elif isinstance(entry, dict) and ("kills" in entry or "level" in entry):
                 text = log_text(entry, t)
                 col = (255, 215, 130) if focus else (190, 175, 130)
                 indent = 56                                   # sits under its mission line
@@ -934,7 +940,10 @@ class StoryHub:
                 mark = "> " if focus else "  "
                 state = t("story_soon")
             cy = row.y + 20
-            _text(surface, small, f"{mark}{t(mission['title'])}", col, cy, left=row.x + 10)
+            name = t(mission["title"])
+            if open_ and mission.get("hunt"):
+                name += "   " + t("story_level").format(n=ss.hunt_level(self.state, mission["id"]))
+            _text(surface, small, f"{mark}{name}", col, cy, left=row.x + 10)
             _text(surface, small, state, col, cy, right=row.right - 14)
             if focus:
                 _text_fit(surface, small, t(mission["blurb"]), (170, 175, 195), cy + 34, row.x + 28, row.w - 40)

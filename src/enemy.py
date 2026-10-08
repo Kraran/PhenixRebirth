@@ -71,7 +71,7 @@ def _whiten_surf(src):
 # Counts are the enemies of one normal screen (13 / 22 / 7 / 10), by content stage.
 SWARM_NORMAL_COUNT = {1: 13, 2: 22, 3: 7, 4: 10}
 SWARM_SCREENS = 3                 # each kind comes SWARM_SCREENS times its normal count in all
-SWARM_ON_SCREEN_SHARE = 1.0       # share of a normal screen shown at once (1.0 = a full screen)
+SWARM_ON_SCREEN_SHARE = 1.0 / 3   # share of a normal screen shown at once (1.0 = a full screen)
 SWARM_REFILL_DELAY = 0.35         # seconds between two arrivals of the same kind
 
 
@@ -428,7 +428,9 @@ class EnemyFormation:
         """Formation seats of both bird kinds, in reading order, kinds spread evenly among them."""
         n1, n2 = self.swarm_on_screen(1), self.swarm_on_screen(2)
         total = n1 + n2
-        per_row, rows_y, spacing = 9, (110, 165, 220, 275), 95
+        rows_y, spacing = (110, 165, 220, 275), 95
+        n_rows = max(1, min(len(rows_y), -(-total // 9)))      # at most 9 birds a row
+        per_row = -(-total // n_rows)
         slots = []
         for i in range(total):
             row, col = divmod(i, per_row)

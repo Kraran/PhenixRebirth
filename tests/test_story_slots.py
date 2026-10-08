@@ -742,7 +742,7 @@ def test_the_journal_starts_with_the_intro_entry_even_when_nothing_happened():
     assert len(entries) == 1 and entries[0] == {"intro": True}
     hub = _hub_in_log(log=[{"key": "story_log_sortie"}, "old line"])
     entries = hub.log_entries()
-    assert entries[0] == {"intro": True} and entries[1:] == [{"key": "story_log_sortie"}, "old line"]
+    assert entries[0] == {"intro": True} and entries[1:] == [{"key": "story_log_sortie"}, {"level": 1, "mission": "ch1_sortie"}, "old line"]
 
 
 def test_new_journal_lines_come_after_the_intro_entry():
@@ -750,7 +750,7 @@ def test_new_journal_lines_come_after_the_intro_entry():
     ss.record_result(st, "ch1_sortie", 100, True)
     hub = StoryHub()
     hub.state = st
-    assert hub.log_entries()[0] == {"intro": True} and len(hub.log_entries()) == 2
+    assert hub.log_entries()[0] == {"intro": True} and len(hub.log_entries()) == 3
 
 
 def test_up_and_down_only_scroll_the_journal_and_stay_inside():
@@ -797,7 +797,7 @@ def test_only_the_intro_line_is_selectable_in_the_journal(run):
     hub = StoryHub()
     hub.open_slot(1)
     hub.pane = "log"
-    assert len(hub.log_entries()) == 3                       # intro, mission line, kill total
+    assert len(hub.log_entries()) == 4                       # intro, mission line, level, kill total
     drawn = []
     real = story.pygame.draw.rect
 

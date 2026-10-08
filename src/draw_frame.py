@@ -80,9 +80,14 @@ def draw_play(game):
         ch = tc.get(game.font, t("cheat_active"), (255, 60, 60))
         game.game_surface.blit(ch, (BASE_WIDTH // 2 - ch.get_width() // 2, 74))
 
+    mission_name = ""
+    if getattr(game, "adventure", None):
+        mission_name = t(game.adventure.get("title") or "story")
+        if game.adventure.get("level"):
+            mission_name += "  " + t("story_level").format(n=int(game.adventure["level"]))
     stage_surf = tc.get(
         game.font,
-        t(game.adventure.get("title") or "story") if getattr(game, "adventure", None) else f"{t('stage')} {game.stage}",
+        mission_name if getattr(game, "adventure", None) else f"{t('stage')} {game.stage}",
         (255, 170, 80) if getattr(game, "adventure", None) else (180, 180, 220),
     )
     stage_x = BASE_WIDTH // 2 - stage_surf.get_width() // 2 if game.play_mode == "coop" else 16
@@ -91,7 +96,7 @@ def draw_play(game):
     if adv and adv.get("swarm") and game.play_mode != "coop":
         left = tc.get(game.font, t("story_swarm_left").format(n=game.formation.swarm_remaining()), (255, 220, 120))
         game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
-    elif adv and adv.get("waves") and game.play_mode != "coop":
+    elif adv and len(adv.get("waves") or []) > 1 and game.play_mode != "coop":
         wave = tc.get(game.font, t("story_wave_n").format(n=int(adv.get("wave_i", 0)) + 1, m=len(adv["waves"])),
                       (255, 220, 120))
         game.game_surface.blit(wave, (BASE_WIDTH - 16 - wave.get_width(), 44))

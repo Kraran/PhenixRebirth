@@ -3267,6 +3267,8 @@ _ADVENTURE_TEXTS.update({
     "story_log_gate2": ("Le boss est tombé. L'acte 2 commence.", "The boss is down. Act 2 begins."),
     "story_act_start": ("Acte {n} : le boss est tombé !", "Act {n}: the boss is down!"),
     "story_shop_dome_on": ("Dôme du Shield", "Shield dome"),
+    "story_level": ("NIVEAU {n}", "LEVEL {n}"),
+    "story_log_level": ("Niveau de la mission : {n}", "Mission level: {n}"),
     "story_wave_n": ("VAGUE {n}/{m}", "WAVE {n}/{m}"),
     "story_swarm_left": ("RESTE : {n}", "LEFT: {n}"),
     "story_best_bonus_boss": ("Bonus de maîtrise : +{pts} PTS par boss", "Mastery bonus: +{pts} PTS per boss"),
