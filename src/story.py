@@ -104,6 +104,8 @@ class StoryHub:
         self.pane = "hangar"
         self.zone = "slots"   # slots | shop
         self.shop_index = 0
+        self.paint_mode = False        # the paint shop is open (choosing a colour)
+        self.paint_choice = 0
         self.map_index = 0
         self.toast = ""
         self._ships = {}
@@ -209,6 +211,7 @@ class StoryHub:
         self.screen = "hub"
         self.pane = "hangar"
         self.zone = "slots"
+        self.paint_mode = False
         self.shop_index = 0
         self.map_index = 0
         self.toast = ""
@@ -227,6 +230,9 @@ class StoryHub:
         self._loaded_img = True
         mapping = {
             "shield": "sprites/player_ship_shield.png",
+            "shield_red": "sprites/player_ship_shield.png",
+            "shield_green": "sprites/player_ship_shield_green.png",
+            "shield_violet": "sprites/player_ship_shield_violet.png",
             "phoenix": "sprites/player_ship.png",
         }
         for key, rel in mapping.items():
@@ -364,6 +370,9 @@ class StoryHub:
     def confirm(self):
         """Hub: shop buy, or a launch spec when a map node is confirmed. Other screens: None."""
         if self.screen == "hub":
+            if self.paint_mode:
+                self._paint_confirm()
+                return None
             return self._hub_confirm()
         if self.screen == "slots":
             info = self._summary()
@@ -407,6 +416,9 @@ class StoryHub:
     def back(self):
         """B / Esc. True when handled here; False on the slot list (leave the Adventure)."""
         if self.screen == "hub":
+            if self.paint_mode:
+                self.paint_mode = False                  # B closes the paint shop, nothing is spent
+                return True
             self.open_slots()
         elif self.screen in ("delete", "name"):
             self.screen = "slots"
@@ -422,6 +434,10 @@ class StoryHub:
     # --- hub input ---
     def _hub_nav_h(self, direction):
         """Left / right. Slots when hangar+slots, else change pane."""
+        if self.paint_mode:
+            n = len(ss.PAINT_TINTS)
+            self.paint_choice = (self.paint_choice + direction) % n
+            return
         if self.pane == "hangar" and self.zone == "slots":
             slots = self.state["slots"]
             cur = int(self.state.get("selected_slot", 0))
@@ -430,6 +446,7 @@ class StoryHub:
                 self.state["selected_slot"] = nxt
                 return
         idx = PANES.index(self.pane)
+        self.paint_mode = False
         self.pane = PANES[max(0, min(len(PANES) - 1, idx + direction))]
         self.zone = "slots"
         self.toast = ""
@@ -439,6 +456,8 @@ class StoryHub:
         return ss.journal_entries(self.state)
 
     def _hub_nav_v(self, direction):
+        if self.paint_mode:
+            return
         if self.pane == "map":
             self.map_index = max(0, min(len(self.missions()) - 1, self.map_index + direction))
             self.toast = ""
@@ -474,8 +493,31 @@ class StoryHub:
         if self.pane != "hangar" or self.zone != "shop":
             return None
         rows = self.shop_rows()
-        self._buy(rows[max(0, min(len(rows) - 1, self.shop_index))])
+        row = rows[max(0, min(len(rows) - 1, self.shop_index))]
+        if row[0] == "paint":
+            self._open_paint()
+            return None
+        self._buy(row)
         return None
+
+    def _open_paint(self):
+        """The paint shop row: opens the colour choice when a change is waiting."""
+        if not ss.paint_state(self.state)["token"]:
+            self.toast = t("story_paint_locked")
+            return
+        shield = next((sl for sl in self.state.get("slots") or [] if sl.get("id") == "shield"), {})
+        tint = shield.get("tint") if shield.get("tint") in ss.PAINT_TINTS else "red"
+        self.paint_choice = ss.PAINT_TINTS.index(tint)
+        self.paint_mode = True
+        self.toast = ""
+
+    def _paint_confirm(self):
+        """A on the colour choice: wear it (spends the change) or, if it is the current colour, just close."""
+        tint = ss.PAINT_TINTS[self.paint_choice % len(ss.PAINT_TINTS)]
+        if ss.paint_change(self.state, tint):
+            self.save()
+            self.toast = t("story_paint_done")
+        self.paint_mode = False
 
     def _launch_selected(self):
         mission = self._mission()
@@ -497,6 +539,10 @@ class StoryHub:
             spec["level"] = level
             if level > 1:                         # a won sortie comes back faster, like the next arcade cycle
                 spec["waves"] = [ss.hunt_stage(mission, level)]
+        if ss.is_paint(mission):
+            level = ss.paint_level(self.state)
+            spec["level"] = level
+            spec["waves"] = ss.paint_waves(mission, level)     # the series climbs by 5 stages each pass
         if mission.get("swarm"):
             spec["swarm"] = True                  # the four enemies together, replaced as they fall
             spec["stage"] = int(mission.get("stage") or 11)
@@ -510,6 +556,8 @@ class StoryHub:
             if res.get("act"):
                 self.map_index = 0                   # a new act has a new map
                 self.toast = t("story_act_start").format(n=res["act"])
+            if res.get("paint"):
+                self.toast = t("story_paint_done_series")
             if res.get("hull") == "phoenix":
                 self.toast = t("story_phenix_gift")
         elif res["fallen"]:
@@ -546,6 +594,8 @@ class StoryHub:
         return True
 
     def _shop_extra(self, sid, cost, locked):
+        if sid == "paint":
+            return t("story_paint_ready") if ss.paint_state(self.state)["token"] else t("story_locked")
         key = ss.upgrade_note(self.state, sid)
         if key:
             return t(key)
@@ -590,6 +640,8 @@ class StoryHub:
             "log": "story_hint_log",
             "bestiary": "story_hint_best",
         }[self.pane]
+        if self.paint_mode:
+            hint_key = "story_hint_paint"
         cx = BASE_WIDTH // 2
         tabs = "  ".join(
             ("> " if p == self.pane else "  ") + t({
@@ -936,7 +988,7 @@ class StoryHub:
                 break
             open_ = self.mission_open(mission)
             playable = self.mission_playable(mission)
-            done = mission["id"] in (self.state.get("cleared") or [])
+            done = ss.mission_done(self.state, mission)
             focus = i == self.map_index
             # the focused row is taller: title line + one line for the blurb
             row = pygame.Rect(box.x + 12, y, box.w - 24, 76 if focus else 40)
@@ -961,8 +1013,9 @@ class StoryHub:
                 state = t("story_soon")
             cy = row.y + 20
             name = t(mission["title"])
-            if open_ and mission.get("hunt"):
-                name += "   " + t("story_level").format(n=ss.hunt_level(self.state, mission["id"]))
+            level = ss.mission_level(self.state, mission)
+            if open_ and level is not None:
+                name += "   " + t("story_level").format(n=level)
             _text(surface, small, f"{mark}{name}", col, cy, left=row.x + 10)
             _text(surface, small, state, col, cy, right=row.right - 14)
             if focus:
@@ -988,7 +1041,10 @@ class StoryHub:
             label = t("ship_shield") if sl.get("id") == "shield" else t("ship_phoenix")
             title = f"SLOT {i + 1}  {label}" if owned else f"SLOT {i + 1}"
             _text(surface, small, title, border, r.y + 26, left=r.x + 16)
-            img = self._ships.get(sl.get("id"))
+            key = sl.get("id")
+            if key == "shield" and sl.get("tint") in ss.PAINT_TINTS:
+                key = "shield_" + sl["tint"]               # the Shield wears the colour chosen in the paint shop
+            img = self._ships.get(key)
             if owned and img is not None:
                 surface.blit(img, (r.centerx - img.get_width() // 2, r.y + 48))
             else:
@@ -1030,10 +1086,32 @@ class StoryHub:
             _text(surface, small, lab, (150, 155, 175), r.y + 22, centerx=r.centerx)
             _text(surface, small, str(val), col, r.y + 54, centerx=r.centerx)
 
+    def _draw_paint(self, surface, small, box):
+        """The paint shop: the three colours of the Shield side by side."""
+        _text(surface, small, t("story_paint_title"), (255, 160, 70), box.y + 26, left=box.x + 16)
+        names = {"red": t("story_paint_red"), "green": t("story_paint_green"), "violet": t("story_paint_violet")}
+        shield = next((sl for sl in self.state.get("slots") or [] if sl.get("id") == "shield"), {})
+        current = shield.get("tint") if shield.get("tint") in ss.PAINT_TINTS else "red"
+        cell_w = 300
+        x0 = box.centerx - (cell_w * 3 + 20 * 2) // 2
+        for i, tint in enumerate(ss.PAINT_TINTS):
+            r = pygame.Rect(x0 + i * (cell_w + 20), box.y + 52, cell_w, 190)
+            focus = i == self.paint_choice
+            pygame.draw.rect(surface, (40, 36, 20) if focus else (22, 24, 36), r, border_radius=8)
+            pygame.draw.rect(surface, (255, 210, 80) if focus else (70, 80, 100), r, 3 if focus else 1, border_radius=8)
+            img = self._ships.get("shield_" + tint)
+            if img is not None:
+                surface.blit(img, (r.centerx - img.get_width() // 2, r.y + 24))
+            label = names[tint] + ("  (" + t("story_paint_worn") + ")" if tint == current else "")
+            _text(surface, small, label, (255, 230, 140) if focus else (200, 200, 210), r.bottom - 28, centerx=r.centerx)
+
     def _draw_shop(self, surface, small):
         box = pygame.Rect(70, 300, BASE_WIDTH - 140, 336)
         pygame.draw.rect(surface, (16, 18, 28), box, border_radius=10)
         pygame.draw.rect(surface, (180, 120, 50), box, 2, border_radius=10)
+        if self.paint_mode:
+            self._draw_paint(surface, small, box)
+            return
         _text(surface, small, t("story_workshop"), (255, 160, 70), box.y + 26, left=box.x + 16)
         flags = self.state.get("flags") or {}
         window = 7
@@ -1043,6 +1121,8 @@ class StoryHub:
         for i in range(start, min(len(rows), start + window)):
             sid, label, cost, need = rows[i]
             locked = bool(need) and not flags.get(need)
+            if sid == "paint":
+                locked = not ss.paint_state(self.state)["token"]
             focus = self.zone == "shop" and i == self.shop_index
             row = pygame.Rect(box.x + 12, y, box.w - 24, 38)
             if focus:
