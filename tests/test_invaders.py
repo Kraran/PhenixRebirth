@@ -121,13 +121,38 @@ def test_the_whole_grid_steps_together_and_animates_together(run):
     after = [(e.x, e.y) for e in f.enemies]
     assert {round(a[0] - b[0]) for a, b in zip(after, before)} == {inv.STEP_PX}
     assert {a[1] - b[1] for a, b in zip(after, before)} == {0}
-    frame_a = {id(e.image) for e in f.enemies if e.stage == 1}
-    assert len(frame_a) == 1
-    first = f.frame
-    f._step()
-    assert f.frame != first
-    for e in f.enemies:
-        assert e.image is e.frames[f.frame]                                # all on the same wing position
+
+def test_the_wings_flap_together_at_a_steady_pace_whatever_the_march(run):
+    f = _formation(run)
+    f.step_timer = -999.0
+    seen = []
+    for _ in range(int(2.0 / (1 / 60))):
+        f.update(1 / 60, 640)
+        f.step_timer = -999.0
+        assert len({id(e.image) for e in f.enemies if e.stage == 3}) == 1      # one wing position for all
+        assert all(e.image is e.frames[f.frame] for e in f.enemies)
+        if not seen or seen[-1] != f.frame:
+            seen.append(f.frame)
+    assert len(seen) in (6, 7)                                                # 2 s at one change per 0.3 s
+    fast = _formation(run)
+    for e in fast.enemies[1:]:
+        e.alive = False
+    flips = 0
+    last = fast.frame
+    for _ in range(120):
+        fast.update(1 / 60, 640)
+        flips += fast.frame != last
+        last = fast.frame
+    assert flips <= 7                                                         # the last enemy does not flicker
+
+
+def test_the_two_wing_positions_of_a_gargoyle_look_clearly_different(run):
+    import pygame
+    for kind in (3, 4):
+        a, b = inv.frames_for(kind)
+        diff = sum(1 for x in range(a.get_width()) for y in range(a.get_height())
+                   if abs(a.get_at((x, y)).a - b.get_at((x, y)).a) > 60)
+        assert diff > 400, kind
 
 
 def test_a_wall_drops_the_grid_one_line_and_turns_it_back(run):
@@ -224,8 +249,9 @@ def test_the_difficulty_speed_makes_the_march_faster(run):
 def test_a_higher_level_marches_faster_and_starts_lower(run):
     ivs = [inv.level_interval(n) for n in range(1, 9)]
     assert all(b <= a for a, b in zip(ivs, ivs[1:])) and ivs[1] < ivs[0] and ivs[-1] >= inv.MIN_INTERVAL
-    ys = [inv.level_start_y(n) for n in range(1, 12)]
-    assert ys[0] == inv.START_Y and ys[1] > ys[0] and ys[-1] == ys[-2] == inv.START_Y + 5 * inv.START_Y_PER_LEVEL
+    ys = [inv.level_start_y(n) for n in range(1, 8)]
+    # the 2nd mission starts one line (a row of the grid) lower, the 3rd two lines lower; the next pass starts again
+    assert ys == [130, 130 + 46, 130 + 92, 130, 130 + 46, 130 + 92, 130]
     assert _formation(run, level=4).enemies[0].y == inv.level_start_y(4)
     assert inv.level_start_y(0) == inv.START_Y                            # a damaged level counts as 1
 
@@ -239,7 +265,7 @@ def test_a_higher_level_shoots_more(run):
 
 def test_the_levels_stay_playable(run):
     f = _formation(run, level=60)
-    assert f.enemies[0].y < inv.INVASION_Y - 3 * inv.SPACING_Y - 100
+    assert f.enemies[0].y < inv.INVASION_Y - 3 * inv.SPACING_Y - 100 and f.enemies[0].y <= 130 + 2 * 46
 
 
 # ------------------------------------------------------------------ the shots of the enemies

@@ -1823,7 +1823,7 @@ class Game:
         self.formation.swarm = None
         self.boss_saucer = None
         if content == 0:
-            self.formation.spawn_swarm(speed_mult=mult)
+            self.formation.spawn_swarm(speed_mult=mult, screens=(adv or {}).get("swarm_screens"))
             self.formation.sounds = self.sounds
         elif content == 5:
             self.boss_saucer = BossSaucer()

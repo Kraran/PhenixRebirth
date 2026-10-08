@@ -3240,6 +3240,8 @@ _ADVENTURE_TEXTS.update({
     "story_cheat_on": ("Code UNLK : toutes les missions sont ouvertes. Plus aucune sauvegarde.",
                        "UNLK code: every mission is open. Nothing is saved any more."),
     "story_cheat_banner": ("TRICHE - PAS DE SAUVEGARDE", "CHEAT - NOT SAVED"),
+    "story_cheat_nix": ("Code NIX2 : missions du Phenix validées, Phenix débloqué. Plus aucune sauvegarde.",
+                        "Code NIX2: Phenix missions won, Phenix unlocked. Nothing is saved any more."),
     "story_cheat_act2": ("Code 2222 : tu es à l'acte 2. Plus aucune sauvegarde.",
                          "Code 2222: you are in Act 2. Nothing is saved any more."),
     "story_ship_label": ("VAISSEAU : {name}", "SHIP: {name}"),

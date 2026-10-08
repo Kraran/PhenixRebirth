@@ -212,6 +212,7 @@ MISSIONS = [
         "need": "phenix_s1",
         "content": 1,
         "swarm": True,
+        "swarm_screens": 1,          # one normal screen of each kind in all (the dome swarm has 3)
         "stage": 16,
         "speed": 1.0,
         "once": True,
@@ -902,6 +903,25 @@ def jump_to_act2(state):
                 cleared.append(mission["id"])
     flags["act2"] = True
     state["act"] = 2
+
+
+def grant_phenix(state):
+    """The NIX2 cheat: Act 2 is on, the five Phenix missions count as won and the Phenix is in the hangar."""
+    if int(_num(state.get("act"), 1)) < 2:
+        jump_to_act2(state)
+    flags = state.setdefault("flags", {})
+    cleared = state.setdefault("cleared", [])
+    for mission in MISSIONS:
+        if not str(mission.get("id", "")).startswith("phenix_"):
+            continue
+        for name in mission.get("unlock") or []:
+            flags[name] = True
+        if mission["id"] not in cleared:
+            cleared.append(mission["id"])
+        if mission.get("grant_hull"):
+            for sl in state.get("slots") or []:
+                if sl.get("id") == mission["grant_hull"]:
+                    sl["owned"] = True
 
 
 def mission_waves(mission):

@@ -64,6 +64,7 @@ Current release: **v1.4.5**
   points, the more centred the killing shot, the more it pays (it does not have to be killed to win). An enemy
   reaching the ship's line ends the run. The three missions are levels 1, 2, 3 (faster and lower each time);
   flown again as a whole series (to change colour again) they are levels 4, 5, 6, then 7, 8, 9, and so on.
+  The 2nd and 3rd missions of a pass start one and two lines (grid rows) lower; the wings flap at a steady pace.
   Winning the third opens the paint shop in the Shield workshop for ONE change of colour (red, green, violet).
   The level is shown on the map, in the journal and on screen
 - Adventure, hangar: the two hulls are drawn like the ship select screen (portrait in a frame, gold frame and
@@ -73,6 +74,8 @@ Current release: **v1.4.5**
 - Adventure, cheat code 2222 on the mission map: jumps to Act 2 (every Act 1 mission counts as won, the Phenix
   is not given). Nothing is saved any more afterwards (red banner, like UNLK); reloading the slot goes back
   to the real save
+- Adventure, Phenix swarm (mission 2 of the Phenix series): one normal screen of each enemy in all (52), not three
+- Adventure, cheat code NIX2 in the hangar: Act 2 on, the five Phenix missions won, the Phenix unlocked; nothing saved
 - Adventure, gateway to Act 2: a full run of arcade levels 11 to 15 (wave counter on screen). The death of
   the boss starts Act 2 (the save shows ACT 2). The mission map scrolls now that it is longer
 

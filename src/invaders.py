@@ -26,8 +26,8 @@ DROP_PX = 22                          # one line down when a wall is touched
 WALL_LEFT = 24
 WALL_RIGHT = BASE_WIDTH - 24
 START_Y = 130                         # centre of the top row at level 1
-START_Y_PER_LEVEL = 22                # each level begins lower...
-START_Y_MAX_LEVELS = 5                # ...up to this many levels
+START_ROWS = 3                        # the 1st, 2nd, 3rd mission of a pass start 0, 1, 2 lines lower (then again)
+FLAP_PERIOD = 0.3                     # seconds per wing position (all together, whatever the pace of the march)
 INVASION_Y = 540                      # an enemy whose feet reach this line has invaded: the ship is lost
 START_DELAY = 1.2                     # the march (and the shooting) starts after the ship has arrived
 
@@ -82,13 +82,17 @@ def _gargoyle_frames(kind):
         return _bird_frames(2)
     frames = []
     bw, bh = body.get_size()
-    for wing in (ups, down):
+    for pose, wing in enumerate((ups, down)):
         ww, wh = wing.get_size()
+        # the flap must read at this size: wings raised and stretched, then lowered and squashed
+        wing = pygame.transform.smoothscale(wing, (ww, int(wh * (1.0 if pose == 0 else 0.6))))
+        wh = wing.get_height()
         width = bw + 2 * (ww - WING_OVERLAP)
-        sheet = pygame.Surface((width, max(bh, wh)), pygame.SRCALPHA)
-        sheet.blit(wing, (0, 0))                                          # the wings go behind the body
-        sheet.blit(pygame.transform.flip(wing, True, False), (width - ww, 0))
-        sheet.blit(body, ((width - bw) // 2, 0))
+        sheet = pygame.Surface((width, bh + 14), pygame.SRCALPHA)
+        wy = 0 if pose == 0 else int(bh * 0.45)
+        sheet.blit(wing, (0, wy))                                         # the wings go behind the body
+        sheet.blit(pygame.transform.flip(wing, True, False), (width - ww, wy))
+        sheet.blit(body, ((width - bw) // 2, 7))
         scale = GARG_WIDTH / width
         frames.append(pygame.transform.smoothscale(sheet, (GARG_WIDTH, max(1, int(sheet.get_height() * scale)))))
     return frames
@@ -121,7 +125,9 @@ def level_interval(level):
 
 
 def level_start_y(level):
-    return START_Y + START_Y_PER_LEVEL * min(max(0, int(level) - 1), START_Y_MAX_LEVELS)
+    """Level 1 starts at the top, level 2 one line (a row of the grid) lower, level 3 two lines lower;
+    levels 4, 5, 6 start like 1, 2, 3 (they are harder by their speed and their shots)."""
+    return START_Y + SPACING_Y * ((max(1, int(level)) - 1) % START_ROWS)
 
 
 def level_shot_gap(level):
@@ -306,9 +312,6 @@ class InvaderFormation:
             for e in self.enemies:
                 e.x += dx
         self.steps += 1
-        self.frame = self.steps % 2
-        for e in self.enemies:
-            e.set_frame(self.frame)
         if max(e.y + e.height / 2 for e in alive) >= INVASION_Y:
             self.invaded = True
 
@@ -349,6 +352,11 @@ class InvaderFormation:
     # --- frame ---
     def update(self, dt, player_x):
         self.time += dt
+        frame = int(self.time / FLAP_PERIOD) % 2
+        if frame != self.frame:
+            self.frame = frame
+            for e in self.enemies:
+                e.set_frame(frame)
         for e in self.enemies:
             e.update(dt)
         for p in self.popups:
