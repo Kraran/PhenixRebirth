@@ -61,6 +61,13 @@ Current release: **v1.4.5**
   the third opens the paint shop in the Shield workshop for ONE change of colour (red, green or violet).
   The series can be flown again, as a whole only, to earn another change; each pass is five levels
   harder (the level, 1, 2, 3..., is shown on the map, in the journal and on screen)
+- Adventure, hangar: the two hulls are drawn like the ship select screen (portrait in a frame, gold frame and
+  slight bob for the chosen one, the other one dimmed the same way), without the Phenix / dome animations.
+  The chosen hull flies every mission (the map shows "SHIP: ..."); a mission can impose a hull later
+  (`ship` field of a mission, none uses it yet)
+- Adventure, cheat code ACT2 on the mission map: jumps to Act 2 (every Act 1 mission counts as won, the Phenix
+  is not given). Nothing is saved any more afterwards (red banner, like UNLK); reloading the slot goes back
+  to the real save
 - Adventure, gateway to Act 2: a full run of arcade levels 11 to 15 (wave counter on screen). The death of
   the boss starts Act 2 (the save shows ACT 2). The mission map scrolls now that it is longer
 
