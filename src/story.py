@@ -63,6 +63,9 @@ def _text(surface, font, text, color, cy, left=None, right=None, centerx=None):
 # Intro slides (credits-style scroll over a picture)
 INTRO_TEXT_W = 860          # width of the scrolling text
 INTRO_SPEED = 46.0          # px per second (about the speed of the credits)
+INTRO_FAST = 150.0          # Down held: the text rises faster (same feel as the credits)
+INTRO_BACK = 140.0          # Up held: the text goes back down
+INTRO_EASE = 8.0            # how quickly the speed follows the keys (soft start and stop)
 INTRO_DELAY = 0.8           # the picture shows alone for a moment before the text rises
 INTRO_FADE = 0.7            # fade in from black at each slide
 INTRO_LOCK = 0.4            # a key pressed right at the start of a slide does not skip it
@@ -94,17 +97,28 @@ class StoryHub:
         self.intro_slides = []         # [(picture, text key)] of the intro being shown
         self.intro_index = 0
         self.intro_t = 0.0             # seconds since the current slide appeared
+        self.intro_pos = 0.0           # how far the text has risen (px)
+        self.intro_speed = 0.0         # current rising speed (px/s), eased
+        self.intro_return = "hangar"   # pane to go back to when the intro ends
+        self.log_index = 0             # cursor in the journal (0 = "watch the intro again")
         self._intro_bg = {}
         self._intro_blocks = {}
         self._intro_mask = None
+        self._intro_limit = None
 
     # --- intro ---
-    def start_intro(self):
-        """Show the story slides (new adventure, or a save that never saw them)."""
+    def start_intro(self, back_to="hangar"):
+        """Show the story slides (new adventure, a save that never saw them, or a replay)."""
         self.intro_slides = ss.intro_slides(self.state.get("mode"))
         self.intro_index = 0
-        self.intro_t = 0.0
+        self._reset_slide()
+        self.intro_return = back_to
         self.screen = "intro"
+
+    def _reset_slide(self):
+        self.intro_t = 0.0
+        self.intro_pos = 0.0
+        self.intro_speed = 0.0
 
     def _maybe_intro(self):
         if not ss.intro_seen(self.state):
@@ -115,7 +129,7 @@ class StoryHub:
             return
         if self.intro_index + 1 < len(self.intro_slides):
             self.intro_index += 1
-            self.intro_t = 0.0
+            self._reset_slide()
         else:
             self._end_intro()
 
@@ -124,12 +138,33 @@ class StoryHub:
         ss.mark_intro_seen(self.state)
         self.save()
         self.screen = "hub"
-        self.pane = "hangar"
+        self.pane = self.intro_return
         self.zone = "slots"
+        self.intro_return = "hangar"
 
-    def update(self, dt):
-        if self.screen == "intro":
-            self.intro_t += max(0.0, min(0.25, float(dt)))
+    def update(self, dt, scroll=0):
+        """Time passes. `scroll` is the speed control of the intro: +1 faster (Down), -1 back (Up)."""
+        if self.screen != "intro":
+            return
+        dt = max(0.0, min(0.25, float(dt)))
+        self.intro_t += dt
+        if scroll > 0:
+            target = INTRO_FAST
+        elif scroll < 0:
+            target = -INTRO_BACK
+        elif self.intro_t >= INTRO_DELAY:
+            target = INTRO_SPEED
+        else:
+            target = 0.0                  # the picture shows alone for a moment
+        self.intro_speed += (target - self.intro_speed) * min(1.0, INTRO_EASE * dt)
+        self.intro_pos += self.intro_speed * dt
+        if self.intro_pos < 0.0:
+            self.intro_pos = 0.0
+            self.intro_speed = max(0.0, self.intro_speed)
+        limit = getattr(self, "_intro_limit", None)
+        if limit is not None and self.intro_pos > limit:
+            self.intro_pos = limit
+            self.intro_speed = min(0.0, self.intro_speed)
 
     # --- save slots ---
     def open_slots(self):
@@ -347,10 +382,17 @@ class StoryHub:
         self.zone = "slots"
         self.toast = ""
 
+    def log_entries(self):
+        """The journal as a list: first the story intro (always there), then what happened."""
+        return [{"intro": True}] + list(self.state.get("log") or [])
+
     def _hub_nav_v(self, direction):
         if self.pane == "map":
             self.map_index = max(0, min(len(MISSIONS) - 1, self.map_index + direction))
             self.toast = ""
+            return
+        if self.pane == "log":
+            self.log_index = max(0, min(len(self.log_entries()) - 1, self.log_index + direction))
             return
         if self.pane != "hangar":
             return
@@ -368,6 +410,10 @@ class StoryHub:
         """Shop buy, or a launch spec dict when a map node is confirmed."""
         if self.pane == "map":
             return self._launch_selected()
+        if self.pane == "log":
+            if self.log_index == 0:
+                self.start_intro(back_to="log")      # watch the introduction again
+            return None
         if self.pane != "hangar" or self.zone != "shop":
             return None
         self._buy(SHOP[self.shop_index])
@@ -548,8 +594,7 @@ class StoryHub:
         return min((BASE_HEIGHT - text_height) // 2, INTRO_END_Y - text_height)
 
     def _intro_top(self, text_height):
-        rising = BASE_HEIGHT - INTRO_SPEED * max(0.0, self.intro_t - INTRO_DELAY)
-        return max(self._intro_rest(text_height), rising)
+        return max(self._intro_rest(text_height), BASE_HEIGHT - self.intro_pos)
 
     def _draw_intro(self, surface, font, small):
         pic, _key = self.intro_slides[self.intro_index]
@@ -560,6 +605,7 @@ class StoryHub:
         surface.blit(band, (cx - band.get_width() // 2, 0))
 
         block, height = self._intro_block(font)
+        self._intro_limit = BASE_HEIGHT - self._intro_rest(height)     # the text cannot rise past this
         top = self._intro_top(height)
         view = pygame.Surface((INTRO_TEXT_W, BASE_HEIGHT), pygame.SRCALPHA)
         view.blit(block, (0, top))
@@ -692,14 +738,26 @@ class StoryHub:
         box = pygame.Rect(80, 78, BASE_WIDTH - 160, BASE_HEIGHT - 168)
         pygame.draw.rect(surface, (18, 20, 32), box, border_radius=10)
         pygame.draw.rect(surface, (70, 90, 130), box, 2, border_radius=10)
-        log = self.state.get("log") or []
-        if not log:
-            _text(surface, font, t("story_log_empty"), (160, 170, 200), box.centery, centerx=box.centerx)
-            return
-        cy = box.y + 34
-        for line in log[-14:]:
-            _text(surface, small, log_text(line, t), (200, 200, 220), cy, left=box.x + 24)
-            cy += 36
+        entries = self.log_entries()
+        self.log_index = max(0, min(len(entries) - 1, self.log_index))
+        rows, step = 12, 40
+        start = max(0, min(self.log_index - rows // 2, len(entries) - rows))
+        y = box.y + 28
+        for i in range(start, min(len(entries), start + rows)):
+            entry = entries[i]
+            focus = i == self.log_index
+            row = pygame.Rect(box.x + 12, y - step // 2 + 2, box.w - 24, step - 4)
+            if focus:
+                pygame.draw.rect(surface, (40, 36, 20), row, border_radius=6)
+                pygame.draw.rect(surface, (255, 210, 80), row, 2, border_radius=6)
+            if isinstance(entry, dict) and entry.get("intro"):
+                text = t("story_log_intro")
+                col = (255, 230, 140) if focus else (255, 190, 90)
+            else:
+                text = log_text(entry, t)
+                col = (235, 235, 245) if focus else (200, 200, 220)
+            _text(surface, small, ("> " if focus else "  ") + text, col, y, left=box.x + 24)
+            y += step
 
     def _draw_map(self, surface, font, medium, small):
         box = pygame.Rect(70, 78, BASE_WIDTH - 140, BASE_HEIGHT - 168)

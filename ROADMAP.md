@@ -21,8 +21,9 @@ Current release: **v1.4.5**
 - Adventure intro: after the name and the mode, 4 slides (Huygens, its destruction, Phobos, Kamarasov)
   scroll like the credits over a picture. Action button = next slide, B / Esc = skip. Shown once per
   adventure. Veteran mode has its own last slide: Professor Kamarasov died before finishing the
-  quantum anchor. The last sentence carries the pilot's name. French text first (other languages
-  show the same text until translated)
+  quantum anchor. The last sentence carries the pilot's name. Up / Down (or the pad) change the
+  scroll speed smoothly, as in the credits. The journal always starts with "Watch the introduction
+  again". French text first (other languages show the same text until translated)
 
 ### Planned for 1.5.0 (Adventure, 3 acts)
 

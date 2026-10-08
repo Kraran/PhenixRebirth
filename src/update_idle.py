@@ -77,7 +77,7 @@ def tick_menu_or_gameover(game):
     else:
         game._season_theme = None
     if not game.started and game.menu_screen == "story_hub" and getattr(game, "story", None):
-        game.story.update(game.dt)
+        game.story.update(game.dt, -game._credits_scroll_axis())
     if not game.started and game.menu_screen == "jukebox":
         game._update_jukebox()
     if not game.started and game.menu_screen == "achievements":
