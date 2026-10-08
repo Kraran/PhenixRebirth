@@ -3385,9 +3385,11 @@ class Game:
             self.menu_index = 1
             if getattr(self, "story", None):
                 if story_slot:
-                    self.story.open_slot(story_slot)   # the new Game forgot the open slot; the result is already saved
-                self.story.pane = "map"
-                self.story.toast = toast
+                    # the new Game forgot the open slot; the result is already saved
+                    self.story.resume(story_slot, toast)
+                else:
+                    self.story.pane = "map"
+                    self.story.toast = toast
         else:
             self.menu_screen = "main"
             self.menu_index = 0
