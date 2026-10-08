@@ -3237,6 +3237,10 @@ _ADVENTURE_TEXTS.update({
     "story_best_empty": ("Aucun ennemi détruit pour l'instant.", "No enemy destroyed yet."),
     "story_best_count": ("Ennemis détruits : {n}", "Enemies destroyed: {n}"),
     "story_best_bonus": ("Bonus de maîtrise : +{pts} PTS par ennemi", "Mastery bonus: +{pts} PTS per enemy"),
+    "story_best_bonus_boss": ("Bonus de maîtrise : +{pts} PTS par boss", "Mastery bonus: +{pts} PTS per boss"),
+    "story_replay": ("REJOUABLE", "REPLAYABLE"),
+    "story_log_kills": ("Ennemis détruits au total : {n}", "Enemies destroyed in total: {n}"),
+    "story_log_kill_1": ("Ennemis détruits au total : {n}", "Enemies destroyed in total: {n}"),
     "story_b_bird1": ("AVIOÏDE ÉCLAIREUR", "SCOUT AVIOID"),
     "story_b_bird1_t": (
         "Le plus répandu des Avioïdes. Il vole en formation serrée et plonge sur le vaisseau "
