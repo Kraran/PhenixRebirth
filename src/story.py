@@ -61,6 +61,17 @@ def _text(surface, font, text, color, cy, left=None, right=None, centerx=None):
     return img
 
 
+def _text_fit(surface, font, text, color, cy, left, max_w, scale=1.0):
+    """A line anchored left, shrunk (never grown) to `scale` and to fit in `max_w` pixels."""
+    img = font.render(text, True, color)
+    k = min(scale, max_w / img.get_width()) if img.get_width() else 1.0
+    k = min(1.0, k)
+    if k < 1.0:
+        img = pygame.transform.smoothscale(img, (max(1, int(img.get_width() * k)), max(1, int(img.get_height() * k))))
+    surface.blit(img, (left, int(cy - (cy - _cap_top(font, cy)) * k)))
+    return img
+
+
 # Intro slides (credits-style scroll over a picture)
 INTRO_TEXT_W = 860          # width of the scrolling text
 INTRO_SPEED = 46.0          # px per second (about the speed of the credits)
@@ -388,7 +399,7 @@ class StoryHub:
 
     def log_entries(self):
         """The journal as a list: first the story intro (always there), then what happened."""
-        return [{"intro": True}] + list(self.state.get("log") or [])
+        return ss.journal_entries(self.state)
 
     def _hub_nav_v(self, direction):
         if self.pane == "map":
@@ -759,6 +770,7 @@ class StoryHub:
         for i in range(start, min(len(entries), start + rows)):
             entry = entries[i]
             focus = i == self.log_index
+            indent = 0
             row = pygame.Rect(box.x + 12, y - step // 2 + 2, box.w - 24, step - 4)
             if focus:
                 pygame.draw.rect(surface, (40, 36, 20), row, border_radius=6)
@@ -766,15 +778,22 @@ class StoryHub:
             if isinstance(entry, dict) and entry.get("intro"):
                 text = t("story_log_intro")
                 col = (255, 230, 140) if focus else (255, 190, 90)
+            elif isinstance(entry, dict) and "kills" in entry:
+                text = log_text(entry, t)
+                col = (255, 215, 130) if focus else (190, 175, 130)
+                indent = 56                                   # sits under its mission line
             else:
                 text = log_text(entry, t)
                 col = (235, 235, 245) if focus else (200, 200, 220)
-            _text(surface, small, ("> " if focus else "  ") + text, col, y, left=box.x + 24)
+            if indent:
+                _text(surface, small, ">" if focus else " ", col, y, left=box.x + 24)
+            _text_fit(surface, small, text if indent else ("> " if focus else "  ") + text, col, y,
+                      box.x + 24 + indent, row.w - 24 - indent)
             y += step
 
     def bestiary_picture(self, kind, count):
         """The picture of an enemy met `count` times: small, then 2x, then animated (also 2x)."""
-        tiers = ss.best_tiers(count)
+        tiers = ss.best_tiers(count, ss.is_boss(kind))
         img = bestiary_art.animated(kind, self.anim_t) if tiers["anim"] else bestiary_art.still(kind)
         if tiers["zoom"]:
             img = pygame.transform.scale(img, (img.get_width() * 2, img.get_height() * 2))
@@ -791,7 +810,7 @@ class StoryHub:
             return
         self.best_index = max(0, min(len(entries) - 1, self.best_index))
 
-        list_w = 340
+        list_w = 400
         y = box.y + 30
         for i, (entry, count) in enumerate(entries):
             focus = i == self.best_index
@@ -800,13 +819,14 @@ class StoryHub:
                 pygame.draw.rect(surface, (40, 36, 20), row, border_radius=6)
                 pygame.draw.rect(surface, (255, 210, 80), row, 2, border_radius=6)
             col = (255, 230, 140) if focus else (200, 200, 215)
-            _text(surface, small, ("> " if focus else "  ") + t(entry["name"]), col, y, left=row.x + 10)
+            _text_fit(surface, small, ("> " if focus else "  ") + t(entry["name"]), col, y, row.x + 10,
+                      list_w - 20, scale=0.8)
             y += 56
         pygame.draw.line(surface, (60, 70, 100), (box.x + list_w + 24, box.y + 16),
                          (box.x + list_w + 24, box.bottom - 16), 1)
 
         entry, count = entries[self.best_index]
-        tiers = ss.best_tiers(count)
+        tiers = ss.best_tiers(count, bool(entry.get("boss")))
         panel = pygame.Rect(box.x + list_w + 44, box.y + 16, box.w - list_w - 64, box.h - 32)
         cx = panel.centerx
 
@@ -817,7 +837,12 @@ class StoryHub:
         img = self.bestiary_picture(entry["id"], count)
         surface.blit(img, (frame.centerx - img.get_width() // 2, frame.centery - img.get_height() // 2))
 
-        _text(surface, medium, t(entry["name"]), (255, 170, 80), frame.bottom + 36, centerx=cx)
+        name_w = medium.size(t(entry["name"]))[0]
+        if name_w <= panel.w - 20:
+            _text(surface, medium, t(entry["name"]), (255, 170, 80), frame.bottom + 36, centerx=cx)
+        else:                                   # a long translated name is shrunk to fit
+            _text_fit(surface, medium, t(entry["name"]), (255, 170, 80), frame.bottom + 36,
+                      panel.x + 10, panel.w - 20)
         _text(surface, small, t("story_best_count").format(n=count), (150, 155, 180), frame.bottom + 76, centerx=cx)
         line_y = frame.bottom + 116
         if tiers["text"]:
@@ -825,7 +850,8 @@ class StoryHub:
                 _text(surface, small, line, (215, 218, 232), line_y, centerx=cx)
                 line_y += 36
         if tiers["bonus"]:
-            _text(surface, small, t("story_best_bonus").format(pts=ss.BESTIARY_BONUS), (255, 215, 90),
+            _text(surface, small, t("story_best_bonus_boss" if entry.get("boss") else "story_best_bonus").format(
+                      pts=ss.bestiary_bonus(entry["id"])), (255, 215, 90),
                   panel.bottom - 14, centerx=cx)
 
     def _draw_map(self, surface, font, medium, small):
@@ -851,7 +877,7 @@ class StoryHub:
             elif done:
                 col = (140, 220, 160) if not focus else (190, 255, 190)
                 mark = "> " if focus else "  "
-                state = t("story_cleared")
+                state = t("story_replay") if mission.get("hunt") else t("story_cleared")
             elif playable:
                 col = (255, 230, 140) if focus else (210, 210, 220)
                 mark = "> " if focus else "  "

@@ -25,9 +25,13 @@ Current release: **v1.4.5**
   scroll speed smoothly, as in the credits. The journal always starts with "Watch the introduction
   again". French text first (other languages show the same text until translated)
 - Adventure Bestiary: a new screen left of the journal. Each enemy shows up once you have destroyed
-  one (picture), then at 3 (picture twice as big), 5 (animated), 10 (presentation text) and 20
-  (every such enemy is worth +10 points, the Veteran bonus of the arcade game). Enemies destroyed
-  count even when you lose a mission, but not when you leave one by choice
+  one (picture), then at 50 (picture twice as big), 100 (animated), 150 (presentation text) and 200
+  (every such enemy is worth +10 points, the Veteran bonus of the arcade game). Bosses use a short
+  table: 1, 2, 3, 5 and 10 defeats, the last one adding +1000 points per boss. Enemies destroyed
+  count even when you lose a mission, but not when you leave one by choice. Names are drawn smaller
+- The four Bestiary sorties of Act 1 are "hunt" missions that can be flown again as often as you like
+  (shown as REPLAYABLE). The journal writes, under each one, how many enemies were destroyed in all
+  its runs
 
 ### Planned for 1.5.0 (Adventure, 3 acts)
 

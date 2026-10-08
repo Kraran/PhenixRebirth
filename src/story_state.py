@@ -50,6 +50,7 @@ _EPS = 1e-6
 MISSIONS = [
     {
         "id": "ch1_sortie",
+        "hunt": True,
         "title": "story_m_sortie",
         "blurb": "story_m_sortie_b",
         "need": None,
@@ -60,6 +61,7 @@ MISSIONS = [
     },
     {
         "id": "best_s2",
+        "hunt": True,
         "title": "story_m_best2",
         "blurb": "story_m_best2_b",
         "need": "ch1_sortie",
@@ -70,6 +72,7 @@ MISSIONS = [
     },
     {
         "id": "best_s3",
+        "hunt": True,
         "title": "story_m_best3",
         "blurb": "story_m_best3_b",
         "need": "bestiary_s2",
@@ -80,6 +83,7 @@ MISSIONS = [
     },
     {
         "id": "best_s4",
+        "hunt": True,
         "title": "story_m_best4",
         "blurb": "story_m_best4_b",
         "need": "bestiary_s3",
@@ -121,13 +125,13 @@ BESTIARY = [
     {"id": "garg3", "stage": 3, "name": "story_b_garg3", "text": "story_b_garg3_t"},
     {"id": "garg4", "stage": 4, "name": "story_b_garg4", "text": "story_b_garg4_t"},
 ]
-# What each tier shows, by number of enemies of that kind destroyed.
-BEST_SEEN = 1        # the picture
-BEST_ZOOM = 3        # the picture twice as big
-BEST_ANIM = 5        # the picture animated
-BEST_TEXT = 10       # the presentation text
-BEST_BONUS = 20      # each such enemy is worth more points (same bonus as Veteran difficulty)
-BESTIARY_BONUS = ENEMY_VETERAN_BONUS
+# What each tier shows, by number of enemies of that kind destroyed:
+# (picture, picture twice as big, animation, presentation text, bonus points).
+BEST_TIERS_COMMON = (1, 50, 100, 150, 200)
+BEST_TIERS_BOSS = (1, 2, 3, 5, 10)
+BEST_SEEN = 1                          # first tier of both tables
+BESTIARY_BONUS = ENEMY_VETERAN_BONUS   # common enemy: same bonus as Veteran difficulty
+BOSS_BONUS = 1000                      # boss: extra points per boss destroyed
 
 
 def enemy_kind(stage):
@@ -148,15 +152,30 @@ def encounters(state, kind):
     return max(0, int(_num(data.get(kind), 0)))
 
 
-def best_tiers(count):
-    """What an entry shows after `count` enemies destroyed."""
+def _entry(kind):
+    return next((e for e in BESTIARY if e["id"] == kind), None)
+
+
+def is_boss(kind):
+    entry = _entry(kind)
+    return bool(entry and entry.get("boss"))
+
+
+def bestiary_bonus(kind):
+    """Extra points per enemy of this kind once its last tier is reached."""
+    return BOSS_BONUS if is_boss(kind) else BESTIARY_BONUS
+
+
+def best_tiers(count, boss=False):
+    """What an entry shows after `count` enemies destroyed (boss: the short table)."""
     count = int(_num(count, 0))
+    seen, zoom, anim, text, bonus = BEST_TIERS_BOSS if boss else BEST_TIERS_COMMON
     return {
-        "seen": count >= BEST_SEEN,
-        "zoom": count >= BEST_ZOOM,
-        "anim": count >= BEST_ANIM,
-        "text": count >= BEST_TEXT,
-        "bonus": count >= BEST_BONUS,
+        "seen": count >= seen,
+        "zoom": count >= zoom,
+        "anim": count >= anim,
+        "text": count >= text,
+        "bonus": count >= bonus,
     }
 
 
@@ -171,9 +190,12 @@ def bestiary_entries(state):
 
 
 def kill_bonus(state, kind, run_kills):
-    """Extra points for a kill: BESTIARY_BONUS once 20 of that kind are down (saved + this run)."""
+    """Extra points for a kill once the last tier is reached (saved total + this run)."""
+    entry = _entry(kind)
+    if entry is None:
+        return 0
     total = encounters(state, kind) + max(0, int(_num(run_kills, 0)))
-    return BESTIARY_BONUS if total >= BEST_BONUS else 0
+    return bestiary_bonus(kind) if best_tiers(total, bool(entry.get("boss")))["bonus"] else 0
 
 
 def record_kills(state, kills):
@@ -187,6 +209,39 @@ def record_kills(state, kills):
     for kind, n in kills.items():
         if kind in known:
             data[kind] = encounters(state, kind) + max(0, int(_num(n, 0)))
+
+
+# ---------------------------------------------------------------- hunt missions
+# The four Act 1 sorties that each face one kind of enemy ("hunt" missions) can be flown again
+# as often as the pilot likes. The journal keeps the total of enemies destroyed in all their runs.
+def mission_by_id(mission_id):
+    return next((m for m in MISSIONS if m["id"] == mission_id), None)
+
+
+def is_hunt(mission):
+    return bool(mission and mission.get("hunt"))
+
+
+def mission_total_kills(state, mission_id):
+    """Enemies destroyed in every run of this mission so far (all outcomes)."""
+    data = state.get("mission_kills")
+    if not isinstance(data, dict):
+        return 0
+    return max(0, int(_num(data.get(mission_id), 0)))
+
+
+def record_mission_kills(state, mission_id, kills):
+    """Add the enemies destroyed during one run to the total of a hunt mission."""
+    if not is_hunt(mission_by_id(mission_id)) or not isinstance(kills, dict):
+        return
+    known = {e["id"] for e in BESTIARY}
+    added = sum(max(0, int(_num(n, 0))) for kind, n in kills.items() if kind in known)
+    if added <= 0:
+        return
+    data = state.get("mission_kills")
+    if not isinstance(data, dict):
+        data = state["mission_kills"] = {}
+    data[mission_id] = mission_total_kills(state, mission_id) + added
 
 
 # ---------------------------------------------------------------- save data
@@ -221,6 +276,7 @@ def default_state():
         "selected_slot": 0,
         "log": [],
         "bestiary": {},          # enemies destroyed so far, by kind
+        "mission_kills": {},     # enemies destroyed in all the runs of a hunt mission, by mission id
     }
 
 
@@ -283,6 +339,10 @@ def migrate_state(data):
         base["log"] = list(data["log"])
     if isinstance(data.get("bestiary"), dict):
         record_kills(base, {k: v for k, v in data["bestiary"].items()})
+    if isinstance(data.get("mission_kills"), dict):
+        for mid, n in data["mission_kills"].items():
+            if isinstance(mid, str) and is_hunt(mission_by_id(mid)):
+                base["mission_kills"][mid] = max(0, int(_num(n, 0)))
     if isinstance(data.get("slots"), list) and data["slots"]:
         merged = []
         for i, sl in enumerate(data["slots"][:2]):
@@ -772,6 +832,7 @@ def record_result(state, mission_id, score, cleared, kills=None):
     score = max(0, int(score or 0))
     res = {"score": score, "cleared": bool(cleared), "first": False, "lost": 0, "fallen": False}
     record_kills(state, kills)            # the enemies met count whatever the outcome
+    record_mission_kills(state, mission_id, kills)
     if not cleared:
         if state.get("mode") == "veteran":
             state["fallen"] = True
@@ -795,8 +856,28 @@ def record_result(state, mission_id, score, cleared, kills=None):
     return res
 
 
+def journal_entries(state):
+    """The journal as a list: the story intro first (always there), then what happened.
+
+    Right under the first-clear line of a hunt mission comes a line with the total of
+    enemies destroyed in all the runs of that mission (only once there is something to count).
+    """
+    out = [{"intro": True}]
+    hunts = {m["log"]: m["id"] for m in MISSIONS if is_hunt(m) and m.get("log")}
+    for entry in state.get("log") or []:
+        out.append(entry)
+        key = entry.get("key") if isinstance(entry, dict) else None
+        mission_id = hunts.get(key)
+        if mission_id and mission_total_kills(state, mission_id) > 0:
+            out.append({"kills": mission_total_kills(state, mission_id), "mission": mission_id})
+    return out
+
+
 def log_text(entry, translate):
     """Text of one journal line (new entries are {"key": ...}, old ones plain text)."""
     if isinstance(entry, dict):
+        if "kills" in entry:
+            n = max(0, int(_num(entry.get("kills"), 0)))
+            return translate("story_log_kill_1" if n == 1 else "story_log_kills").format(n=n)
         return translate(str(entry.get("key") or "story_log_clear"))
     return str(entry)
