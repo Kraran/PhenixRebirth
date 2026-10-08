@@ -58,6 +58,9 @@ PLAYER_INVULN_TIME = 1.8          # seconds of invulnerability after hit
 # Enemy Stage 1
 ENEMY_SPEED = 85.0
 ENEMY_DIVE_SPEED = 280.0
+# Extra points per bird destroyed: Veteran difficulty in the arcade game, and in the Adventure
+# the bonus of an enemy you have met 20 times (Bestiary). Same value on purpose.
+ENEMY_VETERAN_BONUS = 10
 ENEMY_BULLET_SPEED = 320.0
 ENEMY_SHOOT_CHANCE = 0.0035
 ENEMY_DIVE_CHANCE = 0.0018

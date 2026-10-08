@@ -47,6 +47,7 @@ from ingame_music import cycle as ingame_cycle, label as ingame_label, normalize
 from mp3_title import title_from_path, title_for_key
 from i18n import set_lang, get_lang, t, t_help, t_list, get_credits_lines, LANGS, LANG_CODES
 from story import StoryHub
+import story_state
 import addon as mame_addon
 from highscores import load_highscores, is_highscore, insert_score, reset_highscores
 from achievements import (
@@ -946,12 +947,29 @@ class Game:
             return 1.2
         return 1.0
 
-    def _enemy_points(self, content_stage):
-        """Points for killing a bird by content stage (1-4)."""
+    def _enemy_points(self, content_stage, mastered=False):
+        """Points for killing a bird by content stage (1-4).
+
+        Veteran difficulty adds ENEMY_VETERAN_BONUS; so does an Adventure enemy the pilot has
+        already destroyed 20 times (`mastered`). The bonus is never counted twice.
+        """
         base = {1: 10, 2: 20, 3: 30, 4: 40}.get(content_stage, 10)
-        if self.difficulty == "veteran":
-            return base + 10
+        if self.difficulty == "veteran" or mastered:
+            return base + ENEMY_VETERAN_BONUS
         return base
+
+    def _enemy_kill_points(self, enemy):
+        """Points for one enemy destroyed. In the Adventure it also counts for the Bestiary."""
+        stage = getattr(enemy, "stage", 1)
+        adv = getattr(self, "adventure", None)
+        story = getattr(self, "story", None)
+        if not adv or story is None:
+            return self._enemy_points(stage)
+        kind = story_state.enemy_kind(stage)
+        kills = adv.setdefault("kills", {})
+        kills[kind] = kills.get(kind, 0) + 1
+        mastered = story_state.kill_bonus(story.state, kind, kills[kind]) > 0
+        return self._enemy_points(stage, mastered)
 
     def _boss_points(self):
         return 1000 if self.difficulty == "veteran" else 500
@@ -1723,7 +1741,7 @@ class Game:
         story = getattr(self, "story", None)
         if story is not None:
             try:
-                story.apply_result(spec.get("id"), score, bool(cleared))
+                story.apply_result(spec.get("id"), score, bool(cleared), spec.get("kills"))
             except Exception:
                 log_exc("game._end_adventure")
         self.adventure = None
@@ -3362,7 +3380,8 @@ class Game:
             try:
                 if self.stage_transition == "fly_up":
                     # the mission was already won: bank it
-                    self.story.apply_result(self.adventure.get("id"), int(self.score), True)
+                    self.story.apply_result(self.adventure.get("id"), int(self.score), True,
+                                            self.adventure.get("kills"))
                     toast = self.story.toast
                 else:
                     # leaving a mission by choice: nothing gained, nothing lost, back to the hangar

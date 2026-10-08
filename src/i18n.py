@@ -3228,6 +3228,41 @@ _INTRO_FR = {
 for _k, _v in _INTRO_FR.items():
     _ADVENTURE_TEXTS[_k] = (_v, _v)
 
+# --- Bestiary (French text first; the other languages show the English text) ---
+_ADVENTURE_TEXTS.update({
+    "story_best": ("BESTIAIRE", "BESTIARY"),
+    "story_tab_best": ("BESTIAIRE", "BESTIARY"),
+    "story_hint_best": ("Haut / Bas  choisir   Gauche / Droite  écran   B/Échap  retour",
+                        "Up / Down  choose   Left / Right  pane   B/Esc  back"),
+    "story_best_empty": ("Aucun ennemi détruit pour l'instant.", "No enemy destroyed yet."),
+    "story_best_count": ("Ennemis détruits : {n}", "Enemies destroyed: {n}"),
+    "story_best_bonus": ("Bonus de maîtrise : +{pts} PTS par ennemi", "Mastery bonus: +{pts} PTS per enemy"),
+    "story_b_bird1": ("AVIOÏDE ÉCLAIREUR", "SCOUT AVIOID"),
+    "story_b_bird1_t": (
+        "Le plus répandu des Avioïdes. Il vole en formation serrée et plonge sur le vaisseau "
+        "le plus proche, sans jamais battre en retraite. Fragile, mais jamais seul.",
+        "The most common Avioid. It flies in tight formation and dives at the nearest ship, "
+        "never retreating. Fragile, but never alone."),
+    "story_b_bird2": ("AVIOÏDE KAKI", "KHAKI AVIOID"),
+    "story_b_bird2_t": (
+        "Plus rapide et plus nombreux que l'éclaireur. Son plumage kaki se confond avec la "
+        "poussière des stations détruites.",
+        "Faster and more numerous than the scout. Its khaki plumage blends with the dust "
+        "of destroyed stations."),
+    "story_b_garg3": ("GARGOUILLE", "GARGOYLE"),
+    "story_b_garg3_t": (
+        "Grand prédateur mécanique qui rôde sans formation. Ses ailes encaissent les tirs, "
+        "mais elles repoussent si l'on tarde à l'abattre.",
+        "A large mechanical predator that roams with no formation. Its wings soak up shots, "
+        "but grow back if you wait too long to bring it down."),
+    "story_b_garg4": ("GARGOUILLE SOMBRE", "DARK GARGOYLE"),
+    "story_b_garg4_t": (
+        "Plus rapide et plus nombreuse que la gargouille. Les pilotes qui l'ont croisée "
+        "n'en parlent presque jamais.",
+        "Faster and more numerous than the gargoyle. The pilots who met one hardly ever "
+        "talk about it."),
+})
+
 for _k, (_fr, _en) in _ADVENTURE_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}
     T[_k]["fr"] = _fr
