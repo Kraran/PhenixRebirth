@@ -5,14 +5,19 @@ Current release: **v1.4.5**
 
 - Adventure code reorganised, nothing changes on screen: rules and save data now live in
   `story_state.py` (tested without a window), `story.py` only draws the menus
-- Adventure save is now one file per slot (`story_1.json` … `story_3.json`, version 3).
+- Adventure save is now one file per slot (`story_1.json` … `story_3.json`, version 4).
   The old draft `story.json` is no longer read; start a new adventure
 - Dome time and recharge are saved in seconds (no longer tied to 60 Hz)
 - The adventure journal follows the language chosen in Options
 - Adventure menus: texts are now centred inside their boxes (hangar, workshop, mission map, journal)
 - No more frozen explosion pieces on the menu after an adventure mission
 - Adventure start: slot list (3 saves with pilot name, act, date and mode), pilot name entry, Normal / Veteran choice
-- Adventure failure rules: a failed mission gives no points and costs 20 % of your points; Veteran mode has permanent death
+- Adventure failure rules: a failed mission (death) gives no points and costs 20 % of your points; Veteran mode has permanent death. Quitting a mission by choice changes nothing
+- Act 1 hangar: the Shield starts slow (40 % speed), with one life, no dome, and dies the moment
+  it touches the screen edge. The workshop sells speed 60 % then 80 %, a second life, and the arcade
+  edge rule (slowdown, then death if you stay too long). The dome becomes a series of quests (Act 2).
+  Prices: 300 / 800 / 2000 / 1000. The Phenix slot shows as empty and cannot be selected in Act 1.
+  Saves from the earlier draft are converted (speed steps move down, dome back offline)
 
 ### Planned for 1.5.0 (Adventure, 3 acts)
 
@@ -20,8 +25,9 @@ Current release: **v1.4.5**
   keyboard), Normal / Veteran choice, delete with confirmation
 - Done: failed mission = back to the workshop, no gain and 20 % of your points lost (rounded,
   never below 0); Veteran = permanent death (the save becomes a memorial).
-  Quitting a mission counts as a failure
-- Act 1: weak Shield upgraded to about 80 % of the arcade ship
+  Quitting a mission by choice changes nothing (no gain, no loss, back to the hangar)
+- Act 1: weak Shield upgraded to about 80 % of the arcade ship. Done: the Act 1 hangar and workshop
+  (speed, lives, walls); to come: the Act 1 missions and story
 - Act 2: quests to obtain the Phenix (boss at the end) and first upgrades
 - Act 3: both ships up to 100 %, epic final quest
 - Story written together, French first, translations later

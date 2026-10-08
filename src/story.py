@@ -97,6 +97,10 @@ class StoryHub:
         state = ss.load_state(ss.story_path(slot_no))
         self.state = state if state is not None else ss.default_state()
         self.slot_no = int(slot_no)
+        slots = self.state.get("slots") or []
+        cur = int(ss._num(self.state.get("selected_slot"), 0))
+        if not (0 <= cur < len(slots) and slots[cur].get("owned")):
+            self.state["selected_slot"] = 0       # never rest on a hull the pilot does not own yet
         self.screen = "hub"
         self.pane = "hangar"
         self.zone = "slots"
@@ -281,7 +285,7 @@ class StoryHub:
             slots = self.state["slots"]
             cur = int(self.state.get("selected_slot", 0))
             nxt = max(0, min(len(slots) - 1, cur + direction))
-            if nxt != cur:
+            if nxt != cur and slots[nxt].get("owned"):
                 self.state["selected_slot"] = nxt
                 return
         idx = PANES.index(self.pane)
@@ -351,14 +355,14 @@ class StoryHub:
         self.open_slots()
         self.msg = msg
 
-    def resume(self, slot_no, toast=""):
+    def resume(self, slot_no, toast="", pane="map"):
         """Back from a mission in a new Game object: reload the slot from disk."""
         self.open_slot(slot_no)
         if self.state.get("fallen"):
             self.toast = toast
             self._show_fall()
         else:
-            self.pane = "map"
+            self.pane = pane
             self.toast = toast
 
     def _buy(self, row):
@@ -590,13 +594,14 @@ class StoryHub:
             pygame.draw.rect(surface, (16, 18, 28), r, border_radius=12)
             pygame.draw.rect(surface, border, r, 3 if focus else 2, border_radius=12)
             label = t("ship_shield") if sl.get("id") == "shield" else t("ship_phoenix")
-            _text(surface, small, f"SLOT {i + 1}  {label}", border, r.y + 26, left=r.x + 16)
+            title = f"SLOT {i + 1}  {label}" if owned else f"SLOT {i + 1}"
+            _text(surface, small, title, border, r.y + 26, left=r.x + 16)
             img = self._ships.get(sl.get("id"))
             if owned and img is not None:
                 surface.blit(img, (r.centerx - img.get_width() // 2, r.y + 48))
             else:
-                _text(surface, medium, "[X]", (140, 140, 150), r.y + 78, centerx=r.centerx)
-                _text(surface, small, t("story_phoenix_locked"), (140, 140, 160), r.bottom - 26, centerx=r.centerx)
+                # a hull that is not owned yet shows nothing about itself (no spoiler)
+                _text(surface, medium, t("story_hull_empty"), (110, 115, 135), r.centery + 8, centerx=r.centerx)
 
         sl = slots[sel] if 0 <= sel < len(slots) else (slots[0] if slots else {})
         self._draw_stats(surface, sl, small, y0 + slot_h + 8)
@@ -609,12 +614,12 @@ class StoryHub:
         dome = bool(sl.get("dome"))
         dur = float(sl.get("dome_dur") or 0)
         cd = float(sl.get("dome_cd") or 5.0)
-        dome_val = t("story_offline")
+        dome_val = t("story_locked")
         if dome:
             dome_val = f"{dur:.1f}s / {cd:.0f}s"
         cells = [
-            (t("story_stat_lives"), f"{sl.get('lives', 1)}/3"),
-            (t("story_stat_speed"), f"{sl.get('speed', 60)}%"),
+            (t("story_stat_lives"), f"{sl.get('lives', 1)}/{ss.act_caps(self.state)['lives']}"),
+            (t("story_stat_speed"), f"{sl.get('speed', ss.SPEED_START)}%"),
             (t("story_stat_dome"), dome_val),
             (t("story_stat_wall"), t("story_wall_" + str(sl.get("wall", "instant")))),
         ]
@@ -624,7 +629,7 @@ class StoryHub:
             r = pygame.Rect(x + i * (w + 16), y, w, 76)
             pygame.draw.rect(surface, (16, 18, 28), r, border_radius=8)
             pygame.draw.rect(surface, (60, 70, 90), r, 1, border_radius=8)
-            col = (255, 90, 80) if (i == 2 and not dome) else (220, 220, 235)
+            col = (110, 115, 135) if (i == 2 and not dome) else (220, 220, 235)
             if not owned:
                 val = "—"
             _text(surface, small, lab, (150, 155, 175), r.y + 22, centerx=r.centerx)

@@ -1698,7 +1698,7 @@ class Game:
         self.player.pid = 1
         self.player.lives = int(loadout.get("lives") or 1)
         self.player.infinite_lives = False
-        pct = int(loadout.get("speed_pct") or 60)
+        pct = int(loadout.get("speed_pct") or 40)
         self.player.speed = PLAYER_SPEED * (pct / 100.0)
         dome = bool(loadout.get("dome"))
         self.player.adventure_dome = dome
@@ -3356,12 +3356,17 @@ class Game:
         back_story = False
         toast = ""
         story_slot = None
+        story_pane = "map"
         if getattr(self, "adventure", None) and getattr(self, "story", None):
             story_slot = self.story.slot_no
             try:
-                cleared = self.stage_transition == "fly_up"
-                self.story.apply_result(self.adventure.get("id"), int(self.score), cleared)
-                toast = self.story.toast
+                if self.stage_transition == "fly_up":
+                    # the mission was already won: bank it
+                    self.story.apply_result(self.adventure.get("id"), int(self.score), True)
+                    toast = self.story.toast
+                else:
+                    # leaving a mission by choice: nothing gained, nothing lost, back to the hangar
+                    story_pane = "hangar"
             except Exception:
                 log_exc("game._quit_to_menu")
             self.adventure = None
@@ -3386,9 +3391,9 @@ class Game:
             if getattr(self, "story", None):
                 if story_slot:
                     # the new Game forgot the open slot; the result is already saved
-                    self.story.resume(story_slot, toast)
+                    self.story.resume(story_slot, toast, story_pane)
                 else:
-                    self.story.pane = "map"
+                    self.story.pane = story_pane
                     self.story.toast = toast
         else:
             self.menu_screen = "main"
