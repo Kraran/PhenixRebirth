@@ -44,6 +44,13 @@ Current release: **v1.4.5**
   cannot be flown again (the four Bestiary sorties stay replayable). The old "chapter relief" mission is
   replaced by this series
 
+- Adventure, Dome V "the swarm": the four enemies at once (levels 11 to 14, speed of level 11), each kind
+  replaced as it falls, up to three times its normal count in all (39 / 66 / 21 / 30). It is won when
+  all of them are down; a counter shows how many are left. It brings the dome online and opens the
+  first dome upgrade in the workshop
+- Adventure, gateway to Act 2: a full run of arcade levels 11 to 15 (wave counter on screen). The death of
+  the boss starts Act 2 (the save shows ACT 2). The mission map scrolls now that it is longer
+
 ### Planned for 1.5.0 (Adventure, 3 acts)
 
 - Done: 3 save slots (name, date, act, mode), name entry with keyboard or gamepad (on-screen

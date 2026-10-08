@@ -37,21 +37,21 @@ def test_locked_phoenix_falls_back_to_shield():
     assert ss.loadout(st)["ship_id"] == "shield"
 
 
-def test_act1_workshop_reaches_80_percent_two_lives_and_the_slow_wall():
+def test_act1_workshop_reaches_80_percent_two_lives_the_slow_wall_and_the_first_dome():
     st = _state()
-    assert [row[0] for row in ss.SHOP] == ["speed_60", "speed_80", "lives_2", "wall_slow"]
+    assert [row[0] for row in ss.SHOP] == ["speed_60", "speed_80", "lives_2", "wall_slow", "dome_on"]
     for sid, *_ in ss.SHOP:
         assert ss.buy(st, sid), sid
     lo = ss.loadout(st)
-    assert (lo["lives"], lo["speed_pct"], lo["dome"], lo["wall"]) == (2, 80, False, "slow")
+    assert (lo["lives"], lo["speed_pct"], lo["dome"], lo["wall"]) == (2, 80, True, "slow")
     caps = ss.act_caps(st)
     assert (caps["speed"], caps["lives"]) == (80, 2)
     # everything the Act 1 workshop sells is bought: nothing more to buy
     for sid, *_ in ss.SHOP:
         assert ss.buy(st, sid) is False
         assert ss.upgrade_note(st, sid) == "story_owned"
-    # the dome is NOT part of Act 1: it stays offline and unsold
-    assert st["slots"][0]["dome"] is False
+    # only the first dome step is sold in Act 1: the shortest dome, the longer ones come later
+    assert (st["slots"][0]["dome"], st["slots"][0]["dome_dur"], st["slots"][0]["dome_cd"]) == (True, 1.0, 5.0)
 
 
 def test_later_acts_upgrades_finish_the_ship():
@@ -296,4 +296,4 @@ def test_each_slot_has_its_own_file():
 
 def test_act1_workshop_prices():
     assert [(row[0], row[2]) for row in ss.SHOP] == [
-        ("speed_60", 300), ("speed_80", 800), ("lives_2", 2000), ("wall_slow", 1000)]
+        ("speed_60", 300), ("speed_80", 800), ("lives_2", 2000), ("wall_slow", 1000), ("dome_on", 800)]

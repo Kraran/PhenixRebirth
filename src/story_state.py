@@ -143,6 +143,34 @@ MISSIONS = [
         "log": "story_log_dome4",
     },
     {
+        # all four enemies at once (levels 11 to 14), replaced as they fall; opens the dome
+        "id": "dome_5",
+        "title": "story_m_dome5",
+        "blurb": "story_m_dome5_b",
+        "need": "dome_s4",
+        "content": 1,
+        "swarm": True,
+        "stage": 11,
+        "speed": 1.0,
+        "once": True,
+        "unlock": ["dome_s5", "dome_online"],
+        "log": "story_log_dome5",
+    },
+    {
+        # a full run of the arcade levels 11 to 15; the death of the boss starts Act 2
+        "id": "act2_gate",
+        "title": "story_m_gate2",
+        "blurb": "story_m_gate2_b",
+        "need": "dome_s5",
+        "content": 1,
+        "waves": [11, 12, 13, 14, 15],
+        "speed": 1.0,
+        "once": True,
+        "unlock": ["act2"],
+        "act": 2,
+        "log": "story_log_gate2",
+    },
+    {
         "id": "ch2_tease",
         "title": "story_m_ch2",
         "blurb": "story_m_ch2_b",
@@ -707,6 +735,16 @@ def _up_dome_dur(slot):
     return True
 
 
+def _up_dome_on(slot):
+    """The first dome upgrade: the Shield gets its dome (1 s, the shortest one)."""
+    if slot.get("dome"):
+        return False
+    slot["dome"] = True
+    slot["dome_dur"] = DOME_DUR_START
+    slot["dome_cd"] = _num(slot.get("dome_cd"), DOME_CD_START) or DOME_CD_START
+    return True
+
+
 def _up_dome_lat(slot):
     if not slot.get("dome"):
         return False
@@ -772,6 +810,10 @@ def _st_lives_3(slot):
     return None
 
 
+def _st_dome_on(slot):
+    return "owned" if slot.get("dome") else None
+
+
 def _st_dome_dur(slot):
     if slot.get("dome") and (_num(slot.get("dome_dur"), 0.0) or 0.0) >= DOME_DUR_MAX - _EPS:
         return "owned"
@@ -807,6 +849,7 @@ UPGRADES = [
     ("speed_80", "story_shop_speed80", 800, "ch1_speed", _up_speed_80, _st_speed_80, 1),
     ("lives_2", "story_shop_lives2", 2000, "ch1_life_2", _up_lives_2, _st_lives_2, 1),
     ("wall_slow", "story_shop_wall_slow", 1000, "ch1_wall", _up_wall_slow, _st_wall_slow, 1),
+    ("dome_on", "story_shop_dome_on", 800, "dome_online", _up_dome_on, _st_dome_on, 1),
     ("speed_100", "story_shop_speed100", 1000, "ch3_open", _up_speed_100, _st_speed_100, 3),
     ("lives_3", "story_shop_lives3", 900, "ch3_open", _up_lives_3, _st_lives_3, 3),
     ("dome_dur", "story_shop_dome", 800, "dome_online", _up_dome_dur, _st_dome_dur, 2),
@@ -885,7 +928,7 @@ def record_result(state, mission_id, score, cleared, kills=None):
     text KEY, not the translated text, so it follows the player's language.
     """
     score = max(0, int(score or 0))
-    res = {"score": score, "cleared": bool(cleared), "first": False, "lost": 0, "fallen": False}
+    res = {"score": score, "cleared": bool(cleared), "first": False, "lost": 0, "fallen": False, "act": 0}
     record_kills(state, kills)            # the enemies met count whatever the outcome
     record_mission_kills(state, mission_id, kills)
     if not cleared:
@@ -903,6 +946,10 @@ def record_result(state, mission_id, score, cleared, kills=None):
         flags = state.setdefault("flags", {})
         for name in mission.get("unlock") or []:
             flags[name] = True
+        act = int(_num(mission.get("act"), 0))
+        if act > int(_num(state.get("act"), 1)):
+            state["act"] = act                       # the end of an act starts the next one
+            res["act"] = act
         cleared_ids = state.setdefault("cleared", [])
         res["first"] = mission_id not in cleared_ids
         if res["first"]:

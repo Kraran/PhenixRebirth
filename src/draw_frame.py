@@ -87,6 +87,14 @@ def draw_play(game):
     )
     stage_x = BASE_WIDTH // 2 - stage_surf.get_width() // 2 if game.play_mode == "coop" else 16
     game.game_surface.blit(stage_surf, (stage_x, 16))
+    adv = getattr(game, "adventure", None)
+    if adv and adv.get("swarm") and game.play_mode != "coop":
+        left = tc.get(game.font, t("story_swarm_left").format(n=game.formation.swarm_remaining()), (255, 220, 120))
+        game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
+    elif adv and adv.get("waves") and game.play_mode != "coop":
+        wave = tc.get(game.font, t("story_wave_n").format(n=int(adv.get("wave_i", 0)) + 1, m=len(adv["waves"])),
+                      (255, 220, 120))
+        game.game_surface.blit(wave, (BASE_WIDTH - 16 - wave.get_width(), 44))
     if getattr(game, "adventure", None) and not game.adventure.get("dome"):
         off = tc.get(game.font, t("story_dome_broken"), (255, 90, 80))
         game.game_surface.blit(off, (16, 40))
