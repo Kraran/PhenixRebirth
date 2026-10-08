@@ -1,6 +1,27 @@
 # Roadmap — Phenix Rebirth
 Current release: **v1.4.5**
 
+## Unreleased (towards 1.5.0 — Adventure)
+
+- Adventure code reorganised, nothing changes on screen: rules and save data now live in
+  `story_state.py` (tested without a window), `story.py` only draws the menus
+- Adventure save is now one file per slot (`story_1.json` … `story_3.json`, version 3).
+  The old draft `story.json` is no longer read; start a new adventure
+- Dome time and recharge are saved in seconds (no longer tied to 60 Hz)
+- The adventure journal follows the language chosen in Options
+- Adventure menus: texts are now centred inside their boxes (hangar, workshop, mission map, journal)
+- No more frozen explosion pieces on the menu after an adventure mission
+
+### Planned for 1.5.0 (Adventure, 3 acts)
+
+- 3 save slots (name, date, act), name entry with keyboard or gamepad, Normal / Veteran mode
+- Failed mission: back to the workshop, no gain, a penalty that is higher when the score was low;
+  Veteran = permanent death
+- Act 1: weak Shield upgraded to about 80 % of the arcade ship
+- Act 2: quests to obtain the Phenix (boss at the end) and first upgrades
+- Act 3: both ships up to 100 %, epic final quest
+- Story written together, French first, translations later
+
 ## Done in 1.4.5
 
 - 144 Hz option (Options: 60 / 75 / 120 / 144) with an exact frame limiter
