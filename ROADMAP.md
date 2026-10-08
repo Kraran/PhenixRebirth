@@ -33,6 +33,11 @@ Current release: **v1.4.5**
   (shown as REPLAYABLE). The journal writes, under each one, how many enemies were destroyed in all
   its runs
 
+- Adventure journal: only "Watch the introduction again" can be selected; Up / Down scroll the other
+  lines (mission comments and kill totals are not selectable)
+- Adventure cheat UNLK (typed on the mission map): every mission can be played without unlocking it.
+  While it is on, nothing is saved (a red banner says so); loading the save again starts clean
+
 ### Planned for 1.5.0 (Adventure, 3 acts)
 
 - Done: 3 save slots (name, date, act, mode), name entry with keyboard or gamepad (on-screen

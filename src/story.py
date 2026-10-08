@@ -17,6 +17,8 @@ from story_state import MISSIONS, SHOP, log_text
 
 
 PANES = ("bestiary", "log", "hangar", "map")
+CHEAT_UNLOCK = "UNLK"          # typed on the mission map: play any mission, save nothing
+LOG_ROWS = 12                  # journal lines shown at once
 
 
 def _cap_top(font, cy):
@@ -112,7 +114,9 @@ class StoryHub:
         self.intro_pos = 0.0           # how far the text has risen (px)
         self.intro_speed = 0.0         # current rising speed (px/s), eased
         self.intro_return = "hangar"   # pane to go back to when the intro ends
-        self.log_index = 0             # cursor in the journal (0 = "watch the intro again")
+        self.log_scroll = 0            # first journal line shown (only "watch the intro again" is selectable)
+        self.cheat_buf = ""            # last letters typed on the mission map
+        self.cheat_unlock = False      # UNLK: every mission can be played, nothing is saved any more
         self.best_index = 0            # cursor in the Bestiary list
         self.anim_t = 0.0              # seconds, drives the Bestiary animation
         self._intro_bg = {}
@@ -195,6 +199,9 @@ class StoryHub:
         state = ss.load_state(ss.story_path(slot_no))
         self.state = state if state is not None else ss.default_state()
         self.slot_no = int(slot_no)
+        self.cheat_unlock = False                 # loading a save always starts clean
+        self.cheat_buf = ""
+        self.log_scroll = 0
         slots = self.state.get("slots") or []
         cur = int(ss._num(self.state.get("selected_slot"), 0))
         if not (0 <= cur < len(slots) and slots[cur].get("owned")):
@@ -207,8 +214,8 @@ class StoryHub:
         self.toast = ""
 
     def save(self):
-        if self.slot_no is None:
-            return
+        if self.slot_no is None or self.cheat_unlock:
+            return                                # a cheated adventure is never written
         try:
             ss.save_state(ss.story_path(self.slot_no), self.state)
         except Exception:
@@ -248,10 +255,12 @@ class StoryHub:
         return None
 
     def mission_open(self, mission):
+        if self.cheat_unlock:
+            return bool(mission)
         return ss.mission_open(self.state, mission)
 
     def mission_playable(self, mission):
-        return ss.mission_playable(self.state, mission)
+        return ss.mission_playable(self.state, mission, cheat=self.cheat_unlock)
 
     # --- input: every screen answers to the same four calls ---
     def text_input_active(self):
@@ -259,6 +268,11 @@ class StoryHub:
 
     def type_key(self, event):
         """Real keyboard while typing a name. True when the key was used."""
+        if self.screen == "hub" and self.pane == "map":
+            ch = getattr(event, "unicode", "") or ""
+            if ch.isalpha():
+                self.feed_cheat(ch)               # the letters still work as menu keys
+            return False
         if self.screen != "name" or self.entry is None:
             return False
         if event.key == pygame.K_BACKSPACE:
@@ -272,6 +286,16 @@ class StoryHub:
         if ch and ch.isprintable():
             self.entry.type_char(ch)
             self.msg = ""
+            return True
+        return False
+
+    def feed_cheat(self, ch):
+        """Secret code typed on the mission map. Returns True when UNLK was just completed."""
+        self.cheat_buf = (self.cheat_buf + str(ch).upper())[-len(CHEAT_UNLOCK):]
+        if self.cheat_buf == CHEAT_UNLOCK and not self.cheat_unlock:
+            self.cheat_unlock = True
+            self.cheat_buf = ""
+            self.toast = t("story_cheat_on")
             return True
         return False
 
@@ -407,7 +431,9 @@ class StoryHub:
             self.toast = ""
             return
         if self.pane == "log":
-            self.log_index = max(0, min(len(self.log_entries()) - 1, self.log_index + direction))
+            # only the first line (watch the intro again) can be selected: Up / Down scroll the rest
+            top = max(0, len(self.log_entries()) - LOG_ROWS)
+            self.log_scroll = max(0, min(top, self.log_scroll + direction))
             return
         if self.pane == "bestiary":
             n = len(ss.bestiary_entries(self.state))
@@ -430,8 +456,7 @@ class StoryHub:
         if self.pane == "map":
             return self._launch_selected()
         if self.pane == "log":
-            if self.log_index == 0:
-                self.start_intro(back_to="log")      # watch the introduction again
+            self.start_intro(back_to="log")          # watch the introduction again
             return None
         if self.pane != "hangar" or self.zone != "shop":
             return None
@@ -514,6 +539,8 @@ class StoryHub:
         ts = medium.render(title, True, (255, 150, 70))
         surface.blit(ts, (BASE_WIDTH // 2 - ts.get_width() // 2, 18))
 
+        if self.cheat_unlock:
+            _text(surface, small, t("story_cheat_banner"), (255, 70, 70), 36, right=BASE_WIDTH - 60)
         if self.state.get("name"):
             mode = t("story_mode_" + str(self.state.get("mode", "normal")))
             _text(surface, small, f"{self.state['name']}  -  {mode}", (170, 175, 195), 36, left=80)
@@ -763,13 +790,12 @@ class StoryHub:
         pygame.draw.rect(surface, (18, 20, 32), box, border_radius=10)
         pygame.draw.rect(surface, (70, 90, 130), box, 2, border_radius=10)
         entries = self.log_entries()
-        self.log_index = max(0, min(len(entries) - 1, self.log_index))
-        rows, step = 12, 40
-        start = max(0, min(self.log_index - rows // 2, len(entries) - rows))
+        rows, step = LOG_ROWS, 40
+        start = self.log_scroll = max(0, min(self.log_scroll, len(entries) - rows))
         y = box.y + 28
         for i in range(start, min(len(entries), start + rows)):
             entry = entries[i]
-            focus = i == self.log_index
+            focus = isinstance(entry, dict) and bool(entry.get("intro"))   # the only selectable line
             indent = 0
             row = pygame.Rect(box.x + 12, y - step // 2 + 2, box.w - 24, step - 4)
             if focus:

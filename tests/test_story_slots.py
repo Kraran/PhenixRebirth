@@ -753,14 +753,22 @@ def test_new_journal_lines_come_after_the_intro_entry():
     assert hub.log_entries()[0] == {"intro": True} and len(hub.log_entries()) == 2
 
 
-def test_the_cursor_moves_in_the_journal_and_stays_inside():
-    hub = _hub_in_log(log=[{"key": "story_log_sortie"}, {"key": "story_log_best2"}])
-    assert hub.log_index == 0
-    hub.nav_v(-1)
-    assert hub.log_index == 0
+def test_up_and_down_only_scroll_the_journal_and_stay_inside():
+    from story import LOG_ROWS
+    few = _hub_in_log(log=[{"key": "story_log_sortie"}, {"key": "story_log_best2"}])
+    assert few.log_scroll == 0
     for _ in range(10):
-        hub.nav_v(1)
-    assert hub.log_index == 2
+        few.nav_v(1)
+    assert few.log_scroll == 0                      # everything fits on the screen: nothing to scroll
+    many = _hub_in_log(log=[{"key": "story_log_sortie"}] * 20)
+    top = len(many.log_entries()) - LOG_ROWS
+    many.nav_v(-1)
+    assert many.log_scroll == 0
+    for _ in range(40):
+        many.nav_v(1)
+    assert many.log_scroll == top
+    many.nav_v(-1)
+    assert many.log_scroll == top - 1
 
 
 def test_confirm_on_the_first_entry_replays_the_intro_then_returns_to_the_journal():
@@ -779,11 +787,40 @@ def test_skipping_a_replay_also_returns_to_the_journal():
     assert hub.back() and hub.screen == "hub" and hub.pane == "log"
 
 
-def test_confirm_on_another_journal_line_does_nothing():
-    hub = _hub_in_log(log=[{"key": "story_log_sortie"}])
+def test_only_the_intro_line_is_selectable_in_the_journal(run):
+    """The mission lines and the kill totals are comments: no cursor on them."""
+    import pygame, story
+    st = ss.create_slot(1, "NOVA", "normal")
+    ss.mark_intro_seen(st)
+    ss.record_result(st, "ch1_sortie", 100, True, {"bird1": 5})
+    ss.save_state(ss.story_path(1), st)
+    hub = StoryHub()
+    hub.open_slot(1)
+    hub.pane = "log"
+    assert len(hub.log_entries()) == 3                       # intro, mission line, kill total
+    drawn = []
+    real = story.pygame.draw.rect
+
+    def spy(surface, color, rect, *a, **k):
+        if tuple(color)[:3] == (255, 210, 80):               # the gold frame of the cursor
+            drawn.append(pygame.Rect(rect).y)
+        return real(surface, color, rect, *a, **k)
+
+    story.pygame.draw.rect = spy
+    try:
+        g = run.game
+        for steps in (0, 1, 2, 5):
+            drawn.clear()
+            for _ in range(steps):
+                hub.nav_v(1)
+            hub.draw(pygame.Surface((1280, 720)), g.font, g.medium_font, g.font)
+            assert len(drawn) == 1, (steps, drawn)           # one frame, on the intro line only
+    finally:
+        story.pygame.draw.rect = real
+    hub.nav_v(1)
     hub.nav_v(1)
     hub.confirm()
-    assert hub.screen == "hub" and hub.pane == "log"
+    assert hub.screen == "intro"                              # confirm always means "watch again"
 
 
 def test_replay_uses_the_story_of_the_mode():
