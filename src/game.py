@@ -1734,6 +1734,17 @@ class Game:
         self._rebuild_life_icon()
         self._start_arrive_intro()
 
+    def _next_adventure_wave(self):
+        """A won wave of a multi-wave mission: set up the next one. False when it was the last."""
+        adv = getattr(self, "adventure", None) or {}
+        waves = adv.get("waves") or []
+        i = int(adv.get("wave_i", 0) or 0) + 1
+        if i >= len(waves):
+            return False
+        adv["wave_i"] = i
+        self._setup_stage(waves[i])
+        return True
+
     def _end_adventure(self, cleared):
         """Bank the run into the hangar and return to the mission map."""
         spec = getattr(self, "adventure", None) or {}
@@ -1773,7 +1784,14 @@ class Game:
         self.stage_life_lost = False
         self.stage_touched_edge = False
         adv = getattr(self, "adventure", None)
-        if adv:
+        waves = (adv or {}).get("waves")
+        if adv and waves:
+            # a mission of several waves: each one plays like that stage of the arcade game
+            number = int(waves[max(0, min(len(waves) - 1, int(adv.get("wave_i", 0) or 0)))])
+            self.stage = number
+            content = stage_content(number)
+            mult = float(adv.get("speed") or 1.0) * stage_speed_mult(number) * self.difficulty_speed_mult()
+        elif adv:
             content = int(adv.get("content") or 1)
             mult = float(adv.get("speed") or 1.0) * self.difficulty_speed_mult()
         else:
