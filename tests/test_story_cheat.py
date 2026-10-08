@@ -152,27 +152,50 @@ def test_the_cheat_does_not_follow_to_another_slot():
     assert not hub.cheat_unlock
 
 
+def _hub_pixels(hub, g):
+    surf = pygame.Surface((1280, 720))
+    surf.fill((0, 0, 0))
+    hub.draw(surf, g.font, g.medium_font, g.font)
+    mask = pygame.mask.from_threshold(surf, (0, 0, 0, 255), (1, 1, 1, 255))
+    mask.invert()                                   # set bits = something is drawn
+    return mask
+
+
 def test_a_red_banner_shows_while_the_cheat_is_on(run):
-    import story
-    from i18n import t
-    seen = []
-    real = story._text
-
-    def spy(surface, font, text, *a, **k):
-        seen.append(str(text))
-        return real(surface, font, text, *a, **k)
-
-    hub = _hub()
+    """The banner appears with the code, and only then. It is red, small, in the top left corner."""
     g = run.game
-    story._text = spy
-    try:
-        hub.draw(pygame.Surface((1280, 720)), g.font, g.medium_font, g.font)
-        assert t("story_cheat_banner") not in seen
-        _type(hub, "UNLK")
-        hub.draw(pygame.Surface((1280, 720)), g.font, g.medium_font, g.font)
-        assert t("story_cheat_banner") in seen
-    finally:
-        story._text = real
+    hub = _hub()
+    before = _hub_pixels(hub, g)
+    _type(hub, "UNLK")
+    after = _hub_pixels(hub, g)
+    added = after.copy()
+    added.erase(before, (0, 0))
+    assert added.count() > 100                      # something new is drawn
+    box = added.get_bounding_rects()
+    left = min(r.left for r in box)
+    right = max(r.right for r in box)
+    bottom = max(r.bottom for r in box)
+    assert left >= 60 and right <= 440 and bottom <= 24      # top left, above the pilot name
+
+
+def test_the_banner_does_not_overlap_anything_on_any_pane(run):
+    """Screenshot of the bug: the banner sat on the title / the FPS counter."""
+    g = run.game
+    for pane in ("hangar", "map", "log", "bestiary"):
+        hub = _hub()
+        hub.pane = pane
+        before = _hub_pixels(hub, g)
+        hub.pane = "map"
+        _type(hub, "UNLK")                           # the code is typed on the map...
+        hub.toast = ""
+        hub.pane = pane                              # ...and the banner stays on every pane
+        after = _hub_pixels(hub, g)
+        added = after.copy()
+        added.erase(before, (0, 0))
+        rect = pygame.Rect(0, 0, 0, 0).unionall(added.get_bounding_rects())
+        assert rect.width > 0, pane
+        window = pygame.mask.Mask(rect.size, fill=True)
+        assert before.overlap_area(window, rect.topleft) == 0, pane      # nothing else was there
 
 
 # ------------------------------------------------------------------ through the real keyboard

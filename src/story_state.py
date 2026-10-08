@@ -298,6 +298,23 @@ def mission_total_kills(state, mission_id):
     return max(0, int(_num(data.get(mission_id), 0)))
 
 
+def hunt_level(state, mission_id):
+    """Level of a hunt mission: 1 at first, one more after each victory (1, 2, 3...).
+
+    A save from before levels existed counts a cleared mission as won at least once.
+    """
+    data = state.get("mission_clears")
+    won = max(0, int(_num(data.get(mission_id), 0))) if isinstance(data, dict) else 0
+    if mission_id in (state.get("cleared") or []):
+        won = max(won, 1)
+    return 1 + won
+
+
+def hunt_stage(mission, level):
+    """Arcade stage a hunt mission plays at `level`: level 2 is the same wave as at stage +5 (x1.1 speed)."""
+    return max(1, int(_num((mission or {}).get("content"), 1))) + 5 * (max(1, int(_num(level, 1))) - 1)
+
+
 def record_mission_kills(state, mission_id, kills):
     """Add the enemies destroyed during one run to the total of a hunt mission."""
     if not is_hunt(mission_by_id(mission_id)) or not isinstance(kills, dict):
@@ -345,6 +362,7 @@ def default_state():
         "log": [],
         "bestiary": {},          # enemies destroyed so far, by kind
         "mission_kills": {},     # enemies destroyed in all the runs of a hunt mission, by mission id
+        "mission_clears": {},    # how many times a hunt mission was won (its level is one more)
     }
 
 
@@ -407,6 +425,10 @@ def migrate_state(data):
         base["log"] = list(data["log"])
     if isinstance(data.get("bestiary"), dict):
         record_kills(base, {k: v for k, v in data["bestiary"].items()})
+    if isinstance(data.get("mission_clears"), dict):
+        for mid, n in data["mission_clears"].items():
+            if isinstance(mid, str) and is_hunt(mission_by_id(mid)):
+                base["mission_clears"][mid] = max(0, int(_num(n, 0)))
     if isinstance(data.get("mission_kills"), dict):
         for mid, n in data["mission_kills"].items():
             if isinstance(mid, str) and is_hunt(mission_by_id(mid)):
@@ -942,6 +964,10 @@ def record_result(state, mission_id, score, cleared, kills=None):
         return res
     state["credits"] = int(state.get("credits", 0)) + score
     mission = next((m for m in MISSIONS if m["id"] == mission_id), None)
+    if is_hunt(mission):
+        state["mission_clears"] = dict(state.get("mission_clears") or {})
+        # the level before this win is also the number of wins after it
+        state["mission_clears"][mission_id] = hunt_level(state, mission_id)
     if mission:
         flags = state.setdefault("flags", {})
         for name in mission.get("unlock") or []:
@@ -970,6 +996,8 @@ def journal_entries(state):
         out.append(entry)
         key = entry.get("key") if isinstance(entry, dict) else None
         mission_id = hunts.get(key)
+        if mission_id:
+            out.append({"level": hunt_level(state, mission_id), "mission": mission_id})
         if mission_id and mission_total_kills(state, mission_id) > 0:
             out.append({"kills": mission_total_kills(state, mission_id), "mission": mission_id})
     return out
@@ -978,6 +1006,8 @@ def journal_entries(state):
 def log_text(entry, translate):
     """Text of one journal line (new entries are {"key": ...}, old ones plain text)."""
     if isinstance(entry, dict):
+        if "level" in entry:
+            return translate("story_log_level").format(n=max(1, int(_num(entry.get("level"), 1))))
         if "kills" in entry:
             n = max(0, int(_num(entry.get("kills"), 0)))
             return translate("story_log_kill_1" if n == 1 else "story_log_kills").format(n=n)

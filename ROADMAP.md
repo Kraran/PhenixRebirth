@@ -36,7 +36,7 @@ Current release: **v1.4.5**
 - Adventure journal: only "Watch the introduction again" can be selected; Up / Down scroll the other
   lines (mission comments and kill totals are not selectable)
 - Adventure cheat UNLK (typed on the mission map): every mission can be played without unlocking it.
-  While it is on, nothing is saved (a red banner says so); loading the save again starts clean
+  While it is on, nothing is saved (a small red banner at the top left says so); loading the save again starts clean
 
 - Adventure, dome series (Act 1): four chained missions after the Bestiary sorties. Each one flies three
   waves in a row of one enemy kind at the speed of arcade levels 1 / 6 / 11 (Blues), 2 / 7 / 12 (Khakis),
@@ -45,9 +45,12 @@ Current release: **v1.4.5**
   replaced by this series
 
 - Adventure, Dome V "the swarm": the four enemies at once (levels 11 to 14, speed of level 11), each kind
-  replaced as it falls, up to three times its normal count in all (39 / 66 / 21 / 30). It is won when
-  all of them are down; a counter shows how many are left. It brings the dome online and opens the
+  replaced as it falls, up to three times its normal count in all (39 / 66 / 21 / 30), but only a third of
+  a normal screen at once (4 / 7 / 2 / 3 on screen). It is won when all of them are down; a counter shows how many are left. It brings the dome online and opens the
   first dome upgrade in the workshop
+- Adventure, levels of the Bestiary sorties: each victory raises the mission one level (1, 2, 3...). Level 2
+  flies the same enemies as arcade level +5 (a little faster each time, no limit). The level is shown on
+  the mission map, in the journal and on the screen during the mission. A lost run keeps the level
 - Adventure, gateway to Act 2: a full run of arcade levels 11 to 15 (wave counter on screen). The death of
   the boss starts Act 2 (the save shows ACT 2). The mission map scrolls now that it is longer
 
