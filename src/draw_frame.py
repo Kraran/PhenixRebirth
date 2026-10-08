@@ -305,7 +305,7 @@ def draw_menu_footer(game):
         ver = getattr(game, "_ver_surf", None)
         if ver is None:
             vf = pygame.font.SysFont(pygame.font.get_default_font(), 16)
-            ver = vf.render("v1.4.4", True, (110, 110, 130))
+            ver = vf.render("v1.4.5", True, (110, 110, 130))
             game._ver_surf = ver
         game.game_surface.blit(ver, (BASE_WIDTH - ver.get_width() - 10, BASE_HEIGHT - ver.get_height() - 8))
 
