@@ -98,6 +98,8 @@ Current release: **v1.4.5**
   dug into 434-Hungaria. Same mechanism, told once, replayable from the journal (listed after the Dome I line)
 - Adventure scenes: the Paint I text now says "l'astéroïde 434-Hungaria" and its two typos are fixed (teintes uniques,
   ça serait)
+- Adventure scenes: third scene, the very first sortie (Bestiary, blue birds over Mars, `assets/story/oiseaux_bleus.jpg`):
+  told the first time "Première sortie" is launched, replayable from the journal (first line after the introduction)
 - Adventure paint shop: a victory fanfare (trumpets, `assets/sounds/paint_fanfare.wav`) plays when the Shield is
   painted. The hub only asks for sounds (`sound_events` / `take_sounds`); the game plays them
 - Adventure, Act 2: new Bestiary hunt "the Avioid commander" (`best_boss`), right after the four Bestiary hunts. It

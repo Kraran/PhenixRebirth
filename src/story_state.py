@@ -869,6 +869,7 @@ def mark_intro_seen(state):
 # picture and text). It can be watched again from the journal. Keyed by mission id: the slides are
 # [(picture in assets/story, text key)] and `title` is the journal line (after "watch again").
 SCENES = {
+    "ch1_sortie": {"title": "story_scene_sortie_t", "slides": [("oiseaux_bleus", "story_scene_sortie")]},
     "dome_1": {"title": "story_scene_dome_1_t", "slides": [("epave_shield", "story_scene_dome_1")]},
     "paint_1": {"title": "story_scene_paint_1_t", "slides": [("atelier_wallems", "story_scene_paint_1")]},
 }
