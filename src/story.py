@@ -124,7 +124,10 @@ class StoryHub:
         self.intro_pos = 0.0           # how far the text has risen (px)
         self.intro_speed = 0.0         # current rising speed (px/s), eased
         self.intro_return = "hangar"   # pane to go back to when the intro ends
-        self.log_scroll = 0            # first journal line shown (only "watch the intro again" is selectable)
+        self.log_scroll = 0            # first journal line shown (only the replay lines are selectable)
+        self.log_cursor = 0            # which replay line (the intro, then the scenes seen) is selected
+        self.scene_id = None           # mission whose scene is being shown (None: the story intro)
+        self.scene_launch = False      # the scene came before a launch: A on the last slide flies the mission
         self.cheat_buf = ""            # last letters typed on the mission map
         self.cheat_unlock = False      # UNLK: every mission can be played, nothing is saved any more
         self.cheat_act2 = False        # ACT2: the save jumped to Act 2, nothing is saved any more
@@ -142,7 +145,23 @@ class StoryHub:
         self.intro_index = 0
         self._reset_slide()
         self.intro_return = back_to
+        self.scene_id = None
+        self.scene_launch = False
         self.screen = "intro"
+
+    def start_scene(self, mission_id, back_to="map", launch=False):
+        """Show the scene of a mission (the first time it is launched, or from the journal)."""
+        scene = ss.scene_of(mission_id)
+        if not scene:
+            return False
+        self.intro_slides = list(scene["slides"])
+        self.intro_index = 0
+        self._reset_slide()
+        self.intro_return = back_to
+        self.scene_id = mission_id
+        self.scene_launch = bool(launch)
+        self.screen = "intro"
+        return True
 
     def _reset_slide(self):
         self.intro_t = 0.0
@@ -154,18 +173,29 @@ class StoryHub:
             self.start_intro()
 
     def _intro_next(self):
+        """A on a slide: the next one; after the last, the story goes on (a scene before a launch flies the
+        mission: the launch spec is returned)."""
         if self.intro_t < INTRO_LOCK:
-            return
+            return None
         if self.intro_index + 1 < len(self.intro_slides):
             self.intro_index += 1
             self._reset_slide()
-        else:
-            self._end_intro()
+            return None
+        launch = self.scene_launch
+        self._end_intro()
+        if launch:
+            return self._launch_selected()
+        return None
 
     def _end_intro(self):
-        """Last slide done, or skipped: remember it and go to the hangar."""
-        ss.mark_intro_seen(self.state)
+        """Last slide done, or skipped: remember it and go back (the hangar, the map or the journal)."""
+        if self.scene_id:
+            ss.mark_scene_seen(self.state, self.scene_id)
+        else:
+            ss.mark_intro_seen(self.state)
         self.save()
+        self.scene_id = None
+        self.scene_launch = False
         self.screen = "hub"
         self.pane = self.intro_return
         self.zone = "slots"
@@ -214,6 +244,9 @@ class StoryHub:
         self.cheat_act2 = False
         self.cheat_buf = ""
         self.log_scroll = 0
+        self.log_cursor = 0
+        self.scene_id = None
+        self.scene_launch = False
         slots = self.state.get("slots") or []
         cur = int(ss._num(self.state.get("selected_slot"), 0))
         if not (0 <= cur < len(slots) and slots[cur].get("owned")):
@@ -430,7 +463,7 @@ class StoryHub:
                 self.open_slot(self.sel + 1)
                 self._maybe_intro()
         elif self.screen == "intro":
-            self._intro_next()
+            return self._intro_next()
         elif self.screen == "delete":
             if self.del_yes:
                 ss.delete_slot(self.sel + 1)
@@ -490,6 +523,10 @@ class StoryHub:
         self.zone = "slots"
         self.toast = ""
 
+    def replay_entries(self):
+        """The journal lines that replay a story scene: the intro first, then each scene seen."""
+        return [e for e in self.log_entries() if isinstance(e, dict) and (e.get("intro") or e.get("scene"))]
+
     def log_entries(self):
         """The journal as a list: first the story intro (always there), then what happened."""
         return ss.journal_entries(self.state)
@@ -502,9 +539,16 @@ class StoryHub:
             self.toast = ""
             return
         if self.pane == "log":
-            # only the first line (watch the intro again) can be selected: Up / Down scroll the rest
+            # only the replay lines at the top (the intro, then the scenes seen) can be selected: Down goes
+            # through them, then scrolls the rest; Up scrolls back first, then goes up through them
             top = max(0, len(self.log_entries()) - LOG_ROWS)
-            self.log_scroll = max(0, min(top, self.log_scroll + direction))
+            last = len(self.replay_entries()) - 1
+            if direction > 0 and self.log_cursor < last:
+                self.log_cursor += 1
+            elif direction < 0 and self.log_scroll == 0 and self.log_cursor > 0:
+                self.log_cursor -= 1
+            else:
+                self.log_scroll = max(0, min(top, self.log_scroll + direction))
             return
         if self.pane == "bestiary":
             n = len(ss.bestiary_entries(self.state))
@@ -525,9 +569,19 @@ class StoryHub:
     def _hub_confirm(self):
         """Shop buy, or a launch spec dict when a map node is confirmed."""
         if self.pane == "map":
+            mission = self._mission()
+            if (self.mission_playable(mission) and ss.scene_of(mission["id"])
+                    and not ss.scene_seen(self.state, mission["id"])):
+                self.start_scene(mission["id"], back_to="map", launch=True)       # the story comes first
+                return None
             return self._launch_selected()
         if self.pane == "log":
-            self.start_intro(back_to="log")          # watch the introduction again
+            replay = self.replay_entries()
+            entry = replay[max(0, min(len(replay) - 1, self.log_cursor))]
+            if entry.get("scene"):
+                self.start_scene(entry["scene"], back_to="log")       # watch a scene again
+            else:
+                self.start_intro(back_to="log")          # watch the introduction again
             return None
         if self.pane != "hangar" or self.zone != "shop":
             return None
@@ -543,6 +597,9 @@ class StoryHub:
         """The paint shop row: opens the colour choice when a change is waiting."""
         if not ss.paint_state(self.state)["token"]:
             self.toast = t("story_paint_locked")
+            return
+        if not ss.paint_affordable(self.state):
+            self.toast = t("story_paint_poor").format(pts=ss.PAINT_COST)
             return
         shield = next((sl for sl in self.state.get("slots") or [] if sl.get("id") == "shield"), {})
         tint = shield.get("tint") if shield.get("tint") in ss.PAINT_TINTS else "red"
@@ -637,7 +694,9 @@ class StoryHub:
 
     def _shop_extra(self, sid, cost, locked):
         if sid == "paint":
-            return t("story_paint_ready") if ss.paint_state(self.state)["token"] else t("story_locked")
+            if not ss.paint_state(self.state)["token"]:
+                return t("story_locked")
+            return t("story_paint_ready").format(pts=ss.PAINT_COST)
         key = ss.upgrade_note(self.state, sid)
         if key:
             return t(key)
@@ -718,11 +777,11 @@ class StoryHub:
 
     def _intro_block(self, font):
         """The whole text of the current slide as one tall transparent picture (cached)."""
-        key = (self.intro_index, get_lang(), self.state.get("name"), self.state.get("mode"), id(font))
+        _pic, text_key = self.intro_slides[self.intro_index]
+        key = (text_key, get_lang(), self.state.get("name"), id(font))
         hit = self._intro_blocks.get(key)
         if hit is not None:
             return hit
-        _pic, text_key = self.intro_slides[self.intro_index]
         rows = []                                  # (text, height); text None = a pause
         pitch = font.get_linesize() + 12
         for line in ss.intro_lines(t, text_key, self.state.get("name")):
@@ -792,10 +851,15 @@ class StoryHub:
         last = self.intro_index + 1 >= len(self.intro_slides)
         blink = done and (pygame.time.get_ticks() // 500) % 2 == 0
         col = (255, 220, 120) if blink else ((235, 235, 245) if done else (140, 145, 170))
-        _text(surface, small, t("story_intro_last" if last else "story_intro_hint"), col,
-              BASE_HEIGHT - 24, centerx=cx)
-        _text(surface, small, f"{self.intro_index + 1} / {len(self.intro_slides)}", (140, 145, 170),
-              28, right=BASE_WIDTH - 40)
+        if last:
+            hint = "story_scene_last" if self.scene_launch else (
+                "story_scene_end" if self.scene_id else "story_intro_last")
+        else:
+            hint = "story_intro_hint"
+        _text(surface, small, t(hint), col, BASE_HEIGHT - 24, centerx=cx)
+        if len(self.intro_slides) > 1:
+            _text(surface, small, f"{self.intro_index + 1} / {len(self.intro_slides)}", (140, 145, 170),
+                  28, right=BASE_WIDTH - 40)
 
         fade = 1.0 - min(1.0, self.intro_t / INTRO_FADE)
         if fade > 0:
@@ -920,14 +984,15 @@ class StoryHub:
         y = box.y + 28
         for i in range(start, min(len(entries), start + rows)):
             entry = entries[i]
-            focus = isinstance(entry, dict) and bool(entry.get("intro"))   # the only selectable line
+            replay = isinstance(entry, dict) and bool(entry.get("intro") or entry.get("scene"))
+            focus = replay and i == self.log_cursor                       # replay lines come first
             indent = 0
             row = pygame.Rect(box.x + 12, y - step // 2 + 2, box.w - 24, step - 4)
             if focus:
                 pygame.draw.rect(surface, (40, 36, 20), row, border_radius=6)
                 pygame.draw.rect(surface, (255, 210, 80), row, 2, border_radius=6)
-            if isinstance(entry, dict) and entry.get("intro"):
-                text = t("story_log_intro")
+            if replay:
+                text = t("story_log_intro") if entry.get("intro") else log_text(entry, t)
                 col = (255, 230, 140) if focus else (255, 190, 90)
             elif isinstance(entry, dict) and ("kills" in entry or "level" in entry):
                 text = log_text(entry, t)
@@ -1150,7 +1215,7 @@ class StoryHub:
 
     def _draw_paint(self, surface, small, box):
         """The paint shop: the three colours of the Shield side by side."""
-        _text(surface, small, t("story_paint_title"), (255, 160, 70), box.y + 26, left=box.x + 16)
+        _text(surface, small, t("story_paint_title").format(pts=ss.PAINT_COST), (255, 160, 70), box.y + 26, left=box.x + 16)
         names = {"red": t("story_paint_red"), "green": t("story_paint_green"), "violet": t("story_paint_violet")}
         shield = next((sl for sl in self.state.get("slots") or [] if sl.get("id") == "shield"), {})
         current = shield.get("tint") if shield.get("tint") in ss.PAINT_TINTS else "red"
@@ -1184,7 +1249,7 @@ class StoryHub:
             sid, label, cost, need = rows[i]
             locked = bool(need) and not flags.get(need)
             if sid == "paint":
-                locked = not ss.paint_state(self.state)["token"]
+                locked = not ss.paint_state(self.state)["token"] or not ss.paint_affordable(self.state)
             focus = self.zone == "shop" and i == self.shop_index
             row = pygame.Rect(box.x + 12, y, box.w - 24, 38)
             if focus:

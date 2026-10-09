@@ -443,6 +443,7 @@ def hunt_stage(mission, level):
 # Shield. The series can be flown again, as a whole only, to earn another change; each pass is harder.
 PAINT_TINTS = ("red", "green", "violet")
 PAINT_STEPS = 3
+PAINT_COST = 500                 # a colour change is not free: credits spent when the Shield is painted
 
 
 def paint_state(state):
@@ -489,14 +490,20 @@ def mission_done(state, mission):
     return bool(mission) and mission.get("id") in (state.get("cleared") or [])
 
 
+def paint_affordable(state):
+    return int(_num(state.get("credits"), 0)) >= PAINT_COST
+
+
 def paint_change(state, tint):
-    """Spend the waiting colour change on the Shield. False when there is none, the colour is not
-    one of the three, or it is the colour the Shield already wears (nothing is spent then)."""
+    """Spend the waiting colour change (and PAINT_COST credits) on the Shield. False when there is no change
+    waiting, not enough credits, the colour is not one of the three, or it is the colour the Shield already
+    wears (nothing is spent then)."""
     shield = next((sl for sl in state.get("slots") or [] if sl.get("id") == "shield"), None)
     if shield is None or tint not in PAINT_TINTS or not paint_state(state)["token"]:
         return False
-    if (shield.get("tint") or "red") == tint:
+    if (shield.get("tint") or "red") == tint or not paint_affordable(state):
         return False
+    state["credits"] = int(_num(state.get("credits"), 0)) - PAINT_COST
     shield["tint"] = tint
     state["paint"] = dict(paint_state(state), token=False)
     return True
@@ -841,6 +848,35 @@ def mark_intro_seen(state):
     state.setdefault("flags", {})[INTRO_FLAG] = True
 
 
+# A mission can come with a scene told the first time it is launched (same screen as the intro, with its own
+# picture and text). It can be watched again from the journal. Keyed by mission id: the slides are
+# [(picture in assets/story, text key)] and `title` is the journal line (after "watch again").
+SCENES = {
+    "dome_1": {"title": "story_scene_dome_1_t", "slides": [("epave_shield", "story_scene_dome_1")]},
+}
+
+
+def scene_of(mission_id):
+    return SCENES.get(mission_id)
+
+
+def scene_flag(mission_id):
+    return "scene_" + str(mission_id)
+
+
+def scene_seen(state, mission_id):
+    return flag(state, scene_flag(mission_id))
+
+
+def mark_scene_seen(state, mission_id):
+    state.setdefault("flags", {})[scene_flag(mission_id)] = True
+
+
+def scenes_seen(state):
+    """Ids of the scenes already watched, in the order of SCENES."""
+    return [mid for mid in SCENES if scene_seen(state, mid)]
+
+
 PHENIX_CAP_START = 60
 PHENIX_CAP_MAX = 100
 
@@ -1160,7 +1196,7 @@ SHOP = [(u[0], u[1], u[2], u[3]) for u in UPGRADES if u[6] == 1]
 
 
 # What the workshop sells for the Phenix (Act 2): the same hull upgrades, no dome, plus its own gauge.
-PAINT_ROW = ("paint", "story_shop_paint", 0, None)
+PAINT_ROW = ("paint", "story_shop_paint", PAINT_COST, None)
 PHENIX_SHOP_IDS = ("speed_80", "lives_2", "wall_slow", "phenix_cap_80")
 
 
@@ -1171,7 +1207,7 @@ def shop_for(state):
         return [(u[0], u[1], u[2], u[3]) for sid in PHENIX_SHOP_IDS for u in UPGRADES if u[0] == sid]
     rows = list(SHOP)
     if int(_num(state.get("act"), 1)) >= 2:
-        rows.append(PAINT_ROW)                 # the paint shop: free, but one change per finished series
+        rows.append(PAINT_ROW)                 # the paint shop: PAINT_COST credits, and one change per finished series
     return rows
 
 
@@ -1295,7 +1331,7 @@ def journal_entries(state):
     Right under the first-clear line of a hunt mission comes a line with the total of
     enemies destroyed in all the runs of that mission (only once there is something to count).
     """
-    out = [{"intro": True}]
+    out = [{"intro": True}] + [{"scene": mid} for mid in scenes_seen(state)]      # lines that replay a story scene
     hunts = {m["log"]: m["id"] for m in MISSIONS if (is_hunt(m) or is_paint(m)) and m.get("log")}
     for entry in state.get("log") or []:
         out.append(entry)
@@ -1311,6 +1347,9 @@ def journal_entries(state):
 def log_text(entry, translate):
     """Text of one journal line (new entries are {"key": ...}, old ones plain text)."""
     if isinstance(entry, dict):
+        if "scene" in entry:
+            scene = scene_of(entry.get("scene")) or {}
+            return translate("story_log_scene").format(title=translate(scene.get("title") or "story_log_scene"))
         if "level" in entry:
             return translate("story_log_level").format(n=max(1, int(_num(entry.get("level"), 1))))
         if "kills" in entry:
