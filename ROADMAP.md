@@ -98,6 +98,10 @@ Current release: **v1.4.5**
   dug into 434-Hungaria. Same mechanism, told once, replayable from the journal (listed after the Dome I line)
 - Adventure scenes: the Paint I text now says "l'astéroïde 434-Hungaria" and its two typos are fixed (teintes uniques,
   ça serait)
+- Adventure scenes: a slide picture can be a looping video clip (`CLIPS` in story_state.py, frames in
+  `assets/story/<name>_frames/`, no ffmpeg needed), with the same shading, reading band and scrolling text. The loop
+  dissolves its end into its beginning; a missing or broken clip shows the still picture. First clip: the blue birds of
+  the first sortie (10 s, 24 fps, picture only, the video's sound is not used)
 - Adventure: four save slots instead of three (`SLOT_COUNT = 4`, `story_4.json`); the slot list shows four cards
 - Adventure: a mission no longer says the next level out loud when its boss falls (the arcade still does)
 - Adventure scenes: the Paint I text uses the "…" sign instead of three dots, like the other scenes

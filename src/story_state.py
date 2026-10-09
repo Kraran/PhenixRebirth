@@ -875,6 +875,40 @@ SCENES = {
 }
 
 
+# A slide picture can be a video clip instead of a still: `assets/story/<name>_frames/0001.jpg ...` played in a loop
+# behind the text (the still `<name>.jpg` stays as the poster and as the fallback when the frames are missing).
+# `fps` is the pace of the frames; the end of the clip dissolves into its beginning over CLIP_FADE_FRAMES frames.
+CLIPS = {
+    "oiseaux_bleus": {"fps": 24.0},
+}
+CLIP_FADE_FRAMES = 12            # half a second at 24 fps
+
+
+def clip_of(name):
+    return CLIPS.get(name)
+
+
+def clip_frame_at(seconds, count, fps, fade=CLIP_FADE_FRAMES):
+    """What a looping clip shows `seconds` after it started: (frame, other, weight).
+
+    `other` is None except in the dissolve at the loop point, where the end of the clip melts into its
+    beginning (`weight` is how much of frame `other` is visible, 0..1). The first pass plays the whole
+    beginning; every later pass starts after the frames the dissolve already showed, so nothing jumps."""
+    count = int(count)
+    if count <= 0:
+        return 0, None, 0.0
+    fade = max(0, min(int(fade), count // 3))
+    q = max(0, int(float(seconds) * float(fps)))
+    if q < fade or fade == 0:
+        return (q % count if fade == 0 else q), None, 0.0
+    length = count - fade                          # frames in one pass after the first
+    m = (q - fade) % length
+    if m < count - 2 * fade:
+        return fade + m, None, 0.0
+    d = m - (count - 2 * fade)                     # 0..fade-1 inside the dissolve
+    return count - fade + d, d, (d + 1.0) / (fade + 1.0)
+
+
 def scene_of(mission_id):
     return SCENES.get(mission_id)
 

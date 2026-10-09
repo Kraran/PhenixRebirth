@@ -8,6 +8,7 @@ drawing code and is tested on its own. Points earned in a mission are
 hangar credits.
 """
 import math
+import os
 
 import pygame
 from settings import BASE_WIDTH, BASE_HEIGHT, asset_path
@@ -162,6 +163,11 @@ class StoryHub:
         self.best_index = 0            # cursor in the Bestiary list
         self.anim_t = 0.0              # seconds, drives the Bestiary animation
         self._intro_bg = {}
+        self._clip_lists = {}          # clip name -> frame files
+        self._clip_cur = None          # ((clip, frame, other, weight), picture) of the frame on screen
+        self._clip_img = None
+        self._clip_tmp = None
+        self._clip_overlay = None
         self._intro_blocks = {}
         self._intro_mask = None
         self._intro_edges = {}
@@ -872,8 +878,67 @@ class StoryHub:
     def _intro_top(self, text_height):
         return max(self._intro_rest(text_height), BASE_HEIGHT - self.intro_pos)
 
+    # --- video clip as a slide background (see story_state.CLIPS) ---
+    def _clip_files(self, name):
+        """Sorted frame files of a clip (cached); empty when the clip is not on disk."""
+        hit = self._clip_lists.get(name)
+        if hit is None:
+            folder = asset_path("story", name + "_frames")
+            try:
+                hit = [os.path.join(folder, n) for n in sorted(os.listdir(folder))
+                       if n.lower().endswith((".jpg", ".jpeg", ".png"))]
+            except OSError:
+                hit = []
+            self._clip_lists[name] = hit
+        return hit
+
+    def _clip_scaled(self, path, dest):
+        """One frame stretched onto `dest` (the whole canvas; the clips are 16:9 within two percent)."""
+        raw = pygame.image.load(path).convert()
+        pygame.transform.smoothscale(raw, dest.get_size(), dest)
+
+    def _clip_backdrop(self, name):
+        """The clip frame of the moment with the same shading and reading band as a still picture. The picture
+        is rebuilt only when the clip moves on to another frame; a missing or broken clip shows the still."""
+        files = self._clip_files(name)
+        if not files:
+            return None
+        info = ss.clip_of(name)
+        a, b, w = ss.clip_frame_at(self.intro_t, len(files), info["fps"])
+        key = (name, a, b, int(w * 255))
+        if self._clip_cur is not None and self._clip_cur[0] == key:
+            return self._clip_cur[1]
+        try:
+            if self._clip_img is None:
+                self._clip_img = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+                self._clip_tmp = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+                # shade (70) and reading band (120) of a still picture in one blit
+                self._clip_overlay = pygame.Surface((BASE_WIDTH, BASE_HEIGHT), pygame.SRCALPHA)
+                self._clip_overlay.fill((0, 0, 0, 70))
+                both = int(round(255 * (1 - (1 - 70 / 255.0) * (1 - 120 / 255.0))))
+                band = pygame.Rect((BASE_WIDTH - (INTRO_TEXT_W + 120)) // 2, 0, INTRO_TEXT_W + 120, BASE_HEIGHT)
+                self._clip_overlay.fill((0, 0, 0, both), band)
+            img = self._clip_img
+            self._clip_scaled(files[a], img)
+            if b is not None:
+                self._clip_scaled(files[b], self._clip_tmp)
+                self._clip_tmp.set_alpha(int(w * 255))
+                img.blit(self._clip_tmp, (0, 0))
+            img.blit(self._clip_overlay, (0, 0))
+        except Exception:
+            log_exc("story._clip_backdrop")
+            self._clip_lists[name] = []              # give up on this clip: the still takes over
+            self._clip_cur = None
+            return None
+        self._clip_cur = (key, img)
+        return img
+
     def _intro_backdrop(self, name):
         """The slide picture with the dark reading band already baked in (cached, opaque)."""
+        if ss.clip_of(name):
+            moving = self._clip_backdrop(name)
+            if moving is not None:
+                return moving
         key = ("band", name)
         img = self._intro_bg.get(key)
         if img is None:
