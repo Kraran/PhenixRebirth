@@ -18,7 +18,7 @@ import time
 import unicodedata
 
 from safe_io import atomic_write_json, backup_unreadable
-from settings import user_data_dir, ENEMY_VETERAN_BONUS
+from settings import asset_path, user_data_dir, ENEMY_VETERAN_BONUS
 
 SAVE_VERSION = 4
 SLOT_COUNT = 4
@@ -875,38 +875,13 @@ SCENES = {
 }
 
 
-# A slide picture can be a video clip instead of a still: `assets/story/<name>_frames/0001.jpg ...` played in a loop
-# behind the text (the still `<name>.jpg` stays as the poster and as the fallback when the frames are missing).
-# `fps` is the pace of the frames; the end of the clip dissolves into its beginning over CLIP_FADE_FRAMES frames.
-CLIPS = {
-    "oiseaux_bleus": {"fps": 24.0},
-}
-CLIP_FADE_FRAMES = 12            # half a second at 24 fps
-
-
-def clip_of(name):
-    return CLIPS.get(name)
-
-
-def clip_frame_at(seconds, count, fps, fade=CLIP_FADE_FRAMES):
-    """What a looping clip shows `seconds` after it started: (frame, other, weight).
-
-    `other` is None except in the dissolve at the loop point, where the end of the clip melts into its
-    beginning (`weight` is how much of frame `other` is visible, 0..1). The first pass plays the whole
-    beginning; every later pass starts after the frames the dissolve already showed, so nothing jumps."""
-    count = int(count)
-    if count <= 0:
-        return 0, None, 0.0
-    fade = max(0, min(int(fade), count // 3))
-    q = max(0, int(float(seconds) * float(fps)))
-    if q < fade or fade == 0:
-        return (q % count if fade == 0 else q), None, 0.0
-    length = count - fade                          # frames in one pass after the first
-    m = (q - fade) % length
-    if m < count - 2 * fade:
-        return fade + m, None, 0.0
-    d = m - (count - 2 * fade)                     # 0..fade-1 inside the dissolve
-    return count - fade + d, d, (d + 1.0) / (fade + 1.0)
+# A slide picture can be a video clip instead of a still: `assets/story/<name>.mp4` (made by tools/encode_clip.py,
+# no sound, 24 fps, a loop without a seam) plays behind the text. The still `<name>.jpg` stays as the poster, shown
+# while the clip starts and whenever it cannot play (no ffmpeg, damaged file).
+def clip_path(name):
+    """Full path of the clip of a slide picture, or None when the picture is a plain still."""
+    path = asset_path("story", str(name) + ".mp4")
+    return path if os.path.isfile(path) else None
 
 
 def scene_of(mission_id):

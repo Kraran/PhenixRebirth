@@ -8,7 +8,6 @@ drawing code and is tested on its own. Points earned in a mission are
 hangar credits.
 """
 import math
-import os
 
 import pygame
 from settings import BASE_WIDTH, BASE_HEIGHT, asset_path
@@ -17,6 +16,7 @@ from errlog import log_exc
 import story_state as ss
 from text_cache import TextCache
 import bestiary_art
+import videoclip
 from story_state import MISSIONS, SHOP, log_text   # noqa: F401  (re-exported for the tests)
 
 
@@ -163,11 +163,10 @@ class StoryHub:
         self.best_index = 0            # cursor in the Bestiary list
         self.anim_t = 0.0              # seconds, drives the Bestiary animation
         self._intro_bg = {}
-        self._clip_lists = {}          # clip name -> frame files
-        self._clip_cur = None          # ((clip, frame, other, weight), picture) of the frame on screen
-        self._clip_img = None
-        self._clip_tmp = None
-        self._clip_overlay = None
+        self._clip = None              # videoclip.ClipPlayer of the slide on screen, if it is a video
+        self._clip_name = None
+        self._clip_shade = None
+        self._clip_paths = {}          # picture name -> its clip file (None: a still)
         self._intro_blocks = {}
         self._intro_mask = None
         self._intro_edges = {}
@@ -200,6 +199,7 @@ class StoryHub:
         return True
 
     def _reset_slide(self):
+        self._stop_clip()                 # a video starts over with its slide
         self.intro_t = 0.0
         self.intro_pos = 0.0
         self.intro_speed = 0.0
@@ -225,6 +225,7 @@ class StoryHub:
 
     def _end_intro(self):
         """Last slide done, or skipped: remember it and go back (the hangar, the map or the journal)."""
+        self._stop_clip()
         if self.scene_id:
             ss.mark_scene_seen(self.state, self.scene_id)
         else:
@@ -241,6 +242,8 @@ class StoryHub:
         """Time passes. `scroll` is the speed control of the intro: +1 faster (Down), -1 back (Up)."""
         self.anim_t += max(0.0, min(0.25, float(dt)))
         if self.screen != "intro":
+            if self._clip is not None:
+                self._stop_clip()
             return
         dt = max(0.0, min(0.25, float(dt)))
         self.intro_t += dt
@@ -878,64 +881,38 @@ class StoryHub:
     def _intro_top(self, text_height):
         return max(self._intro_rest(text_height), BASE_HEIGHT - self.intro_pos)
 
-    # --- video clip as a slide background (see story_state.CLIPS) ---
-    def _clip_files(self, name):
-        """Sorted frame files of a clip (cached); empty when the clip is not on disk."""
-        hit = self._clip_lists.get(name)
-        if hit is None:
-            folder = asset_path("story", name + "_frames")
-            try:
-                hit = [os.path.join(folder, n) for n in sorted(os.listdir(folder))
-                       if n.lower().endswith((".jpg", ".jpeg", ".png"))]
-            except OSError:
-                hit = []
-            self._clip_lists[name] = hit
-        return hit
+    # --- video clip as a slide background (see story_state.clip_path and videoclip.py) ---
+    def _stop_clip(self):
+        if self._clip is not None:
+            self._clip.close()
+        self._clip = None
+        self._clip_name = None
 
-    def _clip_scaled(self, path, dest):
-        """One frame stretched onto `dest` (the whole canvas; the clips are 16:9 within two percent)."""
-        raw = pygame.image.load(path).convert()
-        pygame.transform.smoothscale(raw, dest.get_size(), dest)
+    def _clip_file(self, name):
+        if name not in self._clip_paths:
+            self._clip_paths[name] = ss.clip_path(name)
+        return self._clip_paths[name]
 
     def _clip_backdrop(self, name):
-        """The clip frame of the moment with the same shading and reading band as a still picture. The picture
-        is rebuilt only when the clip moves on to another frame; a missing or broken clip shows the still."""
-        files = self._clip_files(name)
-        if not files:
+        """The video frame of the moment, darkened like the still picture, or None while the video starts
+        and whenever it cannot play (then the still shows)."""
+        path = self._clip_file(name)
+        if not path:
             return None
-        info = ss.clip_of(name)
-        a, b, w = ss.clip_frame_at(self.intro_t, len(files), info["fps"])
-        key = (name, a, b, int(w * 255))
-        if self._clip_cur is not None and self._clip_cur[0] == key:
-            return self._clip_cur[1]
-        try:
-            if self._clip_img is None:
-                self._clip_img = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
-                self._clip_tmp = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
-                # shade (70) and reading band (120) of a still picture in one blit
-                self._clip_overlay = pygame.Surface((BASE_WIDTH, BASE_HEIGHT), pygame.SRCALPHA)
-                self._clip_overlay.fill((0, 0, 0, 70))
-                both = int(round(255 * (1 - (1 - 70 / 255.0) * (1 - 120 / 255.0))))
-                band = pygame.Rect((BASE_WIDTH - (INTRO_TEXT_W + 120)) // 2, 0, INTRO_TEXT_W + 120, BASE_HEIGHT)
-                self._clip_overlay.fill((0, 0, 0, both), band)
-            img = self._clip_img
-            self._clip_scaled(files[a], img)
-            if b is not None:
-                self._clip_scaled(files[b], self._clip_tmp)
-                self._clip_tmp.set_alpha(int(w * 255))
-                img.blit(self._clip_tmp, (0, 0))
-            img.blit(self._clip_overlay, (0, 0))
-        except Exception:
-            log_exc("story._clip_backdrop")
-            self._clip_lists[name] = []              # give up on this clip: the still takes over
-            self._clip_cur = None
-            return None
-        self._clip_cur = (key, img)
-        return img
+        if self._clip_name != name:
+            self._stop_clip()
+            if self._clip_shade is None:
+                band = INTRO_TEXT_W + 120                          # the same shade and reading band as a still
+                self._clip_shade = videoclip.make_shade(
+                    (BASE_WIDTH, BASE_HEIGHT), [(0, BASE_WIDTH, 70), ((BASE_WIDTH - band) // 2, band, 120)])
+            self._clip = videoclip.ClipPlayer(path, (BASE_WIDTH, BASE_HEIGHT), self._clip_shade)
+            self._clip_name = name
+        self._clip.pump()
+        return self._clip.surface if self._clip.playing else None
 
     def _intro_backdrop(self, name):
         """The slide picture with the dark reading band already baked in (cached, opaque)."""
-        if ss.clip_of(name):
+        if self._clip_file(name):
             moving = self._clip_backdrop(name)
             if moving is not None:
                 return moving

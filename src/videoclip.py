@@ -1,0 +1,232 @@
+"""Small looping videos (6 to 10 seconds) played behind the game screens. No sound.
+
+ffmpeg runs as a separate process that decodes, scales and crops the video, so the game only copies one finished
+picture per frame (and darkens it with one multiply). The process loops the file by itself (`-stream_loop`) and
+runs at a low priority; a thread reads its frames into a short queue (the process waits when the queue is full),
+and `pump()` shows each frame when its time comes, at CLIP_FPS. The queue also hides the short pause ffmpeg makes
+at each loop point. Every clip is encoded at CLIP_FPS by tools/encode_clip.py.
+
+ffmpeg comes from, in this order: the `bin` folder of the game (or of the user data), the `imageio-ffmpeg`
+package (listed in requirements.txt and packed into the exe by build_exe.bat), then the PATH.
+Without ffmpeg, or if it fails, `ClipPlayer.surface` stays None and the screens show their still picture.
+"""
+import atexit
+import os
+import shutil
+import subprocess
+import sys
+import threading
+import time
+from collections import deque
+
+import pygame
+
+from errlog import log_exc
+
+CLIP_FPS = 24.0         # pace of every clip (the encoder tool converts to it)
+QUEUE_FRAMES = 6        # decoded frames kept ahead: a quarter of a second
+
+_exe_cache = []          # [path or None] once looked up
+
+
+def _roots():
+    roots = []
+    try:
+        from settings import project_root
+        roots.append(os.path.join(project_root(), "bin"))
+    except Exception:
+        log_exc("videoclip._roots")
+    roots.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bin"))
+    try:
+        from settings import user_data_dir
+        roots.append(os.path.join(user_data_dir(), "bin"))
+    except Exception:
+        log_exc("videoclip._roots")
+    return roots
+
+
+def find_ffmpeg(refresh=False):
+    """Path of an ffmpeg executable, or None. Looked up once."""
+    if _exe_cache and not refresh:
+        return _exe_cache[0]
+    found = None
+    for root in _roots():
+        for name in ("ffmpeg.exe", "ffmpeg"):
+            fp = os.path.join(root, name)
+            if os.path.isfile(fp):
+                found = fp
+                break
+        if found:
+            break
+    if not found:
+        try:
+            import imageio_ffmpeg
+            fp = imageio_ffmpeg.get_ffmpeg_exe()
+            if fp and os.path.isfile(fp):
+                found = fp
+        except Exception:
+            pass                                   # the package is simply not installed
+    if not found:
+        found = shutil.which("ffmpeg")
+    _exe_cache[:] = [found]
+    return found
+
+
+def video_filter(size):
+    """ffmpeg filter that fills `size` with the picture: scaled up to cover it, the overflow cropped."""
+    w, h = size
+    return "scale=%d:%d:force_original_aspect_ratio=increase:flags=bicubic,crop=%d:%d" % (w, h, w, h)
+
+
+def command(exe, path, size):
+    """The ffmpeg command line: raw 32-bit frames (B, G, R, unused) on stdout, forever."""
+    return [exe, "-hide_banner", "-loglevel", "error", "-nostdin", "-stream_loop", "-1",
+            "-threads", "2", "-i", path, "-an", "-sn", "-filter_threads", "2",
+            "-vf", video_filter(size), "-f", "rawvideo", "-pix_fmt", "bgr0", "-"]
+
+
+def make_shade(size, boxes):
+    """Grey picture that darkens a frame when multiplied into it (BLEND_RGB_MULT), like black boxes would.
+
+    `boxes` is [(x, width, alpha 0..255)] over the full height, in that order: where two boxes overlap the
+    darkening adds up the way two translucent black layers do. Multiplying is a lot cheaper than blending
+    (0.4 ms against 1.2 ms for a 1280x720 picture), and far cheaper than asking ffmpeg to draw the boxes."""
+    w, h = int(size[0]), int(size[1])
+    keep = [1.0] * w
+    for x, bw, alpha in boxes:
+        f = 1.0 - max(0, min(255, int(alpha))) / 255.0
+        for i in range(max(0, int(x)), min(w, int(x) + int(bw))):
+            keep[i] *= f
+    shade = pygame.Surface((w, h))
+    start = 0
+    for i in range(1, w + 1):
+        if i == w or int(round(255 * keep[i])) != int(round(255 * keep[start])):
+            v = int(round(255 * keep[start]))
+            shade.fill((v, v, v), pygame.Rect(start, 0, i - start, h))
+            start = i
+    return shade
+
+
+_players = []
+
+
+@atexit.register
+def _close_all():
+    for p in list(_players):
+        p.close()
+
+
+class ClipPlayer:
+    """One video playing: `pump()` once per drawn frame, then blit `surface` when it is not None."""
+
+    def __init__(self, path, size, shade=None, exe=None, fps=CLIP_FPS):
+        self.path = path
+        self.size = (int(size[0]), int(size[1]))
+        self.shade = shade                         # grey picture multiplied into every frame (make_shade)
+        self.exe = exe if exe is not None else find_ffmpeg()
+        self.fps = float(fps)
+        self.surface = None                        # the picture of the moment (None until the first frame)
+        self.failed = self.exe is None             # no decoder, or it stopped: the still takes over
+        self._bytes = self.size[0] * self.size[1] * 4
+        self._cond = threading.Condition()
+        self._queue = deque()                      # decoded frames not shown yet
+        self._shown = 0                            # frames shown so far
+        self._t0 = None                            # when frame 0 was due
+        self._proc = None
+        self._alive = True
+        self._thread = None
+        if not self.failed:
+            self._thread = threading.Thread(target=self._read, name="clip-reader", daemon=True)
+            self._thread.start()
+            _players.append(self)
+
+    def _spawn(self):
+        flags = 0
+        if sys.platform.startswith("win"):
+            flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)
+        return subprocess.Popen(command(self.exe, self.path, self.size), stdout=subprocess.PIPE,
+                                stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL, creationflags=flags)
+
+    def _read(self):
+        proc = None
+        try:
+            proc = self._proc = self._spawn()
+            if not self._alive:
+                return                              # closed while the process was starting (finally kills it)
+            out = proc.stdout
+            while self._alive:
+                data = out.read(self._bytes)
+                if len(data) < self._bytes:
+                    break                           # ffmpeg stopped (unreadable file, killed...)
+                with self._cond:
+                    while self._alive and len(self._queue) >= QUEUE_FRAMES:
+                        self._cond.wait(0.1)        # ffmpeg waits for the game to catch up
+                    if not self._alive:
+                        break
+                    self._queue.append(data)
+        except Exception:
+            if self._alive:
+                log_exc("videoclip._read")
+        finally:
+            if self._alive:
+                self.failed = True
+            if proc is not None:
+                try:
+                    proc.kill()
+                except Exception:
+                    pass
+                try:
+                    proc.wait(timeout=2)
+                except Exception:
+                    pass
+
+    def pump(self, now=None):
+        """Show the frame whose time has come. True when `surface` changed. Frames that came due together
+        are skipped but the last; when none is ready the clock waits instead of skipping."""
+        now = time.monotonic() if now is None else now
+        data = None
+        with self._cond:
+            if self._t0 is None:
+                if not self._queue:
+                    return False
+                self._t0 = now                      # the first frame starts the clock
+            while self._queue and self._t0 + self._shown / self.fps <= now:
+                data = self._queue.popleft()
+                self._shown += 1
+            if data is not None:
+                self._cond.notify()                 # room for the reader
+            elif not self._queue:
+                self._t0 = max(self._t0, now - self._shown / self.fps)   # starved: the clock waits
+        if data is None:
+            return False
+        try:
+            if self.surface is None:
+                self.surface = pygame.Surface(self.size)         # 32 bits: bytes B, G, R, unused
+            buf = self.surface.get_buffer()
+            buf.write(data)
+            del buf
+            if self.shade is not None:
+                self.surface.blit(self.shade, (0, 0), special_flags=pygame.BLEND_RGB_MULT)
+        except Exception:
+            log_exc("videoclip.pump")
+            self.failed = True
+            self.surface = None
+            return False
+        return True
+
+    @property
+    def playing(self):
+        return self.surface is not None and not self.failed
+
+    def close(self):
+        self._alive = False
+        with self._cond:
+            self._cond.notify_all()
+        proc = self._proc
+        if proc is not None:
+            try:
+                proc.kill()
+            except Exception:
+                pass
+        if self in _players:
+            _players.remove(self)

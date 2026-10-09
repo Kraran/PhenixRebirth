@@ -20,3 +20,6 @@ addon/mame/roms/*.zip
 
 bench_profile.txt
 probe_result.txt
+
+# a hand-placed ffmpeg (see videoclip.find_ffmpeg): too big for the repository
+bin/ffmpeg*

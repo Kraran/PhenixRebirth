@@ -6,7 +6,7 @@ echo.
 echo  Building PhenixRebirth.exe (folder mode, more reliable)...
 echo.
 
-python -m pip install --upgrade pyinstaller pygame
+python -m pip install --upgrade pyinstaller pygame imageio-ffmpeg
 if errorlevel 1 (
     echo [ERREUR] pip / pyinstaller
     pause
@@ -28,6 +28,8 @@ python -m PyInstaller --noconfirm --clean --windowed --name "PhenixRebirth" ^
   --hidden-import sounds ^
   --hidden-import i18n ^
   --hidden-import highscores ^
+  --hidden-import videoclip ^
+  --collect-all imageio_ffmpeg ^
   main.py
 
 if errorlevel 1 (
