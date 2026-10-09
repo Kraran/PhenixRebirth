@@ -94,6 +94,8 @@ Current release: **v1.4.5**
   (back to the map). Once seen, it gets a line in the journal, right under "Watch the introduction again",
   to watch it again (Up / Down go through these lines, then scroll). First scene: Dome I, the wreck of a Shield
   drifting around Jupiter. French text first, as for the intro
+- Adventure scenes: second scene, Paint I (first launch of the first paint mission): Wallems' clandestine workshop
+  dug into 434-Hungaria. Same mechanism, told once, replayable from the journal (listed after the Dome I line)
 - Adventure, hangar: the two hulls are drawn like the ship select screen (portrait in a frame, gold frame and
   slight bob for the chosen one, the other one dimmed the same way), without the Phenix / dome animations.
   The chosen hull flies every mission (the map shows "SHIP: ..."); a mission can impose a hull later
