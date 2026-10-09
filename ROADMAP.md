@@ -259,3 +259,12 @@ Suggestions welcome via GitHub Issues.
   The first sortie clip went from 8.9 MB of frames (6.5 MB with its sound as an mp4) to a 1.25 MB file
 - Video clips: a clip is picked up as soon as `assets/story/<picture>.mp4` exists next to `<picture>.jpg` (no list to
   update); the poster shows during the quarter second ffmpeg needs to start, and when ffmpeg is missing or fails
+- Boot intro and jukebox video on the same player (`src/intro.py`, `src/videoclip.py`): `assets/video/intro.mp4` (silent
+  H.264, 6.2 MB, from the original video) replaces the 433 JPEG frames (16 MB); its music stays `intro.ogg`. The picture
+  and the music start together (ffmpeg first, the music with the first picture), `main.py` starts ffmpeg on the intro
+  before the game loads, the picture is shrunk to the canvas without cropping, and a late decoder skips frames rather
+  than fall behind the sound. The jukebox entry plays the same clip (`open_clip`, `start_audio`). Without ffmpeg the
+  boot intro is left out and the jukebox shows nothing for that entry
+- Video clips: the player now also plays a clip once (`loop=False`, `ended`), fits it in a box (`fit="contain"`, size
+  read from the mp4 header by `videoclip.mp4_info`) and can keep a hard clock; `tools/encode_clip.py` got `--no-poster`
+

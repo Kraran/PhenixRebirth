@@ -140,6 +140,7 @@ def init_run_state(game):
     game.juke_paused = False
     # ingame_music loaded from settings.json below
     game.juke_video = False
+    game.juke_clip = None
     game._eq_n = 40
     game._eq_bands = [0.04] * 40
     game._eq_peaks = [0.04] * 40

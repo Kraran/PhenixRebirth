@@ -63,6 +63,9 @@ python tools/encode_clip.py my_video.mp4 picture_name
 This writes `assets/story/picture_name.mp4` and, if there is none yet, the poster `picture_name.jpg`. The scene whose
 slide uses `picture_name` plays the clip by itself. Without ffmpeg the poster is shown instead.
 
+The boot intro and the jukebox video are one more clip, `assets/video/intro.mp4`, with its music `assets/video/intro.ogg`
+(`python tools/encode_clip.py my_intro.mp4 intro --no-loop --no-poster --crf 23 --out-dir assets/video`).
+
 ## Run
 
 ```bash

@@ -323,12 +323,11 @@ def _collect(path, size, count):
     """The first `count` frames in order, as fast as ffmpeg gives them."""
     fps = 1000.0
     p = vc.ClipPlayer(path, size, fps=fps)
-    frames, t = [], 0.0
+    frames = []
     end = time.time() + 60
     while len(frames) < count and time.time() < end:
-        if p._queue and p.pump(now=t):
+        if p._queue and p.pump(now=len(frames) / fps + 1e-6):                # the time of the next frame, exactly
             frames.append(bytes(p.surface.get_buffer().raw))
-            t += 1.0 / fps
         elif not p._queue:
             time.sleep(0.002)
         assert not p.failed
@@ -432,3 +431,149 @@ def test_the_encoder_refuses_names_and_clips_it_cannot_use(tmp_path):
     res = subprocess.run([sys.executable, tool, str(short), "tiny", "--out-dir", str(tmp_path / "o")],
                          capture_output=True, text=True)
     assert res.returncode != 0 and "too short" in (res.stderr + res.stdout)
+
+
+# ------------------------------------------------------------------ a clip that plays once, with a sound
+def test_a_clip_that_plays_once_has_no_loop_flag_and_a_clip_that_loops_has_one():
+    once = vc.command("ffmpeg", "a.mp4", (1280, 720), loop=False)
+    assert "-stream_loop" not in once and "-i" in once
+    assert "-stream_loop" in vc.command("ffmpeg", "a.mp4", (1280, 720), loop=True)
+    assert vc.command("ffmpeg", "a.mp4", (1280, 720)) == vc.command("ffmpeg", "a.mp4", (1280, 720), True, "cover")
+
+
+def test_the_three_ways_to_shape_a_picture():
+    assert vc.video_filter((1280, 720), "cover").endswith("crop=1280:720") and "increase" in vc.video_filter((1280, 720))
+    assert vc.video_filter((1280, 695), "exact") == "scale=1280:695:flags=bicubic"
+    pad = vc.video_filter((1280, 640), "pad")
+    assert "decrease" in pad and "pad=1280:640:(ow-iw)/2:(oh-ih)/2" in pad and "crop" not in pad
+
+
+def test_the_largest_picture_of_its_shape_that_fits():
+    assert vc.fitted_size((736, 400), (1280, 720)) == (1280, 695)
+    assert vc.fitted_size((736, 400), (1280, 640)) == (1177, 640)
+    assert vc.fitted_size((400, 736), (1280, 640)) == (347, 640)
+    assert vc.fitted_size((10, 10), (1000, 1000)) == (1000, 1000)
+
+
+def test_contain_shrinks_the_picture_to_its_own_shape_and_cover_fills_the_box(monkeypatch):
+    info = {"duration": 18.0, "width": 736, "height": 400}
+    monkeypatch.setattr(vc, "mp4_info", lambda path: info)
+    monkeypatch.setattr(vc.ClipPlayer, "_spawn", lambda self: FakeProc(FakeOut([b""], endless=False)))
+    p = vc.ClipPlayer("x.mp4", (1280, 720), exe="ffmpeg-for-tests", fit="contain", loop=False)
+    assert p.size == (1280, 695) and p.box == (1280, 720) and p.mode == "exact" and p.duration == 18.0
+    q = vc.ClipPlayer("x.mp4", (1280, 640), exe="ffmpeg-for-tests", fit="contain", loop=False)
+    assert q.size == (1177, 640) and q.box == (1280, 640)
+    c = vc.ClipPlayer("x.mp4", (1280, 720), exe="ffmpeg-for-tests")
+    assert c.size == (1280, 720) and c.mode == "cover" and c.loop and not c.hard_clock
+    for x in (p, q, c):
+        x.close()
+
+
+def test_contain_without_a_readable_header_pads_to_the_box(monkeypatch):
+    monkeypatch.setattr(vc, "mp4_info", lambda path: None)
+    monkeypatch.setattr(vc.ClipPlayer, "_spawn", lambda self: FakeProc(FakeOut([b""], endless=False)))
+    p = vc.ClipPlayer("x.mp4", (1280, 640), exe="ffmpeg-for-tests", fit="contain", loop=False)
+    assert p.size == (1280, 640) and p.mode == "pad" and p.duration is None
+    p.close()
+
+
+def test_a_clip_that_plays_once_finishes_instead_of_failing(monkeypatch):
+    frames = [_frame((10 * (i + 1), 0, 0)) for i in range(3)]
+    out = FakeOut(frames, endless=False)
+    proc = FakeProc(out)
+    monkeypatch.setattr(vc.ClipPlayer, "_spawn", lambda self: proc)
+    p = vc.ClipPlayer("x.mp4", (4, 2), exe="ffmpeg-for-tests", loop=False)
+    assert _wait(lambda: p.finished)
+    assert not p.failed and not p.ended and len(p._queue) == 3                # the pictures are still to be shown
+    shown = []
+    for i in range(3):
+        assert p.pump(now=100.0 + i / 24.0 + 1e-6)
+        shown.append(p.surface.get_at((0, 0)).r)
+    assert shown == [10, 20, 30]
+    assert p.ended and p.ready and p.playing                                  # the last picture stays on show
+    assert not p.pump(now=200.0) and p.surface.get_at((0, 0)).r == 30
+    p.close()
+
+
+def test_a_clip_that_plays_once_and_gives_nothing_has_failed(monkeypatch):
+    out = FakeOut([], endless=False)
+    monkeypatch.setattr(vc.ClipPlayer, "_spawn", lambda self: FakeProc(out))
+    p = vc.ClipPlayer("x.mp4", (4, 2), exe="ffmpeg-for-tests", loop=False)
+    assert _wait(lambda: p.failed)
+    assert not p.finished and not p.ended and not p.ready
+    p.close()
+
+
+def test_a_clip_that_loops_never_finishes_by_itself(monkeypatch):
+    p, _out, _proc = _player(monkeypatch, [_frame((1, 1, 1))], endless=False)
+    assert _wait(lambda: p.failed)
+    assert not p.finished                                                     # for a loop the end means trouble
+
+
+def test_ready_means_a_picture_is_waiting_or_on_show(monkeypatch):
+    gate = threading.Event()
+    frame = _frame((5, 5, 5))
+
+    class Slow(FakeOut):
+        def read(self, n):
+            gate.wait(2)
+            return super().read(n)
+
+    monkeypatch.setattr(vc.ClipPlayer, "_spawn", lambda self: FakeProc(Slow([frame])))
+    p = vc.ClipPlayer("x.mp4", (4, 2), exe="ffmpeg-for-tests")
+    assert not p.ready
+    gate.set()
+    assert _wait(lambda: p.ready)
+    p.pump(now=0.0)
+    p._queue.clear()
+    assert p.ready                                                            # still on show
+    p.close()
+
+
+def test_a_hard_clock_never_waits_for_a_late_decoder_but_a_soft_one_does(monkeypatch):
+    for hard in (False, True):
+        out = FakeOut([_frame((9, 9, 9))])
+        monkeypatch.setattr(vc.ClipPlayer, "_spawn", lambda self, o=out: FakeProc(o))
+        p = vc.ClipPlayer("x.mp4", (4, 2), exe="ffmpeg-for-tests", hard_clock=hard)
+        assert _wait(lambda: p._queue)
+        p.pump(now=0.0)
+        p._alive = False
+        time.sleep(0.2)
+        p._queue.clear()
+        assert not p.pump(now=50.0)                                           # starved for a long time
+        for i in (1, 2, 3):
+            p._queue.append(_frame((i * 10, 0, 0)))
+        assert p.pump(now=50.0 + 1e-6)
+        red = p.surface.get_at((0, 0)).r
+        # soft: the clock waited, so the frames come one by one; hard: it kept the time, so it skips ahead
+        assert red == (10 if not hard else 30)
+        p.close()
+
+
+# ------------------------------------------------------------------ what the header of an mp4 says
+@needs_ffmpeg
+def test_the_header_of_a_clip_is_read_without_a_process(tmp_path):
+    for flags, name in (([], "end.mp4"), (["-movflags", "+faststart"], "front.mp4")):          # moov last, moov first
+        path = tmp_path / name
+        subprocess.run([FFMPEG, "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i",
+                        "testsrc2=size=320x180:rate=24:duration=3", "-f", "lavfi", "-i", "sine=duration=3",
+                        "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac"] + flags + ["-y", str(path)], check=True)
+        info = vc.mp4_info(str(path))
+        assert info and (info["width"], info["height"]) == (320, 180) and abs(info["duration"] - 3.0) < 0.1, name
+
+
+def test_a_file_that_is_not_an_mp4_has_no_header(tmp_path):
+    junk = tmp_path / "junk.mp4"
+    junk.write_bytes(b"not a video at all" * 100)
+    assert vc.mp4_info(str(junk)) is None
+    assert vc.mp4_info(str(tmp_path / "missing.mp4")) is None
+    assert vc.mp4_info(os.path.join(ROOT, "assets", "story", "oiseaux_bleus.jpg")) is None
+    empty = tmp_path / "empty.mp4"
+    empty.write_bytes(b"")
+    assert vc.mp4_info(str(empty)) is None
+
+
+def test_the_header_of_the_shipped_clips():
+    info = vc.mp4_info(os.path.join(ROOT, "assets", "story", "oiseaux_bleus.mp4"))
+    assert (info["width"], info["height"]) == (752, 416) and abs(info["duration"] - 9.54) < 0.05
+    assert vc.mp4_info(os.path.join(ROOT, "assets", "story", "oiseaux_bleus.mp4").replace("oiseaux_bleus.mp4", "none")) is None

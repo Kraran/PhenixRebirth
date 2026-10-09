@@ -1,4 +1,5 @@
-"""Small looping videos (6 to 10 seconds) played behind the game screens. No sound.
+"""Small videos played in the game: looping clips behind the screens (6 to 10 seconds) and the boot intro. No sound
+in the video itself (the intro's music is a separate file the game starts at the same time).
 
 ffmpeg runs as a separate process that decodes, scales and crops the video, so the game only copies one finished
 picture per frame (and darkens it with one multiply). The process loops the file by itself (`-stream_loop`) and
@@ -72,17 +73,88 @@ def find_ffmpeg(refresh=False):
     return found
 
 
-def video_filter(size):
-    """ffmpeg filter that fills `size` with the picture: scaled up to cover it, the overflow cropped."""
+def video_filter(size, mode="cover"):
+    """ffmpeg filter that gives the picture the shape of `size`.
+
+    "cover": scaled up to fill it, the overflow cropped. "exact": stretched to it (the caller made `size` the
+    picture's own shape). "pad": the whole picture inside it, black bars where it does not fit."""
     w, h = size
+    if mode == "exact":
+        return "scale=%d:%d:flags=bicubic" % (w, h)
+    if mode == "pad":
+        return ("scale=%d:%d:force_original_aspect_ratio=decrease:flags=bicubic,"
+                "pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black" % (w, h, w, h))
     return "scale=%d:%d:force_original_aspect_ratio=increase:flags=bicubic,crop=%d:%d" % (w, h, w, h)
 
 
-def command(exe, path, size):
-    """The ffmpeg command line: raw 32-bit frames (B, G, R, unused) on stdout, forever."""
-    return [exe, "-hide_banner", "-loglevel", "error", "-nostdin", "-stream_loop", "-1",
-            "-threads", "2", "-i", path, "-an", "-sn", "-filter_threads", "2",
-            "-vf", video_filter(size), "-f", "rawvideo", "-pix_fmt", "bgr0", "-"]
+def command(exe, path, size, loop=True, mode="cover"):
+    """The ffmpeg command line: raw 32-bit frames (B, G, R, unused) on stdout, for ever when `loop`."""
+    cmd = [exe, "-hide_banner", "-loglevel", "error", "-nostdin"]
+    if loop:
+        cmd += ["-stream_loop", "-1"]
+    return cmd + ["-threads", "2", "-i", path, "-an", "-sn", "-filter_threads", "2",
+                  "-vf", video_filter(size, mode), "-f", "rawvideo", "-pix_fmt", "bgr0", "-"]
+
+
+def mp4_info(path):
+    """{"duration": seconds, "width": px, "height": px} read from the header of an mp4 (no process, no decoding),
+    or None when the file is not one we can read. Width and height are those of the first video track."""
+    import struct
+
+    def boxes(f, start, end):
+        pos = start
+        while pos + 8 <= end:
+            f.seek(pos)
+            head = f.read(8)
+            if len(head) < 8:
+                return
+            size, kind = struct.unpack(">I4s", head)
+            body = pos + 8
+            if size == 1:
+                size = struct.unpack(">Q", f.read(8))[0]
+                body += 8
+            elif size == 0:
+                size = end - pos
+            if size < 8:
+                return
+            yield kind, body, min(end, pos + size)
+            pos += size
+
+    try:
+        info = {}
+        with open(path, "rb") as f:
+            f.seek(0, os.SEEK_END)
+            total = f.tell()
+            for kind, body, stop in boxes(f, 0, total):
+                if kind != b"moov":
+                    continue
+                for kind2, body2, stop2 in boxes(f, body, stop):
+                    if kind2 == b"mvhd":
+                        f.seek(body2)
+                        version = f.read(1)[0]
+                        f.seek(body2 + 4 + (16 if version == 1 else 8))
+                        scale = struct.unpack(">I", f.read(4))[0]
+                        length = struct.unpack(">Q" if version == 1 else ">I", f.read(8 if version == 1 else 4))[0]
+                        if scale:
+                            info["duration"] = length / float(scale)
+                    elif kind2 == b"trak" and "width" not in info:
+                        for kind3, body3, stop3 in boxes(f, body2, stop2):
+                            if kind3 != b"tkhd":
+                                continue
+                            f.seek(stop3 - 8)
+                            w, h = struct.unpack(">II", f.read(8))
+                            if w >> 16 and h >> 16:
+                                info["width"], info["height"] = w >> 16, h >> 16
+                break
+        return info if "duration" in info else None
+    except Exception:
+        return None
+
+
+def fitted_size(source, box):
+    """The largest size with the shape of `source` that fits in `box`."""
+    scale = min(box[0] / float(source[0]), box[1] / float(source[1]))
+    return max(1, int(source[0] * scale)), max(1, int(source[1] * scale))
 
 
 def make_shade(size, boxes):
@@ -119,14 +191,31 @@ def _close_all():
 class ClipPlayer:
     """One video playing: `pump()` once per drawn frame, then blit `surface` when it is not None."""
 
-    def __init__(self, path, size, shade=None, exe=None, fps=CLIP_FPS):
+    def __init__(self, path, size, shade=None, exe=None, fps=CLIP_FPS, loop=True, fit="cover", hard_clock=False):
+        """`size` is the box to fill. fit="cover" fills it (the overflow is cropped); fit="contain" shrinks the
+        picture to the box and `size` becomes the picture's own size: centre `surface` yourself. A clip that
+        does not `loop` plays once and then `ended` is true. With `hard_clock` a late decoder never makes the
+        picture wait (frames are skipped to keep the time): for pictures that go with a sound."""
         self.path = path
-        self.size = (int(size[0]), int(size[1]))
+        self.loop = bool(loop)
+        self.hard_clock = bool(hard_clock)
+        self.info = mp4_info(path)
+        self.duration = self.info["duration"] if self.info else None
+        self.mode = "cover"
+        size = (int(size[0]), int(size[1]))
+        self.box = size                            # the box asked for (the picture may be smaller: fit="contain")
+        if fit == "contain":
+            self.mode = "pad"
+            if self.info and "width" in self.info:
+                size, self.mode = fitted_size((self.info["width"], self.info["height"]), size), "exact"
+        self.size = size
         self.shade = shade                         # grey picture multiplied into every frame (make_shade)
         self.exe = exe if exe is not None else find_ffmpeg()
         self.fps = float(fps)
         self.surface = None                        # the picture of the moment (None until the first frame)
         self.failed = self.exe is None             # no decoder, or it stopped: the still takes over
+        self.finished = False                      # a clip that does not loop: its last frame has been read
+        self._got = False
         self._bytes = self.size[0] * self.size[1] * 4
         self._cond = threading.Condition()
         self._queue = deque()                      # decoded frames not shown yet
@@ -144,7 +233,7 @@ class ClipPlayer:
         flags = 0
         if sys.platform.startswith("win"):
             flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)
-        return subprocess.Popen(command(self.exe, self.path, self.size), stdout=subprocess.PIPE,
+        return subprocess.Popen(command(self.exe, self.path, self.size, self.loop, self.mode), stdout=subprocess.PIPE,
                                 stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL, creationflags=flags)
 
     def _read(self):
@@ -158,6 +247,7 @@ class ClipPlayer:
                 data = out.read(self._bytes)
                 if len(data) < self._bytes:
                     break                           # ffmpeg stopped (unreadable file, killed...)
+                self._got = True
                 with self._cond:
                     while self._alive and len(self._queue) >= QUEUE_FRAMES:
                         self._cond.wait(0.1)        # ffmpeg waits for the game to catch up
@@ -169,7 +259,10 @@ class ClipPlayer:
                 log_exc("videoclip._read")
         finally:
             if self._alive:
-                self.failed = True
+                if not self.loop and self._got:
+                    self.finished = True            # the end of a clip that plays once
+                else:
+                    self.failed = True
             if proc is not None:
                 try:
                     proc.kill()
@@ -195,7 +288,7 @@ class ClipPlayer:
                 self._shown += 1
             if data is not None:
                 self._cond.notify()                 # room for the reader
-            elif not self._queue:
+            elif not self._queue and not self.hard_clock:
                 self._t0 = max(self._t0, now - self._shown / self.fps)   # starved: the clock waits
         if data is None:
             return False
@@ -217,6 +310,17 @@ class ClipPlayer:
     @property
     def playing(self):
         return self.surface is not None and not self.failed
+
+    @property
+    def ready(self):
+        """A frame is waiting (or one is already on show): the picture can start together with its sound."""
+        return self.surface is not None or bool(self._queue)
+
+    @property
+    def ended(self):
+        """A clip that plays once has shown its last frame."""
+        with self._cond:
+            return self.finished and not self._queue
 
     def close(self):
         self._alive = False
