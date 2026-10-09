@@ -3128,6 +3128,12 @@ _ADVENTURE_TEXTS = {
     "story_intro_last": ("A/Entrée  commencer   Haut / Bas  vitesse   B/Échap  passer",
                          "A/Enter  start   Up / Down  speed   B/Esc  skip"),
     "story_log_intro": ("Revoir l'introduction", "Watch the introduction again"),
+    "story_log_scene": ("Revoir : {title}", "Watch again: {title}"),
+    "story_scene_last": ("A/Entrée  décoller   Haut / Bas  vitesse   B/Échap  passer",
+                         "A/Enter  take off   Up / Down  speed   B/Esc  skip"),
+    "story_scene_end": ("A/Entrée  fermer   Haut / Bas  vitesse   B/Échap  passer",
+                        "A/Enter  close   Up / Down  speed   B/Esc  skip"),
+    "story_scene_dome_1_t": ("Dôme I : l'épave du Shield", "Dome I: the Shield wreck"),
     "story_mode_hint": ("Gauche / Droite  choisir   A/Entree  commencer   B/Esc  retour",
                         "Left / Right  choose   A/Enter  start   B/Esc  back"),
     "story_pilot": ("PILOTE", "PILOT"),
@@ -3225,6 +3231,11 @@ _INTRO_FR = {
         "je peux encore renverser le cours de l'histoire, moi, {name}, j'en suis maintenant certain."
     ),
 }
+_INTRO_FR["story_scene_dome_1"] = (
+    'De rares survivants, échappés des colonies ravagées des lunes de Jupiter, affirment avoir aperçu la carcasse d’un EDF42-Shield dérivant en orbite haute autour de la géante gazeuse. Leurs récits concordent sur l’essentiel : la coque est éventrée de part en part, les propulseurs sont morts, et la dérive lente de l’épave dessine déjà une ellipse instable qui finira par la précipiter dans les bandes de nuages. Pourtant, le générateur de bouclier pourrait encore être récupérable — à condition que le cœur n’ait pas cédé sous le feu des Avioïdes.\n\n'
+    'Il nous faut tenter de le ramener. Un bouclier encore fonctionnel, même endommagé, changerait le rapport de force sur tout le secteur. Les survivants parlent d’un clignotement intermittent dans la baie technique, d’une lueur froide qui s’allume encore par à-coups, comme si le système refusait de mourir. Personne n’a pu s’approcher assez près pour le confirmer. Les balises de détresse se sont tues depuis des semaines, et les dernières transmissions n’étaient plus que du bruit.\n\n'
+    'Le problème, c’est qu’entre nous et l’épave s’étend tout un secteur sous contrôle avioïde. Leurs patrouilles quadrillent les corridors d’approche, leurs nids orbitaux surveillent les points de Lagrange, et la moindre signature de propulsion au-delà de la ligne de débris attire déjà une réponse. Atteindre la carcasse exigera une trajectoire précisément calculée, puis une extraction sous silence radio. Si le générateur tient, nous repartirons avec lui. S’il a cédé, nous n’aurons fait que confirmer la malédiction qui pèse sur la race humaine.'
+)
 for _k, _v in _INTRO_FR.items():
     _ADVENTURE_TEXTS[_k] = (_v, _v)
 
@@ -3350,11 +3361,13 @@ _ADVENTURE_TEXTS.update({
                       "The whole series can be flown again, harder."),
     "story_log_pt3": ("Peinture III — l'atelier de peinture est ouvert.", "Paint III — the paint shop is open."),
     "story_shop_paint": ("Atelier de peinture", "Paint shop"),
-    "story_paint_ready": ("1 CHANGEMENT", "1 CHANGE"),
+    "story_paint_ready": ("1 CHANGEMENT  -  {pts} PTS", "1 CHANGE  -  {pts} PTS"),
+    "story_paint_poor": ("Il faut {pts} PTS pour peindre le Shield.", "Painting the Shield costs {pts} PTS."),
     "story_paint_locked": ("Termine les trois missions de peinture pour changer de couleur.",
                            "Finish the three paint missions to change colour."),
     "story_paint_done": ("Le Shield change de couleur !", "The Shield has a new colour!"),
-    "story_paint_title": ("ATELIER DE PEINTURE — UN SEUL CHANGEMENT", "PAINT SHOP — ONE CHANGE ONLY"),
+    "story_paint_title": ("ATELIER DE PEINTURE — UN SEUL CHANGEMENT — {pts} PTS",
+                          "PAINT SHOP — ONE CHANGE ONLY — {pts} PTS"),
     "story_paint_red": ("ROUGE", "RED"),
     "story_paint_green": ("VERT", "GREEN"),
     "story_paint_violet": ("VIOLET", "VIOLET"),

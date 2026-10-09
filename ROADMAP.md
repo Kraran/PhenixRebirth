@@ -72,8 +72,14 @@ Current release: **v1.4.5**
   The saucer is a bright sprite of its own (red hull, light dome, blinking lights; the dark boss picture was lost
   on the sky), it crosses either way at random, can only be hit once its centre is on screen, and its fade-out no
   longer alters the shared picture (that made every later saucer see-through: a sound with nothing to see).
-  Winning the third opens the paint shop in the Shield workshop for ONE change of colour (red, green, violet).
+  Winning the third opens the paint shop in the Shield workshop for ONE change of colour (red, green, violet),
+  which costs 500 points (nothing is spent if the colour is kept, or when leaving the shop).
   The level is shown on the map, in the journal and on screen
+- Adventure scenes: a mission can come with a story scene (a picture and a scrolling text, like the intro), told
+  once, the first time the mission is launched; A on the last slide then flies the mission, B / Esc skips it
+  (back to the map). Once seen, it gets a line in the journal, right under "Watch the introduction again",
+  to watch it again (Up / Down go through these lines, then scroll). First scene: Dome I, the wreck of a Shield
+  drifting around Jupiter. French text first, as for the intro
 - Adventure, hangar: the two hulls are drawn like the ship select screen (portrait in a frame, gold frame and
   slight bob for the chosen one, the other one dimmed the same way), without the Phenix / dome animations.
   The chosen hull flies every mission (the map shows "SHIP: ..."); a mission can impose a hull later

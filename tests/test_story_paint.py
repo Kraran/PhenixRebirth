@@ -14,6 +14,7 @@ def _act2():
     ss.mark_intro_seen(st)
     st["flags"].update(act2=True, dome_online=True, ch1_speed=True)
     st["act"] = 2
+    st["credits"] = 2000                                              # painting costs 500
     return st
 
 
@@ -191,6 +192,11 @@ def test_the_journal_follows_the_series_with_its_level():
 
 
 # ------------------------------------------------------------------ hub and game
+def _ready():
+    from i18n import t
+    return t("story_paint_ready").format(pts=ss.PAINT_COST)
+
+
 def _hub(st):
     ss.save_state(ss.story_path(1), st)
     hub = StoryHub()
@@ -252,7 +258,7 @@ def test_without_a_change_the_row_is_locked_and_opens_nothing(run):
     hub = _hub(_act2())
     _go_to_paint_row(hub)
     shown = _texts(hub, run)
-    assert any(t("story_shop_paint") in x for x in shown) and t("story_paint_ready") not in shown
+    assert any(t("story_shop_paint") in x for x in shown) and _ready() not in shown
     hub.confirm()
     assert not hub.paint_mode and hub.toast == t("story_paint_locked")
 
@@ -263,11 +269,11 @@ def test_the_paint_shop_changes_the_colour_once_and_saves(run):
     _pass(st)
     hub = _hub(st)
     _go_to_paint_row(hub)
-    assert t("story_paint_ready") in _texts(hub, run)
+    assert _ready() in _texts(hub, run)
     hub.confirm()
     assert hub.paint_mode and hub.paint_choice == 0
     shown = _texts(hub, run)
-    assert t("story_paint_title") in shown and any(t("story_paint_green") in x for x in shown)
+    assert t("story_paint_title").format(pts=500) in shown and any(t("story_paint_green") in x for x in shown)
     hub.nav_h(1)
     assert hub.paint_choice == 1 and hub.pane == "hangar"             # the arrows choose the colour here
     hub.confirm()
@@ -451,3 +457,73 @@ def test_the_next_missions_of_the_series_show_as_locked_until_their_turn():
     assert [ss.mission_open(st, _mission(m)) for m in PAINT] == [True, True, False]
     _pass(st)
     assert [ss.mission_open(st, _mission(m)) for m in PAINT] == [True, False, False]     # a new pass
+
+
+# ------------------------------------------------------------------ the paint costs 500
+def test_the_paint_costs_500_points():
+    assert ss.PAINT_COST == 500
+    assert [r for r in ss.shop_for(_act2()) if r[0] == "paint"][0][2] == 500
+
+
+def test_painting_takes_the_credits_and_a_refused_change_takes_nothing():
+    st = _act2()
+    _pass(st)
+    before = st["credits"]
+    assert ss.paint_change(st, "green") and st["credits"] == before - 500
+    st2 = _act2()
+    _pass(st2)
+    kept = st2["credits"]
+    assert not ss.paint_change(st2, "red") and st2["credits"] == kept          # the same colour: free of charge
+    assert not ss.paint_change(st2, "pink") and st2["credits"] == kept
+
+
+@pytest.mark.parametrize("credits, ok", [(499, False), (500, True), (501, True)])
+def test_the_change_needs_exactly_the_price(credits, ok):
+    st = _act2()
+    _pass(st)
+    st["credits"] = credits
+    assert ss.paint_change(st, "violet") is ok
+    assert st["credits"] == (credits - 500 if ok else credits)
+    assert ss.paint_state(st)["token"] is (not ok)                            # nothing spent, the change waits
+
+
+def test_too_poor_to_paint_the_shop_does_not_open_and_says_so(run):
+    from i18n import t
+    st = _act2()
+    _pass(st)
+    st["credits"] = 120
+    hub = _hub(st)
+    _go_to_paint_row(hub)
+    hub.confirm()
+    assert not hub.paint_mode and hub.toast == t("story_paint_poor").format(pts=500)
+    assert ss.paint_state(hub.state)["token"] and hub.state["credits"] == 120
+    shown = _texts(hub, run)
+    assert _ready() in shown                                                  # the price is on the row
+
+
+def test_the_paint_shop_charges_when_the_colour_is_worn_and_saves_it(run):
+    st = _act2()
+    _pass(st)
+    credits = st["credits"]
+    hub = _hub(st)
+    _go_to_paint_row(hub)
+    hub.confirm()
+    hub.nav_h(1)
+    hub.confirm()
+    assert hub.state["credits"] == credits - 500
+    again = StoryHub()
+    again.open_slot(1)
+    assert again.state["credits"] == credits - 500 and again.state["slots"][0]["tint"] == "green"
+
+
+def test_leaving_the_paint_shop_or_keeping_the_colour_costs_nothing():
+    st = _act2()
+    _pass(st)
+    credits = st["credits"]
+    hub = _hub(st)
+    _go_to_paint_row(hub)
+    hub.confirm()
+    hub.back()
+    hub.confirm()
+    hub.confirm()                                                             # red again
+    assert hub.state["credits"] == credits and ss.paint_state(hub.state)["token"]
