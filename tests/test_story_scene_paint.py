@@ -41,8 +41,8 @@ def test_the_first_paint_mission_has_a_scene_with_its_picture_and_text():
     pic, key = scene["slides"][0]
     assert pic == "atelier_wallems" and os.path.exists(asset_path("story", pic + ".jpg"))
     text = t(key)
-    assert text.startswith("L’atelier clandestin du vieux Wallems, creusé dans le flanc de 434-Hungaria, tourne encore.")
-    assert text.endswith("Non, je n'irai pas, ça serai du délire...")
+    assert text.startswith("L’atelier clandestin du vieux Wallems, creusé dans le flanc de l’astéroïde 434-Hungaria, tourne encore.")
+    assert text.endswith("Non, je n'irai pas, ça serait du délire...")
     assert text.count("\n\n") == 2                                 # three paragraphs, with a pause between
     assert "Wallems" in text and "Avioïdes" in text and "trompettes flamboyantes…" in text
     assert ss.scene_of("paint_2") is None and ss.scene_of("paint_3") is None
@@ -53,7 +53,7 @@ def test_the_text_is_exactly_the_one_given():
     assert paragraphs[1] == ("Je ne suis pas assez fou pour tenter de franchir les hordes d’Avioïdes qui quadrillent "
                              "le secteur, rang après rang, rien que pour faire repeindre mon vaisseau. Non. Je ne le suis pas.")
     assert paragraphs[0].endswith("des masques penchés sur le métal...")
-    assert paragraphs[2].startswith("Et pourtant la rumeur tient. Wallems prend encore les commandes, choisit ses teintes unique à l’œil,")
+    assert paragraphs[2].startswith("Et pourtant la rumeur tient. Wallems prend encore les commandes, choisit ses teintes uniques à l’œil,")
 
 
 def test_the_title_and_text_are_in_every_language_table():

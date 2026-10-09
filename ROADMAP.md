@@ -96,6 +96,13 @@ Current release: **v1.4.5**
   drifting around Jupiter. French text first, as for the intro
 - Adventure scenes: second scene, Paint I (first launch of the first paint mission): Wallems' clandestine workshop
   dug into 434-Hungaria. Same mechanism, told once, replayable from the journal (listed after the Dome I line)
+- Adventure scenes: the Paint I text now says "l'astéroïde 434-Hungaria" and its two typos are fixed (teintes uniques,
+  ça serait)
+- Adventure paint shop: a victory fanfare (trumpets, `assets/sounds/paint_fanfare.wav`) plays when the Shield is
+  painted. The hub only asks for sounds (`sound_events` / `take_sounds`); the game plays them
+- Adventure, Act 2: new Bestiary hunt "the Avioid commander" (`best_boss`), right after the four Bestiary hunts. It
+  flies the arcade boss level (stage 5), can be replayed, and goes up one level at each victory (boss of stage 5, 10,
+  15...), like the other hunts. It counts for the Bestiary boss entry
 - Adventure, hangar: the two hulls are drawn like the ship select screen (portrait in a frame, gold frame and
   slight bob for the chosen one, the other one dimmed the same way), without the Phenix / dome animations.
   The chosen hull flies every mission (the map shows "SHIP: ..."); a mission can impose a hull later

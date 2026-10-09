@@ -238,7 +238,7 @@ def test_the_jump_gives_the_save_of_a_pilot_who_finished_act_1():
     ss.jump_to_act2(st)
     assert st["act"] == 2 and ss.flag(st, "act2") and ss.flag(st, "dome_online") and ss.flag(st, "ch1_speed")
     assert "act2_gate" in st["cleared"] and "ch2_tease" not in st["cleared"]
-    assert _ids(ss.visible_missions(st)) == HUNTS + PHENIX + PAINT
+    assert _ids(ss.visible_missions(st)) == HUNTS + ["best_boss"] + PHENIX + PAINT
     assert ss.mission_playable(st, ss.mission_by_id("phenix_1")) and not ss.mission_playable(st, ss.mission_by_id("phenix_2"))
     assert ss.mission_playable(st, ss.mission_by_id("paint_1"))
     assert all(ss.mission_playable(st, ss.mission_by_id(m)) for m in HUNTS)
@@ -260,7 +260,7 @@ def test_act2_typed_on_the_map_goes_to_act_2_and_saves_nothing():
     assert _type(hub, "2222") == [False, False, False, False]          # the keys still work as menu keys
     assert hub.cheat_act2 and hub.cheating and not hub.cheat_unlock
     assert hub.state["act"] == 2 and hub.map_index == 0
-    assert _ids(hub.missions()) == HUNTS + PHENIX + PAINT
+    assert _ids(hub.missions()) == HUNTS + ["best_boss"] + PHENIX + PAINT
     from i18n import t
     assert hub.toast == t("story_cheat_act2")
     hub.apply_result("phenix_1", 300, True)

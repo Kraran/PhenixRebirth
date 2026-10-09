@@ -124,6 +124,7 @@ class StoryHub:
 
     def __init__(self):
         self.slot_no = None            # save slot (1..3) being played; None before one is opened
+        self.sound_events = []         # sounds the hub asks for (the game plays them, see take_sounds)
         self.state = ss.default_state()
         self.screen = "slots"          # slots | delete | name | mode | intro | hub
         self.sel = 0                   # slot cursor on the slot list (0..2)
@@ -622,6 +623,11 @@ class StoryHub:
         self._buy(row)
         return None
 
+    def take_sounds(self):
+        """The sounds asked for since the last call (names known to the Sounds object), then forgotten."""
+        out, self.sound_events = self.sound_events, []
+        return out
+
     def _open_paint(self):
         """The paint shop row: opens the colour choice when a change is waiting."""
         if not ss.paint_state(self.state)["token"]:
@@ -642,6 +648,7 @@ class StoryHub:
         if ss.paint_change(self.state, tint):
             self.save()
             self.toast = t("story_paint_done")
+            self.sound_events.append("paint_fanfare")            # trumpets for the new colour
         self.paint_mode = False
 
     def _launch_selected(self):

@@ -423,7 +423,7 @@ HUNTS = ("ch1_sortie", "best_s2", "best_s3", "best_s4")
 
 
 def test_the_four_bestiary_missions_are_hunts_each_with_its_enemy():
-    hunts = [m for m in ss.MISSIONS if ss.is_hunt(m)]
+    hunts = [m for m in ss.MISSIONS if ss.is_hunt(m) and m["id"] != "best_boss"]
     assert [m["id"] for m in hunts] == list(HUNTS)
     assert [ss.enemy_kind(m["content"]) for m in hunts] == ["bird1", "bird2", "garg3", "garg4"]
     assert not ss.is_hunt(ss.mission_by_id("dome_1")) and not ss.is_hunt(ss.mission_by_id("ch2_tease"))

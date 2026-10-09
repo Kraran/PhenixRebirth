@@ -189,6 +189,21 @@ MISSIONS = [
         "log": "",
         "playable": False,
     },
+    {
+        # Act 2 Bestiary hunt: the saucer and its commander (the arcade boss level, 5). Replayable;
+        # level 2 is the boss of level 10, level 3 that of level 15...
+        "id": "best_boss",
+        "hunt": True,
+        "acts": (2,),
+        "title": "story_m_bestboss",
+        "blurb": "story_m_bestboss_b",
+        "need": "act2",
+        "content": 5,
+        "waves": [5],
+        "speed": 1.0,
+        "unlock": [],
+        "log": "story_log_bestboss",
+    },
     # Act 2: the Phenix series. Five chained missions, flown once each (arcade levels 16 and up,
     # x1.3 speed). The last one hands over the Phenix and opens its workshop.
     {

@@ -184,6 +184,8 @@ def menu_confirm(game):
         spec = None
         if getattr(game, "story", None):
             spec = game.story.confirm()
+            for name in game.story.take_sounds():
+                game.sounds.play(name)
         if isinstance(spec, dict) and spec.get("launch"):
             game._begin_adventure(spec)
     elif game.menu_screen == "addon":
