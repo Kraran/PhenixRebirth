@@ -274,9 +274,8 @@ class Game:
         self.juke_index = int(getattr(self, "juke_index", 0) or 0)
         self.juke_paused = False
         self.juke_video = False
-        self.juke_video_i = 0
-        self.juke_video_acc = 0.0
-        self.juke_frames = None
+        self.juke_clip = None
+        self._juke_audio_wait = False
         try:
             self.sounds.stop_music()
         except Exception:
@@ -326,10 +325,12 @@ class Game:
         self._extra_enter(nxt)
 
     def _juke_stop_video(self):
+        clip = getattr(self, "juke_clip", None)
         self.juke_video = False
-        self.juke_frames = None
-        self.juke_video_i = 0
-        self.juke_video_acc = 0.0
+        self.juke_clip = None
+        self._juke_audio_wait = False
+        if clip is not None:
+            clip.close()
 
     def _juke_play_or_pause(self):
         cat = self._juke_catalog()
@@ -343,23 +344,16 @@ class Game:
                 log_exc("game._juke_play_or_pause")
             return
         if kind == "video":
-            from intro import _frame_list, AUDIO_PATH, INTRO_FPS
-            frames = _frame_list()
-            self.juke_frames = frames
+            from intro import open_clip
+            clip = open_clip((BASE_WIDTH, BASE_HEIGHT - 80))
+            if clip is None or clip.failed:
+                if clip is not None:
+                    clip.close()
+                return                                  # no intro file, or no ffmpeg: nothing to show
+            self.juke_clip = clip
             self.juke_video = True
-            self.juke_video_i = 0
-            self.juke_video_acc = 0.0
             self.juke_paused = False
-            self._juke_intro_fps = float(INTRO_FPS)
-            try:
-                if AUDIO_PATH and os.path.exists(AUDIO_PATH):
-                    pygame.mixer.music.stop()
-                    pygame.mixer.music.load(AUDIO_PATH)
-                    pygame.mixer.music.set_volume(self.sounds.music_volume)
-                    pygame.mixer.music.play(0)
-                    self.sounds._current_music = "intro"
-            except Exception as e:
-                print("Jukebox intro audio:", e)
+            self._juke_audio_wait = True                # the music starts with the first picture (see _update_jukebox)
             return
         cur = None
         try:
@@ -417,22 +411,26 @@ class Game:
 
     def _update_jukebox(self):
         if getattr(self, "juke_video", False):
+            clip = getattr(self, "juke_clip", None)
+            if clip is None or clip.failed:
+                self._juke_stop_video()
+                return
+            if getattr(self, "_juke_audio_wait", False):
+                if not clip.ready:
+                    return
+                self._juke_audio_wait = False           # picture and music start together
+                from intro import start_audio
+                if start_audio(self.sounds.music_volume):
+                    self.sounds._current_music = "intro"
             if self.juke_paused:
                 return
-            fps = float(getattr(self, "_juke_intro_fps", 24.0) or 24.0)
-            self.juke_video_acc = float(getattr(self, "juke_video_acc", 0.0)) + self.dt
-            step = 1.0 / max(1.0, fps)
-            frames = getattr(self, "juke_frames", None) or []
-            while self.juke_video_acc >= step and frames:
-                self.juke_video_acc -= step
-                self.juke_video_i += 1
-                if self.juke_video_i >= len(frames):
-                    self._juke_stop_video()
-                    try:
-                        self.sounds.stop_music()
-                    except Exception:
-                        log_exc("game._update_jukebox")
-                    break
+            clip.pump()
+            if clip.failed or clip.ended:
+                self._juke_stop_video()
+                try:
+                    self.sounds.stop_music()
+                except Exception:
+                    log_exc("game._update_jukebox")
             return
         if self.juke_paused:
             return
@@ -462,20 +460,8 @@ class Game:
         hdr = self._txt(self.medium_font, t("jukebox"), (255, 180, 90))
         surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 28))
         if getattr(self, "juke_video", False):
-            frames = getattr(self, "juke_frames", None) or []
-            i = int(getattr(self, "juke_video_i", 0) or 0)
-            img = getattr(self, "_juke_frame_surf", None)
-            if frames and 0 <= i < len(frames) and getattr(self, "_juke_frame_i", -1) != i:
-                try:
-                    raw = pygame.image.load(frames[i]).convert()
-                    src_w, src_h = raw.get_size()
-                    scale = min(BASE_WIDTH / max(1, src_w), (BASE_HEIGHT - 80) / max(1, src_h))
-                    tw, th = max(1, int(src_w * scale)), max(1, int(src_h * scale))
-                    img = pygame.transform.smoothscale(raw, (tw, th)) if raw.get_size() != (tw, th) else raw
-                    self._juke_frame_surf = img
-                    self._juke_frame_i = i
-                except Exception:
-                    img = None
+            clip = getattr(self, "juke_clip", None)
+            img = clip.surface if clip is not None else None
             if img is not None:
                 surface.blit(img, ((BASE_WIDTH - img.get_width()) // 2, 70 + (BASE_HEIGHT - 80 - img.get_height()) // 2))
             hint = self._txt(self.font, t("juke_hint_video"), (255, 220, 100))

@@ -1,6 +1,7 @@
 """Turn a video into a game clip: no sound, H.264 tuned for size, and a loop without a visible seam.
 
     python tools/encode_clip.py SOURCE.mp4 NAME [--fade 0.5] [--crf 27] [--no-loop] [--max-width 1280]
+                                [--no-poster] [--out-dir assets/video]
 
 Writes assets/story/NAME.mp4 (and the poster assets/story/NAME.jpg when there is none yet). The game plays
 the clip behind the text of the scene whose picture is NAME (see videoclip.py and story_state.clip_path).
@@ -65,6 +66,7 @@ def main():
     ap.add_argument("--crf", type=int, default=27, help="quality, higher is smaller (default 27)")
     ap.add_argument("--max-width", type=int, default=1280)
     ap.add_argument("--no-loop", action="store_true", help="plain re-encode, no dissolve at the loop point")
+    ap.add_argument("--no-poster", action="store_true", help="do not make the NAME.jpg poster")
     ap.add_argument("--out-dir", default=STORY)
     args = ap.parse_args()
     if not re.fullmatch(r"[A-Za-z0-9_]+", args.name):
@@ -97,7 +99,7 @@ def main():
     print("%s: %d frames %dx%d (source at %g fps) -> %d frames at %g fps, %.2f MB" %
           (dest, frames, w, h, fps, out_frames, CLIP_FPS, os.path.getsize(dest) / 1048576.0))
     poster = os.path.join(args.out_dir, args.name + ".jpg")
-    if not os.path.exists(poster):
+    if not args.no_poster and not os.path.exists(poster):
         res = run([exe, "-hide_banner", "-loglevel", "error", "-i", dest, "-frames:v", "1", "-q:v", "3",
                    "-vf", "scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720", "-y", poster])
         print("poster:", poster if not res.returncode else "failed: " + res.stderr)

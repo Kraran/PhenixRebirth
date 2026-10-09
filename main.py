@@ -33,6 +33,11 @@ if __name__ == "__main__":
         _log("import pygame...")
         import pygame
         _log("pygame " + pygame.version.ver)
+        try:
+            import intro
+            intro.prewarm()            # ffmpeg starts on the intro while the game loads
+        except Exception as e:
+            _log("intro prewarm: %r" % (e,))
         _log("import Game...")
         from game import Game
         _log("Game imported")
