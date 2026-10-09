@@ -149,34 +149,34 @@ def _start(g, stage_mission=0, **counts):
 
 def test_destroyed_enemies_are_counted_during_the_mission(run):
     g = _start(run.game)
-    assert g._enemy_kill_points(_Foe(1)) == 10
-    assert g._enemy_kill_points(_Foe(1)) == 10
-    assert g._enemy_kill_points(_Foe(3)) == 30
+    assert g._enemy_kill_points(_Foe(1)) == 20          # 10 + the +10 of level 1
+    assert g._enemy_kill_points(_Foe(1)) == 20
+    assert g._enemy_kill_points(_Foe(3)) == 40
     assert g.adventure["kills"] == {"bird1": 2, "garg3": 1}
 
 
 def test_the_200th_enemy_of_a_kind_pays_ten_more_points(run):
     g = _start(run.game, bird1=198)
-    assert g._enemy_kill_points(_Foe(1)) == 10           # 199th
-    assert g._enemy_kill_points(_Foe(1)) == 20           # 200th: 10 + bonus
-    assert g._enemy_kill_points(_Foe(1)) == 20
-    assert g._enemy_kill_points(_Foe(2)) == 20           # another enemy, not mastered: its own price
-    assert g._enemy_kill_points(_Foe(4)) == 40
+    assert g._enemy_kill_points(_Foe(1)) == 20           # 199th
+    assert g._enemy_kill_points(_Foe(1)) == 30           # 200th: 20 + bonus
+    assert g._enemy_kill_points(_Foe(1)) == 30
+    assert g._enemy_kill_points(_Foe(2)) == 30           # another enemy, not mastered: its own price
+    assert g._enemy_kill_points(_Foe(4)) == 50
 
 
 def test_the_bonus_is_not_counted_twice_on_veteran_difficulty(run):
     g = _start(run.game, bird1=250)
     g.difficulty = "veteran"
-    assert g._enemy_kill_points(_Foe(1)) == 20           # 10 + 10, not 10 + 10 + 10
+    assert g._enemy_kill_points(_Foe(1)) == 30           # 20 + 10, not 20 + 10 + 10
 
 
 def test_the_arcade_game_is_untouched(run):
     g = run.game
     g.adventure = None
     g.difficulty = "normal"
-    assert g._enemy_kill_points(_Foe(1)) == 10 and g._enemy_kill_points(_Foe(4)) == 40
+    assert g._enemy_kill_points(_Foe(1)) == 20 and g._enemy_kill_points(_Foe(4)) == 50
     g.difficulty = "veteran"
-    assert g._enemy_kill_points(_Foe(2)) == 30
+    assert g._enemy_kill_points(_Foe(2)) == 40
     assert g.adventure is None                            # nothing recorded outside the Adventure
 
 

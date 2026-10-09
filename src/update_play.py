@@ -257,7 +257,7 @@ def player_bullets_vs_enemies(game):
                     game.explosions.append(game._boom(target.x, target.y, kind="flame"))
                     game.shake_amount = 5.0
                     game.sounds.play("enemy_explosion", volume=0.45, x=target.x)
-                    game._add_score(ship, 50)
+                    game._add_score(ship, game._deco_points())
                     game._note_scalable("cutter")
                     delay = 0.72 + random.uniform(0.18, 0.65)
                     game._boss_angry_queue.append(delay)

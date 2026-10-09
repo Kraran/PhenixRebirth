@@ -108,6 +108,15 @@ def stage_content(stage):
     return ((int(stage) - 1) % 5) + 1
 
 
+LEVEL_POINTS_STEP = 10      # points added to every enemy for each 5-level round (levels 1-5, 6-10, 11-15...)
+
+
+def level_points_bonus(level):
+    """Points added to an enemy's value at `level`: +10 in levels 1-5, +20 in 6-10, +30 in 11-15, ...
+    (a blue bird is worth 20 at level 1, 30 at level 6, 40 at level 11). Armor bricks never get it."""
+    return LEVEL_POINTS_STEP * ((max(1, int(level)) - 1) // 5 + 1)
+
+
 def stage_speed_mult(stage):
     """+10% enemy speed every full 5-stage cycle (stages 6–10 → 1.1×, …)."""
     """+10% speed every 5 stages: 1-5 → 1.0, 6-10 → 1.1, 11-15 → 1.2, ..."""

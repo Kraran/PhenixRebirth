@@ -432,7 +432,7 @@ def test_a_shot_destroys_an_enemy_and_pays_by_row(run):
                 break
         got[row] = g.score
         assert target.dying or not target.alive, row
-    assert got == {3: 10, 2: 20, 1: 30, 0: 40}
+    assert got == {3: 20, 2: 30, 1: 40, 0: 50}          # 10, 20, 30, 40 + the +10 of level 1
 
 
 def test_the_kills_of_the_invasion_count_for_the_bestiary(run):

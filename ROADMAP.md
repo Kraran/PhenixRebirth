@@ -78,6 +78,9 @@ Current release: **v1.4.5**
   The level is shown on the map, in the journal and on screen
 - Adventure menus: the panel backgrounds (slots, hangar, workshop, map, journal, Bestiary, paint shop...) are slightly
   see-through (about 76 % opaque, `MENU_ALPHA` in story.py): the starfield shows through a little
+- Points: every enemy (birds, gargoyles, boss core, saucer decorations; Adventure included) is worth +10 more per
+  5-level round: +10 in levels 1-5, +20 in 6-10, +30 in 11-15... (a blue bird: 20, then 30, then 40). Armor bricks stay
+  at 1 point. Veteran and Bestiary bonuses still come on top. The Space Invaders saucer keeps its 500 to 1000
 - Faster drawing, same picture: the adventure menu texts are rendered once instead of every frame; the story
   screens (intro, mission scenes) no longer rebuild their dark band and text window each frame and no longer
   draw the starfield under the full-screen picture (about 2.5 times faster); the invader saucer is painted when the

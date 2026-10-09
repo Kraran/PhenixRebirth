@@ -35,7 +35,7 @@ import subprocess
 import threading
 from datetime import datetime
 from settings import *
-from settings import stage_content, stage_speed_mult
+from settings import stage_content, stage_speed_mult, level_points_bonus
 from player import Player, recolor_phenix_frames
 from enemy import EnemyFormation, BigBird, Enemy
 import invaders
@@ -949,13 +949,22 @@ class Game:
             return 1.2
         return 1.0
 
+    def _level_points_bonus(self):
+        """What every enemy is worth on top of its price at the level being played (+10 per 5-level round)."""
+        form = getattr(self, "formation", None)
+        if isinstance(form, InvaderFormation):
+            level = form.level                               # the paint missions count their own levels
+        else:
+            level = getattr(self, "stage", 1)
+        return level_points_bonus(level)
+
     def _enemy_points(self, content_stage, mastered=False):
-        """Points for killing a bird by content stage (1-4).
+        """Points for killing a bird by content stage (1-4), plus the bonus of the level being played.
 
         Veteran difficulty adds ENEMY_VETERAN_BONUS; so does an Adventure enemy the pilot has
         already destroyed 20 times (`mastered`). The bonus is never counted twice.
         """
-        base = {1: 10, 2: 20, 3: 30, 4: 40}.get(content_stage, 10)
+        base = {1: 10, 2: 20, 3: 30, 4: 40}.get(content_stage, 10) + self._level_points_bonus()
         if self.difficulty == "veteran" or mastered:
             return base + ENEMY_VETERAN_BONUS
         return base
@@ -974,7 +983,11 @@ class Game:
         return self._enemy_points(stage, mastered)
 
     def _boss_points(self):
-        return 1000 if self.difficulty == "veteran" else 500
+        return (1000 if self.difficulty == "veteran" else 500) + self._level_points_bonus()
+
+    def _deco_points(self):
+        """A destroyed top decoration of the boss saucer (its armor bricks stay at 1 point)."""
+        return 50 + self._level_points_bonus()
 
     def _apply_difficulty_start(self):
         """Lives and stage 1 setup when pressing JOUER."""
