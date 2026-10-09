@@ -45,7 +45,7 @@ Current release: **v1.4.5**
   replaced by this series
 
 - Adventure, Dome V "the swarm": the four enemies at once (levels 11 to 14, speed of level 11), each kind
-  replaced as it falls, up to three times its normal count in all (39 / 66 / 21 / 30), but only a third of
+  replaced as it falls, up to twice its normal count in all (26 / 44 / 14 / 20 = 104), but only a third of
   a normal screen at once (4 / 7 / 2 / 3 on screen). It is won when all of them are down; a counter shows how many are left. It brings the dome online and opens the
   first dome upgrade in the workshop
 - Adventure, levels of the Bestiary sorties: each victory raises the mission one level (1, 2, 3...). Level 2
@@ -64,15 +64,25 @@ Current release: **v1.4.5**
   points, the more centred the killing shot, the more it pays (it does not have to be killed to win). An enemy
   reaching the ship's line ends the run. The three missions are levels 1, 2, 3 (faster and lower each time);
   flown again as a whole series (to change colour again) they are levels 4, 5, 6, then 7, 8, 9, and so on.
+  The 2nd and 3rd missions of a pass start one and two lines (grid rows) lower; the wings flap at a steady pace.
+  Sounds: a step sound for every march step (very slightly higher the faster the march) and the saucer sound,
+  waved to last as long as the saucer takes to cross the screen. Both are in stereo (the saucer by its position,
+  the steps by the centre of the group); the saucer sound is tied to the saucer on screen (paused with the game,
+  cut as soon as the saucer is gone).
+  The saucer is a bright sprite of its own (red hull, light dome, blinking lights; the dark boss picture was lost
+  on the sky), it crosses either way at random, can only be hit once its centre is on screen, and its fade-out no
+  longer alters the shared picture (that made every later saucer see-through: a sound with nothing to see).
   Winning the third opens the paint shop in the Shield workshop for ONE change of colour (red, green, violet).
   The level is shown on the map, in the journal and on screen
 - Adventure, hangar: the two hulls are drawn like the ship select screen (portrait in a frame, gold frame and
   slight bob for the chosen one, the other one dimmed the same way), without the Phenix / dome animations.
   The chosen hull flies every mission (the map shows "SHIP: ..."); a mission can impose a hull later
   (`ship` field of a mission, none uses it yet)
-- Adventure, cheat code ACT2 on the mission map: jumps to Act 2 (every Act 1 mission counts as won, the Phenix
+- Adventure, cheat code 2222 on the mission map: jumps to Act 2 (every Act 1 mission counts as won, the Phenix
   is not given). Nothing is saved any more afterwards (red banner, like UNLK); reloading the slot goes back
   to the real save
+- Adventure, Phenix swarm (mission 2 of the Phenix series): one normal screen of each enemy in all (52), not three
+- Adventure, cheat code NIX2 in the hangar: Act 2 on, the five Phenix missions won, the Phenix unlocked; nothing saved
 - Adventure, gateway to Act 2: a full run of arcade levels 11 to 15 (wave counter on screen). The death of
   the boss starts Act 2 (the save shows ACT 2). The mission map scrolls now that it is longer
 

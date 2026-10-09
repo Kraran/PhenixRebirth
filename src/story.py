@@ -22,7 +22,8 @@ PANES = ("bestiary", "log", "hangar", "map")
 CHEAT_UNLOCK = "UNLK"          # typed on the mission map: play any mission, save nothing
 PORTRAIT_H = 124                 # height of a hull portrait in the hangar (the ship select screen uses 168)
 GREY_MULT = (80, 80, 90, 160)    # the dimming of the ship select screen for the hull that is not chosen
-CHEAT_ACT2 = "ACT2"            # typed on the mission map: go straight to Act 2, save nothing
+CHEAT_NIX = "NIX2"             # typed in the hangar: all the Phenix missions won, the Phenix is yours, nothing saved
+CHEAT_ACT2 = "2222"            # typed on the mission map: go straight to Act 2, save nothing
 LOG_ROWS = 12                  # journal lines shown at once
 
 
@@ -303,8 +304,11 @@ class StoryHub:
 
     def type_key(self, event):
         """Real keyboard while typing a name. True when the key was used."""
-        if self.screen == "hub" and self.pane == "map":
+        if self.screen == "hub" and self.pane in ("map", "hangar"):
             ch = getattr(event, "unicode", "") or ""
+            if getattr(self, "_cheat_pane", None) != self.pane:
+                self._cheat_pane = self.pane
+                self.cheat_buf = ""               # a code is typed on one screen, not across two
             if ch.isalnum():
                 self.feed_cheat(ch)               # the letters still work as menu keys
             return False
@@ -326,8 +330,15 @@ class StoryHub:
 
     def feed_cheat(self, ch):
         """Secret code typed on the mission map. Returns True when UNLK was just completed."""
-        self.cheat_buf = (self.cheat_buf + str(ch).upper())[-max(len(CHEAT_UNLOCK), len(CHEAT_ACT2)):]
-        if self.cheat_buf == CHEAT_ACT2:
+        self.cheat_buf = (self.cheat_buf + str(ch).upper())[-max(len(CHEAT_UNLOCK), len(CHEAT_ACT2), len(CHEAT_NIX)):]
+        if self.cheat_buf == CHEAT_NIX and self.pane == "hangar":
+            self.cheat_buf = ""
+            ss.grant_phenix(self.state)
+            self.cheat_act2 = True                # nothing is saved any more
+            self.map_index = 0
+            self.toast = t("story_cheat_nix")
+            return True
+        if self.cheat_buf == CHEAT_ACT2 and self.pane == "map":
             self.cheat_buf = ""
             if int(ss._num(self.state.get("act"), 1)) < 2:
                 ss.jump_to_act2(self.state)
@@ -335,7 +346,7 @@ class StoryHub:
             self.map_index = 0                    # the Act 2 map is a different list
             self.toast = t("story_cheat_act2")
             return True
-        if self.cheat_buf == CHEAT_UNLOCK and not self.cheat_unlock:
+        if self.cheat_buf == CHEAT_UNLOCK and not self.cheat_unlock and self.pane == "map":
             here = self._mission()
             self.cheat_unlock = True
             self.cheat_buf = ""
@@ -575,6 +586,8 @@ class StoryHub:
         if mission.get("swarm"):
             spec["swarm"] = True                  # the four enemies together, replaced as they fall
             spec["stage"] = int(mission.get("stage") or 11)
+            if mission.get("swarm_screens") is not None:
+                spec["swarm_screens"] = float(mission["swarm_screens"])    # a smaller swarm
         return spec
 
     def apply_result(self, mission_id, score, cleared, kills=None):

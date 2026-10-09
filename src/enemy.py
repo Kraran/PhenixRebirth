@@ -70,7 +70,7 @@ def _whiten_surf(src):
 # The swarm mission mixes the four enemies and keeps replacing the ones that fall.
 # Counts are the enemies of one normal screen (13 / 22 / 7 / 10), by content stage.
 SWARM_NORMAL_COUNT = {1: 13, 2: 22, 3: 7, 4: 10}
-SWARM_SCREENS = 3                 # each kind comes SWARM_SCREENS times its normal count in all
+SWARM_SCREENS = 2                 # each kind comes SWARM_SCREENS times its normal count in all (Dôme V)
 SWARM_ON_SCREEN_SHARE = 1.0 / 3   # share of a normal screen shown at once (1.0 = a full screen)
 SWARM_REFILL_DELAY = 0.35         # seconds between two arrivals of the same kind
 
@@ -421,8 +421,10 @@ class EnemyFormation:
         return max(1, int(round(SWARM_NORMAL_COUNT[kind] * SWARM_ON_SCREEN_SHARE)))
 
     @staticmethod
-    def swarm_total(kind):
-        return SWARM_NORMAL_COUNT[kind] * SWARM_SCREENS
+    def swarm_total(kind, screens=None):
+        """All the enemies of a kind to destroy: `screens` (default SWARM_SCREENS) normal screens' worth."""
+        n = SWARM_SCREENS if screens is None else max(0.0, float(screens))
+        return max(EnemyFormation.swarm_on_screen(kind), int(round(SWARM_NORMAL_COUNT[kind] * n)))
 
     def _swarm_bird_slots(self):
         """Formation seats of both bird kinds, in reading order, kinds spread evenly among them."""
@@ -447,7 +449,7 @@ class EnemyFormation:
                 kinds.append(2)
         return [(x, y, k) for (x, y), k in zip(slots, kinds)]
 
-    def spawn_swarm(self, speed_mult=1.0):
+    def spawn_swarm(self, speed_mult=1.0, screens=None):
         """Start the swarm: a full screen of every kind, the rest waits to come in."""
         self.stage = 2                           # the drift of the khaki formation
         self.speed_mult = speed_mult
@@ -459,7 +461,7 @@ class EnemyFormation:
         self.speed = ENEMY_SPEED * 1.15 * speed_mult
         self.swarm = {
             "mult": speed_mult,
-            "reserve": {k: self.swarm_total(k) - self.swarm_on_screen(k) for k in (1, 2, 3, 4)},
+            "reserve": {k: self.swarm_total(k, screens) - self.swarm_on_screen(k) for k in (1, 2, 3, 4)},
             "wait": {k: 0.0 for k in (1, 2, 3, 4)},
             "slots": self._swarm_bird_slots(),
             "next_index": 0,

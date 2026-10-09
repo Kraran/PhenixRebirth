@@ -38,6 +38,7 @@ from settings import *
 from settings import stage_content, stage_speed_mult
 from player import Player, recolor_phenix_frames
 from enemy import EnemyFormation, BigBird, Enemy
+import invaders
 from invaders import InvaderFormation
 from boss import BossSaucer
 from explosion import Explosion, TeslaCoilFx
@@ -1752,6 +1753,7 @@ class Game:
     def _end_adventure(self, cleared):
         """Bank the run into the hangar and return to the mission map."""
         spec = getattr(self, "adventure", None) or {}
+        self.sounds.stop_sfx("saucer_pass", 150)
         score = int(getattr(self, "score", 0) or 0)
         story = getattr(self, "story", None)
         if story is not None:
@@ -1802,6 +1804,7 @@ class Game:
             self.formation = InvaderFormation(level=int(adv.get("level") or 1), speed_mult=mult)
             self.formation.sounds = self.sounds
             self.formation.font = self.font
+            self.sounds.prepare_invader_sfx(invaders.STEP_PITCHES, invaders.STEP_PITCH_GAP, invaders.SAUCER_PASS)
             self.boss_saucer = None
             return
         elif adv and adv.get("swarm"):
@@ -1823,7 +1826,7 @@ class Game:
         self.formation.swarm = None
         self.boss_saucer = None
         if content == 0:
-            self.formation.spawn_swarm(speed_mult=mult)
+            self.formation.spawn_swarm(speed_mult=mult, screens=(adv or {}).get("swarm_screens"))
             self.formation.sounds = self.sounds
         elif content == 5:
             self.boss_saucer = BossSaucer()
@@ -3414,6 +3417,7 @@ class Game:
 
     def _quit_to_menu(self):
         """Leave current run, return to main menu (keep settings)."""
+        self.sounds.stop_sfx("saucer_pass", 150)
         back_story = False
         toast = ""
         story_slot = None
@@ -3656,8 +3660,19 @@ class Game:
                 input_events.on_joy_axis(self, event)
 
     # --- Simulation step ---
+    def _sync_invader_voices(self):
+        """The saucer sound belongs to the saucer on screen: it follows it (stereo), waits while the game is
+        paused and stops when the saucer is gone or the game is no longer running the invasion."""
+        f = getattr(self, "formation", None)
+        m = getattr(f, "mothership", None)
+        running = (bool(getattr(self, "adventure", None)) and self.started and not self.game_over
+                   and self.stage_transition is None)
+        here = m is not None and m.alive and not m.dying and running
+        self.sounds.follow_voice("saucer_pass", x=getattr(m, "x", None), alive=here, paused=bool(self.paused))
+
     def update(self):
         update_idle.tick_housekeeping(self)
+        self._sync_invader_voices()
         
         if self.game_over and getattr(self, "hs_phase", None) == "card":
             self.sounds.play_electric(False)

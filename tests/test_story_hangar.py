@@ -257,7 +257,7 @@ def test_act2_typed_on_the_map_goes_to_act_2_and_saves_nothing():
     hub = _hub(_state(phenix=False))
     hub.pane = "map"
     before = _file()
-    assert _type(hub, "ACT2") == [False, False, False, False]          # the keys still work as menu keys
+    assert _type(hub, "2222") == [False, False, False, False]          # the keys still work as menu keys
     assert hub.cheat_act2 and hub.cheating and not hub.cheat_unlock
     assert hub.state["act"] == 2 and hub.map_index == 0
     assert _ids(hub.missions()) == HUNTS + PHENIX + PAINT
@@ -273,7 +273,7 @@ def test_nothing_is_saved_whatever_happens_after_act2():
     hub = _hub(_state())
     hub.pane = "map"
     before = _file()
-    _type(hub, "ACT2")
+    _type(hub, "2222")
     hub.state["credits"] = 5000
     hub.pane = "hangar"
     hub.zone = "shop"
@@ -287,7 +287,7 @@ def test_nothing_is_saved_whatever_happens_after_act2():
 def test_loading_the_save_again_clears_the_cheat():
     hub = _hub(_state(phenix=False))
     hub.pane = "map"
-    _type(hub, "ACT2")
+    _type(hub, "2222")
     hub.open_slot(1)
     assert not hub.cheat_act2 and not hub.cheating and hub.state["act"] == 1
     assert _ids(hub.missions())[-1] == "ch2_tease"
@@ -297,7 +297,7 @@ def test_act2_typed_elsewhere_does_nothing():
     hub = _hub(_state(phenix=False))
     for pane in ("hangar", "log", "bestiary"):
         hub.pane = pane
-        _type(hub, "ACT2")
+        _type(hub, "2222")
         assert not hub.cheat_act2 and hub.state["act"] == 1, pane
 
 
@@ -308,14 +308,14 @@ def test_a_pilot_already_in_act_2_keeps_his_progress():
     st["cleared"] = ["phenix_1"]
     hub = _hub(st)
     hub.pane = "map"
-    _type(hub, "ACT2")
+    _type(hub, "2222")
     assert hub.cheat_act2 and hub.state["cleared"] == ["phenix_1"]     # nothing is reset or added
 
 
 def test_act2_then_unlk_lists_everything_and_keeps_the_focus():
     hub = _hub(_state(phenix=False))
     hub.pane = "map"
-    _type(hub, "ACT2")
+    _type(hub, "2222")
     hub.map_index = _ids(hub.missions()).index("phenix_1")
     _type(hub, "UNLK")
     assert hub.cheat_unlock and hub.cheat_act2 and hub._mission()["id"] == "phenix_1"
@@ -332,7 +332,7 @@ def test_the_banner_shows_for_act2_too(run):
     from i18n import t
     hub = _hub(_state(phenix=False))
     hub.pane = "map"
-    _type(hub, "ACT2")
+    _type(hub, "2222")
     hub.toast = ""
     seen = []
     real = story._text_fit
@@ -348,7 +348,7 @@ def test_the_act_2_map_title_shows_after_the_cheat(run):
     from i18n import t
     hub = _hub(_state(phenix=False))
     hub.pane = "map"
-    _type(hub, "ACT2")
+    _type(hub, "2222")
     seen = []
     real = story._text
     story._text = lambda s, f, text, *a, **k: (seen.append(str(text)), real(s, f, text, *a, **k))[1]

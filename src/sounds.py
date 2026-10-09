@@ -46,6 +46,7 @@ class SoundManager:
         self.PAUSE_OUT = 0.40
         self.pause_duck = False
         self._base_volumes = {}
+        self._voices = {}       # long sounds that follow something on screen (name -> channel)
         self._current_music = None  # "menu" | "gameover" | "credits" | None
         self._fading_out = False
         self._pending_music = None
@@ -323,15 +324,50 @@ class SoundManager:
     def play(self, name, volume=None, x=None):
         """Play SFX. Optional x (screen px) pans L/R; volume 0..1 overrides base."""
         if not self.enabled or getattr(self, "sfx_muted", False):
-            return
+            return None
         snd = self.sounds.get(name)
         if not snd:
-            return
+            return None
         if volume is not None:
             gain = max(0.0, min(1.0, float(volume))) * self.master_volume
         else:
             gain = self._base_volumes.get(name, 0.5) * self.master_volume
-        self._play_on_channel(snd, gain, x=x)
+        return self._play_on_channel(snd, gain, x=x)
+
+    def play_voice(self, name, x=None):
+        """Play a long sound that `follow_voice` will keep in step with what it belongs to."""
+        ch = self.play(name, x=x)
+        if ch is not None:
+            self._voices[name] = ch
+
+    def follow_voice(self, name, x=None, alive=True, paused=False, fade_ms=150):
+        """Every frame: pan the voice to x, hold it while the game is paused, cut it when its source is gone.
+        True while the voice is still sounding."""
+        ch = self._voices.get(name)
+        snd = self.sounds.get(name)
+        if ch is None or snd is None:
+            return False
+        try:
+            busy = ch.get_busy() and ch.get_sound() is snd
+        except Exception:
+            busy = False
+        if not busy:
+            self._voices.pop(name, None)
+            return False
+        try:
+            if not alive:
+                self._voices.pop(name, None)
+                snd.fadeout(int(fade_ms))
+                return False
+            if paused:
+                ch.pause()
+                return True
+            ch.unpause()
+            left, right = self._pan_lr(x, self._base_volumes.get(name, 0.5) * self.master_volume)
+            ch.set_volume(left, right)
+        except Exception:
+            log_exc("sounds.follow_voice")
+        return True
 
     def play_vo(self, name, volume=None):
         """Announcer: reserved channel, never stolen by SFX."""
@@ -439,6 +475,48 @@ class SoundManager:
                 pygame.mixer.music.fadeout(fade)
             except Exception:
                 self._finish_fade()
+
+    # --- Space Invaders missions: sounds made from two short wavs ---
+    def prepare_invader_sfx(self, pitches, pitch_step, saucer_seconds):
+        """Build (once) the steps of the invaders, `pitches` copies each `pitch_step` higher than the one before,
+        and the passage of the saucer, the short saucer sound waved to last `saucer_seconds`."""
+        if not self.enabled:
+            return
+        key = (int(pitches), round(float(pitch_step), 4), round(float(saucer_seconds), 2))
+        if getattr(self, "_invader_sfx_key", None) == key:
+            return
+        try:
+            import sfx_synth
+            init = pygame.mixer.get_init()
+            if not init or init[1] != -16:
+                return
+            freq, _size, chans = init
+            chans = max(1, int(chans))
+            step, rate = sfx_synth.read_wav(os.path.join(SOUND_DIR, "invader_step.wav"))
+            for i in range(int(pitches)):
+                data = sfx_synth.resample(step, rate, freq, 1.0 + pitch_step * i)
+                snd = pygame.mixer.Sound(buffer=sfx_synth.to_pcm(data, chans))
+                snd.set_volume(1.0)
+                self.sounds["invader_step_%d" % i] = snd
+                self._base_volumes["invader_step_%d" % i] = 0.40
+            saucer, rate = sfx_synth.read_wav(os.path.join(SOUND_DIR, "saucer.wav"))
+            data = sfx_synth.undulating(saucer, rate, freq, float(saucer_seconds))
+            snd = pygame.mixer.Sound(buffer=sfx_synth.to_pcm(data, chans))
+            snd.set_volume(1.0)
+            self.sounds["saucer_pass"] = snd
+            self._base_volumes["saucer_pass"] = 0.50
+            self._invader_sfx_key = key
+        except Exception:
+            log_exc("sounds.prepare_invader_sfx")
+
+    def stop_sfx(self, name, fade_ms=200):
+        """Cut a long sound (the saucer) short, softly."""
+        snd = self.sounds.get(name)
+        if snd is not None:
+            try:
+                snd.fadeout(int(fade_ms))
+            except Exception:
+                log_exc("sounds.stop_sfx")
 
     def stop_music(self):
         """Fade out to silence (e.g. entering gameplay)."""

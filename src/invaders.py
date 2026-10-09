@@ -26,8 +26,8 @@ DROP_PX = 22                          # one line down when a wall is touched
 WALL_LEFT = 24
 WALL_RIGHT = BASE_WIDTH - 24
 START_Y = 130                         # centre of the top row at level 1
-START_Y_PER_LEVEL = 22                # each level begins lower...
-START_Y_MAX_LEVELS = 5                # ...up to this many levels
+START_ROWS = 3                        # the 1st, 2nd, 3rd mission of a pass start 0, 1, 2 lines lower (then again)
+FLAP_PERIOD = 0.3                     # seconds per wing position (all together, whatever the pace of the march)
 INVASION_Y = 540                      # an enemy whose feet reach this line has invaded: the ship is lost
 START_DELAY = 1.2                     # the march (and the shooting) starts after the ship has arrived
 
@@ -46,6 +46,10 @@ SAUCER_Y = 88
 SAUCER_W, SAUCER_H = 52, 37
 SAUCER_HIT_W = 44                     # the width over which a shot counts as centred
 SAUCER_MIN, SAUCER_MAX = 500, 1000
+SAUCER_PASS = (BASE_WIDTH + 1.5 * SAUCER_W) / SAUCER_SPEED     # seconds the saucer takes to cross the screen
+STEP_PITCHES = 11                     # the step sound exists in this many pitches...
+STEP_PITCH_GAP = 0.025                # ...each this much higher (a fraction of the pitch) than the one before
+STEP_PITCH_PER_SPEED = 0.03           # a march twice as fast as the first one: 3 % higher
 
 _CACHE = {}
 
@@ -82,13 +86,17 @@ def _gargoyle_frames(kind):
         return _bird_frames(2)
     frames = []
     bw, bh = body.get_size()
-    for wing in (ups, down):
+    for pose, wing in enumerate((ups, down)):
         ww, wh = wing.get_size()
+        # the flap must read at this size: wings raised and stretched, then lowered and squashed
+        wing = pygame.transform.smoothscale(wing, (ww, int(wh * (1.0 if pose == 0 else 0.6))))
+        wh = wing.get_height()
         width = bw + 2 * (ww - WING_OVERLAP)
-        sheet = pygame.Surface((width, max(bh, wh)), pygame.SRCALPHA)
-        sheet.blit(wing, (0, 0))                                          # the wings go behind the body
-        sheet.blit(pygame.transform.flip(wing, True, False), (width - ww, 0))
-        sheet.blit(body, ((width - bw) // 2, 0))
+        sheet = pygame.Surface((width, bh + 14), pygame.SRCALPHA)
+        wy = 0 if pose == 0 else int(bh * 0.45)
+        sheet.blit(wing, (0, wy))                                         # the wings go behind the body
+        sheet.blit(pygame.transform.flip(wing, True, False), (width - ww, wy))
+        sheet.blit(body, ((width - bw) // 2, 7))
         scale = GARG_WIDTH / width
         frames.append(pygame.transform.smoothscale(sheet, (GARG_WIDTH, max(1, int(sheet.get_height() * scale)))))
     return frames
@@ -103,16 +111,38 @@ def frames_for(kind):
     return _CACHE[key]
 
 
-def saucer_image():
+SAUCER_BLINK = 0.25                   # seconds per position of the lights under the saucer
+
+
+def _saucer_frame(lit):
+    """The miniature saucer, bright on purpose: the old dark boss sprite was lost against the night sky (and
+    under the score), so a shot could kill it unseen. `lit` picks which of the two light sets is on."""
+    w, h = SAUCER_W, SAUCER_H
+    img = pygame.Surface((w, h), pygame.SRCALPHA)
+    halo = pygame.Surface((w, h), pygame.SRCALPHA)
+    pygame.draw.ellipse(halo, (255, 70, 90, 70), pygame.Rect(0, 8, w, h - 10))
+    img.blit(halo, (0, 0))
+    pygame.draw.ellipse(img, (255, 235, 240), pygame.Rect(w // 2 - 13, 2, 26, 22))              # glass dome
+    pygame.draw.ellipse(img, (255, 150, 170), pygame.Rect(w // 2 - 11, 4, 22, 18))
+    pygame.draw.ellipse(img, (255, 255, 255), pygame.Rect(w // 2 - 7, 6, 8, 6))                 # its shine
+    body = pygame.Rect(1, 14, w - 2, 18)
+    pygame.draw.ellipse(img, (255, 235, 240), body)                                             # light rim
+    pygame.draw.ellipse(img, (225, 40, 70), body.inflate(-4, -4))                               # red hull
+    pygame.draw.ellipse(img, (255, 110, 120), pygame.Rect(8, 16, w - 16, 5))                    # top gleam
+    for i in range(5):
+        on = (i + lit) % 2 == 0
+        pygame.draw.circle(img, (255, 235, 90) if on else (110, 20, 40), (9 + i * 8, 24), 2)
+    return img
+
+
+def saucer_frames():
     if "saucer" not in _CACHE:
-        raw = _load("boss_saucer.png")
-        if raw is None:
-            img = pygame.Surface((SAUCER_W, SAUCER_H), pygame.SRCALPHA)
-            pygame.draw.ellipse(img, (150, 60, 50), img.get_rect())
-        else:
-            img = pygame.transform.smoothscale(raw, (SAUCER_W, SAUCER_H))
-        _CACHE["saucer"] = img
+        _CACHE["saucer"] = (_saucer_frame(0), _saucer_frame(1))
     return _CACHE["saucer"]
+
+
+def saucer_image(frame=0):
+    return saucer_frames()[frame % 2]
 
 
 def level_interval(level):
@@ -120,8 +150,18 @@ def level_interval(level):
     return max(MIN_INTERVAL, BASE_INTERVAL * LEVEL_INTERVAL ** (max(1, int(level)) - 1))
 
 
+def step_pitch_index(interval):
+    """Which pitch of the step sound for a march with `interval` seconds between two steps: the first pace of
+    level 1 is the plain sound, a faster march is very slightly higher (never more than a quarter higher)."""
+    speed = BASE_INTERVAL / max(0.001, float(interval))
+    k = round(STEP_PITCH_PER_SPEED * (speed - 1.0) / STEP_PITCH_GAP)
+    return max(0, min(STEP_PITCHES - 1, int(k)))
+
+
 def level_start_y(level):
-    return START_Y + START_Y_PER_LEVEL * min(max(0, int(level) - 1), START_Y_MAX_LEVELS)
+    """Level 1 starts at the top, level 2 one line (a row of the grid) lower, level 3 two lines lower;
+    levels 4, 5, 6 start like 1, 2, 3 (they are harder by their speed and their shots)."""
+    return START_Y + SPACING_Y * ((max(1, int(level)) - 1) % START_ROWS)
 
 
 def level_shot_gap(level):
@@ -199,6 +239,7 @@ class Mothership:
     def __init__(self, direction):
         self.image = saucer_image()
         self.width, self.height = self.image.get_size()
+        self.age = 0.0
         self.direction = 1 if direction >= 0 else -1
         self.x = -self.width / 2 if self.direction > 0 else BASE_WIDTH + self.width / 2
         self.y = float(SAUCER_Y)
@@ -214,6 +255,7 @@ class Mothership:
             if self.death_timer >= 0.3:
                 self.alive = False
             return
+        self.age += dt
         self.x += self.direction * SAUCER_SPEED * dt
         if (self.direction > 0 and self.x > BASE_WIDTH + self.width) or \
                 (self.direction < 0 and self.x < -self.width):
@@ -224,18 +266,22 @@ class Mothership:
             self.dying = True
             self.death_timer = 0.0
 
+    def on_screen(self):
+        """A shot only counts on a saucer the player can see: its centre is inside the screen."""
+        return 0 <= self.x <= BASE_WIDTH
+
     def get_hitbox(self):
-        if not self.alive or self.dying:
+        if not self.alive or self.dying or not self.on_screen():
             return pygame.Rect(0, 0, 0, 0)
         return pygame.Rect(int(self.x - SAUCER_HIT_W / 2), int(self.y - self.height / 2), SAUCER_HIT_W, self.height)
 
     def draw(self, surface):
         if not self.alive:
             return
-        img = self.image
+        img = saucer_image(int(self.age / SAUCER_BLINK))
         if self.dying:
+            img = img.copy()            # never touch the shared picture: its fade would stay on every later saucer
             if int(self.death_timer * 20) % 2 == 0:
-                img = img.copy()
                 img.fill((255, 255, 255, 0), special_flags=pygame.BLEND_RGB_ADD)
             img.set_alpha(max(0, int(255 * (1.0 - self.death_timer / 0.3))))
         surface.blit(img, (int(self.x - self.width / 2), int(self.y - self.height / 2)))
@@ -306,9 +352,10 @@ class InvaderFormation:
             for e in self.enemies:
                 e.x += dx
         self.steps += 1
-        self.frame = self.steps % 2
-        for e in self.enemies:
-            e.set_frame(self.frame)
+        if self.sounds:
+            lo = min(e.x - e.width / 2 for e in alive)
+            hi = max(e.x + e.width / 2 for e in alive)
+            self.sounds.play("invader_step_%d" % step_pitch_index(self.interval()), x=(lo + hi) / 2)     # centre of the group
         if max(e.y + e.height / 2 for e in alive) >= INVASION_Y:
             self.invaded = True
 
@@ -343,12 +390,19 @@ class InvaderFormation:
             return 0
         pts = saucer_points(shot_x, m.x)
         m.kill()
+        if self.sounds:
+            self.sounds.stop_sfx("saucer_pass", 150)
         self.popups.append([m.x, m.y, str(pts), 0.0])
         return pts
 
     # --- frame ---
     def update(self, dt, player_x):
         self.time += dt
+        frame = int(self.time / FLAP_PERIOD) % 2
+        if frame != self.frame:
+            self.frame = frame
+            for e in self.enemies:
+                e.set_frame(frame)
         for e in self.enemies:
             e.update(dt)
         for p in self.popups:
@@ -384,6 +438,8 @@ class InvaderFormation:
             self.saucer_timer -= dt
             if self.saucer_timer <= 0 and len(self.living()) > 1:
                 self.mothership = Mothership(random.choice((-1, 1)))
+                if self.sounds:
+                    self.sounds.play_voice("saucer_pass", x=self.mothership.x)
                 self.saucer_timer = random.uniform(*SAUCER_GAP)
 
     def draw(self, surface):
