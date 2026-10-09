@@ -6,6 +6,7 @@ import pytest
 
 import invaders as inv
 import story_state as ss
+from settings import asset_path
 from enemy import EnemyBullet
 from test_smoke import run  # noqa: F401  (fixture)
 
@@ -344,9 +345,18 @@ def test_the_saucer_crosses_the_top_in_a_straight_line_and_leaves(run):
         assert {round(s, 2) for s in steps} == {round(d * inv.SAUCER_SPEED / 60, 2)}
 
 
-def test_the_saucer_is_the_size_of_a_bird(run):
+def test_the_saucer_is_a_small_miniature_of_the_given_picture(run):
+    src = pygame.image.load(asset_path("sprites", "saucer_mini.png"))
+    assert abs(inv.SAUCER_W / inv.SAUCER_H - src.get_width() / src.get_height()) < 0.12          # same proportions
+    assert 56 <= inv.SAUCER_W <= 80 and 24 <= inv.SAUCER_H <= 36                                 # about a bird's size
     img = inv.saucer_image()
-    assert 40 <= img.get_width() <= 60 and 28 <= img.get_height() <= 44
+    assert img.get_size() == (inv.SAUCER_W + 2 * inv.SAUCER_GLOW, inv.SAUCER_H + 2 * inv.SAUCER_GLOW)
+    m = inv.Mothership(1)
+    assert (m.width, m.height) == (inv.SAUCER_W, inv.SAUCER_H)
+    box = m.get_hitbox
+    m.x = 300
+    assert box().height == inv.SAUCER_H and box().width == inv.SAUCER_HIT_W
+    assert inv.SAUCER_HIT_W <= inv.SAUCER_W
 
 
 def test_the_saucer_comes_now_and_then_but_not_for_the_last_enemy(run):
@@ -558,65 +568,158 @@ def test_the_grid_is_drawn_whole(run):
 
 
 # ------------------------------------------------------------------ the saucer must be seen
-def _opaque(img):
-    px = pygame.image.tobytes(img, "RGBA")
-    return [(px[i], px[i + 1], px[i + 2]) for i in range(0, len(px), 4) if px[i + 3] > 200]
+PEAK = inv.SAUCER_PULSE_FRAMES // 2
 
 
-@pytest.mark.parametrize("frame", [0, 1])
-def test_the_saucer_is_bright_against_the_night_sky(run, frame):
-    pix = _opaque(inv.saucer_image(frame))
-    assert len(pix) > 600                                               # a solid body, not a few dots
-    bright = sum(1 for r, g, b in pix if max(r, g, b) >= 200)
-    assert bright / len(pix) > 0.85                                     # the old dark sprite had almost none
-    assert sum(r for r, g, b in pix) / len(pix) > 220                   # and it is red-ish, not grey
+def _red_parts():
+    """Where the picture is red (frame coordinates), as the game found them."""
+    _img, redness = inv._saucer_source()
+    return [(x + inv.SAUCER_GLOW, y + inv.SAUCER_GLOW) for (x, y), red in redness.items() if red > 0.5]
 
 
-def test_the_lights_of_the_saucer_blink(run):
-    a, b = inv.saucer_image(0), inv.saucer_image(1)
-    assert pygame.image.tobytes(a, "RGBA") != pygame.image.tobytes(b, "RGBA")
+def _mean_red(frame):
+    img = inv.saucer_image(frame)
+    pts = _red_parts()
+    return sum(img.get_at(p)[0] for p in pts) / len(pts)
+
+
+def test_the_miniature_has_the_shape_of_the_given_picture(run):
+    src = pygame.image.load(asset_path("sprites", "saucer_mini.png"))
+    flat = pygame.transform.smoothscale(src, (inv.SAUCER_W, inv.SAUCER_H))
+    want = pygame.mask.from_surface(flat, 128).count()
+    img = inv.saucer_image(PEAK)
+    got = pygame.mask.from_surface(img, 200).count()                    # the body, without the soft halo
+    assert abs(got - want) <= 0.1 * want and want > 1000
+    # the dome window, the dishes and the red band are where they are in the picture: the silhouettes agree
+    a = pygame.mask.from_surface(flat, 128)
+    b = pygame.mask.from_surface(img.subsurface((inv.SAUCER_GLOW, inv.SAUCER_GLOW, inv.SAUCER_W, inv.SAUCER_H)), 128)
+    assert a.overlap_area(b, (0, 0)) > 0.9 * want
+
+
+def test_there_are_red_parts_and_they_pulse(run):
+    red = _red_parts()
+    assert len(red) >= 40                                               # the band, the two lights, the tip
+    dim, peak = _mean_red(0), _mean_red(PEAK)
+    assert peak - dim > 60 and peak > 200 and dim < 160
+    levels = [_mean_red(i) for i in range(inv.SAUCER_PULSE_FRAMES)]
+    assert levels.index(min(levels)) == 0 and levels.index(max(levels)) == PEAK
+    rises = [b - a for a, b in zip(levels[:PEAK], levels[1:PEAK + 1])]
+    assert all(r > 0 for r in rises) and max(rises) < 0.4 * (peak - dim)    # a smooth swell, not a flash
+    falls = [a - b for a, b in zip(levels[PEAK:], levels[PEAK + 1:] + levels[:1])]
+    assert all(f > 0 for f in falls)                                    # and it comes back down to the start
+
+
+def test_the_hull_does_not_pulse_only_the_red_parts(run):
+    red = _red_parts()
+    a, b = inv.saucer_image(0), inv.saucer_image(PEAK)
+    g = inv.SAUCER_GLOW
+    redness = inv._saucer_source()[1]
+    grey = [(x, y) for x in range(g, g + inv.SAUCER_W) for y in range(g, g + inv.SAUCER_H)
+            if a.get_at((x, y))[3] >= 251 and (x - g, y - g) not in redness
+            and all(abs(x - rx) > 5 or abs(y - ry) > 5 for rx, ry in red)]     # away from the red light
+    assert len(grey) > 300
+    # (the body is a hair see-through: the halo behind it shows by a few levels at most)
+    assert all(max(abs(u - v) for u, v in zip(a.get_at(p)[:3], b.get_at(p)[:3])) <= 8 for p in grey)
+    near = [p for p in red if a.get_at(p)[:3] != b.get_at(p)[:3]]
+    assert len(near) > 0.8 * len(red)                                    # while the red parts all change
+
+
+def test_the_grey_hull_is_lightened_to_show_against_the_sky(run):
+    g = inv.SAUCER_GLOW
+    img = inv.saucer_image(0)
+    redness = inv._saucer_source()[1]
+    vals = [max(img.get_at((x + g, y + g))[:3]) for x in range(inv.SAUCER_W) for y in range(inv.SAUCER_H)
+            if img.get_at((x + g, y + g))[3] > 200 and (x, y) not in redness]
+    assert sum(vals) / len(vals) > 75
+
+
+def _halo(frame):
+    """How much red light spills outside the body of the saucer (sum of the alpha around it)."""
+    img = inv.saucer_image(frame)
+    g = inv.SAUCER_GLOW
+    body = pygame.mask.from_surface(inv._saucer_source()[0], 1)           # every pixel the picture itself covers
+    total = 0
+    for x in range(img.get_width()):
+        for y in range(img.get_height()):
+            inside = 0 <= x - g < inv.SAUCER_W and 0 <= y - g < inv.SAUCER_H and body.get_at((x - g, y - g))
+            if not inside:
+                total += img.get_at((x, y))[3]
+    return total
+
+
+def test_a_red_halo_swells_with_the_red_parts(run):
+    dim, peak = _halo(0), _halo(PEAK)
+    assert peak > 20 * max(1, dim) and peak > 400
+    img = inv.saucer_image(PEAK)
+    g = inv.SAUCER_GLOW
+    spill = [img.get_at((x, y)) for x in range(img.get_width()) for y in range(img.get_height())
+             if img.get_at((x, y))[3] > 40 and not (0 <= x - g < inv.SAUCER_W and 0 <= y - g < inv.SAUCER_H
+                                                    and inv._saucer_source()[0].get_at((x - g, y - g))[3] > 0)]
+    assert spill and all(p[0] > 3 * p[1] and p[0] > 3 * p[2] for p in spill)                 # the halo is red, not white or grey
+
+
+def test_the_pulse_follows_the_age_of_the_saucer(run):
+    n, T = inv.SAUCER_PULSE_FRAMES, inv.SAUCER_PULSE
+    assert inv.saucer_frame_at(0) == 0 and inv.saucer_frame_at(T / 2) == n // 2
+    assert inv.saucer_frame_at(T) == 0 and inv.saucer_frame_at(7 * T + T / 2) == n // 2
+    assert [inv.saucer_frame_at(T * i / n) for i in range(n)] == list(range(n))
     m = inv.Mothership(1)
     m.x = 640
-    seen = set()
-    for t in range(0, 40):
-        m.age = t * 0.05
+    shots = []
+    for age in (0.0, T / 2, T):
+        m.age = age
         surf = pygame.Surface((1280, 720), pygame.SRCALPHA)
         m.draw(surf)
-        seen.add(pygame.image.tobytes(surf, "RGBA"))
-    assert len(seen) == 2
+        shots.append(pygame.image.tobytes(surf, "RGBA"))
+    assert shots[0] != shots[1] and shots[0] == shots[2]
 
 
-def test_the_saucer_is_drawn_bright_on_the_real_screen(run):
+def test_a_saucer_pulses_as_it_flies(run):
+    f = _formation(run)
+    f.mothership = inv.Mothership(1)
+    m = f.mothership
+    m.x = 100
+    seen = set()
+    for _ in range(int(inv.SAUCER_PULSE * 60)):
+        m.update(1 / 60)
+        seen.add(inv.saucer_frame_at(m.age))
+    assert len(seen) >= inv.SAUCER_PULSE_FRAMES - 2
+
+
+def test_the_saucer_is_drawn_visibly_on_the_real_screen(run):
     g, f = _playing(run)
     f.mothership = inv.Mothership(1)
     f.mothership.x = 900
     f.mothership.direction = 0
+    f.mothership.age = inv.SAUCER_PULSE / 2                              # the red parts at their brightest
     g.shake_amount = 0
     g._draw_canvas()
-    box = pygame.Rect(900 - 26, inv.SAUCER_Y - 18, 52, 37)
-    bright = sum(1 for x in range(box.left, box.right) for y in range(box.top, box.bottom)
-                 if max(g.game_surface.get_at((x, y))[:3]) >= 200)
-    assert bright > 500
+    box = pygame.Rect(900 - 40, inv.SAUCER_Y - 22, 80, 44)
+    px = [g.game_surface.get_at((x, y))[:3] for x in range(box.left, box.right) for y in range(box.top, box.bottom)]
+    assert sum(1 for p in px if max(p) >= 90) > 400                       # the hull stands out of the night
+    assert sum(1 for p in px if p[0] >= 200 and p[1] < 170) >= 40         # and so do the red parts
 
 
 def test_a_dying_saucer_never_spoils_the_picture_of_the_next_ones(run):
     """The fade-out used to be set on the one shared picture: after the first kill every saucer stayed
     nearly see-through (a sound with no saucer to be seen)."""
-    reference = pygame.image.tobytes(inv.saucer_image(0), "RGBA")
+    reference = [pygame.image.tobytes(inv.saucer_image(i), "RGBA") for i in range(inv.SAUCER_PULSE_FRAMES)]
     for age in (0.0, 0.04, 0.08, 0.12, 0.2, 0.29):
         m = inv.Mothership(1)
         m.x = 300
+        m.age = 0.37
         m.kill()
         m.death_timer = age
         m.draw(pygame.Surface((1280, 720), pygame.SRCALPHA))
-        assert inv.saucer_image(0).get_alpha() in (None, 255)
-        assert pygame.image.tobytes(inv.saucer_image(0), "RGBA") == reference
+        assert all(inv.saucer_image(i).get_alpha() in (None, 255) for i in range(inv.SAUCER_PULSE_FRAMES))
+        assert [pygame.image.tobytes(inv.saucer_image(i), "RGBA") for i in range(inv.SAUCER_PULSE_FRAMES)] == reference
     fresh = pygame.Surface((1280, 720), pygame.SRCALPHA)
     n = inv.Mothership(-1)
     n.x = 640
     n.draw(fresh)
     ref = pygame.Surface((1280, 720), pygame.SRCALPHA)
-    ref.blit(inv.saucer_image(0), (int(640 - inv.SAUCER_W / 2), int(inv.SAUCER_Y - inv.SAUCER_H / 2)))
+    ref.blit(inv.saucer_image(0), (int(640 - inv.SAUCER_W / 2) - inv.SAUCER_GLOW,
+                                   int(inv.SAUCER_Y - inv.SAUCER_H / 2) - inv.SAUCER_GLOW))
     assert pygame.image.tobytes(fresh, "RGBA") == pygame.image.tobytes(ref, "RGBA")
 
 

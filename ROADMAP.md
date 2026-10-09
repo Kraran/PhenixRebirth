@@ -69,8 +69,9 @@ Current release: **v1.4.5**
   waved to last as long as the saucer takes to cross the screen. Both are in stereo (the saucer by its position,
   the steps by the centre of the group); the saucer sound is tied to the saucer on screen (paused with the game,
   cut as soon as the saucer is gone).
-  The saucer is a bright sprite of its own (red hull, light dome, blinking lights; the dark boss picture was lost
-  on the sky), it crosses either way at random, can only be hit once its centre is on screen, and its fade-out no
+  The saucer is a 72 x 30 miniature of a dark cracked-hull saucer picture (assets/sprites/saucer_mini.png), the hull
+  lightened so it shows on the sky, its red parts (band, lights) pulsing in brightness once a second with a red
+  halo; it crosses either way at random, can only be hit once its centre is on screen, and its fade-out no
   longer alters the shared picture (that made every later saucer see-through: a sound with nothing to see).
   Winning the third opens the paint shop in the Shield workshop for ONE change of colour (red, green, violet),
   which costs 500 points (nothing is spent if the colour is kept, or when leaving the shop).

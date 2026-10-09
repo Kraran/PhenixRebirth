@@ -9,6 +9,7 @@ screen: it is worth 500 to 1000 points, the more the shot that kills it is centr
 The formation looks like `enemy.EnemyFormation` for the rest of the game (enemies, bullets, update, draw,
 all_dead), so the shots, the scoring and the stage clear of the arcade code work unchanged.
 """
+import math
 import os
 import random
 
@@ -43,8 +44,13 @@ BULLET_PAUSE_MIN = 0.35
 SAUCER_GAP = (14.0, 22.0)             # seconds between two passes of the miniature saucer
 SAUCER_SPEED = 170.0
 SAUCER_Y = 88
-SAUCER_W, SAUCER_H = 52, 37
-SAUCER_HIT_W = 44                     # the width over which a shot counts as centred
+SAUCER_W, SAUCER_H = 72, 30           # the miniature of the boss-like saucer (assets/sprites/saucer_mini.png)
+SAUCER_GLOW = 6                       # room around it for the red halo
+SAUCER_PULSE = 1.0                    # seconds for the red parts to brighten and dim once
+SAUCER_PULSE_FRAMES = 16
+SAUCER_LIFT = 1.5                     # the grey hull is lightened so it can be seen against the night sky
+SAUCER_RED_DIM, SAUCER_RED_PEAK = 0.4, 2.2     # brightness of the red parts at the dimmest / brightest
+SAUCER_HIT_W = 52                     # the width over which a shot counts as centred
 SAUCER_MIN, SAUCER_MAX = 500, 1000
 SAUCER_PASS = (BASE_WIDTH + 1.5 * SAUCER_W) / SAUCER_SPEED     # seconds the saucer takes to cross the screen
 STEP_PITCHES = 11                     # the step sound exists in this many pitches...
@@ -111,38 +117,71 @@ def frames_for(kind):
     return _CACHE[key]
 
 
-SAUCER_BLINK = 0.25                   # seconds per position of the lights under the saucer
+def _saucer_source():
+    """The saucer picture scaled to SAUCER_W x SAUCER_H and, for each pixel, how red it is (0..1)."""
+    if "saucer_src" not in _CACHE:
+        raw = _load("saucer_mini.png")
+        if raw is None:
+            raw = pygame.Surface((SAUCER_W, SAUCER_H), pygame.SRCALPHA)
+            pygame.draw.ellipse(raw, (110, 110, 118), raw.get_rect())
+            for x in (8, SAUCER_W // 2, SAUCER_W - 8):
+                pygame.draw.circle(raw, (230, 30, 30), (x, SAUCER_H // 2), 3)
+        img = pygame.transform.smoothscale(raw, (SAUCER_W, SAUCER_H))
+        redness = {}
+        for y in range(SAUCER_H):
+            for x in range(SAUCER_W):
+                r, g, b, a = img.get_at((x, y))
+                if a > 0:
+                    red = max(0.0, min(1.0, (r - max(g, b)) / 110.0))
+                    if red > 0:
+                        redness[(x, y)] = red
+        _CACHE["saucer_src"] = (img, redness)
+    return _CACHE["saucer_src"]
 
 
-def _saucer_frame(lit):
-    """The miniature saucer, bright on purpose: the old dark boss sprite was lost against the night sky (and
-    under the score), so a shot could kill it unseen. `lit` picks which of the two light sets is on."""
-    w, h = SAUCER_W, SAUCER_H
-    img = pygame.Surface((w, h), pygame.SRCALPHA)
-    halo = pygame.Surface((w, h), pygame.SRCALPHA)
-    pygame.draw.ellipse(halo, (255, 70, 90, 70), pygame.Rect(0, 8, w, h - 10))
-    img.blit(halo, (0, 0))
-    pygame.draw.ellipse(img, (255, 235, 240), pygame.Rect(w // 2 - 13, 2, 26, 22))              # glass dome
-    pygame.draw.ellipse(img, (255, 150, 170), pygame.Rect(w // 2 - 11, 4, 22, 18))
-    pygame.draw.ellipse(img, (255, 255, 255), pygame.Rect(w // 2 - 7, 6, 8, 6))                 # its shine
-    body = pygame.Rect(1, 14, w - 2, 18)
-    pygame.draw.ellipse(img, (255, 235, 240), body)                                             # light rim
-    pygame.draw.ellipse(img, (225, 40, 70), body.inflate(-4, -4))                               # red hull
-    pygame.draw.ellipse(img, (255, 110, 120), pygame.Rect(8, 16, w - 16, 5))                    # top gleam
-    for i in range(5):
-        on = (i + lit) % 2 == 0
-        pygame.draw.circle(img, (255, 235, 90) if on else (110, 20, 40), (9 + i * 8, 24), 2)
-    return img
+def _saucer_frame(level):
+    """The saucer with its red parts at brightness `level` (0 dim .. 1 glowing), a red halo around them."""
+    img, redness = _saucer_source()
+    g = SAUCER_GLOW
+    out = pygame.Surface((SAUCER_W + 2 * g, SAUCER_H + 2 * g), pygame.SRCALPHA)
+    halo = pygame.Surface(out.get_size(), pygame.SRCALPHA)
+    strength = 0.05 + 0.95 * level
+    for (x, y), red in redness.items():
+        halo.set_at((x + g, y + g), (255, 60, 50, int(255 * red * strength)))
+    small = pygame.transform.smoothscale(halo, (out.get_width() // 2, out.get_height() // 2))
+    halo = pygame.transform.smoothscale(small, out.get_size())
+    out.blit(halo, (0, 0))
+    body = pygame.Surface((SAUCER_W, SAUCER_H), pygame.SRCALPHA)
+    boost = SAUCER_RED_DIM + (SAUCER_RED_PEAK - SAUCER_RED_DIM) * level
+    for y in range(SAUCER_H):
+        for x in range(SAUCER_W):
+            r, gr, b, a = img.get_at((x, y))
+            if a == 0:
+                continue
+            w = redness.get((x, y), 0.0)
+            metal = (r * SAUCER_LIFT, gr * SAUCER_LIFT, b * SAUCER_LIFT)
+            hot = (r * boost + 70 * level, gr * boost + 35 * level, b * boost + 35 * level)
+            body.set_at((x, y), tuple(min(255, int(m * (1 - w) + h * w)) for m, h in zip(metal, hot)) + (a,))
+    out.blit(body, (g, g))
+    out.blit(halo, (0, 0))                       # and the red light spills over the hull as well
+    return out
 
 
 def saucer_frames():
     if "saucer" not in _CACHE:
-        _CACHE["saucer"] = (_saucer_frame(0), _saucer_frame(1))
+        n = SAUCER_PULSE_FRAMES
+        _CACHE["saucer"] = [_saucer_frame(0.5 - 0.5 * math.cos(2 * math.pi * i / n)) for i in range(n)]
     return _CACHE["saucer"]
 
 
 def saucer_image(frame=0):
-    return saucer_frames()[frame % 2]
+    frames = saucer_frames()
+    return frames[int(frame) % len(frames)]
+
+
+def saucer_frame_at(age):
+    """Index of the picture for a saucer `age` seconds old: its red parts pulse once per SAUCER_PULSE."""
+    return int((age / SAUCER_PULSE) * SAUCER_PULSE_FRAMES) % SAUCER_PULSE_FRAMES
 
 
 def level_interval(level):
@@ -237,8 +276,7 @@ class Mothership:
     """The miniature boss saucer that crosses the top of the screen."""
 
     def __init__(self, direction):
-        self.image = saucer_image()
-        self.width, self.height = self.image.get_size()
+        self.width, self.height = SAUCER_W, SAUCER_H
         self.age = 0.0
         self.direction = 1 if direction >= 0 else -1
         self.x = -self.width / 2 if self.direction > 0 else BASE_WIDTH + self.width / 2
@@ -278,13 +316,13 @@ class Mothership:
     def draw(self, surface):
         if not self.alive:
             return
-        img = saucer_image(int(self.age / SAUCER_BLINK))
+        img = saucer_image(saucer_frame_at(self.age))
         if self.dying:
             img = img.copy()            # never touch the shared picture: its fade would stay on every later saucer
             if int(self.death_timer * 20) % 2 == 0:
                 img.fill((255, 255, 255, 0), special_flags=pygame.BLEND_RGB_ADD)
             img.set_alpha(max(0, int(255 * (1.0 - self.death_timer / 0.3))))
-        surface.blit(img, (int(self.x - self.width / 2), int(self.y - self.height / 2)))
+        surface.blit(img, (int(self.x - self.width / 2) - SAUCER_GLOW, int(self.y - self.height / 2) - SAUCER_GLOW))
 
 
 class InvaderFormation:
