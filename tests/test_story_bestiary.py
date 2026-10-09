@@ -305,10 +305,7 @@ def test_gargoyles_beat_their_wings(run):
 def test_every_enemy_has_a_picture_of_a_sensible_size(run):
     for kind in bestiary_art.known_kinds():
         w, h = bestiary_art.still(kind).get_size()
-        if ss.is_boss(kind):                       # the saucer is wide: it must still fit twice as big in the frame
-            assert 100 <= w <= 320 and 40 <= h <= 105, (kind, w, h)
-        else:
-            assert 30 <= w <= 200 and 30 <= h <= 100, (kind, w, h)
+        assert 30 <= w <= 200 and 30 <= h <= 100, (kind, w, h)
 
 
 def _drawn_texts(hub, run):

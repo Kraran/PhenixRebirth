@@ -3315,12 +3315,12 @@ _ADVENTURE_TEXTS.update({
         "n'en parlent presque jamais.",
         "Faster and more numerous than the gargoyle. The pilots who met one hardly ever "
         "talk about it."),
-    "story_b_boss": ("SOUCOUPE MÈRE AVIOÏDE", "AVIOID MOTHERSHIP"),
+    "story_b_boss": ("COMMANDANT AVIOÏDE", "AVIOID COMMANDER"),
     "story_b_boss_t": (
-        "Le vaisseau qui commande les Avioïdes. Sa coque craquelée encaisse les tirs, et sa "
-        "ceinture rouge tourne sans cesse pour protéger le cœur où veille son pilote.",
-        "The ship that commands the Avioids. Its cracked hull soaks up shots, and its red belt "
-        "keeps turning to shield the core where its pilot watches."),
+        "La forme de vie qui commande la soucoupe. Terrée en son cœur, derrière le blindage, elle ne se "
+        "montre que lorsque la voie est dégagée. Un seul tir l'abat.",
+        "The life form that commands the saucer. Hidden at its heart behind the armor, it only shows "
+        "itself when the way is clear. A single shot brings it down."),
     # --- Act 2: the Phenix series (draft texts, to be reviewed)
     "story_ch2": ("ACTE 2 — LE RÉVEIL DU PHENIX", "ACT 2 — THE PHENIX AWAKENS"),
     "story_m_ph1": ("Phenix I : le signal", "Phenix I: the signal"),

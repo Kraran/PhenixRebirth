@@ -1,4 +1,5 @@
-"""The boss saucer joins the Bestiary once the pilot has destroyed it (the end of Act 1)."""
+"""The boss joins the Bestiary once the pilot has destroyed it (the end of Act 1): the alien that commands the
+saucer, not the saucer itself."""
 import pygame
 import pytest
 
@@ -117,45 +118,54 @@ def test_shooting_the_boss_core_registers_it_in_the_game(run):
     assert g.score == 500
 
 
-# --- the pictures ---
-def test_the_boss_has_a_still_picture_and_a_loop(run):
+# --- the pictures: the alien at the heart of the saucer, not the saucer ---
+def _game_core_frames():
+    """The pictures BossCore animates in the game."""
+    import os
+    from settings import asset_path
+    out = []
+    for i in range(8):
+        path = os.path.join(asset_path("sprites"), f"boss_core_{i:02d}.png")
+        if os.path.isfile(path):
+            out.append(pygame.image.load(path).convert_alpha())
+    return out
+
+
+def test_the_boss_picture_is_the_alien_not_the_saucer(run):
+    from boss import BossCore
     still = bestiary_art.still("boss")
-    assert still.get_width() > 100
-    frames = {pygame.image.tostring(bestiary_art.animated("boss", i / bestiary_art.BOSS_FPS), "RGBA")
-              for i in range(bestiary_art.BOSS_FRAMES)}
-    assert len(frames) > 4                            # the core flickers, the band scrolls
-    assert (pygame.image.tostring(bestiary_art.animated("boss", 0.0), "RGBA")
-            == pygame.image.tostring(bestiary_art.animated("boss", bestiary_art.BOSS_FRAMES / bestiary_art.BOSS_FPS), "RGBA"))
+    assert still.get_size() == (72, 72)                         # the alien's sprite, not a 400 px saucer
+    assert pygame.image.tostring(still, "RGBA") == pygame.image.tostring(_game_core_frames()[0], "RGBA")
+    assert BossCore.ANIM_FPS == bestiary_art.CORE_FPS           # it beats at the game's own pace
 
 
-def test_the_twice_as_big_boss_is_drawn_at_that_size_not_stretched(run):
+def test_the_boss_animation_is_the_games_own_frames(run):
+    game_frames = [pygame.image.tostring(f, "RGBA") for f in _game_core_frames()]
+    assert len(game_frames) >= 2
+    seen = []
+    for i in range(len(game_frames)):
+        got = pygame.image.tostring(bestiary_art.animated("boss", (i + 0.5) / bestiary_art.CORE_FPS), "RGBA")
+        assert got == game_frames[i]
+        seen.append(got)
+    assert len(set(seen)) > 1                                   # it really moves
+    loop = len(game_frames) / bestiary_art.CORE_FPS
+    assert (pygame.image.tostring(bestiary_art.animated("boss", 0.01), "RGBA")
+            == pygame.image.tostring(bestiary_art.animated("boss", 0.01 + loop), "RGBA"))
+
+
+def test_the_boss_follows_the_boss_table_for_its_picture(run):
     hub = StoryHub()
-    one = hub.bestiary_picture("boss", 1)
-    two = hub.bestiary_picture("boss", 2)
-    assert two.get_width() == one.get_width() * 2 and two.get_height() == one.get_height() * 2
-    assert two is bestiary_art.big("boss")            # the real big picture, not a scaled copy
-    small = pygame.transform.scale(one, two.get_size())
-    assert pygame.image.tostring(two, "RGBA") != pygame.image.tostring(small, "RGBA")
-
-
-def test_the_boss_picture_animates_from_its_third_defeat(run):
-    hub = StoryHub()
+    one, two = hub.bestiary_picture("boss", 1), hub.bestiary_picture("boss", 2)
+    assert two.get_size() == (one.get_width() * 2, one.get_height() * 2)       # twice as big at 2
+    hub.anim_t = 0.0
+    a = pygame.image.tostring(hub.bestiary_picture("boss", 2), "RGBA")
+    hub.anim_t = 0.5 / bestiary_art.CORE_FPS * 3
+    assert a == pygame.image.tostring(hub.bestiary_picture("boss", 2), "RGBA")  # still at 2
     seen = set()
-    for i in range(bestiary_art.BOSS_FRAMES):
-        hub.anim_t = i / bestiary_art.BOSS_FPS
-        seen.add(pygame.image.tostring(hub.bestiary_picture("boss", 2), "RGBA"))
-    assert len(seen) == 1                             # still at 2
-    for i in range(bestiary_art.BOSS_FRAMES):
-        hub.anim_t = i / bestiary_art.BOSS_FPS
+    for i in range(len(_game_core_frames())):
+        hub.anim_t = (i + 0.5) / bestiary_art.CORE_FPS
         seen.add(pygame.image.tostring(hub.bestiary_picture("boss", 3), "RGBA"))
-    assert len(seen) > 4                              # alive at 3
-
-
-def test_the_ordinary_enemies_keep_their_stretched_pictures(run):
-    hub = StoryHub()
-    one, two = hub.bestiary_picture("bird1", 1), hub.bestiary_picture("bird1", 50)
-    assert two.get_size() == (one.get_width() * 2, one.get_height() * 2)
-    assert bestiary_art.big("bird1") is None
+    assert len(seen) > 1                                                        # alive at 3
 
 
 def test_the_boss_screen_draws_with_text_and_bonus(run):
