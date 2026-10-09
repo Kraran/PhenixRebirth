@@ -83,6 +83,7 @@ from user_settings import SETTINGS_FILE, load_user_settings, save_user_settings
 from text_cache import TextCache
 from pacing import FramePacer
 from errlog import log_exc
+import videoclip
 
 
 class _AddonClip:
@@ -175,24 +176,8 @@ class _AddonClip:
 
 
 def _ffmpeg_exe():
-    """Decoder shipped with the game, then PATH."""
-    names = ("ffmpeg.exe", "ffmpeg")
-    roots = []
-    try:
-        roots.append(os.path.join(project_root(), "bin"))
-    except Exception:
-        log_exc("game._ffmpeg_exe")
-    roots.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bin"))
-    try:
-        roots.append(os.path.join(user_data_dir(), "bin"))
-    except Exception:
-        log_exc("game._ffmpeg_exe")
-    for root in roots:
-        for name in names:
-            fp = os.path.join(root, name)
-            if os.path.isfile(fp):
-                return fp
-    return "ffmpeg.exe" if sys.platform.startswith("win") else "ffmpeg"
+    """The decoder shipped with the game (see videoclip.find_ffmpeg), else the bare name for the PATH."""
+    return videoclip.find_ffmpeg() or ("ffmpeg.exe" if sys.platform.startswith("win") else "ffmpeg")
 
 
 class Game:

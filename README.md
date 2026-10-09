@@ -41,6 +41,8 @@ Free to play · Open source · MIT License
 
 - Python **3.10+** (3.11 / 3.12 / 3.13 recommended)
 - [Pygame](https://www.pygame.org/) 2.5+
+- [imageio-ffmpeg](https://pypi.org/project/imageio-ffmpeg/) (brings its own ffmpeg, used for the video clips; a
+  `bin/ffmpeg.exe` placed next to the game takes precedence, then the PATH)
 
 ## Install
 
@@ -49,6 +51,17 @@ git clone https://github.com/Kraran/PhenixRebirth.git
 cd PhenixRebirth
 python -m pip install -r requirements.txt
 ```
+
+## Video clips
+
+Scenes can play a short looping video behind their text. Turn any video into a clip (no sound, H.264, seamless loop):
+
+```bash
+python tools/encode_clip.py my_video.mp4 picture_name
+```
+
+This writes `assets/story/picture_name.mp4` and, if there is none yet, the poster `picture_name.jpg`. The scene whose
+slide uses `picture_name` plays the clip by itself. Without ffmpeg the poster is shown instead.
 
 ## Run
 

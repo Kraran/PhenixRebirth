@@ -1,12 +1,15 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+from PyInstaller.utils.hooks import collect_all
+
+_ffmpeg = collect_all('imageio_ffmpeg')      # the ffmpeg executable of the clips
 
 a = Analysis(
     ['main.py'],
     pathex=['src'],
-    binaries=[],
-    datas=[('src', 'src'), ('assets', 'assets')],
-    hiddenimports=['game', 'settings', 'player', 'enemy', 'boss', 'explosion', 'starfield', 'sounds', 'i18n', 'highscores'],
+    binaries=_ffmpeg[1],
+    datas=[('src', 'src'), ('assets', 'assets')] + _ffmpeg[0],
+    hiddenimports=['game', 'settings', 'player', 'enemy', 'boss', 'explosion', 'starfield', 'sounds', 'i18n', 'highscores', 'videoclip'] + _ffmpeg[2],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

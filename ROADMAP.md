@@ -98,10 +98,9 @@ Current release: **v1.4.5**
   dug into 434-Hungaria. Same mechanism, told once, replayable from the journal (listed after the Dome I line)
 - Adventure scenes: the Paint I text now says "l'astéroïde 434-Hungaria" and its two typos are fixed (teintes uniques,
   ça serait)
-- Adventure scenes: a slide picture can be a looping video clip (`CLIPS` in story_state.py, frames in
-  `assets/story/<name>_frames/`, no ffmpeg needed), with the same shading, reading band and scrolling text. The loop
-  dissolves its end into its beginning; a missing or broken clip shows the still picture. First clip: the blue birds of
-  the first sortie (10 s, 24 fps, picture only, the video's sound is not used)
+- Adventure scenes: a slide picture can be a looping video clip, `assets/story/<name>.mp4` (see "Video clips" below),
+  with the same shading, reading band and scrolling text; a missing or broken clip shows the still picture. First
+  clip: the blue birds of the first sortie (10 s, picture only, the video's sound is not used)
 - Adventure: four save slots instead of three (`SLOT_COUNT = 4`, `story_4.json`); the slot list shows four cards
 - Adventure: a mission no longer says the next level out loud when its boss falls (the arcade still does)
 - Adventure scenes: the Paint I text uses the "…" sign instead of three dots, like the other scenes
@@ -248,3 +247,15 @@ Current release: **v1.4.5**
 - [ ] Additional languages from contributors
 
 Suggestions welcome via GitHub Issues.
+- Video clips, done properly (`src/videoclip.py`): ffmpeg is now part of the game. It comes from `bin/ffmpeg(.exe)` if
+  present, else from the `imageio-ffmpeg` package (in `requirements.txt`, packed into the exe by `build_exe.bat` and
+  `PhenixRebirth.spec`), else from the PATH. The jukebox and add-on clips use the same lookup
+- Video clips: a clip is one small silent H.264 file (24 fps, a loop without a seam) instead of a folder of JPEG frames.
+  ffmpeg runs beside the game at a low priority, loops the file by itself and scales it to the canvas; the game copies
+  one finished picture per frame and darkens it with a single multiply (about 1 ms per frame, against 5 ms before);
+  frames wait in a six-frame queue, which also hides the short pause ffmpeg makes at each loop point
+- Video clips: `tools/encode_clip.py SOURCE.mp4 NAME` turns any video into a clip (no sound, 24 fps, `--crf 27`, width
+  capped at 1280, last half second dissolved into the first so the loop has no cut) and makes the poster `NAME.jpg`.
+  The first sortie clip went from 8.9 MB of frames (6.5 MB with its sound as an mp4) to a 1.25 MB file
+- Video clips: a clip is picked up as soon as `assets/story/<picture>.mp4` exists next to `<picture>.jpg` (no list to
+  update); the poster shows during the quarter second ffmpeg needs to start, and when ffmpeg is missing or fails
