@@ -106,6 +106,7 @@ class SoundManager:
                 ("welcome_phoenix", 1.00),
                 ("gameover_vo", 0.92),
                 ("welcome_shield", 1.00),
+                ("paint_fanfare", 0.85),          # the Shield is painted (adventure paint shop)
             ]:
                 self._load(name, f"{name}.wav", vol)
             self.enabled = len(self.sounds) > 0

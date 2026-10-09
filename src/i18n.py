@@ -3238,10 +3238,10 @@ _INTRO_FR["story_scene_dome_1"] = (
     'Le problème, c’est qu’entre nous et l’épave s’étend tout un secteur sous contrôle avioïde. Leurs patrouilles quadrillent les corridors d’approche, leurs nids orbitaux surveillent les points de Lagrange, et la moindre signature de propulsion au-delà de la ligne de débris attire déjà une réponse. Atteindre la carcasse exigera une trajectoire précisément calculée, puis une extraction sous silence radio. Si le générateur tient, nous repartirons avec lui. S’il a cédé, nous n’aurons fait que confirmer la malédiction qui pèse sur la race humaine.'
 )
 _INTRO_FR["story_scene_paint_1"] = (
-    'L’atelier clandestin du vieux Wallems, creusé dans le flanc de 434-Hungaria, tourne encore. Malgré l’invasion. Malgré les patrouilles. On y voit toujours des coques posées sur tréteaux, des bidons ouverts, des masques penchés sur le métal...\n\n'
+    'L’atelier clandestin du vieux Wallems, creusé dans le flanc de l’astéroïde 434-Hungaria, tourne encore. Malgré l’invasion. Malgré les patrouilles. On y voit toujours des coques posées sur tréteaux, des bidons ouverts, des masques penchés sur le métal...\n\n'
     'Je ne suis pas assez fou pour tenter de franchir les hordes d’Avioïdes qui quadrillent le secteur, rang après rang, rien que pour faire repeindre mon vaisseau. Non. Je ne le suis pas.\n\n'
-    'Et pourtant la rumeur tient. Wallems prend encore les commandes, choisit ses teintes unique à l’œil, et livre des coques magnifiques le tout avec en fond sonore des trompettes flamboyantes…\n'
-    'Non, je n\'irai pas, ça serai du délire...'
+    'Et pourtant la rumeur tient. Wallems prend encore les commandes, choisit ses teintes uniques à l’œil, et livre des coques magnifiques le tout avec en fond sonore des trompettes flamboyantes…\n'
+    'Non, je n\'irai pas, ça serait du délire...'
 )
 for _k, _v in _INTRO_FR.items():
     _ADVENTURE_TEXTS[_k] = (_v, _v)
@@ -3330,6 +3330,11 @@ _ADVENTURE_TEXTS.update({
         "itself when the way is clear. A single shot brings it down."),
     # --- Act 2: the Phenix series (draft texts, to be reviewed)
     "story_ch2": ("ACTE 2 — LE RÉVEIL DU PHENIX", "ACT 2 — THE PHENIX AWAKENS"),
+    # Act 2: the Bestiary mission of the commander (draft texts, to be reviewed)
+    "story_m_bestboss": ("Bestiaire : le commandant avioïde", "Bestiary: the Avioid commander"),
+    "story_m_bestboss_b": ("La soucoupe et son commandant (niveau 5). Rejouable, un niveau de plus à chaque victoire.",
+                           "The saucer and its commander (level 5). Replayable, one level harder after each win."),
+    "story_log_bestboss": ("Bestiaire — le commandant avioïde est traqué.", "Bestiary — the Avioid commander is hunted."),
     "story_m_ph1": ("Phenix I : le signal", "Phenix I: the signal"),
     "story_m_ph1_b": ("Bleus et Kakis, niveaux 16 et 17. Un signal vient de la zone interdite. Une seule fois.",
                       "Blues and Khakis, levels 16 and 17. A signal comes from the forbidden zone. Once only."),
