@@ -1,5 +1,6 @@
-"""Every enemy is worth +10 per 5-level round: a blue bird is 20 at level 1, 30 at level 6, 40 at level 11.
-That goes for the birds, the boss and the decorations of its saucer; its armor bricks stay at 1 point."""
+"""From level 6 every enemy is worth +10 more per 5-level round: levels 1-5 keep the old prices, a 10-point bird is
+worth 20 at level 6 and 30 at level 11. That goes for the birds, the boss and the decorations of its saucer;
+its armor bricks stay at 1 point."""
 from types import SimpleNamespace
 
 import pygame
@@ -17,10 +18,20 @@ class Foe:
 
 
 # --- the rule itself ---
-@pytest.mark.parametrize("level,bonus", [(1, 10), (2, 10), (5, 10), (6, 20), (10, 20), (11, 30), (15, 30),
-                                         (16, 40), (51, 110)])
+@pytest.mark.parametrize("level,bonus", [(1, 0), (2, 0), (5, 0), (6, 10), (10, 10), (11, 20), (15, 20),
+                                         (16, 30), (51, 100)])
 def test_the_bonus_grows_by_ten_every_five_levels(level, bonus):
     assert level_points_bonus(level) == bonus
+
+
+def test_levels_one_to_five_keep_the_old_prices_exactly(run):
+    g = run.game
+    g.adventure = None
+    g.difficulty = "normal"
+    for stage in range(1, 6):
+        g.stage = stage
+        assert [g._enemy_kill_points(Foe(k)) for k in (1, 2, 3, 4)] == [10, 20, 30, 40]
+        assert g._boss_points() == 500 and g._deco_points() == 50
 
 
 def test_a_nonsense_level_counts_as_level_one():
@@ -28,7 +39,7 @@ def test_a_nonsense_level_counts_as_level_one():
 
 
 # --- birds ---
-def test_a_blue_bird_is_worth_20_then_30_then_40(run):
+def test_a_bird_keeps_its_price_for_five_levels_then_gains_ten_per_round(run):
     g = run.game
     g.adventure = None
     g.difficulty = "normal"
@@ -36,14 +47,14 @@ def test_a_blue_bird_is_worth_20_then_30_then_40(run):
     for stage in (1, 6, 11):
         g.stage = stage
         got.append(g._enemy_kill_points(Foe(1)))
-    assert got == [20, 30, 40]
+    assert got == [10, 20, 30]
 
 
 def test_every_kind_of_enemy_gets_the_bonus_of_its_level(run):
     g = run.game
     g.adventure = None
     g.difficulty = "normal"
-    for stage, bonus in ((1, 10), (5, 10), (6, 20), (12, 30)):
+    for stage, bonus in ((1, 0), (5, 0), (6, 10), (12, 20)):
         g.stage = stage
         for kind, base in ((1, 10), (2, 20), (3, 30), (4, 40)):
             assert g._enemy_kill_points(Foe(kind)) == base + bonus, (stage, kind)
@@ -57,7 +68,7 @@ def test_the_whole_round_pays_the_same_then_the_next_round_pays_more(run):
     for stage in range(1, 12):
         g.stage = stage
         prices.append(g._enemy_kill_points(Foe(2)))
-    assert prices == [30] * 5 + [40] * 5 + [50]
+    assert prices == [20] * 5 + [30] * 5 + [40]
 
 
 def test_the_veteran_bonus_comes_on_top(run):
@@ -65,7 +76,7 @@ def test_the_veteran_bonus_comes_on_top(run):
     g.adventure = None
     g.difficulty = "veteran"
     g.stage = 6
-    assert g._enemy_kill_points(Foe(1)) == 10 + 20 + 10
+    assert g._enemy_kill_points(Foe(1)) == 10 + 10 + 10
 
 
 # --- boss and saucer ---
@@ -76,10 +87,10 @@ def test_the_boss_is_worth_its_price_plus_the_level_bonus(run):
     for stage in (5, 10, 15):
         g.stage = stage
         got.append(g._boss_points())
-    assert got == [510, 520, 530]
+    assert got == [500, 510, 520]
     g.difficulty = "veteran"
     g.stage = 5
-    assert g._boss_points() == 1010
+    assert g._boss_points() == 1000
 
 
 def test_a_saucer_decoration_is_worth_50_plus_the_level_bonus(run):
@@ -88,7 +99,7 @@ def test_a_saucer_decoration_is_worth_50_plus_the_level_bonus(run):
     for stage in (1, 6, 11):
         g.stage = stage
         got.append(g._deco_points())
-    assert got == [60, 70, 80]
+    assert got == [50, 60, 70]
 
 
 def _shoot_boss(g, kind, stage):
@@ -110,10 +121,10 @@ def _shoot_boss(g, kind, stage):
 def test_shooting_the_saucer_gives_the_new_points_in_the_game(run):
     g = run.game
     g.difficulty = "normal"
-    assert _shoot_boss(g, "deco", 1) == 60
-    assert _shoot_boss(g, "deco", 6) == 70
-    assert _shoot_boss(g, "boss", 5) == 510
-    assert _shoot_boss(g, "boss", 10) == 520
+    assert _shoot_boss(g, "deco", 1) == 50
+    assert _shoot_boss(g, "deco", 6) == 60
+    assert _shoot_boss(g, "boss", 5) == 500
+    assert _shoot_boss(g, "boss", 10) == 510
 
 
 def test_the_armor_bricks_always_stay_at_one_point(run):
@@ -125,15 +136,15 @@ def test_the_armor_bricks_always_stay_at_one_point(run):
 
 # --- the Adventure and the Space Invaders missions ---
 def test_the_adventure_waves_pay_by_their_arcade_stage(run):
-    g = _launch(run.game, "dome_5")                    # the swarm plays at stage 11: +30
+    g = _launch(run.game, "dome_5")                    # the swarm plays at stage 11: +20
     assert g.stage == 11
-    assert g._enemy_kill_points(Foe(1)) == 10 + 30
+    assert g._enemy_kill_points(Foe(1)) == 10 + 20
 
 
-def test_the_first_adventure_mission_pays_the_level_one_bonus(run):
+def test_the_first_adventure_mission_keeps_the_old_prices(run):
     g = _launch(run.game, "dome_1")
     assert g.stage == 1
-    assert g._enemy_kill_points(Foe(1)) == 20
+    assert g._enemy_kill_points(Foe(1)) == 10
 
 
 def test_invader_missions_count_their_own_levels(run):
@@ -142,9 +153,9 @@ def test_invader_missions_count_their_own_levels(run):
     g.difficulty = "normal"
     g.stage = 1
     g.formation = inv.InvaderFormation(level=1)
-    assert g._enemy_kill_points(Foe(1)) == 20
+    assert g._enemy_kill_points(Foe(1)) == 10
     g.formation = inv.InvaderFormation(level=7)
-    assert g._enemy_kill_points(Foe(1)) == 30
+    assert g._enemy_kill_points(Foe(1)) == 20
 
 
 def test_the_miniature_saucer_keeps_its_own_500_to_1000(run):
