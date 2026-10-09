@@ -3897,7 +3897,10 @@ class Game:
         return True
 
     def _draw_canvas(self):
-        draw_frame.draw_background(self)
+        story = getattr(self, "story", None)
+        if not (not self.started and self.menu_screen == "story_hub" and story is not None
+                and story.covers_screen()):
+            draw_frame.draw_background(self)       # (a full-screen slide paints over it anyway)
         
         shake_x = shake_y = 0
         if self.shake_amount > 0 and self.started and (not self.game_over or self.hs_phase == "card"):
