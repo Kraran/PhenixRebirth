@@ -224,7 +224,8 @@ def tick_boss_outro(game):
     if game.transition_timer > 1.8:
         game._clear_enemy_fire()
         game._on_stage_cleared()
-        game._play_level_vo(int(getattr(game, "stage", 1) or 1) + 1)
+        if not getattr(game, "adventure", None):          # a mission never announces the next level
+            game._play_level_vo(int(getattr(game, "stage", 1) or 1) + 1)
         game.stage_transition = "fly_up"
         for ship in game._ships():
             ship.destroy_bullet()

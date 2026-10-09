@@ -123,7 +123,7 @@ class StoryHub:
     """Three-pane hub. Left = log, center = hangar, right = map."""
 
     def __init__(self):
-        self.slot_no = None            # save slot (1..3) being played; None before one is opened
+        self.slot_no = None            # save slot (1..4) being played; None before one is opened
         self.sound_events = []         # sounds the hub asks for (the game plays them, see take_sounds)
         self.state = ss.default_state()
         self.screen = "slots"          # slots | delete | name | mode | intro | hub
@@ -258,7 +258,7 @@ class StoryHub:
 
     # --- save slots ---
     def open_slots(self):
-        """Entry point of the Adventure menu: the list of the 3 save slots."""
+        """Entry point of the Adventure menu: the list of the 4 save slots."""
         self.screen = "slots"
         self.col = 0
         self.msg = ""
@@ -266,7 +266,7 @@ class StoryHub:
         self.sel = max(0, min(ss.SLOT_COUNT - 1, self.sel))
 
     def open_slot(self, slot_no):
-        """Load slot 1..3 and go to its hangar (a missing file starts a fresh one)."""
+        """Load slot 1..4 and go to its hangar (a missing file starts a fresh one)."""
         state = ss.load_state(ss.story_path(slot_no))
         self.state = state if state is not None else ss.default_state()
         self.slot_no = int(slot_no)

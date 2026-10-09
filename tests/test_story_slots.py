@@ -74,7 +74,7 @@ def test_name_entry_cursor_wraps_and_presses_keys():
 
 # ------------------------------------------------------------------ save slots
 def test_slot_files_summaries_create_delete():
-    assert [s["status"] for s in ss.all_summaries()] == ["missing"] * 3
+    assert [s["status"] for s in ss.all_summaries()] == ["missing"] * ss.SLOT_COUNT
     st = ss.create_slot(2, "  nova ", "veteran")
     assert st["name"] == "NOVA" and st["mode"] == "veteran"
     info = ss.slot_summary(2)

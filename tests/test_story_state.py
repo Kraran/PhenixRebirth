@@ -290,7 +290,7 @@ def test_missing_and_corrupt_files(tmp_path):
 
 def test_each_slot_has_its_own_file():
     paths = {ss.story_path(i) for i in range(1, ss.SLOT_COUNT + 1)}
-    assert len(paths) == 3
+    assert len(paths) == ss.SLOT_COUNT == 4
     assert all(os.path.basename(p) == "story_%d.json" % (i + 1) for i, p in enumerate(sorted(paths)))
 
 
