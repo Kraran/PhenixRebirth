@@ -76,6 +76,8 @@ Current release: **v1.4.5**
   Winning the third opens the paint shop in the Shield workshop for ONE change of colour (red, green, violet),
   which costs 500 points (nothing is spent if the colour is kept, or when leaving the shop).
   The level is shown on the map, in the journal and on screen
+- Adventure menus: the panel backgrounds (slots, hangar, workshop, map, journal, Bestiary, paint shop...) are slightly
+  see-through (about 76 % opaque, `MENU_ALPHA` in story.py): the starfield shows through a little
 - Adventure scenes: a mission can come with a story scene (a picture and a scrolling text, like the intro), told
   once, the first time the mission is launched; A on the last slide then flies the mission, B / Esc skips it
   (back to the map). Once seen, it gets a line in the journal, right under "Watch the introduction again",
