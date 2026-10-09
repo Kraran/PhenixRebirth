@@ -3244,10 +3244,10 @@ _INTRO_FR["story_scene_sortie"] = (
     'Alors tant pis si le NX01 tient à peine en l’air. Il faut bien commencer par quelque part. Je vais sortir, les affronter un par un, et regarder de près ce qu’ils sont, car on ne bat que ce qu’on connaît bien. Si l’ancrage quantique fait ce que Kamarasov a promis, je reviendrai avec de quoi remplir le premier jeu de données. Sinon… eh bien, je n’aurai plus à m’en soucier.'
 )
 _INTRO_FR["story_scene_paint_1"] = (
-    'L’atelier clandestin du vieux Wallems, creusé dans le flanc de l’astéroïde 434-Hungaria, tourne encore. Malgré l’invasion. Malgré les patrouilles. On y voit toujours des coques posées sur tréteaux, des bidons ouverts, des masques penchés sur le métal...\n\n'
+    'L’atelier clandestin du vieux Wallems, creusé dans le flanc de l’astéroïde 434-Hungaria, tourne encore. Malgré l’invasion. Malgré les patrouilles. On y voit toujours des coques posées sur tréteaux, des bidons ouverts, des masques penchés sur le métal…\n\n'
     'Je ne suis pas assez fou pour tenter de franchir les hordes d’Avioïdes qui quadrillent le secteur, rang après rang, rien que pour faire repeindre mon vaisseau. Non. Je ne le suis pas.\n\n'
     'Et pourtant la rumeur tient. Wallems prend encore les commandes, choisit ses teintes uniques à l’œil, et livre des coques magnifiques le tout avec en fond sonore des trompettes flamboyantes…\n'
-    'Non, je n\'irai pas, ça serait du délire...'
+    'Non, je n\'irai pas, ça serait du délire…'
 )
 for _k, _v in _INTRO_FR.items():
     _ADVENTURE_TEXTS[_k] = (_v, _v)

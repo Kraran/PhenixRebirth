@@ -42,7 +42,7 @@ def test_the_first_paint_mission_has_a_scene_with_its_picture_and_text():
     assert pic == "atelier_wallems" and os.path.exists(asset_path("story", pic + ".jpg"))
     text = t(key)
     assert text.startswith("L’atelier clandestin du vieux Wallems, creusé dans le flanc de l’astéroïde 434-Hungaria, tourne encore.")
-    assert text.endswith("Non, je n'irai pas, ça serait du délire...")
+    assert text.endswith("Non, je n'irai pas, ça serait du délire…")
     assert text.count("\n\n") == 2                                 # three paragraphs, with a pause between
     assert "Wallems" in text and "Avioïdes" in text and "trompettes flamboyantes…" in text
     assert ss.scene_of("paint_2") is None and ss.scene_of("paint_3") is None
@@ -52,7 +52,7 @@ def test_the_text_is_exactly_the_one_given():
     paragraphs = t("story_scene_paint_1").split("\n\n")
     assert paragraphs[1] == ("Je ne suis pas assez fou pour tenter de franchir les hordes d’Avioïdes qui quadrillent "
                              "le secteur, rang après rang, rien que pour faire repeindre mon vaisseau. Non. Je ne le suis pas.")
-    assert paragraphs[0].endswith("des masques penchés sur le métal...")
+    assert paragraphs[0].endswith("des masques penchés sur le métal…")
     assert paragraphs[2].startswith("Et pourtant la rumeur tient. Wallems prend encore les commandes, choisit ses teintes uniques à l’œil,")
 
 
@@ -200,3 +200,9 @@ def test_the_scene_draws_its_own_text_and_hints(run):
         story._text, story._text_fit = real, real_fit
     assert t("story_scene_last") in seen
     assert len({tuple(surf.get_at((x, y))) for x in range(0, 1280, 40) for y in range(0, 720, 40)}) > 20   # the picture is there
+
+
+def test_every_scene_text_uses_the_ellipsis_sign_never_three_dots():
+    for scene in ss.SCENES.values():
+        for _pic, key in scene["slides"]:
+            assert "..." not in t(key)

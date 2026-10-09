@@ -6,7 +6,7 @@ screen: the default hangar, the mission list, the workshop upgrades, what a
 mission result changes, and how a save slot is read, migrated and written.
 `story.py` only draws these things and handles the menu input.
 
-Save file: one JSON per slot (story_1.json ... story_3.json), version 4.
+Save file: one JSON per slot (story_1.json ... story_4.json), version 4.
 Durations (dome time and recharge) are stored in SECONDS, so they do not
 depend on the frame rate. Version 2 files stored them in frames at 60 Hz.
 Version 4 is the Act 1 hangar: the Shield starts at 40 % speed with one life,
@@ -21,7 +21,7 @@ from safe_io import atomic_write_json, backup_unreadable
 from settings import user_data_dir, ENEMY_VETERAN_BONUS
 
 SAVE_VERSION = 4
-SLOT_COUNT = 3
+SLOT_COUNT = 4
 MODES = ("normal", "veteran")
 NAME_MAX = 12
 # A failed mission (Normal mode) gains nothing and costs this share of the credits held.
