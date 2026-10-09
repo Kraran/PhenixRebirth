@@ -855,6 +855,7 @@ def mark_intro_seen(state):
 # [(picture in assets/story, text key)] and `title` is the journal line (after "watch again").
 SCENES = {
     "dome_1": {"title": "story_scene_dome_1_t", "slides": [("epave_shield", "story_scene_dome_1")]},
+    "paint_1": {"title": "story_scene_paint_1_t", "slides": [("atelier_wallems", "story_scene_paint_1")]},
 }
 
 
