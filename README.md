@@ -73,14 +73,17 @@ python main.py
 
 ## Stages (cycle 1–5, then faster loops)
 
-| Stage | Enemies | Points (Normal) |
-|-------|---------|-----------------|
+| Stage | Enemies | Points (Normal, levels 1–5) |
+|-------|---------|----------------------|
 | 1 | Dark birds | 10 |
 | 2 | Green / khaki birds | 20 |
 | 3 | Gargoyles | 30 (body only; wings neutral) |
 | 4 | Violet / dark-red gargoyles | 40 |
 | 5 | Boss saucer + escort birds | Core 500 · cells 1 · decorations 50 |
 
+- Level bonus: levels 1–5 pay the prices above. From level 6 every enemy, the boss core and the saucer decorations
+  get **+10 in levels 6–10, +20 in 11–15**, and so on (a 10-point bird is worth 20 at level 6, 30 at level 11).
+  Armor cells stay at 1.
 - Veteran: bird scores **+10**, boss core **1000**.
 - Novice: slower enemies, 5 lives, no high-score entry; PHENIX lasts longer.
 - Bonus lives at **1 337** and **8 086** points.
