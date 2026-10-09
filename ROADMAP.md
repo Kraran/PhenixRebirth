@@ -78,6 +78,10 @@ Current release: **v1.4.5**
   The level is shown on the map, in the journal and on screen
 - Adventure menus: the panel backgrounds (slots, hangar, workshop, map, journal, Bestiary, paint shop...) are slightly
   see-through (about 76 % opaque, `MENU_ALPHA` in story.py): the starfield shows through a little
+- Faster drawing, same picture: the adventure menu texts are rendered once instead of every frame; the story
+  screens (intro, mission scenes) no longer rebuild their dark band and text window each frame and no longer
+  draw the starfield under the full-screen picture (about 2.5 times faster); the invader saucer is painted when the
+  mission starts, so its first appearance no longer makes the game stutter for a moment
 - Adventure scenes: a mission can come with a story scene (a picture and a scrolling text, like the intro), told
   once, the first time the mission is launched; A on the last slide then flies the mission, B / Esc skips it
   (back to the map). Once seen, it gets a line in the journal, right under "Watch the introduction again",

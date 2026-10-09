@@ -14,6 +14,7 @@ from settings import BASE_WIDTH, BASE_HEIGHT, asset_path
 from i18n import t, get_lang
 from errlog import log_exc
 import story_state as ss
+from text_cache import TextCache
 import bestiary_art
 from story_state import MISSIONS, SHOP, log_text   # noqa: F401  (re-exported for the tests)
 
@@ -75,9 +76,16 @@ def _fill(surface, color, rect, radius=0, alpha=None):
     surface.blit(layer, rect.topleft)
 
 
+_TEXTS = TextCache()        # rendered lines: a line is drawn again every frame, rendered once
+
+
+def _render(font, text, color):
+    return _TEXTS.get(font, text, tuple(color[:3]))
+
+
 def _text(surface, font, text, color, cy, left=None, right=None, centerx=None):
     """Draw one line, vertically centred on `cy`, anchored left, right or centre."""
-    img = font.render(text, True, color)
+    img = _render(font, text, color)
     if left is not None:
         x = left
     elif right is not None:
@@ -90,7 +98,7 @@ def _text(surface, font, text, color, cy, left=None, right=None, centerx=None):
 
 def _text_fit(surface, font, text, color, cy, left, max_w, scale=1.0):
     """A line anchored left, shrunk (never grown) to `scale` and to fit in `max_w` pixels."""
-    img = font.render(text, True, color)
+    img = _render(font, text, color)
     k = min(scale, max_w / img.get_width()) if img.get_width() else 1.0
     k = min(1.0, k)
     if k < 1.0:
@@ -155,6 +163,8 @@ class StoryHub:
         self._intro_bg = {}
         self._intro_blocks = {}
         self._intro_mask = None
+        self._intro_edges = {}
+        self._intro_black = None
         self._intro_limit = None
 
     # --- intro ---
@@ -721,6 +731,11 @@ class StoryHub:
             return t(key)
         return f"{cost} PTS"
 
+    def covers_screen(self):
+        """True when the current screen paints every pixel itself (the slide pictures), so the
+        starfield underneath need not be drawn."""
+        return self.screen == "intro"
+
     # --- draw ---
     def draw(self, surface, font, medium, small):
         self._ensure_art()
@@ -850,21 +865,57 @@ class StoryHub:
     def _intro_top(self, text_height):
         return max(self._intro_rest(text_height), BASE_HEIGHT - self.intro_pos)
 
+    def _intro_backdrop(self, name):
+        """The slide picture with the dark reading band already baked in (cached, opaque)."""
+        key = ("band", name)
+        img = self._intro_bg.get(key)
+        if img is None:
+            img = self._intro_picture(name).copy()
+            band = pygame.Surface((INTRO_TEXT_W + 120, BASE_HEIGHT), pygame.SRCALPHA)
+            band.fill((0, 0, 0, 120))
+            img.blit(band, ((BASE_WIDTH - band.get_width()) // 2, 0))
+            self._intro_bg[key] = img
+        return img
+
+    def _intro_edge(self, which):
+        """Scratch picture and fade strip for the top or bottom edge of the text window (cached)."""
+        hit = self._intro_edges.get(which)
+        if hit is None:
+            y0, y1 = (0, 90) if which == "top" else (INTRO_END_Y, BASE_HEIGHT)
+            strip = pygame.Surface((INTRO_TEXT_W, y1 - y0), pygame.SRCALPHA)
+            hit = (y0, y1, strip)
+            self._intro_edges[which] = hit
+        return hit
+
+    def _draw_intro_text(self, surface, block, top, x):
+        """The scrolling text, faded softly at the top and bottom edges of its window.
+
+        Between the two fade zones the fade is fully opaque, so the text is drawn straight onto the
+        picture; only the two thin edge strips go through the mask."""
+        mask = self._intro_fade_mask()
+        y_top = self._intro_edge("top")[1]
+        y_bot = self._intro_edge("bottom")[0]
+        keep = surface.get_clip()
+        surface.set_clip(pygame.Rect(x, y_top, INTRO_TEXT_W, y_bot - y_top).clip(keep))
+        surface.blit(block, (x, top))
+        surface.set_clip(keep)
+        for which in ("top", "bottom"):
+            y0, y1, strip = self._intro_edge(which)
+            strip.fill((0, 0, 0, 0))
+            strip.blit(block, (0, top - y0))
+            strip.blit(mask, (0, 0), area=pygame.Rect(0, y0, INTRO_TEXT_W, y1 - y0),
+                       special_flags=pygame.BLEND_RGBA_MULT)
+            surface.blit(strip, (x, y0))
+
     def _draw_intro(self, surface, font, small):
         pic, _key = self.intro_slides[self.intro_index]
-        surface.blit(self._intro_picture(pic), (0, 0))
+        surface.blit(self._intro_backdrop(pic), (0, 0))
         cx = BASE_WIDTH // 2
-        band = pygame.Surface((INTRO_TEXT_W + 120, BASE_HEIGHT), pygame.SRCALPHA)
-        band.fill((0, 0, 0, 120))
-        surface.blit(band, (cx - band.get_width() // 2, 0))
 
         block, height = self._intro_block(font)
         self._intro_limit = BASE_HEIGHT - self._intro_rest(height)     # the text cannot rise past this
         top = self._intro_top(height)
-        view = pygame.Surface((INTRO_TEXT_W, BASE_HEIGHT), pygame.SRCALPHA)
-        view.blit(block, (0, top))
-        view.blit(self._intro_fade_mask(), (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-        surface.blit(view, (cx - INTRO_TEXT_W // 2, 0))
+        self._draw_intro_text(surface, block, top, cx - INTRO_TEXT_W // 2)
 
         done = self.intro_finished_scrolling(height)
         last = self.intro_index + 1 >= len(self.intro_slides)
@@ -882,9 +933,10 @@ class StoryHub:
 
         fade = 1.0 - min(1.0, self.intro_t / INTRO_FADE)
         if fade > 0:
-            black = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
-            black.set_alpha(int(255 * fade))
-            surface.blit(black, (0, 0))
+            if self._intro_black is None:
+                self._intro_black = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+            self._intro_black.set_alpha(int(255 * fade))
+            surface.blit(self._intro_black, (0, 0))
 
     # --- slot list, name, mode, delete ---
     def _draw_gate(self, surface, font, medium, small):

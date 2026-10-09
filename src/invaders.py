@@ -352,6 +352,7 @@ class InvaderFormation:
         self.saucer_timer = random.uniform(*SAUCER_GAP)
         self.total = COLS * len(ROW_KINDS)
         self.spawn()
+        saucer_frames()                    # paint the saucer now (once per session), not in the middle of the fight
 
     # --- the grid ---
     def spawn(self):
