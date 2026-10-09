@@ -29,6 +29,11 @@ Current release: **v1.4.5**
   (every such enemy is worth +10 points, the Veteran bonus of the arcade game). Bosses use a short
   table: 1, 2, 3, 5 and 10 defeats, the last one adding +1000 points per boss. Enemies destroyed
   count even when you lose a mission, but not when you leave one by choice. Names are drawn smaller
+- The boss saucer is now in the Bestiary ("Avioid Mothership"): it shows up once you have destroyed it (the end of
+  Act 1, mission "Gateway to Act 2"), then at 2 (picture twice as big, drawn at that size), 3 (animated: its core
+  flickers, its band scrolls), 5 (presentation text, a draft to review) and 10 defeats (+1000 points per boss). The
+  boss of any Adventure mission counts. Pictures: `assets/sprites/bestiary_boss.png`, made from the game's own boss by
+  `tools/make_bestiary_boss.py`
 - The four Bestiary sorties of Act 1 are "hunt" missions that can be flown again as often as you like
   (shown as REPLAYABLE). The journal writes, under each one, how many enemies were destroyed in all
   its runs

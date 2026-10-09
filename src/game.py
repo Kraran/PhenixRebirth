@@ -982,6 +982,18 @@ class Game:
         mastered = story_state.kill_bonus(story.state, kind, kills[kind]) > 0
         return self._enemy_points(stage, mastered)
 
+    def _boss_kill_points(self):
+        """Points for the boss saucer destroyed. In the Adventure it also counts for the Bestiary
+        (and pays its mastery bonus once the last tier is reached)."""
+        pts = self._boss_points()
+        adv = getattr(self, "adventure", None)
+        story = getattr(self, "story", None)
+        if not adv or story is None:
+            return pts
+        kills = adv.setdefault("kills", {})
+        kills["boss"] = kills.get("boss", 0) + 1
+        return pts + story_state.kill_bonus(story.state, "boss", kills["boss"])
+
     def _boss_points(self):
         return (1000 if self.difficulty == "veteran" else 500) + self._level_points_bonus()
 

@@ -20,7 +20,8 @@ def _state(**counts):
 def test_enemy_kind_follows_the_content_stage():
     assert [ss.enemy_kind(s) for s in (1, 2, 3, 4)] == ["bird1", "bird2", "garg3", "garg4"]
     assert ss.enemy_kind(9) == "garg4" and ss.enemy_kind(0) == "bird1" and ss.enemy_kind("x") == "bird1"
-    assert {e["stage"]: e["id"] for e in ss.BESTIARY} == {1: "bird1", 2: "bird2", 3: "garg3", 4: "garg4"}
+    assert {e["stage"]: e["id"] for e in ss.BESTIARY if not e.get("boss")} == {
+        1: "bird1", 2: "bird2", 3: "garg3", 4: "garg4"}
 
 
 def _shown(n, boss=False):
@@ -304,7 +305,10 @@ def test_gargoyles_beat_their_wings(run):
 def test_every_enemy_has_a_picture_of_a_sensible_size(run):
     for kind in bestiary_art.known_kinds():
         w, h = bestiary_art.still(kind).get_size()
-        assert 30 <= w <= 200 and 30 <= h <= 100, (kind, w, h)
+        if ss.is_boss(kind):                       # the saucer is wide: it must still fit twice as big in the frame
+            assert 100 <= w <= 320 and 40 <= h <= 105, (kind, w, h)
+        else:
+            assert 30 <= w <= 200 and 30 <= h <= 100, (kind, w, h)
 
 
 def _drawn_texts(hub, run):

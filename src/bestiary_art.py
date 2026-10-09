@@ -16,12 +16,15 @@ BIRD_FLAP_RATE = 5.2        # wing beats per second
 BIRD_GLOW_PERIOD = 2.0      # the eyes light up every 2 s ...
 BIRD_GLOW_LEN = 0.35        # ... for this long
 GARG_FLAP_SPEED = 12.0      # radians per second (the game uses 10-14)
+BOSS_FRAMES = 16            # the boss loop in assets/sprites/bestiary_boss.png (tools/make_bestiary_boss.py)
+BOSS_FPS = 10.0
 
 _KINDS = {
     "bird1": ("bird", "bird1"),
     "bird2": ("bird", "bird2"),
     "garg3": ("garg", "garg3"),
     "garg4": ("garg", "garg4"),
+    "boss": ("boss", "bestiary_boss"),
 }
 _cache = {}
 
@@ -57,6 +60,15 @@ def _gargoyle(prefix, wings_up):
     return surf
 
 
+def _boss_frames(name):
+    """The boss strip cut into its pictures: the big ones (what the 2x tier shows) and half-size ones."""
+    strip = _load(name)
+    w = strip.get_width() // BOSS_FRAMES
+    big = [strip.subsurface((i * w, 0, w, strip.get_height())).copy() for i in range(BOSS_FRAMES)]
+    small = [pygame.transform.smoothscale(f, (max(1, w // 2), max(1, strip.get_height() // 2))) for f in big]
+    return small, big
+
+
 def _frames(kind):
     """All pictures of one enemy, loaded once: {"still": Surface, "bird": [4] or "garg": [down, up]}."""
     hit = _cache.get(kind)
@@ -67,6 +79,9 @@ def _frames(kind):
         if family == "bird":
             frames = _bird_frames(prefix)
             hit = {"family": family, "frames": frames, "still": frames[0]}
+        elif family == "boss":
+            small, big = _boss_frames(prefix)
+            hit = {"family": family, "frames": small, "big": big, "still": small[0]}
         else:
             down, up = _gargoyle(prefix, False), _gargoyle(prefix, True)
             hit = {"family": family, "frames": [down, up], "still": down}
@@ -93,7 +108,18 @@ def animated(kind, t):
         return frames[flap + (2 if glow else 0)]
     if data["family"] == "garg" and len(frames) >= 2:
         return frames[1] if math.sin(t * GARG_FLAP_SPEED) > 0 else frames[0]
+    if data["family"] == "boss" and frames:
+        return frames[int(t * BOSS_FPS) % len(frames)]
     return data["still"]
+
+
+def big(kind, t=None):
+    """A picture drawn at twice the size for real (not stretched), or None when the enemy has none.
+    With a time `t` it is the animated one, without it the motionless one."""
+    pics = _frames(kind).get("big")
+    if not pics:
+        return None
+    return pics[0] if t is None else pics[int(t * BOSS_FPS) % len(pics)]
 
 
 def known_kinds():

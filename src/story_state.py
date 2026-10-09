@@ -315,6 +315,8 @@ BESTIARY = [
     {"id": "bird2", "stage": 2, "name": "story_b_bird2", "text": "story_b_bird2_t"},
     {"id": "garg3", "stage": 3, "name": "story_b_garg3", "text": "story_b_garg3_t"},
     {"id": "garg4", "stage": 4, "name": "story_b_garg4", "text": "story_b_garg4_t"},
+    # the saucer that ends level 5 (and every fifth level): it shows up once the pilot has destroyed it
+    {"id": "boss", "stage": 5, "name": "story_b_boss", "text": "story_b_boss_t", "boss": True},
 ]
 # What each tier shows, by number of enemies of that kind destroyed:
 # (picture, picture twice as big, animation, presentation text, bonus points).

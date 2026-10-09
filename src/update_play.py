@@ -268,7 +268,7 @@ def player_bullets_vs_enemies(game):
                     game._hitstop(0.045)
                     ship.destroy_bullet("valid", index=shot_i)
                     target.kill()
-                    game._add_score(ship, game._boss_points())
+                    game._add_score(ship, game._boss_kill_points())
                     game.explosions.append(game._boom(target.x, target.y, kind="gameover"))
                     game.shake_amount = 20.0
                     game.sounds.play("explosion_big", x=ship.x)

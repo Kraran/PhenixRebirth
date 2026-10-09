@@ -1081,6 +1081,10 @@ class StoryHub:
     def bestiary_picture(self, kind, count):
         """The picture of an enemy met `count` times: small, then 2x, then animated (also 2x)."""
         tiers = ss.best_tiers(count, ss.is_boss(kind))
+        if tiers["zoom"]:
+            real = bestiary_art.big(kind, self.anim_t if tiers["anim"] else None)
+            if real is not None:                 # drawn at that size (the boss), not stretched
+                return real
         img = bestiary_art.animated(kind, self.anim_t) if tiers["anim"] else bestiary_art.still(kind)
         if tiers["zoom"]:
             img = pygame.transform.scale(img, (img.get_width() * 2, img.get_height() * 2))
