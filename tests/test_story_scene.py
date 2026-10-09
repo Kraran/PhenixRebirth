@@ -42,7 +42,7 @@ def test_the_first_dome_mission_has_a_scene_with_its_picture_and_text():
     assert text.endswith("la malédiction qui pèse sur la race humaine.")
     assert text.count("\n\n") == 2                                 # its three paragraphs, with a pause between
     assert "EDF42-Shield" in text and "Avioïdes" in text
-    assert ss.scene_of("dome_2") is None and ss.scene_of("ch1_sortie") is None
+    assert ss.scene_of("dome_2") is None and ss.scene_of("best_s2") is None
 
 
 def test_the_scene_texts_are_in_every_language_table():
@@ -106,9 +106,9 @@ def test_skipping_the_scene_counts_as_seen_and_comes_back_to_the_map():
 
 def test_other_missions_fly_straight_away():
     hub = _hub()
-    hub.map_index = [m["id"] for m in hub.missions()].index("ch1_sortie")
+    hub.map_index = [m["id"] for m in hub.missions()].index("best_s2")
     spec = hub.confirm()
-    assert isinstance(spec, dict) and spec["id"] == "ch1_sortie" and hub.screen == "hub"
+    assert isinstance(spec, dict) and spec["id"] == "best_s2" and hub.screen == "hub"
 
 
 def test_a_mission_that_cannot_be_flown_shows_no_scene():
