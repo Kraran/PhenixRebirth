@@ -9,7 +9,7 @@ class TextCache:
         self._data = {}
 
     def get(self, font, text, color):
-        key = (id(font), text, color)
+        key = (font, text, color)          # the font itself, not its id: a freed font's id can be reused by another
         surf = self._data.get(key)
         if surf is None:
             if len(self._data) > 1200:

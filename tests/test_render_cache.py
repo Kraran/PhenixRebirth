@@ -215,3 +215,23 @@ def test_a_second_mission_does_not_paint_the_saucer_again(monkeypatch):
     inv.InvaderFormation(1)
     monkeypatch.setattr(inv, "_saucer_frame", lambda level: pytest.fail("painted again"))
     inv.InvaderFormation(2)
+
+
+def test_the_text_cache_tells_fonts_apart_even_when_one_is_freed():
+    """Keyed by the font object, not its id(): a new font can never get an old font's pictures."""
+    import gc
+    from text_cache import TextCache
+    pygame.font.init()
+    cache = TextCache()
+    small = pygame.font.Font(None, 20)
+    first = cache.get(small, "SAME", (255, 255, 255))
+    assert any(k[0] is small for k in cache._data)
+    del small
+    gc.collect()
+    heights = set()
+    for size in (20, 24, 28, 32, 36, 40, 48, 60):         # new fonts may land on the freed font's memory
+        font = pygame.font.Font(None, size)
+        got = cache.get(font, "SAME", (255, 255, 255))
+        assert got.get_height() == font.render("SAME", True, (255, 255, 255)).get_height()
+        heights.add(got.get_height())
+    assert len(heights) > 1 and first.get_height() in heights | {first.get_height()}
