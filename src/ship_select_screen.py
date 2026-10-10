@@ -13,7 +13,7 @@ import pygame
 from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
 from i18n import t
 from player import recolor_phenix_frames
-from phenix_art import PHENIX_MORPH_IN_SEC, PHENIX_MORPH_OUT_SEC, PREVIEW_FLASH_RADIUS, morph_sequence
+from phenix_art import PREVIEW_FLASH_RADIUS, PREVIEW_MORPH_IN_SEC, PREVIEW_MORPH_OUT_SEC, morph_sequence
 
 
 def load_ship_previews(game):
@@ -66,8 +66,8 @@ def load_ship_previews(game):
             game.preview_ships["phoenix_" + key]["core_size"] = (
                 max(f.get_width() for f in [idle_t] + drawn_t + anim_t[:1]),
                 max(f.get_height() for f in [idle_t] + drawn_t + anim_t[:1]))
-            game.preview_ships["phoenix_" + key]["on_sec"] = PHENIX_MORPH_IN_SEC
-            game.preview_ships["phoenix_" + key]["off_sec"] = PHENIX_MORPH_OUT_SEC
+            game.preview_ships["phoenix_" + key]["on_sec"] = PREVIEW_MORPH_IN_SEC
+            game.preview_ships["phoenix_" + key]["off_sec"] = PREVIEW_MORPH_OUT_SEC
     game.preview_ships["phoenix"] = game.preview_ships["phoenix_argent"]
     idle_s = _load(asset_path("sprites", "player_ship_shield.png"))
     anim_s, on_s, off_s = [], [], []
