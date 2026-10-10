@@ -245,7 +245,7 @@ def test_the_bestiary_is_left_of_the_journal():
     hub.nav_h(-1)
     assert hub.pane == "bestiary"
     hub.nav_h(-1)
-    assert hub.pane == "credits"                         # Options, Jukebox and Credits come before it (test_story_doors)
+    assert hub.pane == "extras"                          # the Extras tab comes before it (test_story_doors)
     hub.nav_h(1)
     assert hub.pane == "bestiary"
 

@@ -320,8 +320,9 @@ class Game:
     DOOR_SCREENS = {"options": ("options", "reset_confirm"), "jukebox": ("jukebox",), "credits": ("credits",)}
 
     def _open_story_door(self, door):
-        """The screen of the main menu that the Adventure tab `door` stands for. It looks and works as from the main
-        menu; B / Esc (or whatever else would go on to another menu screen) brings the Adventure back on that tab."""
+        """The screen of the main menu that a paragraph of the Extras tab of the Adventure stands for. It looks and works
+        as from the main menu; B / Esc (or whatever else would go on to another menu screen) brings the Adventure back
+        on that paragraph."""
         if door not in self.DOOR_SCREENS:
             return
         self.story_door = door
@@ -339,7 +340,7 @@ class Game:
 
     def _story_door_tick(self):
         """Every frame: when the screen opened from the Adventure has been left for another one, the Adventure is
-        back on the tab it was opened from."""
+        back on the Extras tab, on the paragraph it was opened from."""
         door = getattr(self, "story_door", None)
         if not door:
             return
@@ -353,7 +354,8 @@ class Game:
         self.story_door = None
         if getattr(self, "menu_screen", "") == "jukebox":
             self._leave_jukebox_audio()
-        story.pane = door
+        story.pane = "extras"
+        story.extras_index = ("options", "jukebox", "credits").index(door)
         story.screen = "hub"
         self.menu_screen = "story_hub"
         self.menu_index = 1

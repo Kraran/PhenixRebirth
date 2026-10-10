@@ -312,10 +312,10 @@ Suggestions welcome via GitHub Issues.
   wings come out of nothing, uses 60 % of the flow (all of it stretches the feathers to the corners). Same 26 pictures,
   same durations, same ends. Without the file, with a canvas that does not fit or without numpy, the pictures are plain
   cross-dissolves. Run the tool again if the drawn pictures change. The Shield dome is as it was
-- Adventure: Options, Jukebox and Credits are reachable from the Adventure, as three tabs at the far left (left of the
-  Bestiary, in that order). A tab only says what the screen is; A / Enter opens the real screen of the main menu, which works
-  as from the main menu (Left / Right change a value there, so they could not also change tab). B / Esc, or the screen's own
-  way out ("Retour" line, Esc in the reset question, B on the gamepad), brings the Adventure back on the same tab, same
+- Adventure: Options, Jukebox and Credits are reachable from the Adventure, in ONE tab at the far left, "Extras" (left of
+  the Bestiary), with three paragraphs, one for each screen. It first was three tabs, which was three screens for nothing.
+  Up / Down choose the paragraph, A / Enter opens the real screen of the main menu, which works as from the main menu (Left /
+  Right change a value there, so they could not also change tab). B / Esc, or the screen's own way out ("Retour" line,
+  Esc in the reset question, B on the gamepad), brings the Adventure back on the Extras tab, on the same paragraph, same
   save, nothing reloaded. From the Adventure, Left / Right in the Jukebox do not go on to the high scores. The main menu
-  is as it was. Code: `story.DOOR_PANES`, `Game._open_story_door`, `Game._story_door_tick`
-
+  is as it was. Code: `story.DOORS`, `StoryHub._draw_extras`, `Game._open_story_door`, `Game._story_door_tick`
