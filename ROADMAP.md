@@ -319,3 +319,15 @@ Suggestions welcome via GitHub Issues.
   Esc in the reset question, B on the gamepad), brings the Adventure back on the Extras tab, on the same paragraph, same
   save, nothing reloaded. From the Adventure, Left / Right in the Jukebox do not go on to the high scores. The main menu
   is as it was. Code: `story.DOORS`, `StoryHub._draw_extras`, `Game._open_story_door`, `Game._story_door_tick`
+- Adventure: return to base by the quantum anchor when a mission is lost (Normal mode only: a fallen Veteran has no anchor,
+  the anchor was never finished, so the memorial and slot list come at once as before). The last picture of the mission is
+  taken (`Game._anchor_snapshot`), then, in 3.1 s (`src/anchor_fx.py`): 1.6 s of whirlwind (the picture turns, more in the
+  middle than outside, shrinks to a point and goes blue; the legend "ANCRAGE QUANTIQUE / Retour à la base..." comes in the
+  second half), 0.3 s of flash that opens from the middle, 0.9 s where the flash fades and shows the mission map. The result
+  is banked at once as before (nothing is lost if the game is closed). During the whirlwind and the flash keys and the pad do
+  nothing, except Enter / Space / Esc or a pad button, which skip to the end of the flash (and F12 for a screenshot); the map
+  keeps a 0.3 s grace so a held key does not act on it. The whirlwind is computed by numpy on a 400x225 picture (about 7 ms a
+  frame) and scaled up; the real picture shows through for the first 0.15 s so nothing jumps. Without numpy there is no
+  effect (the map comes back at once, as before). Sound `assets/sounds/anchor_return.wav`, made by
+  `tools/make_anchor_sound.py` (numpy only). Code: `anchor_fx.AnchorReturn`, `Game._start_anchor_return`,
+  `Game._tick_anchor_fx`, `Game._anchor_blocks`. Tests: `tests/test_anchor_return.py`

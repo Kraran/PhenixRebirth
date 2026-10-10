@@ -3258,6 +3258,9 @@ _ADVENTURE_TEXTS.update({
     "story_tab_best": ("BESTIAIRE", "BESTIARY"),
     "story_hint_best": ("Haut / Bas  choisir   Gauche / Droite  écran   B/Échap  retour",
                         "Up / Down  choose   Left / Right  pane   B/Esc  back"),
+    # a lost mission: the quantum anchor brings the ship back to the base (src/anchor_fx.py)
+    "story_anchor_title": ("ANCRAGE QUANTIQUE", "QUANTUM ANCHOR"),
+    "story_anchor_sub": ("Retour à la base…", "Back to base…"),
     # Extras tab of the Adventure: Options / Jukebox / Credits, the screens of the main menu
     "story_extras": ("EXTRAS", "EXTRAS"),
     "story_hint_extras": ("Haut / Bas  choisir   A/Entrée  ouvrir   Gauche / Droite  écran   B/Échap  retour",

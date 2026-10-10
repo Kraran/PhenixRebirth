@@ -16,6 +16,7 @@ def tick_housekeeping(game):
     game._tick_fade()
     game.title_timer += game.dt
     game._story_door_tick()
+    game._tick_anchor_fx()
     game._update_music()
     game._tick_listen_achs()
     if getattr(game, "sounds", None):
