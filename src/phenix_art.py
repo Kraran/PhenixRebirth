@@ -30,6 +30,10 @@ FLASH_RADIUS = 110           # radius of the halo, in pixels of the picture (the
 PREVIEW_FLASH_RADIUS = 75     # the same, in the ship select preview, where the pictures are bigger and the panel small
 FLASH_GLOW = 0.80            # opacity of the halo at its brightest
 FLASH_LIGHT = 190            # how much the ship itself is lightened at the peak (0..255)
+SHIELD_IN_STEPS = 1          # pictures added between two drawn pictures of the dome forming (8 drawn make 15)
+SHIELD_OUT_STEPS = 2         # the same for the dome going away (6 drawn make 16)
+SHIELD_IN_SEC = 0.22         # the dome forming. Not only a look: the countdown of the bubble waits for it and
+SHIELD_OUT_SEC = 0.26        # the cooldown starts after the dome going away, so changing them changes the game
 PHENIX_MORPH_IN_SEC = 0.45   # ship -> Phenix
 PHENIX_MORPH_OUT_SEC = 0.40  # Phenix -> ship
 PREVIEW_MORPH_IN_SEC = 0.65  # the same in the ship select screen, where there is time to watch it
@@ -119,6 +123,23 @@ def _with_flash(surf, level, colour, size, radius):
     return _surface(out_rgb, a_o * 255.0)
 
 
+def dissolve(pictures, steps=MORPH_STEPS):
+    """The `pictures` in order, with `steps` cross-dissolves between each two, all on a canvas of the size of the biggest
+    and placed in it the way the game draws them centred. Empty when numpy is missing or a picture is None."""
+    if np is None or not pictures or any(k is None for k in pictures):
+        return []
+    size = (max(k.get_width() for k in pictures), max(k.get_height() for k in pictures))
+    arrays = [_on_canvas(k, size) for k in pictures]
+    out = []
+    for i, a in enumerate(arrays):
+        out.append(_surface(*a))
+        if i == len(arrays) - 1:
+            break
+        for j in range(1, steps + 1):
+            out.append(_mix(a, arrays[i + 1], j / float(steps + 1)))
+    return out
+
+
 def morph_sequence(ship, drawn, flight, steps=MORPH_STEPS, flash=False, flash_radius=FLASH_RADIUS):
     """The pictures of the transformation, ship first and the first picture of the flight last: `ship`, then the
     `drawn` pictures, then `flight`, with `steps` cross-dissolves between each two.
@@ -138,14 +159,7 @@ def morph_sequence(ship, drawn, flight, steps=MORPH_STEPS, flash=False, flash_ra
     if not drawn or any(k is None for k in keys):
         return []
     size = (max(k.get_width() for k in keys), max(k.get_height() for k in keys))
-    arrays = [_on_canvas(k, size) for k in keys]
-    plain = []
-    for i, a in enumerate(arrays):
-        plain.append(_surface(*a))
-        if i == len(arrays) - 1:
-            break
-        for j in range(1, steps + 1):
-            plain.append(_mix(a, arrays[i + 1], j / float(steps + 1)))
+    plain = dissolve(keys, steps)
     if not flash:
         return plain
     colour = flash_colour(flight)

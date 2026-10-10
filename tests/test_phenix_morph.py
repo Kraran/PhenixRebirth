@@ -224,27 +224,6 @@ def test_cancelling_in_the_middle_of_the_change_goes_back_from_where_it_was(game
     assert p.morph_dir < 0
 
 
-def test_the_shield_change_is_left_as_it_was(game):
-    from player import Player
-
-    p = Player(250, 200, ship_id="shield")
-    assert p.morph_frames and len(p.morph_frames) == len(p.shield_on_frames)
-    assert all(a is b for a, b in zip(p.morph_frames, p.shield_on_frames))      # not the Phenix sequence
-    p.phenix_gauge, p.phenix_cooldown = 10.0, 0.0
-    assert p.try_activate_phenix()
-    n = len(p.morph_frames)
-    p.morph_timer = p.morph_duration * 0.5
-    surf = pygame.Surface((500, 400))
-    surf.fill((0, 0, 0))
-    p.draw(surf)
-    expected = pygame.Surface((500, 400))
-    expected.fill((0, 0, 0))
-    expected.blit(p.image, (int(p.x - p.image.get_width() // 2), int(p.y - p.image.get_height() // 2)))
-    frame = p.morph_frames[int(0.5 * (n - 1) + 1e-6)]
-    expected.blit(frame, (int(p.x - frame.get_width() // 2), int(p.y - frame.get_height() // 2)))
-    assert (pygame.surfarray.array3d(surf) == pygame.surfarray.array3d(expected)).all()
-
-
 # --- the menu preview ----------------------------------------------------------------------------------------------
 
 def test_the_ship_select_preview_uses_the_same_change(game):

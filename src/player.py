@@ -16,7 +16,8 @@ from settings import *
 
 from settings import asset_path
 from errlog import log_exc
-from phenix_art import PHENIX_MORPH_IN_SEC, PHENIX_MORPH_OUT_SEC, lead_in, morph_sequence
+from phenix_art import (PHENIX_MORPH_IN_SEC, PHENIX_MORPH_OUT_SEC, SHIELD_IN_SEC, SHIELD_IN_STEPS, SHIELD_OUT_SEC,
+                        SHIELD_OUT_STEPS, dissolve, lead_in, morph_sequence)
 SHIP_PATH = asset_path("sprites", "player_ship.png")
 SHIP_PHOENIX_PATHS = {
     "argent": asset_path("sprites", "player_ship.png"),
@@ -228,8 +229,8 @@ class Player:
             self.phenix_cooldown = 0.0
             self.SHIELD_DURATION = 2.0
             self.SHIELD_COOLDOWN = 5.0
-            self.MORPH_IN_SEC = 0.22
-            self.MORPH_OUT_SEC = 0.26
+            self.MORPH_IN_SEC = SHIELD_IN_SEC
+            self.MORPH_OUT_SEC = SHIELD_OUT_SEC
         else:
             self.engine_offsets = (-8, 8)
             self.engine_ys = (0, 0)
@@ -249,6 +250,17 @@ class Player:
     @property
     def uses_shield(self):
         return getattr(self, "ship_id", "phoenix") == "shield"
+
+    def _dome_on_show(self):
+        """The dome picture drawn now (while it forms, or in the loop), or None."""
+        frames = getattr(self, "morph_frames", None) or []
+        if getattr(self, "morph_dir", 0) > 0 and frames and self.morph_duration > 0:
+            prog = min(1.0, self.morph_timer / self.morph_duration)
+            return frames[min(len(frames) - 1, int(prog * len(frames)))]
+        loop = getattr(self, "phenix_frames", None) or []
+        if loop:
+            return loop[int(self.phenix_anim_time * self.PHENIX_ANIM_FPS) % len(loop)]
+        return None
 
     def _load_shield_frames(self):
         self.shield_on_frames = []
@@ -274,7 +286,10 @@ class Player:
             self.shield_dome_w = fr0.get_width()
             self.shield_dome_h = fr0.get_height()
         if self.uses_shield:
-            self.morph_frames = list(self.shield_on_frames)
+            # the dome forming and going away, with pictures between the drawn ones
+            self.shield_in_seq = dissolve(self.shield_on_frames, SHIELD_IN_STEPS) or list(self.shield_on_frames)
+            self.shield_out_seq = dissolve(self.shield_off_frames, SHIELD_OUT_STEPS) or list(self.shield_off_frames)
+            self.morph_frames = list(self.shield_in_seq)
             self.phenix_frames = list(self.shield_loop_frames)
 
     def update(self, dt, keys, input_mode="keyboard", joystick=None, allow_shoot=True, ai_move=None, ai_shoot=None):
@@ -641,11 +656,12 @@ class Player:
             self.phenix_gauge = 10.0
             self.combo_streak = 0
             self.phenix_anim_time = 0.0
-            self.morph_frames = list(getattr(self, "shield_on_frames", None) or [])
+            self.morph_frames = list(getattr(self, "shield_in_seq", None) or getattr(self, "shield_on_frames", None) or [])
             self.phenix_frames = list(getattr(self, "shield_loop_frames", None) or [])
             self.morph_dir = 1 if self.morph_frames else 0
             self.morph_timer = 0.0
-            self.morph_duration = 0.22 if self.morph_frames else 0.0
+            self._morph_lead = []
+            self.morph_duration = self.MORPH_IN_SEC if self.morph_frames else 0.0
             self._special_lock = 0.40
             if getattr(self, "sounds", None):
                 try:
@@ -697,11 +713,17 @@ class Player:
         else:
             self.phenix_saved_gauge = None
 
+        shown_dome = self._dome_on_show() if self.uses_shield else None      # before the pictures are changed
         if self.uses_shield and getattr(self, "shield_off_frames", None):
-            self.morph_frames = list(self.shield_off_frames)
+            # stored like the Phenix's, in the order of the way in: the way out plays them backwards, so the dome
+            # goes from the drawn picture nearest the flight to the one that is nearly gone
+            self.morph_frames = list(reversed(getattr(self, "shield_out_seq", None) or self.shield_off_frames))
         if getattr(self, "morph_frames", None):
             start_timer, self._morph_lead = 0.0, []
-            if not self.uses_shield:
+            if self.uses_shield:
+                if shown_dome is not None:
+                    self._morph_lead = lead_in(shown_dome, self.morph_frames[-1])
+            else:
                 n = len(self.morph_frames)
                 if getattr(self, "morph_dir", 0) > 0:
                     # cancelled in the middle of the change: go back from the picture on show, not from the end
@@ -712,7 +734,7 @@ class Player:
                     self._morph_lead = lead_in(shown, self.morph_frames[-1])
             self.morph_dir = -1
             self.morph_timer = start_timer
-            self.morph_duration = 0.26 if self.uses_shield else self.MORPH_OUT_SEC
+            self.morph_duration = self.MORPH_OUT_SEC
             self.phenix_timer = 0.0
             if getattr(self, "sounds", None):
                 self.sounds.play("phenix_end", x=self.x)
@@ -1026,14 +1048,11 @@ class Player:
         if morph_dir != 0 and morph_frames:
             n = len(morph_frames)
             prog = 0.0 if self.morph_duration <= 0 else min(1.0, self.morph_timer / self.morph_duration)
-            lead = []                                   # pictures that open the way back (Phenix only)
-            if self.uses_shield:
-                idx = int(prog * (n - 1) + 1e-6) if morph_dir > 0 else int((1.0 - prog) * (n - 1) + 1e-6)
-            else:
-                # every picture gets its turn: the first is the ship, the last the first picture of the flight
-                lead = self._morph_lead if morph_dir < 0 else []
-                k = min(len(lead) + n - 1, int(prog * (len(lead) + n)))
-                idx = int(prog * n) if morph_dir > 0 else n - 1 - (k - len(lead))
+            # every picture gets its turn: the first is the ship (or no dome), the last the first picture of the
+            # flight (or of the dome); the way back opens with the pictures that join the one on show to it
+            lead = self._morph_lead if morph_dir < 0 else []
+            k = min(len(lead) + n - 1, int(prog * (len(lead) + n)))
+            idx = int(prog * n) if morph_dir > 0 else n - 1 - (k - len(lead))
             idx = max(0, min(n - 1, idx))
             img = lead[k] if lead and k < len(lead) else morph_frames[idx]
             extra = punch if self.uses_shield else 0
