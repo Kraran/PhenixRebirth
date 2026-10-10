@@ -12,6 +12,8 @@ The transformation (ship -> Phenix, and back) is drawn from a few pictures that 
 puts pictures between them (cross-dissolves), so that the change is smooth at the pace of the screen and starts
 and ends on exactly the pictures that come before and after it.
 """
+import os
+
 import pygame
 
 try:                         # the pictures between the drawn ones need numpy; without it the drawn ones are used as they are
@@ -77,6 +79,58 @@ def _mix(a, b, t):
     return _surface(rgb, alpha)
 
 
+FLOW_FILE = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "sprites", "morph_flow.npz")
+_flow_cache = {}
+
+
+def morph_flow(path=None):
+    """How the pictures of the transformation move into one another, as `(fab, fba)`: two lists with one array
+    (width, height, 2) for each two pictures in a row (ship, the drawn pictures, first flight picture), made by
+    tools/bake_morph_flow.py. `fab` says where a pixel of the first picture goes in the second, `fba` where a pixel of
+    the second comes from in the first. Together with their canvas size. None when numpy or the file is missing or
+    unreadable: the pictures between are then plain cross-dissolves."""
+    if np is None:
+        return None
+    path = path or FLOW_FILE
+    if path not in _flow_cache:
+        try:
+            with np.load(path) as data:
+                size = tuple(int(v) for v in data["size"])
+                fab, fba = data["fab"].astype(np.float32), data["fba"].astype(np.float32)
+            _flow_cache[path] = (size, list(fab), list(fba))
+        except Exception:      # missing, damaged, an older numpy: the game works without it
+            _flow_cache[path] = None
+    return _flow_cache[path]
+
+
+def _warp(img, flow, k):
+    """`img` (width, height, C) sampled at x + k * flow(x), bilinear, zero outside the picture."""
+    cw, ch = img.shape[:2]
+    gx, gy = np.meshgrid(np.arange(cw, dtype=np.float32), np.arange(ch, dtype=np.float32), indexing="ij")
+    sx, sy = gx + k * flow[..., 0], gy + k * flow[..., 1]
+    x0, y0 = np.floor(sx).astype(np.int32), np.floor(sy).astype(np.int32)
+    fx, fy = (sx - x0)[..., None], (sy - y0)[..., None]
+    out = np.zeros_like(img)
+    for dx, dy, w in ((0, 0, (1 - fx) * (1 - fy)), (1, 0, fx * (1 - fy)), (0, 1, (1 - fx) * fy), (1, 1, fx * fy)):
+        xi, yi = x0 + dx, y0 + dy
+        ok = ((xi >= 0) & (xi < cw) & (yi >= 0) & (yi < ch))[..., None]
+        out += np.where(ok, img[np.clip(xi, 0, cw - 1), np.clip(yi, 0, ch - 1)], 0.0) * w
+    return out
+
+
+def _mix_flow(a, b, t, fab, fba):
+    """Like `_mix`, but the details of `a` and `b` are first moved along the flow to where they are at t, so they
+    do not show through each other as a ghost."""
+    rgb_a, alpha_a = a
+    rgb_b, alpha_b = b
+    pa_ = np.dstack([rgb_a * (alpha_a / 255.0)[..., None], alpha_a])
+    pb_ = np.dstack([rgb_b * (alpha_b / 255.0)[..., None], alpha_b])
+    m = (1.0 - t) * _warp(pa_, fba, t) + t * _warp(pb_, fab, 1.0 - t)
+    alpha = np.maximum(m[..., 3], 0.0)
+    rgb = np.where(alpha[..., None] > 0.5, m[..., :3] * 255.0 / np.maximum(alpha, 1e-3)[..., None], 0.0)
+    return _surface(rgb, alpha)
+
+
 def flash_colour(flight):
     """The colour of the flash: the fire of the Phenix picture `flight` (the brightest fifth of its saturated pixels),
     at full strength and lifted a little toward white. About orange for the original, golden for the gold one, blue
@@ -123,24 +177,33 @@ def _with_flash(surf, level, colour, size, radius):
     return _surface(out_rgb, a_o * 255.0)
 
 
-def dissolve(pictures, steps=MORPH_STEPS):
+def dissolve(pictures, steps=MORPH_STEPS, flow=None):
     """The `pictures` in order, with `steps` cross-dissolves between each two, all on a canvas of the size of the biggest
-    and placed in it the way the game draws them centred. Empty when numpy is missing or a picture is None."""
+    and placed in it the way the game draws them centred. Empty when numpy is missing or a picture is None.
+
+    With `flow` (from `morph_flow`, when it fits the canvas and the number of pictures) the pictures between are made
+    by moving the details along the flow as well as fading, which does not leave the one picture as a ghost in the other."""
     if np is None or not pictures or any(k is None for k in pictures):
         return []
     size = (max(k.get_width() for k in pictures), max(k.get_height() for k in pictures))
     arrays = [_on_canvas(k, size) for k in pictures]
+    if flow is not None and not (flow[0] == size and len(flow[1]) == len(pictures) - 1 == len(flow[2])):
+        flow = None
     out = []
     for i, a in enumerate(arrays):
         out.append(_surface(*a))
         if i == len(arrays) - 1:
             break
         for j in range(1, steps + 1):
-            out.append(_mix(a, arrays[i + 1], j / float(steps + 1)))
+            t = j / float(steps + 1)
+            if flow is None:
+                out.append(_mix(a, arrays[i + 1], t))
+            else:
+                out.append(_mix_flow(a, arrays[i + 1], t, flow[1][i], flow[2][i]))
     return out
 
 
-def morph_sequence(ship, drawn, flight, steps=MORPH_STEPS, flash=False, flash_radius=FLASH_RADIUS):
+def morph_sequence(ship, drawn, flight, steps=MORPH_STEPS, flash=False, flash_radius=FLASH_RADIUS, use_flow=True):
     """The pictures of the transformation, ship first and the first picture of the flight last: `ship`, then the
     `drawn` pictures, then `flight`, with `steps` cross-dissolves between each two.
 
@@ -159,7 +222,7 @@ def morph_sequence(ship, drawn, flight, steps=MORPH_STEPS, flash=False, flash_ra
     if not drawn or any(k is None for k in keys):
         return []
     size = (max(k.get_width() for k in keys), max(k.get_height() for k in keys))
-    plain = dissolve(keys, steps)
+    plain = dissolve(keys, steps, morph_flow() if use_flow else None)
     if not flash:
         return plain
     colour = flash_colour(flight)

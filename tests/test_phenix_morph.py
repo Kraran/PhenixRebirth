@@ -163,9 +163,11 @@ def test_no_jump_in_the_change_is_bigger_than_the_flight_animation_makes_itself(
     p = Player(250, 200)
     shown_in, shown_flight, shown_out, _ship = _play(_flight(p))
     biggest = max(_steps(shown_flight))
-    # the flash is a deliberate rise in light, so the biggest step may be a little over the flight's own
-    assert max(_steps(shown_in + [shown_flight[0]])) <= 1.25 * biggest
-    assert max(_steps([shown_flight[-1]] + shown_out)) <= 1.25 * biggest  # the start of the way back too
+    # the flash is a deliberate rise in light, and the details now MOVE between the drawn pictures (the wings opening) instead
+    # of fading, which changes more pixels per picture than a fade does: the biggest step may be over the flight's own,
+    # but a pop (a picture that appears or goes at once) is several times bigger
+    assert max(_steps(shown_in + [shown_flight[0]])) <= 1.5 * biggest
+    assert max(_steps([shown_flight[-1]] + shown_out)) <= 1.5 * biggest  # the start of the way back too
 
 
 def test_the_change_in_ends_on_the_first_picture_of_the_flight(game):

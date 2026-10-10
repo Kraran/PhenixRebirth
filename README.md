@@ -74,6 +74,8 @@ added to the original frames by `python tools/extend_wings.py ORIGINAL_DIR OUT_D
 
 The transformation (ship to Phenix and back) is the few pictures drawn by hand plus cross-dissolves between them, made when the
 ship is chosen (`phenix_art.morph_sequence`, needs numpy: without it the drawn pictures are used as they are); the pace is `PHENIX_MORPH_IN_SEC` / `PHENIX_MORPH_OUT_SEC`.
+The pictures between the drawn ones move the details along a flow calculated once (`assets/sprites/morph_flow.npz`, made by
+`python tools/bake_morph_flow.py`, which needs OpenCV; the game needs only numpy), so the hull does not show through the wings as a ghost.
 A flash (lighter ship and a halo, in the colour of the Phenix's fire) peaks when the wings open (`FLASH_*` in the same file).
 The Shield dome forms and goes away the same way, from its drawn pictures with cross-dissolves between them (`dissolve`, `SHIELD_*`).
 
