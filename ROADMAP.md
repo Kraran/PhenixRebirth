@@ -304,3 +304,11 @@ Suggestions welcome via GitHub Issues.
   game, not only the look (a test holds the 0.22 + 2 + 0.26 s). A forming cancelled half way goes away from the picture
   on show. Without numpy the drawn pictures are used (the way out in the right order all the same). The ship select
   preview is as it was
+- Phenix transformation, pictures between the drawn ones made by motion instead of a plain fade: a cross-dissolve leaves the
+  hull showing through the wings as a ghost. `tools/bake_morph_flow.py` (the only place that needs OpenCV) measures with
+  optical flow how each picture of the change moves into the next and saves it in `assets/sprites/morph_flow.npz` (0.5 MB,
+  made once on the silver ship: the three colours have the same shape). The game applies it with numpy only
+  (`phenix_art.morph_flow`, `_warp`, `_mix_flow`): the details are moved along the flow, then faded. The last pair, where the
+  wings come out of nothing, uses 60 % of the flow (all of it stretches the feathers to the corners). Same 26 pictures,
+  same durations, same ends. Without the file, with a canvas that does not fit or without numpy, the pictures are plain
+  cross-dissolves. Run the tool again if the drawn pictures change. The Shield dome is as it was
