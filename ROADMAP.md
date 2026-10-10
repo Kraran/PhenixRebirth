@@ -293,3 +293,5 @@ Suggestions welcome via GitHub Issues.
   Phenix picture (`flash_colour`): orange, golden or blue by tint. It is baked into the pictures (a canvas 220x220, still
   centred, so the ship does not move). In the ship select preview the halo is smaller (`PREVIEW_FLASH_RADIUS`) and the
   panel keeps its size (`preview_extent`, `core_size`)
+- Ship select screen: the Phenix transformation plays a little slower there (0.65 s in, 0.60 s out instead of 0.45 and
+  0.40; `PREVIEW_MORPH_IN_SEC` / `PREVIEW_MORPH_OUT_SEC` in `src/phenix_art.py`). The game itself is not slowed

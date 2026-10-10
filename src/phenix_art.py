@@ -32,6 +32,8 @@ FLASH_GLOW = 0.80            # opacity of the halo at its brightest
 FLASH_LIGHT = 190            # how much the ship itself is lightened at the peak (0..255)
 PHENIX_MORPH_IN_SEC = 0.45   # ship -> Phenix
 PHENIX_MORPH_OUT_SEC = 0.40  # Phenix -> ship
+PREVIEW_MORPH_IN_SEC = 0.65  # the same in the ship select screen, where there is time to watch it
+PREVIEW_MORPH_OUT_SEC = 0.60
 
 
 def ship_size(frame):

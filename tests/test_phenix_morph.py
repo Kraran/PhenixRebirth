@@ -8,7 +8,8 @@ import numpy as np
 import pygame
 import pytest
 
-from phenix_art import LEAD_STEPS, MORPH_STEPS, PHENIX_MORPH_IN_SEC, PHENIX_MORPH_OUT_SEC, lead_in, morph_sequence
+from phenix_art import (LEAD_STEPS, MORPH_STEPS, PHENIX_MORPH_IN_SEC, PHENIX_MORPH_OUT_SEC, PREVIEW_MORPH_IN_SEC,
+                        PREVIEW_MORPH_OUT_SEC, lead_in, morph_sequence)
 from test_smoke import run  # noqa: F401  (fixture)
 
 
@@ -249,7 +250,7 @@ def test_the_shield_change_is_left_as_it_was(game):
 def test_the_ship_select_preview_uses_the_same_change(game):
     pack = game.preview_ships["phoenix_argent"]
     assert len(pack["on"]) == len(pack["off"]) == 5 * (MORPH_STEPS + 1) + 1
-    assert pack["on_sec"] == PHENIX_MORPH_IN_SEC and pack["off_sec"] == PHENIX_MORPH_OUT_SEC
+    assert pack["on_sec"] == PREVIEW_MORPH_IN_SEC and pack["off_sec"] == PREVIEW_MORPH_OUT_SEC
     assert pack["off"][0] is pack["on"][-1]
     assert "on_sec" not in game.preview_ships["shield"]                   # the shield preview is as it was
 
@@ -261,15 +262,15 @@ def test_the_preview_picks_pictures_over_the_whole_time_of_the_change(game):
     game.ship_cycle_phase = "to_special"
     game.ship_cycle_t = 0.0
     assert preview_cycle_frame(game, pack, pack["idle"], pack["anim"]) is pack["on"][0]
-    game.ship_cycle_t = PHENIX_MORPH_IN_SEC - 0.005
+    game.ship_cycle_t = PREVIEW_MORPH_IN_SEC - 0.005
     assert preview_cycle_frame(game, pack, pack["idle"], pack["anim"]) is pack["on"][-1]
-    game.ship_cycle_t = PHENIX_MORPH_IN_SEC / 2
+    game.ship_cycle_t = PREVIEW_MORPH_IN_SEC / 2
     mid = preview_cycle_frame(game, pack, pack["idle"], pack["anim"])
     assert mid is pack["on"][len(pack["on"]) // 2]
     game.ship_cycle_phase = "to_idle"
     game.ship_cycle_t = 0.0
     assert preview_cycle_frame(game, pack, pack["idle"], pack["anim"]) is pack["off"][0]
-    game.ship_cycle_t = PHENIX_MORPH_OUT_SEC - 0.005
+    game.ship_cycle_t = PREVIEW_MORPH_OUT_SEC - 0.005
     assert preview_cycle_frame(game, pack, pack["idle"], pack["anim"]) is pack["off"][-1]
 
 
@@ -278,12 +279,12 @@ def test_the_preview_changes_phase_when_the_change_is_over_not_before(game):
     game.ship_cycle_focus = 0
     game.ship_cycle_phase = "to_special"
     game.ship_cycle_t = 0.0
-    game._tick_preview_cycle(PHENIX_MORPH_IN_SEC - 0.05)
+    game._tick_preview_cycle(PREVIEW_MORPH_IN_SEC - 0.05)
     assert game.ship_cycle_phase == "to_special"
     game._tick_preview_cycle(0.06)
     assert game.ship_cycle_phase == "special"
     game.ship_cycle_phase, game.ship_cycle_t = "to_idle", 0.0
-    game._tick_preview_cycle(PHENIX_MORPH_OUT_SEC - 0.05)
+    game._tick_preview_cycle(PREVIEW_MORPH_OUT_SEC - 0.05)
     assert game.ship_cycle_phase == "to_idle"
     game._tick_preview_cycle(0.06)
     assert game.ship_cycle_phase == "idle"
@@ -443,3 +444,11 @@ def test_the_halo_is_round_and_centred_on_the_ship(game):
         assert len(around) == 1, d                                       # the same in every direction
     assert alpha[40, 40 + 20] > alpha[40, 40 + 35] > 0                   # fading out
     assert alpha[40, 79] == 0
+
+
+def test_the_preview_is_slower_than_the_game_but_only_a_little(game):
+    assert PHENIX_MORPH_IN_SEC < PREVIEW_MORPH_IN_SEC <= 1.6 * PHENIX_MORPH_IN_SEC
+    assert PHENIX_MORPH_OUT_SEC < PREVIEW_MORPH_OUT_SEC <= 1.6 * PHENIX_MORPH_OUT_SEC
+    from player import Player
+    p = Player(250, 200)
+    assert (p.MORPH_IN_SEC, p.MORPH_OUT_SEC) == (PHENIX_MORPH_IN_SEC, PHENIX_MORPH_OUT_SEC)     # the game itself is not slowed
