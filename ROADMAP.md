@@ -274,3 +274,9 @@ Suggestions welcome via GitHub Issues.
   same screen position with the same colour. The help page, which scaled the Phenix by the height of its picture, now
   scales it by the ship (`src/phenix_art.py`), so it does not shrink. The wing tips are an extrapolation made by
   `tools/extend_wings.py` (the originals are in git, commit f5fdcf4), not the lost drawing
+- Back from a MAME session, the game window did not always get the focus: Windows only lets the program in front
+  take the foreground, and the single `SetForegroundWindow` call was never checked. `src/window_focus.py` now joins
+  the input of the window in front, brings the game window up, checks that it is really the foreground window, tries
+  again up to 6 times (an Alt tap as a last resort), and the game asks once more after the black cover is removed.
+  A failure is written to `errors.log` ("the game window could not be put in front"). Written from the code and tested
+  with a fake Windows, not seen on a real one
