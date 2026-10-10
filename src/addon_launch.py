@@ -96,6 +96,10 @@ def launch_addon(game):
     except Exception:
         log_exc("addon_launch.launch_addon")
     try:
+        mame_addon.focus_pygame_window()        # taking the black cover away may have put another window in front
+    except Exception:
+        log_exc("addon_launch.launch_addon")
+    try:
         if getattr(game, "menu_screen", "") == "addon":
             game.sounds.play_music("nostalgie_elise")
         else:

@@ -12,7 +12,7 @@ import ctypes
 from ctypes import wintypes
 
 from settings import project_root, user_data_dir
-from errlog import log_exc
+from errlog import log_exc, log_note
 
 # XInput wButtons — shared read, does not steal the pad from MAME.
 _XI_BACK = 0x0020
@@ -1280,16 +1280,20 @@ def launch(set_name, wait=True, monitor_index=0, width=0, height=0):
 
 
 def focus_pygame_window():
+    """Bring the game window back in front, with the keyboard focus, once MAME is gone. True when it worked."""
     if not sys.platform.startswith("win"):
-        return
+        return True
     try:
         import pygame
+        from window_focus import bring_to_front
         wm = pygame.display.get_wm_info()
         hwnd = int(wm.get("window") or 0)
         if not hwnd:
-            return
-        user32 = ctypes.windll.user32
-        user32.ShowWindow(hwnd, 9)
-        user32.SetForegroundWindow(hwnd)
+            return False
+        ok = bring_to_front(hwnd)
+        if not ok:
+            log_note("addon.focus_pygame_window: the game window could not be put in front")
+        return ok
     except Exception:
         log_exc("addon.focus_pygame_window")
+        return False
