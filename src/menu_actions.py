@@ -188,6 +188,8 @@ def menu_confirm(game):
                 game.sounds.play(name)
         if isinstance(spec, dict) and spec.get("launch"):
             game._begin_adventure(spec)
+        elif isinstance(spec, dict) and spec.get("door"):
+            game._open_story_door(spec["door"])
     elif game.menu_screen == "addon":
         game._launch_addon()
     elif game.menu_screen == "jukebox":

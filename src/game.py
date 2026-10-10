@@ -316,7 +316,53 @@ class Game:
             self.hs_entries = load_highscores()
             self.menu_screen = "highscores"
 
+    # --- Options, Jukebox and Credits opened from the Adventure ---
+    DOOR_SCREENS = {"options": ("options", "reset_confirm"), "jukebox": ("jukebox",), "credits": ("credits",)}
+
+    def _open_story_door(self, door):
+        """The screen of the main menu that the Adventure tab `door` stands for. It looks and works as from the main
+        menu; B / Esc (or whatever else would go on to another menu screen) brings the Adventure back on that tab."""
+        if door not in self.DOOR_SCREENS:
+            return
+        self.story_door = door
+        self.menu_index = 0
+        self.menu_idle = 0.0
+        self.input_grace = 0.45          # the same press / key repeat must not act in the screen just opened
+        if door == "options":
+            self.menu_screen = "options"
+        elif door == "credits":
+            self.menu_screen = "credits"
+            self.credits_scroll = float(BASE_HEIGHT)
+            self.credits_from_start = True
+        else:
+            self._open_jukebox()
+
+    def _story_door_tick(self):
+        """Every frame: when the screen opened from the Adventure has been left for another one, the Adventure is
+        back on the tab it was opened from."""
+        door = getattr(self, "story_door", None)
+        if not door:
+            return
+        story = getattr(self, "story", None)
+        if (getattr(self, "started", False) or getattr(self, "attract_mode", False) or story is None
+                or getattr(self, "menu_screen", "") == "story_hub"):
+            self.story_door = None
+            return
+        if self.menu_screen in self.DOOR_SCREENS[door]:
+            return
+        self.story_door = None
+        if getattr(self, "menu_screen", "") == "jukebox":
+            self._leave_jukebox_audio()
+        story.pane = door
+        story.screen = "hub"
+        self.menu_screen = "story_hub"
+        self.menu_index = 1
+        self.menu_idle = 0.0
+        self.input_grace = 0.25
+
     def _extra_step(self, direction):
+        if getattr(self, "story_door", None):
+            return                      # opened from the Adventure: Left / Right are not for going to the scores
         order = ("highscores", "achievements", "jukebox")
         cur = getattr(self, "menu_screen", "")
         if cur not in order:
