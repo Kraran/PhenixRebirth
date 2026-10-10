@@ -13,7 +13,7 @@ import pygame
 from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
 from i18n import t
 from player import recolor_phenix_frames
-from phenix_art import PHENIX_MORPH_IN_SEC, PHENIX_MORPH_OUT_SEC, morph_sequence
+from phenix_art import PHENIX_MORPH_IN_SEC, PHENIX_MORPH_OUT_SEC, PREVIEW_FLASH_RADIUS, morph_sequence
 
 
 def load_ship_previews(game):
@@ -54,7 +54,7 @@ def load_ship_previews(game):
         anim_t = recolor_phenix_frames(pack_p["anim"], key)
         drawn_t = recolor_phenix_frames(pack_p["on"], key)
         # same transformation as in the game: the drawn pictures with pictures between them, ship to flight
-        change = morph_sequence(idle_t, drawn_t, anim_t[0] if anim_t else None)
+        change = morph_sequence(idle_t, drawn_t, anim_t[0] if anim_t else None, flash=True, flash_radius=PREVIEW_FLASH_RADIUS)
         game.preview_ships["phoenix_" + key] = {
             "idle": idle_t,
             "anim": anim_t,
@@ -62,6 +62,10 @@ def load_ship_previews(game):
             "off": list(reversed(change)) if change else recolor_phenix_frames(pack_p["off"], key),
         }
         if change:
+            # the panel is sized by the pictures without the halo, which may go a little beyond it
+            game.preview_ships["phoenix_" + key]["core_size"] = (
+                max(f.get_width() for f in [idle_t] + drawn_t + anim_t[:1]),
+                max(f.get_height() for f in [idle_t] + drawn_t + anim_t[:1]))
             game.preview_ships["phoenix_" + key]["on_sec"] = PHENIX_MORPH_IN_SEC
             game.preview_ships["phoenix_" + key]["off_sec"] = PHENIX_MORPH_OUT_SEC
     game.preview_ships["phoenix"] = game.preview_ships["phoenix_argent"]
@@ -137,6 +141,33 @@ def preview_cycle_frame(game, pack, idle, loop):
     return idle or (loop[0] if loop else None)
 
 
+def preview_extent(pack):
+    """(width, height, scale) of the panel of a ship preview: the idle picture at 168 px high, and room for every
+    picture of the ship (the halo of the flash is left out: it may go a little beyond the panel)."""
+    idle = pack.get("idle")
+    if idle is None:
+        return 168, 168, 1.0
+    scale = 168 / max(1, idle.get_height())
+    mw = mh = 1
+    for key in ("idle", "anim", "on", "off"):
+        frs = pack.get(key)
+        if frs is None:
+            continue
+        if not isinstance(frs, (list, tuple)):
+            frs = [frs]
+        core = pack.get("core_size") if key in ("on", "off") else None
+        if core:
+            mw = max(mw, int(core[0] * scale))
+            mh = max(mh, int(core[1] * scale))
+            continue
+        for fr in frs:
+            if fr is None:
+                continue
+            mw = max(mw, int(fr.get_width() * scale))
+            mh = max(mh, int(fr.get_height() * scale))
+    return mw, mh, scale
+
+
 def draw_ship_select(game, surface):
     slot = int(getattr(game, "ship_select_slot", 1) or 1)
     two_p = getattr(game, "play_mode", "solo") in ("hotseat", "coop")
@@ -168,28 +199,10 @@ def draw_ship_select(game, surface):
         tint = game._tint_of(sid, slot)
         pack = previews.get(sid + "_" + tint) or pack
         return pack
-    def _extent(pack):
-        idle = pack.get("idle")
-        if idle is None:
-            return 168, 168, 1.0
-        scale = 168 / max(1, idle.get_height())
-        mw = mh = 1
-        for key in ("idle", "anim", "on", "off"):
-            frs = pack.get(key)
-            if frs is None:
-                continue
-            if not isinstance(frs, (list, tuple)):
-                frs = [frs]
-            for fr in frs:
-                if fr is None:
-                    continue
-                mw = max(mw, int(fr.get_width() * scale))
-                mh = max(mh, int(fr.get_height() * scale))
-        return mw, mh, scale
     box_w = box_h = 1
     scales = {}
     for sid in ids:
-        mw, mh, sc = _extent(_pack_for(sid))
+        mw, mh, sc = preview_extent(_pack_for(sid))
         scales[sid] = sc
         box_w = max(box_w, mw)
         box_h = max(box_h, mh)
