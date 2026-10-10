@@ -67,6 +67,21 @@ def log_exc(where):
         pass
 
 
+def log_note(text):
+    """Record a line of text (no exception): the same line is only written once per session."""
+    try:
+        key = ("note", text)
+        if key in _seen:
+            _seen[key] += 1
+            return
+        if len(_seen) >= MAX_DISTINCT:
+            return
+        _seen[key] = 1
+        _append("[note] %s\n" % text)
+    except Exception:
+        pass
+
+
 def _summary():
     try:
         repeats = [(k, n) for k, n in _seen.items() if n > 1]

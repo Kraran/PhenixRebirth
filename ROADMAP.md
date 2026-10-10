@@ -281,3 +281,9 @@ Suggestions welcome via GitHub Issues.
   picture on show into it (`lead_in`), and a change cancelled half way goes back from the picture on show. The ship select
   preview plays the same pictures over the same time. The Shield ship change is as it was. The in-between pictures are
   computed, not drawn
+- Back from a MAME session, the game window did not always get the focus: Windows only lets the program in front
+  take the foreground, and the single `SetForegroundWindow` call was never checked. `src/window_focus.py` now joins
+  the input of the window in front, brings the game window up, checks that it is really the foreground window, tries
+  again up to 6 times (an Alt tap as a last resort), and the game asks once more after the black cover is removed.
+  A failure is written to `errors.log` ("the game window could not be put in front"). Written from the code and tested
+  with a fake Windows, not seen on a real one
