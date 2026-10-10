@@ -243,8 +243,8 @@ class Player:
             self.phenix_frames = recolor_phenix_frames(src_p, tint)
             # the drawn pictures of the change, with pictures between them: ship, drawn ones, first flight picture
             drawn = recolor_phenix_frames(src_m, tint)
-            self.morph_frames = morph_sequence(self.image, drawn, self.phenix_frames[0] if self.phenix_frames else None) \
-                or drawn
+            self.morph_frames = morph_sequence(
+                self.image, drawn, self.phenix_frames[0] if self.phenix_frames else None, flash=True) or drawn
 
     @property
     def uses_shield(self):

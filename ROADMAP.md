@@ -287,3 +287,9 @@ Suggestions welcome via GitHub Issues.
   again up to 6 times (an Alt tap as a last resort), and the game asks once more after the black cover is removed.
   A failure is written to `errors.log` ("the game window could not be put in front"). Written from the code and tested
   with a fake Windows, not seen on a real one
+- Flash in the Phenix transformation: the pictures in the middle of the change (ship to Phenix, and back) are lightened and
+  have a soft round halo behind them, strongest when the wings open and exactly nil at both ends, so the change starts and
+  ends on the plain pictures (`phenix_art.flash_level`, `FLASH_*`). The colour of the halo is taken from the fire of the
+  Phenix picture (`flash_colour`): orange, golden or blue by tint. It is baked into the pictures (a canvas 220x220, still
+  centred, so the ship does not move). In the ship select preview the halo is smaller (`PREVIEW_FLASH_RADIUS`) and the
+  panel keeps its size (`preview_extent`, `core_size`)
