@@ -12,8 +12,12 @@ The transformation (ship -> Phenix, and back) is drawn from a few pictures that 
 puts pictures between them (cross-dissolves), so that the change is smooth at the pace of the screen and starts
 and ends on exactly the pictures that come before and after it.
 """
-import numpy as np
 import pygame
+
+try:                         # the pictures between the drawn ones need numpy; without it the drawn ones are used as they are
+    import numpy as np
+except ImportError:          # pragma: no cover - exercised by a test that hides numpy
+    np = None
 
 WING_PAD_X = 16
 WING_PAD_Y = 12
@@ -68,7 +72,10 @@ def morph_sequence(ship, drawn, flight, steps=MORPH_STEPS):
     All the pictures have the size of the biggest and sit in it the way the game draws them centred, so each picture
     drawn centred at (x, y) puts every pixel of the original where it was. The drawn pictures themselves are not
     altered. Where a picture is transparent and the next is not, the pixel fades in (the colour is mixed
-    premultiplied by the alpha, so a half-transparent pixel is not darkened). Empty when there is nothing drawn."""
+    premultiplied by the alpha, so a half-transparent pixel is not darkened). Empty when there is nothing drawn, or
+    when numpy is missing (the caller then uses the drawn pictures)."""
+    if np is None:
+        return []
     keys = [ship] + list(drawn) + [flight]
     if not drawn or any(k is None for k in keys):
         return []
@@ -86,7 +93,9 @@ def morph_sequence(ship, drawn, flight, steps=MORPH_STEPS):
 
 def lead_in(start, end, steps=LEAD_STEPS):
     """`steps` pictures that fade `start` into `end`, neither of them included: they join the flight picture on show
-    to the first picture of the way back, which is another one of the flight."""
+    to the first picture of the way back, which is another one of the flight. Empty when numpy is missing."""
+    if np is None:
+        return []
     size = (max(start.get_width(), end.get_width()), max(start.get_height(), end.get_height()))
     a, b = _on_canvas(start, size), _on_canvas(end, size)
     return [_mix(a, b, j / float(steps + 1)) for j in range(1, steps + 1)]

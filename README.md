@@ -73,7 +73,7 @@ Always scale a frame by the size of the ship (`phenix_art.ship_size`), never by 
 added to the original frames by `python tools/extend_wings.py ORIGINAL_DIR OUT_DIR` (needs only pygame and numpy).
 
 The transformation (ship to Phenix and back) is the few pictures drawn by hand plus cross-dissolves between them, made when the
-ship is chosen (`phenix_art.morph_sequence`); the pace is `PHENIX_MORPH_IN_SEC` / `PHENIX_MORPH_OUT_SEC`.
+ship is chosen (`phenix_art.morph_sequence`, needs numpy: without it the drawn pictures are used as they are); the pace is `PHENIX_MORPH_IN_SEC` / `PHENIX_MORPH_OUT_SEC`.
 
 ## Run
 

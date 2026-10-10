@@ -286,3 +286,19 @@ def test_the_preview_changes_phase_when_the_change_is_over_not_before(game):
     assert game.ship_cycle_phase == "to_idle"
     game._tick_preview_cycle(0.06)
     assert game.ship_cycle_phase == "idle"
+
+
+# --- without numpy -----------------------------------------------------------------------------------------------
+
+def test_without_numpy_the_drawn_pictures_are_used_and_the_change_still_runs(game, monkeypatch):
+    import phenix_art
+    from player import Player
+
+    monkeypatch.setattr(phenix_art, "np", None)
+    ship, flight = _picture(10, 14, (200, 200, 200, 255)), _picture(31, 35, (255, 120, 0, 255))
+    assert morph_sequence(ship, [flight], flight) == [] and lead_in(ship, flight) == []
+    p = Player(250, 200)
+    assert len(p.morph_frames) == 4                                       # the drawn pictures, as before
+    _flight(p)
+    shown_in, _flight_pics, shown_out, _ship = _play(p)
+    assert shown_in and shown_out and p.morph_dir == 0
