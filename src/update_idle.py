@@ -15,6 +15,7 @@ def tick_housekeeping(game):
     """Music, fades, gamepad hot-plug, timers (runs every frame)."""
     game._tick_fade()
     game.title_timer += game.dt
+    game._story_door_tick()
     game._update_music()
     game._tick_listen_achs()
     if getattr(game, "sounds", None):

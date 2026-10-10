@@ -20,7 +20,10 @@ import videoclip
 from story_state import MISSIONS, SHOP, log_text   # noqa: F401  (re-exported for the tests)
 
 
-PANES = ("bestiary", "log", "hangar", "map")
+# Options, Jukebox and Credits are the three screens of the main menu, reached from here too, at the far left. They are
+# only a door each (A opens the real screen, B / Esc comes back to this tab): Left / Right change values there.
+DOOR_PANES = ("options", "jukebox", "credits")
+PANES = DOOR_PANES + ("bestiary", "log", "hangar", "map")
 CHEAT_UNLOCK = "UNLK"          # typed on the mission map: play any mission, save nothing
 PORTRAIT_H = 124                 # height of a hull portrait in the hangar (the ship select screen uses 168)
 GREY_MULT = (80, 80, 90, 160)    # the dimming of the ship select screen for the hull that is not chosen
@@ -614,6 +617,8 @@ class StoryHub:
                 self.start_scene(mission["id"], back_to="map", launch=True)       # the story comes first
                 return None
             return self._launch_selected()
+        if self.pane in DOOR_PANES:
+            return {"door": self.pane}               # the game opens the screen and brings us back here
         if self.pane == "log":
             replay = self.replay_entries()
             entry = replay[max(0, min(len(replay) - 1, self.log_cursor))]
@@ -766,6 +771,9 @@ class StoryHub:
             "map": t("story_map"),
             "log": t("story_log"),
             "bestiary": t("story_best"),
+            "options": t("options"),
+            "jukebox": t("jukebox"),
+            "credits": t("credits"),
         }[self.pane]
         ts = medium.render(title, True, (255, 150, 70))
         surface.blit(ts, (BASE_WIDTH // 2 - ts.get_width() // 2, 18))
@@ -782,6 +790,8 @@ class StoryHub:
             self._draw_map(surface, font, medium, small)
         elif self.pane == "bestiary":
             self._draw_bestiary(surface, font, medium, small)
+        elif self.pane in DOOR_PANES:
+            self._draw_door(surface, medium, small)
         else:
             self._draw_log(surface, font, small)
 
@@ -790,6 +800,9 @@ class StoryHub:
             "map": "story_hint_map",
             "log": "story_hint_log",
             "bestiary": "story_hint_best",
+            "options": "story_hint_door",
+            "jukebox": "story_hint_door",
+            "credits": "story_hint_door",
         }[self.pane]
         if self.paint_mode:
             hint_key = "story_hint_paint"
@@ -800,6 +813,9 @@ class StoryHub:
                 "log": "story_tab_log",
                 "hangar": "story_tab_hangar",
                 "map": "story_tab_map",
+                "options": "options",
+                "jukebox": "jukebox",
+                "credits": "credits",
             }[p])
             for p in PANES
         )
@@ -1134,6 +1150,16 @@ class StoryHub:
         if tiers["zoom"]:
             img = pygame.transform.scale(img, (img.get_width() * 2, img.get_height() * 2))
         return img
+
+    def _draw_door(self, surface, medium, small):
+        """The tab of a screen of the main menu: what it is, and how to open it."""
+        cx = BASE_WIDTH // 2
+        lines = _wrap(small, t("story_door_" + self.pane), 760)
+        y = BASE_HEIGHT // 2 - 40
+        for line in lines:
+            _text(surface, small, line, (190, 195, 215), y, centerx=cx)
+            y += 30
+        _text(surface, medium, t("story_door_open"), (255, 230, 120), y + 26, centerx=cx)
 
     def _draw_bestiary(self, surface, font, medium, small):
         """Left: the enemies met so far. Right: what the pilot has learned about the selected one."""

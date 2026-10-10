@@ -245,9 +245,9 @@ def test_the_bestiary_is_left_of_the_journal():
     hub.nav_h(-1)
     assert hub.pane == "bestiary"
     hub.nav_h(-1)
-    assert hub.pane == "bestiary"                        # first screen: it stops there
+    assert hub.pane == "credits"                         # Options, Jukebox and Credits come before it (test_story_doors)
     hub.nav_h(1)
-    assert hub.pane == "log"
+    assert hub.pane == "bestiary"
 
 
 def test_the_cursor_stays_inside_the_list():

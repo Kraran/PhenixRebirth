@@ -26,7 +26,7 @@ Free to play · Open source · MIT License
 
 ## Features
 
-- **Adventure** — chapter 1: Shield with a broken dome, mission map, bestiary unlocks, hangar credits
+- **Adventure** (Options, Jukebox and Credits are tabs at its far left) — chapter 1: Shield with a broken dome, mission map, bestiary unlocks, hangar credits
 - **Shield ship** — second craft: freeze + explosive barrier (2 s, 5 s cooldown)
 - Ship select at start (and P2 in hot-seat); blue tint only when both pick the same hull
 - Achievements (scrollable, dated)
