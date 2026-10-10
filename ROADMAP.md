@@ -274,3 +274,10 @@ Suggestions welcome via GitHub Issues.
   same screen position with the same colour. The help page, which scaled the Phenix by the height of its picture, now
   scales it by the ship (`src/phenix_art.py`), so it does not shrink. The wing tips are an extrapolation made by
   `tools/extend_wings.py` (the originals are in git, commit f5fdcf4), not the lost drawing
+- Smooth Phenix transformation, both ways: the change was 4 drawn pictures in 0.45 s (the last one never shown), began
+  on the second picture and popped in from the ship and out into the flight. It is now the ship, the 4 drawn pictures and
+  the first flight picture, with 4 cross-dissolves between each two (26 pictures, `phenix_art.morph_sequence`), so every
+  screen frame brings a new picture; the way back is the same pictures reversed, opened by 3 pictures that fade the flight
+  picture on show into it (`lead_in`), and a change cancelled half way goes back from the picture on show. The ship select
+  preview plays the same pictures over the same time. The Shield ship change is as it was. The in-between pictures are
+  computed, not drawn

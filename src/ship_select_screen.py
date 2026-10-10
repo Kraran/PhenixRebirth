@@ -13,6 +13,7 @@ import pygame
 from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
 from i18n import t
 from player import recolor_phenix_frames
+from phenix_art import PHENIX_MORPH_IN_SEC, PHENIX_MORPH_OUT_SEC, morph_sequence
 
 
 def load_ship_previews(game):
@@ -50,12 +51,19 @@ def load_ship_previews(game):
         ("gold", asset_path("sprites", "player_ship_gold.png")),
     ):
         idle_t = _load(path) or idle_p
+        anim_t = recolor_phenix_frames(pack_p["anim"], key)
+        drawn_t = recolor_phenix_frames(pack_p["on"], key)
+        # same transformation as in the game: the drawn pictures with pictures between them, ship to flight
+        change = morph_sequence(idle_t, drawn_t, anim_t[0] if anim_t else None)
         game.preview_ships["phoenix_" + key] = {
             "idle": idle_t,
-            "anim": recolor_phenix_frames(pack_p["anim"], key),
-            "on": recolor_phenix_frames(pack_p["on"], key),
-            "off": recolor_phenix_frames(pack_p["off"], key),
+            "anim": anim_t,
+            "on": change or drawn_t,
+            "off": list(reversed(change)) if change else recolor_phenix_frames(pack_p["off"], key),
         }
+        if change:
+            game.preview_ships["phoenix_" + key]["on_sec"] = PHENIX_MORPH_IN_SEC
+            game.preview_ships["phoenix_" + key]["off_sec"] = PHENIX_MORPH_OUT_SEC
     game.preview_ships["phoenix"] = game.preview_ships["phoenix_argent"]
     idle_s = _load(asset_path("sprites", "player_ship_shield.png"))
     anim_s, on_s, off_s = [], [], []
@@ -117,13 +125,14 @@ def preview_cycle_frame(game, pack, idle, loop):
     fps = 10.0
     on_fr = pack.get("on") or []
     off_fr = pack.get("off") or list(reversed(on_fr))
+    on_sec, off_sec = pack.get("on_sec"), pack.get("off_sec")      # set when the pictures are the whole change
     if ph == "to_special" and on_fr:
-        idx = min(len(on_fr) - 1, int(tt * fps))
+        idx = min(len(on_fr) - 1, int(tt * (len(on_fr) / on_sec if on_sec else fps)))
         return on_fr[idx]
     if ph == "special" and loop:
         return loop[int(tt * 8.0) % len(loop)]
     if ph == "to_idle" and off_fr:
-        idx = min(len(off_fr) - 1, int(tt * fps))
+        idx = min(len(off_fr) - 1, int(tt * (len(off_fr) / off_sec if off_sec else fps)))
         return off_fr[idx]
     return idle or (loop[0] if loop else None)
 

@@ -1213,7 +1213,8 @@ class Game:
             else:
                 self.ship_cycle_t = tt
         elif ph == "to_special":
-            need = max(0.08, len(on_fr) / fps) if on_fr else 0.08
+            need = (pack.get("on_sec") or len(on_fr) / fps) if on_fr else 0.08
+            need = max(0.08, need)
             if tt >= need:
                 self.ship_cycle_phase = "special"
                 self.ship_cycle_t = 0.0
@@ -1226,7 +1227,8 @@ class Game:
             else:
                 self.ship_cycle_t = tt
         elif ph == "to_idle":
-            need = max(0.08, len(off_fr) / fps) if off_fr else 0.08
+            need = (pack.get("off_sec") or len(off_fr) / fps) if off_fr else 0.08
+            need = max(0.08, need)
             if tt >= need:
                 self.ship_cycle_phase = "idle"
                 self.ship_cycle_t = 0.0
