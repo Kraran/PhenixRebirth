@@ -11,6 +11,35 @@ import os
 from settings import BASE_WIDTH, asset_path
 from i18n import t, t_help, t_list
 from errlog import log_exc
+from phenix_art import ship_size
+
+HELP_PHENIX_SHIP_H = 80          # height of the Phenix itself in the help icons (not of its canvas)
+
+
+def fit_art(surf, box_h=90, ship_h=None):
+    """`surf` shrunk so that its content is `box_h` high.
+
+    By default the content is what the picture shows (its picture is cropped to it first). With `ship_h`, the
+    height of the ship inside `surf` (the margin around it left out), the whole picture is scaled by the ship and
+    not cropped: the ship keeps its size and its place however far its wings go."""
+    if surf is None:
+        return None
+    if ship_h:
+        sc = box_h / float(max(1, ship_h))
+        return pygame.transform.smoothscale(
+            surf, (max(1, int(surf.get_width() * sc)), max(1, int(surf.get_height() * sc))))
+    try:
+        r = surf.get_bounding_rect(min_alpha=24)
+    except Exception:
+        r = surf.get_rect()
+    if r.width < 2 or r.height < 2:
+        src = surf
+    else:
+        src = surf.subsurface(r).copy()
+    sc = box_h / max(1, src.get_height())
+    return pygame.transform.smoothscale(
+        src, (max(1, int(src.get_width() * sc)), box_h)
+    )
 
 
 def build_help_icons(game):
@@ -71,20 +100,22 @@ def build_help_icons(game):
             img = pygame.image.load(path).convert_alpha()
         except Exception:
             continue
-        ph = 80
-        scale = ph / max(1, img.get_height())
-        pw = max(1, int(img.get_width() * scale))
-        frames.append(pygame.transform.smoothscale(img, (pw, ph)))
+        # the scale comes from the ship, not from its canvas: the canvas has a margin around the ship
+        scale = HELP_PHENIX_SHIP_H / max(1, ship_size(img)[1])
+        frames.append(pygame.transform.smoothscale(
+            img, (max(1, int(img.get_width() * scale)), max(1, int(img.get_height() * scale)))))
+    game.help_icons["phenix_ship_h"] = HELP_PHENIX_SHIP_H if frames else None
     if not frames:
         for name in ("phenix_04.png", "morph_03.png", "phenix_00.png"):
             path = os.path.join(phenix_dir, name)
             if os.path.isfile(path):
                 try:
                     img = pygame.image.load(path).convert_alpha()
-                    ph = 80
-                    scale = ph / max(1, img.get_height())
-                    pw = max(1, int(img.get_width() * scale))
-                    frames.append(pygame.transform.smoothscale(img, (pw, ph)))
+                    padded = name.startswith("phenix_")           # morph frames have no margin
+                    scale = HELP_PHENIX_SHIP_H / max(1, ship_size(img)[1] if padded else img.get_height())
+                    frames.append(pygame.transform.smoothscale(
+                        img, (max(1, int(img.get_width() * scale)), max(1, int(img.get_height() * scale)))))
+                    game.help_icons["phenix_ship_h"] = HELP_PHENIX_SHIP_H if padded else None
                     break
                 except Exception:
                     log_exc("help_screen.build_help_icons")
@@ -195,21 +226,8 @@ def draw_help_page(game, surface, page, y_off):
         surface.blit(note2, (col_r, yy(y)))
     else:
         # Page 2 — Phenix (left) + Shield (right), same ship size
-        def _fit(surf, box_h=90):
-            if surf is None:
-                return None
-            try:
-                r = surf.get_bounding_rect(min_alpha=24)
-            except Exception:
-                r = surf.get_rect()
-            if r.width < 2 or r.height < 2:
-                src = surf
-            else:
-                src = surf.subsurface(r).copy()
-            sc = box_h / max(1, src.get_height())
-            return pygame.transform.smoothscale(
-                src, (max(1, int(src.get_width() * sc)), box_h)
-            )
+        def _fit(surf, box_h=90, ship_h=None):
+            return fit_art(surf, box_h, ship_h)
 
         body_font = getattr(game, "help_small", None)
         if body_font is None:
@@ -260,9 +278,9 @@ def draw_help_page(game, surface, page, y_off):
             canvas.blit(fs, ((cw - fs.get_width()) // 2, (ch - fs.get_height()) // 2))
             return canvas
 
-        def _art_row(hx, col_w, art_left, art_right, hcol, art_y, right_is_shield=False, hull_h=90):
+        def _art_row(hx, col_w, art_left, art_right, hcol, art_y, right_is_shield=False, hull_h=90, right_ship_h=None):
             left = _fit(art_left, hull_h)
-            right = _fit_shield(art_left, art_right, hull_h) if right_is_shield else _fit(art_right, hull_h)
+            right = _fit_shield(art_left, art_right, hull_h) if right_is_shield else _fit(art_right, hull_h, right_ship_h)
             arrow = game._txt(game.medium_font, ">>>", hcol)
             total = arrow.get_width() + 20
             if left is not None:
@@ -290,5 +308,6 @@ def draw_help_page(game, surface, page, y_off):
         y_l = _text_col("PHENIX", t_list("phenix"), lx, col_w, (255, 160, 80), 146)
         y_r = _text_col("SHIELD", t_list("shield"), rx, col_w, (120, 200, 255), 146)
         art_y = max(y_l, y_r) + 16
-        _art_row(lx, col_w, game.help_icons.get("ship"), phenix, (255, 160, 80), art_y)
+        _art_row(lx, col_w, game.help_icons.get("ship"), phenix, (255, 160, 80), art_y,
+                 right_ship_h=game.help_icons.get("phenix_ship_h"))
         _art_row(rx, col_w, game.help_icons.get("ship_shield"), bubble, (120, 200, 255), art_y, right_is_shield=True)

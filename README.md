@@ -66,6 +66,12 @@ slide uses `picture_name` plays the clip by itself. Without ffmpeg the poster is
 The boot intro and the jukebox video are one more clip, `assets/video/intro.mp4`, with its music `assets/video/intro.ogg`
 (`python tools/encode_clip.py my_intro.mp4 intro --no-loop --no-poster --crf 23 --out-dir assets/video`).
 
+## Phenix frames
+
+The Phenix flight frames are drawn on a canvas larger than the ship (`src/phenix_art.py`): the margin holds the wing tips.
+Always scale a frame by the size of the ship (`phenix_art.ship_size`), never by the size of the picture. The wing tips were
+added to the original frames by `python tools/extend_wings.py ORIGINAL_DIR OUT_DIR` (needs only pygame and numpy).
+
 ## Run
 
 ```bash

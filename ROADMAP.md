@@ -267,4 +267,10 @@ Suggestions welcome via GitHub Issues.
   boot intro is left out and the jukebox shows nothing for that entry
 - Video clips: the player now also plays a clip once (`loop=False`, `ended`), fits it in a box (`fit="contain"`, size
   read from the mp4 header by `videoclip.mp4_info`) and can keep a hard clock; `tools/encode_clip.py` got `--no-poster`
-
+- Phenix wing tips: the eight flight frames (`assets/sprites/phenix/phenix_NN.png`) were cut by the edge of their canvas
+  on both sides (and at the top, on the flame frames). They now sit on a canvas 16 px wider on each side and 12 px taller
+  above and below (105x134 instead of 73x110), the wings going on past the old edge and ending in a point. The margin is
+  even on every side, so the ship keeps its size and its place: drawn in the game, every pixel of the old ship is at the
+  same screen position with the same colour. The help page, which scaled the Phenix by the height of its picture, now
+  scales it by the ship (`src/phenix_art.py`), so it does not shrink. The wing tips are an extrapolation made by
+  `tools/extend_wings.py` (the originals are in git, commit f5fdcf4), not the lost drawing
