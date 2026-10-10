@@ -295,3 +295,12 @@ Suggestions welcome via GitHub Issues.
   panel keeps its size (`preview_extent`, `core_size`)
 - Ship select screen: the Phenix transformation plays a little slower there (0.65 s in, 0.60 s out instead of 0.45 and
   0.40; `PREVIEW_MORPH_IN_SEC` / `PREVIEW_MORPH_OUT_SEC` in `src/phenix_art.py`). The game itself is not slowed
+- Shield dome, smoother and in the right order: the way out played the drawn pictures backwards (the dome vanished at
+  once, came back to half its size, then vanished again). It now fades from the dome on show into the first picture of the
+  way out and shrinks to nothing in order. Pictures are added between the drawn ones as for the Phenix (8 drawn make 15 for
+  the forming, 6 make 16 for the going away: `phenix_art.dissolve`, `SHIELD_*`), so a new picture shows at almost every screen
+  frame (6 of 14 before). The durations are unchanged (0.22 s forming, 0.26 s going away): the 2 s countdown of the
+  bubble waits for the forming and its 5 s cooldown starts after the going away, so longer durations would change the
+  game, not only the look (a test holds the 0.22 + 2 + 0.26 s). A forming cancelled half way goes away from the picture
+  on show. Without numpy the drawn pictures are used (the way out in the right order all the same). The ship select
+  preview is as it was
