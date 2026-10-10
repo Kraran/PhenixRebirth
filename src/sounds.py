@@ -107,6 +107,7 @@ class SoundManager:
                 ("gameover_vo", 0.92),
                 ("welcome_shield", 1.00),
                 ("paint_fanfare", 0.85),          # the Shield is painted (adventure paint shop)
+                ("anchor_return", 0.80),          # a mission is lost: back to base by the quantum anchor
             ]:
                 self._load(name, f"{name}.wav", vol)
             self.enabled = len(self.sounds) > 0

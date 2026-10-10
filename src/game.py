@@ -66,6 +66,7 @@ import ship_select_screen
 import highscores_screen
 import credits_screen
 import update_idle
+import anchor_fx
 import update_play
 import input_events
 import draw_frame
@@ -1796,10 +1797,52 @@ class Game:
         self._setup_stage(waves[i])
         return True
 
+    def _anchor_snapshot(self):
+        """The mission as it is on screen now, as a picture of its own (None if it cannot be drawn)."""
+        canvas = self.game_surface
+        snap = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+        self.game_surface = snap
+        try:
+            draw_frame.draw_background(self)
+            draw_frame.draw_play(self)
+        except Exception:
+            log_exc("game._anchor_snapshot")
+            return None
+        finally:
+            self.game_surface = canvas
+        return snap
+
+    def _start_anchor_return(self, snapshot):
+        """The mission was lost: the quantum double of the ship appears again at the base (Normal mode). The picture of the
+        mission is drawn into a whirlwind, a flash, and the map comes back (src/anchor_fx.py)."""
+        title = self.medium_font.render(t("story_anchor_title"), True, (190, 235, 255))
+        sub = self.font.render(t("story_anchor_sub"), True, (150, 200, 240))
+        self.anchor_fx = anchor_fx.make(snapshot, title, sub)
+        if self.anchor_fx is not None:
+            self._anchor_phase = "swirl"
+            try:
+                self.sounds.play("anchor_return")
+            except Exception:
+                log_exc("game._start_anchor_return")
+
+    def _tick_anchor_fx(self):
+        """Every frame: the return to base goes on; the map must not act on keys until it is back in sight."""
+        fx = getattr(self, "anchor_fx", None)
+        if fx is None:
+            return
+        fx.update(self.dt)
+        if fx.done:
+            self.anchor_fx = None
+            return
+        if fx.phase == "fade" and getattr(self, "_anchor_phase", "") != "fade":
+            self._anchor_phase = "fade"
+            self.input_grace = max(float(self.input_grace or 0.0), 0.3)      # a key held down must not act on the map
+
     def _end_adventure(self, cleared):
         """Bank the run into the hangar and return to the mission map."""
         spec = getattr(self, "adventure", None) or {}
         self.sounds.stop_sfx("saucer_pass", 150)
+        snapshot = None if cleared else self._anchor_snapshot()
         score = int(getattr(self, "score", 0) or 0)
         story = getattr(self, "story", None)
         if story is not None:
@@ -1819,6 +1862,8 @@ class Game:
         self.shake_amount = 0.0
         self.menu_screen = "story_hub"
         self.input_grace = 0.4
+        if snapshot is not None and story is not None and getattr(story, "screen", "") == "hub":
+            self._start_anchor_return(snapshot)         # (a fallen Veteran has no anchor: the slot list comes at once)
         try:
             self.sounds.play_electric(False)
         except Exception:
@@ -3692,6 +3737,8 @@ class Game:
                 if event.type == pygame.KEYDOWN and event.key == pygame.K_F12:
                     self.take_screenshot()
                 continue
+            elif self._anchor_blocks(event):
+                continue
             elif event.type == pygame.KEYDOWN:
                 input_events.on_keydown(self, event)
 
@@ -3704,6 +3751,22 @@ class Game:
                 input_events.on_joy_hat(self, event)
             elif event.type == pygame.JOYAXISMOTION:
                 input_events.on_joy_axis(self, event)
+
+    def _anchor_blocks(self, event):
+        """While the vortex and the flash are on screen the map is not in sight: keys do nothing, except that a confirm /
+        back key or a pad button skips to the end of the flash (and F12 still takes a screenshot)."""
+        fx = getattr(self, "anchor_fx", None)
+        if fx is None or fx.phase not in ("swirl", "flash"):
+            return False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_F12:
+                self.take_screenshot()
+            elif event.key in (pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE, pygame.K_ESCAPE):
+                fx.skip()
+        elif event.type == pygame.JOYBUTTONDOWN:
+            fx.skip()
+        return event.type in (pygame.KEYDOWN, pygame.KEYUP, pygame.JOYBUTTONDOWN, pygame.JOYHATMOTION,
+                              pygame.JOYAXISMOTION)
 
     # --- Simulation step ---
     def _sync_invader_voices(self):
@@ -3993,6 +4056,10 @@ class Game:
         # FPS counter (top-right) — refresh text ~4 Hz to avoid constant render
         if self.show_fps:
             draw_frame.draw_fps_counter(self)
+
+        fx = getattr(self, "anchor_fx", None)
+        if fx is not None and not self.started:
+            fx.draw(self.game_surface)             # the return to base: over the map, before the CRT effects
 
         draw_frame.draw_post_effects(self)
 

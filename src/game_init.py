@@ -274,6 +274,7 @@ def init_input_menu(game):
 
     # Menu state: "main" | "options" | "story_hub"
     game.menu_screen = "main"
+    game.anchor_fx = None            # the return to base by the quantum anchor, while it is playing (src/anchor_fx.py)
     game.story = StoryHub()
     game.menu_index = 0
     # Difficulty is session-only (not in settings.json) but must survive soft resets
