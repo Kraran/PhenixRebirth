@@ -72,6 +72,9 @@ The Phenix flight frames are drawn on a canvas larger than the ship (`src/phenix
 Always scale a frame by the size of the ship (`phenix_art.ship_size`), never by the size of the picture. The wing tips were
 added to the original frames by `python tools/extend_wings.py ORIGINAL_DIR OUT_DIR` (needs only pygame and numpy).
 
+The transformation (ship to Phenix and back) is the few pictures drawn by hand plus cross-dissolves between them, made when the
+ship is chosen (`phenix_art.morph_sequence`); the pace is `PHENIX_MORPH_IN_SEC` / `PHENIX_MORPH_OUT_SEC`.
+
 ## Run
 
 ```bash
