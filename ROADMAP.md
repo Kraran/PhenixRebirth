@@ -110,6 +110,21 @@ Current release: **v1.4.5**
 - Adventure scenes: Wallems' workshop (Paint I) is now a video too: `assets/story/atelier_wallems.mp4` (the 752x416 video given,
   6 s, no sound, loop without a seam, 0.2 MB), made with `tools/encode_clip.py`; the still stays as the poster. No code
   change (a slide with a clip plays it). Tests: `tests/test_story_scene_paint.py`
+- Adventure intro read aloud (French only): each of the four slides has a recorded voice (`assets/story/voice/story_intro_1.ogg`,
+  `_2`, `_3`, `_4` (Normal) and `_4v` (Veteran: Kamarasov's death); recorded with ElevenLabs, voice "Eliott"; the name of the
+  pilot is not said: "moi, j'en suis maintenant certain"). The voice starts 1.6 s after the slide appears; the music steps back
+  (the announcer channel). The text no longer scrolls at its own speed: it follows the voice, the line being said is kept near
+  the middle of the screen (it comes down slowly, 380 to 500 px), the text first rises into place in 3.2 s, and it goes on rising
+  until the voice ends (so the text is longer than the screen or not, the line said is on screen). `assets/story/voice/marks.json`
+  says when each line is said (start, end, in seconds), made by `tools/make_intro_voice.py story_intro_1=take.mp3 ...`: it
+  evens out the level, cuts the silence at both ends, writes the ogg and finds the times of the lines from the pauses of the
+  recording (printed, to be read: run it again if a time is wrong). A missing or damaged `marks.json` or a recording that
+  cannot play gives the old scroll at its own speed (as do the other languages, the muted sound, `sfx_muted`). Up / Down still
+  speed the text up or back, which then comes back to the voice in a moment. The slide being left (A, B / Esc, the end of the
+  story) stops the voice with a short fade. Replaying the intro from the journal reads it again. Code: `StoryHub._tick_voice`,
+  `_voice_target`, `_voice_scroll`, `SoundManager.play_narration` / `stop_narration` / `narration_busy`,
+  `story_state.intro_voice`. The Credits name the service (the free plan asks for it): "Voix de l'introduction : ElevenLabs
+  (elevenlabs.io)". Two takes of slide 3 were given (files 3 and 4): the newer one (4) is the one used. Tests: `tests/test_intro_voice.py`
 - Adventure: four save slots instead of three (`SLOT_COUNT = 4`, `story_4.json`); the slot list shows four cards
 - Adventure: a mission no longer says the next level out loud when its boss falls (the arcade still does)
 - Adventure scenes: the Paint I text uses the "…" sign instead of three dots, like the other scenes

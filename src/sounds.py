@@ -393,6 +393,57 @@ class SoundManager:
         except Exception:
             self._play_on_channel(snd, gain)
 
+    def play_narration(self, path, volume=0.90):
+        """A long recorded voice (the Adventure intro) on the announcer channel: the music steps back as for the announcer.
+        The file is loaded when it starts and let go of when it stops. True when it plays."""
+        self.stop_narration()
+        if not self.enabled or getattr(self, "sfx_muted", False) or not path:
+            return False
+        try:
+            snd = pygame.mixer.Sound(path)
+            gain = max(0.0, min(1.0, float(volume))) * self.master_volume
+            ch = pygame.mixer.Channel(0)
+            ch.play(snd)
+            ch.set_volume(gain, gain)
+        except Exception:
+            log_exc("sounds.play_narration")
+            return False
+        self._vo_channel = ch
+        self._narration = snd
+        self._vo_t0 = pygame.time.get_ticks() * 0.001
+        try:
+            self._vo_len = float(snd.get_length())
+        except Exception:
+            self._vo_len = 0.0
+        return True
+
+    def narration_busy(self):
+        """True while the recorded voice started by play_narration is still speaking."""
+        snd = getattr(self, "_narration", None)
+        ch = getattr(self, "_vo_channel", None)
+        if snd is None or ch is None:
+            return False
+        try:
+            return bool(ch.get_busy()) and ch.get_sound() is snd
+        except Exception:
+            return False
+
+    def stop_narration(self, fade_ms=250):
+        """Stop the recorded voice (a short fade, not a click) and let go of its memory."""
+        snd = getattr(self, "_narration", None)
+        if snd is None:
+            return
+        self._narration = None
+        try:
+            ch = getattr(self, "_vo_channel", None)
+            if ch is not None and ch.get_sound() is snd:
+                if fade_ms and ch.get_busy():
+                    ch.fadeout(int(fade_ms))
+                else:
+                    ch.stop()
+        except Exception:
+            log_exc("sounds.stop_narration")
+
     def vo_progress(self):
         """0..1 how far the current announcer clip has played."""
         if not self.vo_is_busy():

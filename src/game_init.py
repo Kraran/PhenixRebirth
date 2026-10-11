@@ -395,6 +395,7 @@ def init_audio_and_layout(game, soft):
 
     if not soft or not getattr(game, "sounds", None):
         game.sounds = SoundManager()
+    game.story.sounds = game.sounds                  # the Adventure intro is read aloud
     game.sounds.set_master_volume(game.sfx_volume)
     game.sounds.set_music_volume(game.music_volume)
     game._apply_audio_mix()
