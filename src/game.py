@@ -1852,14 +1852,8 @@ class Game:
                 log_exc("game._end_adventure")
         self.adventure = None
         self.started = False
-        self.game_over = False
-        self.hs_phase = None
-        self.paused = False
-        self.quit_confirm = False
-        self.stage_transition = None
-        self.boss_saucer = None
-        self.explosions = []        # the menu would redraw them frozen (nothing updates them there)
-        self.shake_amount = 0.0
+        self._stop_go_rumble()
+        game_init.reset_run(self)   # a new ship, formation, score... : the next game must not inherit the dead mission
         self.menu_screen = "story_hub"
         self.input_grace = 0.4
         if snapshot is not None and story is not None and getattr(story, "screen", "") == "hub":

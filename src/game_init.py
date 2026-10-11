@@ -96,6 +96,57 @@ def init_display(game):
         log_exc("game_init.init_display")
 
 
+def reset_run(game):
+    """Forget the run that has just ended: a new ship and formation, no score, no stage, nothing of the old death
+    sequence (hot-seat hold, game over card, high-score queues). The menus, the settings and the story stay as they are.
+    A mission of the Adventure ends here (it does not go through the soft restart of "Quit game"), so without it the
+    next game would start with the dead ship of the mission and run its game over at once."""
+    game.player = Player(BASE_WIDTH // 2, BASE_HEIGHT - 95)
+    game.player.sounds = getattr(game, "sounds", None)
+    game.player2 = None
+    game.formation = EnemyFormation()
+    game.formation.sounds = getattr(game, "sounds", None)
+    game.explosions = []
+    game.tesla_fx = None
+    game.score = 0
+    game.game_over = False
+    game.hs_phase = None
+    game.stage = 1
+    game.stage_transition = None
+    game.transition_timer = 0.0
+    game.boss_saucer = None
+    game.boss_bird_timer = 0.0
+    game._boss_angry_queue = []
+    game._boss_cry_quiet = 0.0
+    game.bosses_defeated = 0
+    game.life_flash_timer = 0.0
+    game.life_flash_index = -1
+    game.life_thresholds = [(1337, False), (8086, False)]
+    game.stage_life_lost = False
+    game.stage_touched_edge = False
+    game.paused = False
+    game.pause_index = 0
+    game.pause_options = False
+    game.quit_confirm = False
+    game.hotseat = False
+    game.slots = [None, None]
+    game.current_p = 0
+    game.lives_shared = 5
+    game.hotseat_wait = False
+    game.hotseat_next = 0
+    game.hotseat_hold = 0.0
+    game.hotseat_pending = None
+    game.hs_queue = []
+    game.hs_coop_queue = []
+    game.hs_slot_label = 1
+    game.go_card_t = 0.0
+    game.go_card_after = "hs"
+    game.go_card_player = None
+    game.go_rumble_on = False
+    game.hitstop = 0.0
+    game.shake_amount = 0.0
+
+
 def init_run_state(game):
     """Player, formation, scores, high scores, achievements, pause/hot-seat/help/credits state."""
     game.player = Player(BASE_WIDTH // 2, BASE_HEIGHT - 95)
