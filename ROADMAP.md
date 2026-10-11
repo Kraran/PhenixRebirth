@@ -101,6 +101,12 @@ Current release: **v1.4.5**
 - Adventure scenes: a slide picture can be a looping video clip, `assets/story/<name>.mp4` (see "Video clips" below),
   with the same shading, reading band and scrolling text; a missing or broken clip shows the still picture. First
   clip: the blue birds of the first sortie (10 s, picture only, the video's sound is not used)
+- Adventure intro: the four slides (Huygens, its destruction, Phobos, Kamarasov) and the Veteran's last one (Kamarasov's
+  death) are now video clips instead of stills: `assets/story/huygens.mp4`, `huygens_destroyed.mp4`, `phobos.mp4`,
+  `kamarasov.mp4`, `kamarasov_veteran.mp4`, made with `tools/encode_clip.py` from the 752x416 videos given (6 s, Phobos 10 s;
+  no sound, 24 fps, a loop without a seam, 0.3 to 0.7 MB each). Nothing in the code changed: a slide whose picture has a
+  clip plays it (see above), so the same applies to the replay from the journal. The stills stay as posters (shown while
+  a clip starts, or without ffmpeg). Tests: `tests/test_intro_videos.py`
 - Adventure: four save slots instead of three (`SLOT_COUNT = 4`, `story_4.json`); the slot list shows four cards
 - Adventure: a mission no longer says the next level out loud when its boss falls (the arcade still does)
 - Adventure scenes: the Paint I text uses the "…" sign instead of three dots, like the other scenes
