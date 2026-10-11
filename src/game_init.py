@@ -108,6 +108,8 @@ def reset_run(game):
     game.formation.sounds = getattr(game, "sounds", None)
     game.explosions = []
     game.tesla_fx = None
+    game.loot = None                 # an Adventure loot item falling, and the line that tells it was caught
+    game.loot_note = None
     game.score = 0
     game.game_over = False
     game.hs_phase = None
@@ -154,6 +156,8 @@ def init_run_state(game):
     game.explosions = []
     # old explosion.py has no delay_frames — wrap once
     game.tesla_fx = None
+    game.loot = None
+    game.loot_note = None
     game.starfield = Starfield()
 
     game.running = True

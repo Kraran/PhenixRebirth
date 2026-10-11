@@ -138,6 +138,21 @@ Current release: **v1.4.5**
 - Adventure paint shop: the background music fades down to 12 % in half a second while the trumpets play and comes back
   over their last 2 seconds (`SoundManager.MUSIC_FADE`, `fade_music`, smooth curve, product with the announcer duck;
   nothing when the sound is muted or does not play). Tests: `tests/test_music_fade.py`
+- Adventure, loot items: four single-use objects that fall during a mission (`src/story_items.py` for the rules, `src/loot.py` for the
+  falling sprite and the pictures, tests `tests/test_story_items.py` and `tests/test_loot_in_mission.py`). **Singularity Core**
+  (6000 PTS, fire rate x2: the bullets fly twice as fast, so the ship fires twice as often), **Noyau Genesis** (6000, one more
+  life), **Réacteur Hyperion** (4000, speed +40 %: the speed of the workshop x 1.4), **Tesla Seal** (2000, the electric walls
+  do nothing, Shield and Phenix form). Life of an item in one Act: lootable -> found (caught during a mission, on sale in the
+  hangar workshop until bought) -> installed (bought: works in the next mission that ends, shown top right) -> used (gone for
+  the Act, never falls again). One copy at a time, never twice in an Act; a new Act gives them all back. Loot is rare: at most one
+  mission in three carries an item (a drop needs two missions without one before it, then 40 % per mission), and it falls 6 to
+  30 s into the mission, from the top of the screen to the bottom (130 px/s) at a place the ship can still reach. Caught = touched
+  by the ship. Recorded when the mission ends, win or lose (`record_result(..., loot=, used=)`); leaving a mission by choice records
+  nothing and uses nothing, like the points. Sprites: `assets/items/<id>.png` (36 frames, about 44 px, the size of the birds of
+  the stages 1 and 2) and `<id>_icon.png` (the workshop), made from the videos and pictures given with
+  `tools/make_item_sprites.py`. The workshop shows a picture, the effect and the price per item, and the description of the
+  focused item under the list (six rows at a time). Save: `items` key (additive, version 4 unchanged). The replay reference
+  of the `adventure` scenario was regenerated (the drop draw uses the random generator)
 - Adventure, Act 2: new Bestiary hunt "the Avioid commander" (`best_boss`), right after the four Bestiary hunts. It
   flies the arcade boss level (stage 5), can be replayed, and goes up one level at each victory (boss of stage 5, 10,
   15...), like the other hunts. It counts for the Bestiary boss entry

@@ -137,6 +137,8 @@ class Player:
         self.PHENIX_COOLDOWN_SEC = 1.25
         
         self.lives = PLAYER_MAX_LIVES
+        self.bullet_speed_mult = 1.0     # Adventure loot (Singularity Core): faster bullets, so the ship fires more often
+        self.electric_immune = False     # Adventure loot (Tesla Seal): the electric walls do nothing
         self.infinite_lives = False
         self.use_shared_lives = False
         self.input_scheme = "solo"  # solo | kb1 | kb2 | pad
@@ -466,7 +468,7 @@ class Player:
             # Arcade Shield: sparks only — no slow, no wall death, no gauge dump.
             # Adventure can downgrade that: instant (kill) or slow (phoenix wall).
             wall = getattr(self, "adventure_wall", None)
-            shield_immune = self.uses_shield and wall not in ("slow", "instant")
+            shield_immune = self.electric_immune or (self.uses_shield and wall not in ("slow", "instant"))
             if shield_immune:
                 self.edge_flash = 1.0
                 self.edge_timer = 0.0
@@ -510,7 +512,7 @@ class Player:
         # Update shots
         for shot in self.shots[:]:
             shot["prev_y"] = shot["y"]
-            shot["y"] -= BULLET_SPEED * dt
+            shot["y"] -= BULLET_SPEED * self.bullet_speed_mult * dt
             if shot["y"] < -30:
                 if not shot.get("resolved"):
                     self.register_miss()

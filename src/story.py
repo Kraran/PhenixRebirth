@@ -13,7 +13,9 @@ import pygame
 from settings import BASE_WIDTH, BASE_HEIGHT, asset_path
 from i18n import t, get_lang
 from errlog import log_exc
+import story_items
 import story_state as ss
+import loot
 from text_cache import TextCache
 import bestiary_art
 import videoclip
@@ -31,6 +33,7 @@ GREY_MULT = (80, 80, 90, 160)    # the dimming of the ship select screen for the
 CHEAT_NIX = "NIX2"             # typed in the hangar: all the Phenix missions won, the Phenix is yours, nothing saved
 CHEAT_ACT2 = "2222"            # typed on the mission map: go straight to Act 2, save nothing
 LOG_ROWS = 12                  # journal lines shown at once
+SHOP_WINDOW = 6                # workshop rows shown at once (the line under them describes a loot item)
 
 
 def _cap_top(font, cy):
@@ -794,6 +797,7 @@ class StoryHub:
             "content": int(mission["content"]),
             "speed": float(mission.get("speed") or 1.0),
             "dome": bool(self.loadout(mission.get("ship")).get("dome")),
+            "items": story_items.installed(self.state),       # bought in the hangar: they work in this mission only
         }
         if mission.get("ship"):
             spec["ship"] = mission["ship"]            # a mission that imposes its hull
@@ -815,9 +819,10 @@ class StoryHub:
                 spec["swarm_screens"] = float(mission["swarm_screens"])    # a smaller swarm
         return spec
 
-    def apply_result(self, mission_id, score, cleared, kills=None):
-        """End of a mission: credits, penalty or fall (see story_state.record_result)."""
-        res = ss.record_result(self.state, mission_id, score, cleared, kills)
+    def apply_result(self, mission_id, score, cleared, kills=None, loot=None, used=None):
+        """End of a mission: credits, penalty or fall (see story_state.record_result). `loot` is the item caught
+        during the mission, `used` the items that were installed for it."""
+        res = ss.record_result(self.state, mission_id, score, cleared, kills, loot=loot, used=used)
         if res["cleared"]:
             self.toast = t("story_clear").format(pts=res["score"])
             if res.get("act"):
@@ -833,6 +838,8 @@ class StoryHub:
             self.toast = t("story_fail_pen").format(pts=res["lost"])
         else:
             self.toast = t("story_fail_none")
+        if res.get("loot") and not res["fallen"]:
+            self.toast += "   " + t("story_item_found").format(name=t("item_%s_name" % res["loot"]))
         self.pane = "map"
         self.save()
         if res["fallen"]:
@@ -857,6 +864,8 @@ class StoryHub:
     def _buy(self, row):
         if not ss.buy(self.state, row[0]):
             return False
+        if ss.item_of(row[0]):
+            self.sound_events.append("1up")                  # a loot item is installed for the next mission
         self.save()
         return True
 
@@ -1526,15 +1535,18 @@ class StoryHub:
             return
         _text(surface, small, t("story_workshop"), (255, 160, 70), box.y + 26, left=box.x + 16)
         flags = self.state.get("flags") or {}
-        window = 7
+        window = SHOP_WINDOW
         rows = self.shop_rows()
         start = max(0, min(self.shop_index - 3, len(rows) - window))
         y = box.y + 46
         for i in range(start, min(len(rows), start + window)):
             sid, label, cost, need = rows[i]
+            item = ss.item_of(sid)
             locked = bool(need) and not flags.get(need)
             if sid == "paint":
                 locked = not ss.paint_state(self.state)["token"] or not ss.paint_affordable(self.state)
+            if item:
+                locked = story_items.status(self.state, item) != story_items.INSTALLED and not story_items.affordable(self.state, item)
             focus = self.zone == "shop" and i == self.shop_index
             row = pygame.Rect(box.x + 12, y, box.w - 24, 38)
             if focus:
@@ -1543,6 +1555,20 @@ class StoryHub:
             col = (100, 100, 110) if locked else ((255, 230, 140) if focus else (200, 200, 210))
             mark = "> " if focus else "  "
             extra = self._shop_extra(sid, cost, locked)
-            _text(surface, small, f"{mark}{t(label)}", col, row.centery, left=row.x + 8)
+            if item:
+                _text(surface, small, mark.strip(), col, row.centery, left=row.x + 8)
+                pic = loot.icon(item, 30, 40)
+                if pic is not None:
+                    surface.blit(pic, (row.x + 30 + (40 - pic.get_width()) // 2, row.centery - pic.get_height() // 2))
+                _text(surface, small, t(label), col, row.centery, left=row.x + 80)
+                _text(surface, small, t("item_%s_effect" % item), col if locked else (150, 195, 235),
+                      row.centery, left=row.x + 400)
+            else:
+                _text(surface, small, f"{mark}{t(label)}", col, row.centery, left=row.x + 8)
             _text(surface, small, extra, col, row.centery, right=row.right - 12)
             y += 40
+        if 0 <= self.shop_index < len(rows):
+            item = ss.item_of(rows[self.shop_index][0])
+            if item and self.zone == "shop":
+                _text_fit(surface, small, t("item_%s_desc" % item), (190, 200, 220), box.bottom - 22,
+                          box.x + 20, box.w - 40)

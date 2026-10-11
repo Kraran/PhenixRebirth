@@ -10,6 +10,7 @@ import pygame
 import addon as mame_addon
 import credits_screen
 import highscores_screen
+import loot
 from i18n import LANGS, t, t_help
 from settings import BASE_HEIGHT, BASE_WIDTH, COLOR_BG
 
@@ -26,11 +27,36 @@ def draw_background(game):
     game.starfield.draw(game.game_surface)
 
 
+def _draw_loot_hud(game):
+    """Adventure: the items installed for this mission (small pictures, top right) and the line that tells an item
+    was caught."""
+    adv = getattr(game, "adventure", None)
+    if not adv or game.play_mode == "coop":
+        return
+    x = BASE_WIDTH - 16
+    for item in reversed(adv.get("items") or []):
+        pic = loot.icon(item, 28)
+        if pic is not None:
+            x -= pic.get_width()
+            game.game_surface.blit(pic, (x, 74))
+            x -= 8
+    note = getattr(game, "loot_note", None)
+    if note:
+        img = game.text_cache.get(game.medium_font, note["text"], (150, 220, 255))
+        alpha = max(0, min(255, int(255 * min(1.0, note["t"] / 0.6))))
+        if alpha < 255:
+            img = img.copy()
+            img.set_alpha(alpha)
+        game.game_surface.blit(img, (BASE_WIDTH // 2 - img.get_width() // 2, 110))
+
+
 def draw_play(game):
     """In-run scene: boss, birds, explosions, ships, score, lives and HUD."""
     if game.boss_saucer:
         game.boss_saucer.draw(game.game_surface)
     game.formation.draw(game.game_surface)
+    if getattr(game, "loot", None) is not None:
+        game.loot.draw(game.game_surface)
 
     for exp in game.explosions:
         exp.draw(game.game_surface)
@@ -106,6 +132,7 @@ def draw_play(game):
     if getattr(game, "adventure", None) and not game.adventure.get("dome"):
         off = tc.get(game.font, t("story_dome_broken"), (255, 90, 80))
         game.game_surface.blit(off, (16, 40))
+    _draw_loot_hud(game)
     if game.difficulty in ("novice", "veteran") and not game.attract_mode:
         dkey = "diff_novice" if game.difficulty == "novice" else "diff_veteran"
         dcol = (120, 210, 255) if game.difficulty == "novice" else (255, 150, 80)
