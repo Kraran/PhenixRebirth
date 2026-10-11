@@ -28,6 +28,9 @@ class SoundManager:
     # Soft end-fade length (seconds before track end). Credits gets a longer one.
     END_FADE_DEFAULT = 2.5
     END_FADE_CREDITS = 12.0  # long soft landing — track ends hard otherwise
+    # Sounds that play over the music and are worth hearing alone: while they sound the music fades down (to `level`
+    # of what it was, in `down` seconds), stays low, and comes back in `up` seconds just before the sound ends.
+    MUSIC_FADE = {"paint_fanfare": {"level": 0.12, "down": 0.5, "up": 2.0}}      # the trumpets of the paint shop
 
     def __init__(self):
         self.enabled = False
@@ -38,6 +41,8 @@ class SoundManager:
         self.master_volume = 0.8
         self.music_volume = 0.4
         self._duck = 1.0
+        self._dip = 1.0          # the music faded down under a sound (see MUSIC_FADE), 1.0 = not faded
+        self._dip_spec = None    # [from, level, down, hold, up, seconds so far] while a fade is on
         self.DUCK_LEVEL = 0.40   # -8 dB VO
         self.PAUSE_DUCK = 0.32   # ~-10 dB in-game pause
         self.DUCK_IN = 0.10
@@ -313,7 +318,47 @@ class SoundManager:
     def _music_out(self):
         """OST is mastered hotter than SFX. Slider 1.0 ≈ 30% mixer, then VO duck."""
         duck = float(getattr(self, "_duck", 1.0) or 1.0)
-        return max(0.0, min(1.0, float(self.music_volume) * 0.30 * duck))
+        dip = float(getattr(self, "_dip", 1.0))
+        return max(0.0, min(1.0, float(self.music_volume) * 0.30 * duck * dip))
+
+    def fade_music(self, seconds, level=0.12, down=0.5, up=2.0):
+        """Fade the music down to `level` (a share of its volume), keep it there for `seconds` in all, then bring it back
+        in `up` seconds (the way back starts `up` seconds before the end, so the music is whole again just after).
+        A fade already going on goes on from where the music is now."""
+        down = max(0.05, float(down))
+        up = max(0.05, float(up))
+        hold = max(0.0, float(seconds) - down - up)
+        self._dip_spec = [float(getattr(self, "_dip", 1.0)), max(0.0, min(1.0, float(level))), down, hold, up, 0.0]
+
+    def _tick_dip(self, dt):
+        """Every frame: where the faded music is now (smooth, down then up), and the music volume with it."""
+        spec = getattr(self, "_dip_spec", None)
+        if spec is None:
+            return
+        start, level, down, hold, up, clock = spec
+        clock += max(0.0, float(dt))
+        spec[5] = clock
+
+        def smooth(x):
+            x = max(0.0, min(1.0, x))
+            return x * x * (3.0 - 2.0 * x)
+
+        if clock < down:
+            gain = start + (level - start) * smooth(clock / down)
+        elif clock < down + hold:
+            gain = level
+        elif clock < down + hold + up:
+            gain = level + (1.0 - level) * smooth((clock - down - hold) / up)
+        else:
+            gain = 1.0
+            self._dip_spec = None
+        if gain != getattr(self, "_dip", 1.0):
+            self._dip = gain
+            if not self._end_fading and not self._fading_out:
+                try:
+                    pygame.mixer.music.set_volume(self._music_out())
+                except Exception:
+                    log_exc("sounds._tick_dip")
 
     def set_music_volume(self, vol):
         self.music_volume = max(0.0, min(1.0, vol))
@@ -334,7 +379,14 @@ class SoundManager:
             gain = max(0.0, min(1.0, float(volume))) * self.master_volume
         else:
             gain = self._base_volumes.get(name, 0.5) * self.master_volume
-        return self._play_on_channel(snd, gain, x=x)
+        ch = self._play_on_channel(snd, gain, x=x)
+        fade = self.MUSIC_FADE.get(name)
+        if fade is not None and ch is not None:
+            try:
+                self.fade_music(snd.get_length(), **fade)
+            except Exception:
+                log_exc("sounds.play")
+        return ch
 
     def play_voice(self, name, x=None):
         """Play a long sound that `follow_voice` will keep in step with what it belongs to."""
@@ -658,6 +710,7 @@ class SoundManager:
         """Call each frame: VO duck + finish a theme crossfade."""
         try:
             self._tick_duck(dt)
+            self._tick_dip(dt)
         except Exception:
             log_exc("sounds.update")
         if not self._fading_out:
