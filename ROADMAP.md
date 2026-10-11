@@ -132,6 +132,7 @@ Current release: **v1.4.5**
   told the first time "Première sortie" is launched, replayable from the journal (first line after the introduction)
 - Adventure paint shop: a victory fanfare (trumpets, `assets/sounds/paint_fanfare.wav`) plays when the Shield is
   painted. The hub only asks for sounds (`sound_events` / `take_sounds`); the game plays them
+- Adventure, Act 1: the dome swarm (Dôme V) is easier after the beta testers' feedback: each kind comes 1.6 times its normal count in all (`SWARM_SCREENS = 1.6`: 21 / 35 / 11 / 16 = 83 enemies instead of 104). Still a third of a screen shown at once. The Phenix swarm (52) is unchanged
 - Adventure scenes: the second Bestiary hunt (khaki birds, `best_s2`) has its own scene, told the first time it is launched and replayable from the journal right after the first sortie: picture `assets/story/oiseaux_kaki.jpg` and clip `assets/story/oiseaux_kaki.mp4` (made with `tools/encode_clip.py`), text `story_scene_best2` (draft by Claude). Tests: `tests/test_story_scene_kaki.py`
 - Adventure paint shop: the background music fades down to 12 % in half a second while the trumpets play and comes back
   over their last 2 seconds (`SoundManager.MUSIC_FADE`, `fade_music`, smooth curve, product with the announcer duck;
