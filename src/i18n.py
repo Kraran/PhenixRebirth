@@ -3158,6 +3158,7 @@ _ADVENTURE_TEXTS = {
                         "A/Enter  close   Up / Down  speed   B/Esc  skip"),
     "story_scene_dome_1_t": ("Dôme I : l'épave du Shield", "Dome I: the Shield wreck"),
     "story_scene_sortie_t": ("Première sortie : les oiseaux bleus", "First sortie: the blue birds"),
+    "story_scene_best2_t": ("Bestiaire : les oiseaux kaki", "Bestiary: the khaki birds"),
     "story_scene_paint_1_t": ("Peinture I : l'atelier de Wallems", "Paint I: Wallems' workshop"),
     "story_mode_hint": ("Gauche / Droite  choisir   A/Entree  commencer   B/Esc  retour",
                         "Left / Right  choose   A/Enter  start   B/Esc  back"),
@@ -3265,6 +3266,11 @@ _INTRO_FR["story_scene_sortie"] = (
     'Mars brûle de son éternel rouge ; là-bas somnole le NX01. Depuis la baie de Phobos, les capteurs relèvent des signatures minuscules, nombreuses, qui tournent au-dessus des cratères en se jouant des blocs d’astéroïdes. Ce sont des Avioïdes. Des oiseaux bleus, disent les rares survivants, à cause de la teinte de leur peau écailleuse, un bleu d’ardoise, un bleu de nuit, et de ces lueurs rouges qui couvent dans leurs yeux et dans leur poitrine.\n\n'
     'Personne ne sait ce qu’ils cherchent. Ils ne communiquent pas, ils n’exigent rien. Ils patrouillent, ils plongent, ils déchirent. Avec leurs ailes de cuir tendu, leurs serres incandescentes et leurs armes à plasma, ils ont mis en pièces plus de Shields que je n’ai d’heures de vol. Ce sont les éclaireurs de la horde, les plus rapides, les plus nombreux, et c’est toujours par eux que tout commence.\n\n'
     'Alors tant pis si le NX01 tient à peine en l’air. Il faut bien commencer par quelque part. Je vais sortir, les affronter un par un, et regarder de près ce qu’ils sont, car on ne bat que ce qu’on connaît bien. Si l’ancrage quantique fait ce que Kamarasov a promis, je reviendrai avec de quoi remplir le premier jeu de données. Sinon… eh bien, je n’aurai plus à m’en soucier.'
+)
+_INTRO_FR["story_scene_best2"] = (
+    'Les bleus ne sont pas les seuls. Sur les relevés de la première sortie, d’autres signatures reviennent, plus denses, plus vives, loin de Mars, au-dessus d’une lune de Jupiter que la géante écrase de sa masse rayée. Ce sont encore des Avioïdes. Des oiseaux kaki, disent les rares survivants, à cause du vert militaire de leur peau, un vert de blindage, un vert de mousse sombre, et de ces braises orange qui brillent dans leurs yeux et au creux de leur poitrine.\n\n'
+    'Là où les bleus plongent en ligne, les kakis arrivent en grappes et changent de cap sans prévenir. Leurs ailes de cuir battent plus vite, leurs serres claquent plus tôt, et leurs tirs de plasma se rapprochent. Ils se perdent dans la poussière des stations détruites. On ne les voit pas venir, ou alors trop tard.\n\n'
+    'Cette fois, je ne sors pas pour regarder. Je sors pour apprendre à les battre. Ce qu’il y a derrière ces yeux orange, je le saurai en les voyant tomber, un par un, et chaque page ajoutée au Bestiaire rendra la suite moins périlleuse.'
 )
 _INTRO_FR["story_scene_paint_1"] = (
     'L’atelier clandestin du vieux Wallems, creusé dans le flanc de l’astéroïde 434-Hungaria, tourne encore. Malgré l’invasion. Malgré les patrouilles. On y voit toujours des coques posées sur tréteaux, des bidons ouverts, des masques penchés sur le métal…\n\n'
