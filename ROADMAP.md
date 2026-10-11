@@ -132,6 +132,9 @@ Current release: **v1.4.5**
   told the first time "Première sortie" is launched, replayable from the journal (first line after the introduction)
 - Adventure paint shop: a victory fanfare (trumpets, `assets/sounds/paint_fanfare.wav`) plays when the Shield is
   painted. The hub only asks for sounds (`sound_events` / `take_sounds`); the game plays them
+- Adventure paint shop: the background music fades down to 12 % in half a second while the trumpets play and comes back
+  over their last 2 seconds (`SoundManager.MUSIC_FADE`, `fade_music`, smooth curve, product with the announcer duck;
+  nothing when the sound is muted or does not play). Tests: `tests/test_music_fade.py`
 - Adventure, Act 2: new Bestiary hunt "the Avioid commander" (`best_boss`), right after the four Bestiary hunts. It
   flies the arcade boss level (stage 5), can be replayed, and goes up one level at each victory (boss of stage 5, 10,
   15...), like the other hunts. It counts for the Bestiary boss entry
