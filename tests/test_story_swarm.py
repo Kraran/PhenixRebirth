@@ -11,6 +11,7 @@ from test_smoke import run  # noqa: F401  (fixture)
 
 KINDS = (1, 2, 3, 4)
 ON_SCREEN = {1: 4, 2: 7, 3: 2, 4: 3}       # a third of the normal screens: 13, 22, 7, 10
+TOTAL = {1: 20, 2: 33, 3: 10, 4: 15}                # Dôme V: one and a half normal screens of each kind (78 in all)
 
 
 @pytest.fixture(autouse=True)
@@ -39,9 +40,10 @@ def test_the_swarm_shows_a_third_of_a_normal_screen_of_each_kind_and_the_rest_wa
     assert SWARM_NORMAL_COUNT == {1: 13, 2: 22, 3: 7, 4: 10}      # the counts of the normal screens
     assert _kinds(form) == ON_SCREEN == {k: round(n / 3) for k, n in SWARM_NORMAL_COUNT.items()}
     assert sum(_kinds(form).values()) == 16                       # three times fewer at once than before (48)
-    assert form.swarm["reserve"] == {1: 22, 2: 37, 3: 12, 4: 17}  # twice the normal count in all (26 / 44 / 14 / 20)
-    assert form.swarm_remaining() == 2 * (13 + 22 + 7 + 10) == 104
-    assert SWARM_SCREENS == 2
+    assert form.swarm["reserve"] == {1: 16, 2: 26, 3: 8, 4: 12}   # one and a half times the normal count in all
+    assert TOTAL == {1: 20, 2: 33, 3: 10, 4: 15}                  # (20 / 33 / 10 / 15), 78 in all instead of 104
+    assert form.swarm_remaining() == sum(TOTAL.values()) == 78
+    assert SWARM_SCREENS == 1.5
     assert all(isinstance(e, Enemy) for e in form.enemies if e.stage in (1, 2))
     assert all(isinstance(e, BigBird) for e in form.enemies if e.stage in (3, 4))
     assert {e.speed_mult for e in form.enemies} == {1.2}
@@ -70,7 +72,7 @@ def test_a_fallen_enemy_is_replaced_by_one_of_the_same_kind_coming_from_above():
         victim.kill(flash=False)
         form.update(0.01, 640)
         assert _kinds(form)[kind] == ON_SCREEN[kind], kind
-        assert form.swarm["reserve"][kind] == SWARM_SCREENS * SWARM_NORMAL_COUNT[kind] - ON_SCREEN[kind] - 1
+        assert form.swarm["reserve"][kind] == TOTAL[kind] - ON_SCREEN[kind] - 1
         new = [e for e in form.enemies if e.stage == kind and e.alive][-1]
         assert new.y < 0, kind                                      # it comes in from the top
         assert new.state in ("returning", "enter")
@@ -149,7 +151,7 @@ def test_the_swarm_is_won_when_every_enemy_ever_sent_is_down():
         on_screen = _kinds(form)
         assert all(on_screen[k] <= SWARM_NORMAL_COUNT[k] for k in KINDS)
     assert form.all_dead() and form.swarm_remaining() == 0
-    assert killed == {k: SWARM_SCREENS * n for k, n in SWARM_NORMAL_COUNT.items()}
+    assert killed == TOTAL
 
 
 def test_the_swarm_is_not_over_while_enemies_are_still_to_come():
@@ -292,7 +294,7 @@ def test_the_swarm_mission_starts_at_level_eleven_with_a_third_of_the_screens(ru
     g = _launch(run.game, "dome_5")
     assert g.stage == 11 and g.formation.swarm is not None
     assert _kinds(g.formation) == ON_SCREEN
-    assert g.formation.swarm_remaining() == 104                    # Dôme V: twice the normal count of each enemy
+    assert g.formation.swarm_remaining() == 78                     # Dôme V: one and a half times the normal count
     assert {round(e.speed_mult, 6) for e in g.formation.enemies} == {round(1.2 * g.difficulty_speed_mult(), 6)}
 
 
