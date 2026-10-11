@@ -151,6 +151,7 @@ def menu_confirm(game):
             if not getattr(game, "story", None):
                 from story import StoryHub
                 game.story = StoryHub()
+                game.story.sounds = getattr(game, "sounds", None)
             game.story.open_slots()
             game.menu_screen = "story_hub"
             game.menu_idle = 0.0

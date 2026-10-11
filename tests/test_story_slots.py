@@ -702,6 +702,7 @@ def test_drawing_sets_the_limit_and_the_text_stops_at_rest(run):
 def test_the_game_loop_feeds_the_speed_keys(run):
     g = run.game
     _open_adventure(g)
+    g.story.sounds = None                                  # no voice here: the text goes at its own speed (see test_intro_voice)
     ss.delete_slot(1)
     g.story.open_slots()
     _key(pygame.K_RETURN, "\r"); run.frames(2)

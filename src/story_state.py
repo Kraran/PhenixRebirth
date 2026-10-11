@@ -846,6 +846,44 @@ INTRO_LAST = {
 INTRO_FLAG = "intro_seen"
 
 
+# The Adventure intro is read aloud (French only): `assets/story/voice/<text key>.ogg`, and `marks.json` says when each line of
+# the text is said (made by tools/make_intro_voice.py). The intro scrolls the text with it.
+_VOICE_TABLE = {}
+
+
+def _voice_table():
+    if not _VOICE_TABLE:
+        try:
+            with open(asset_path("story", "voice", "marks.json"), encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, ValueError):
+            data = {}
+        _VOICE_TABLE["table"] = data if isinstance(data, dict) else {}
+    return _VOICE_TABLE["table"]
+
+
+def intro_voice(text_key, lang):
+    """The recorded voice of a slide: {"path", "length", "marks": [(line index, start, end), ...]} (seconds, the lines are
+    those of `intro_lines`), or None when there is no voice for this text or language, or the data is not usable."""
+    if lang != "fr":
+        return None
+    entry = _voice_table().get(text_key)
+    try:
+        path = asset_path("story", "voice", str(entry["file"]))
+        length = float(entry["length"])
+        marks = [(int(m["line"]), float(m["start"]), float(m["end"])) for m in entry["marks"]]
+    except (TypeError, KeyError, ValueError):
+        return None
+    if not os.path.isfile(path) or length <= 0.0 or not marks:
+        return None
+    last = (-1, -1.0)
+    for line, start, end in marks:
+        if line <= last[0] or start < last[1] or end <= start or end > length + 0.5:
+            return None                                    # not in order: better no voice than a wrong scroll
+        last = (line, end)
+    return {"path": path, "length": length, "marks": marks}
+
+
 def intro_slides(mode):
     """The slides to show for `mode`: a list of (picture name, text key)."""
     return INTRO_SLIDES + [INTRO_LAST.get(mode, INTRO_LAST["normal"])]

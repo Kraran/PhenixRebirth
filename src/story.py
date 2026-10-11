@@ -122,12 +122,21 @@ INTRO_DELAY = 0.8           # the picture shows alone for a moment before the te
 INTRO_FADE = 0.7            # fade in from black at each slide
 INTRO_LOCK = 0.4            # a key pressed right at the start of a slide does not skip it
 INTRO_END_Y = BASE_HEIGHT - 96    # where the last line comes to rest
+# When the intro is read aloud (see story_state.intro_voice) the text follows the voice: the line being said is kept near
+# VOICE_READ_Y, the text first rises into place while the voice has not started.
+VOICE_DELAY = 1.6           # seconds after the slide appears before the voice starts
+VOICE_LEAD = 3.2            # seconds the text takes to rise into place
+VOICE_READ_Y = 380          # where on the screen the line being said is kept at the start...
+VOICE_READ_END_Y = 500      # ...and at the end of the voice (it comes down slowly, so the last lines end in the lower half)
+VOICE_CATCH = 0.25          # seconds in which the text catches up with the voice after the keys moved it
+VOICE_MAX_SPEED = 220.0     # px/s, the fastest the text goes to catch up
+VOICE_VOLUME = 0.92
 
 
 class StoryHub:
     """Three-pane hub. Left = log, center = hangar, right = map."""
 
-    def __init__(self):
+    def __init__(self, sounds=None):
         self.slot_no = None            # save slot (1..4) being played; None before one is opened
         self.sound_events = []         # sounds the hub asks for (the game plays them, see take_sounds)
         self.state = ss.default_state()
@@ -177,6 +186,14 @@ class StoryHub:
         self._intro_edges = {}
         self._intro_black = None
         self._intro_limit = None
+        self.sounds = sounds           # the SoundManager: the intro is read aloud (None: no voice)
+        self._intro_spans = {}         # text key -> (y0, y1) of each line of the text, in the tall picture
+        self._voice = None             # the voice of the slide on screen (story_state.intro_voice), once it is playing
+        self._voice_t = 0.0            # seconds the voice has been speaking
+        self._voice_curve = None       # [(second, y in the text)] of the voice of the slide on screen (made when drawn)
+        self._voice_given_up = False   # the voice could not start on this slide: the text goes at its own speed
+        self._intro_key = None         # key of the tall text picture last asked for
+        self._voice_found = {}         # (text key, language) -> its voice, or None
 
     # --- intro ---
     def start_intro(self, back_to="hangar"):
@@ -205,6 +222,7 @@ class StoryHub:
 
     def _reset_slide(self):
         self._stop_clip()                 # a video starts over with its slide
+        self._stop_voice()                # and so does the voice
         self.intro_t = 0.0
         self.intro_pos = 0.0
         self.intro_speed = 0.0
@@ -231,6 +249,7 @@ class StoryHub:
     def _end_intro(self):
         """Last slide done, or skipped: remember it and go back (the hangar, the map or the journal)."""
         self._stop_clip()
+        self._stop_voice()
         if self.scene_id:
             ss.mark_scene_seen(self.state, self.scene_id)
         else:
@@ -249,13 +268,17 @@ class StoryHub:
         if self.screen != "intro":
             if self._clip is not None:
                 self._stop_clip()
+            self._stop_voice()
             return
         dt = max(0.0, min(0.25, float(dt)))
         self.intro_t += dt
+        self._tick_voice(dt)
         if scroll > 0:
             target = INTRO_FAST
         elif scroll < 0:
             target = -INTRO_BACK
+        elif self._voice is not None or self._voice_expected():
+            target = self._voice_scroll()    # the text follows the voice (before it starts, the text rises into place)
         elif self.intro_t >= INTRO_DELAY:
             target = INTRO_SPEED
         else:
@@ -266,9 +289,99 @@ class StoryHub:
             self.intro_pos = 0.0
             self.intro_speed = max(0.0, self.intro_speed)
         limit = getattr(self, "_intro_limit", None)
+        if self._voice is not None:
+            limit = None                  # the voice leads: the text goes up as far as the last line it says
         if limit is not None and self.intro_pos > limit:
             self.intro_pos = limit
             self.intro_speed = min(0.0, self.intro_speed)
+
+    # --- the voice of the intro (story_state.intro_voice): the text is kept in step with it ---
+    def _slide_voice(self):
+        """The voice of the slide on screen, or None (no recording, another language, or no sound)."""
+        if self.sounds is None or not getattr(self.sounds, "enabled", False) or getattr(self.sounds, "sfx_muted", False):
+            return None
+        try:
+            key = (self.intro_slides[self.intro_index][1], get_lang())
+        except (IndexError, TypeError):
+            return None
+        if key not in self._voice_found:
+            self._voice_found[key] = ss.intro_voice(*key)
+        return self._voice_found[key]
+
+    def _voice_expected(self):
+        """True from the moment the slide appears until its voice has started or has been given up."""
+        return self._voice is None and not self._voice_given_up and self._slide_voice() is not None
+
+    def _tick_voice(self, dt):
+        if self._voice is not None:
+            self._voice_t += dt
+            if not self.sounds.narration_busy():
+                self._voice_t = max(self._voice_t, self._voice["length"])
+            return
+        if self.intro_t < VOICE_DELAY or self._voice_given_up:
+            return
+        voice = self._slide_voice()
+        if voice is None or not self.sounds.play_narration(voice["path"], VOICE_VOLUME):
+            self._voice_given_up = True                    # no voice: the text goes at its own speed
+            return
+        self._voice = voice
+        self._voice_t = self.intro_t - VOICE_DELAY          # (the frame that started it may be late)
+        self._voice_curve = None
+
+    def _stop_voice(self):
+        if self.sounds is not None and self._voice is not None:
+            try:
+                self.sounds.stop_narration()
+            except Exception:
+                log_exc("story._stop_voice")
+        self._voice = None
+        self._voice_t = 0.0
+        self._voice_curve = None
+        self._voice_given_up = False
+
+    def _voice_target(self, t, v):
+        """Where the text should be (intro_pos, in px) `t` seconds after the slide appeared, the voice having spoken for `v`
+        seconds (negative: it has not started)."""
+        curve = self._voice_curve
+        if curve:
+            if v <= curve[0][0]:
+                y = curve[0][1]
+            elif v >= curve[-1][0]:
+                y = curve[-1][1]
+            else:
+                y = curve[-1][1]
+                for (t0, y0), (t1, y1) in zip(curve, curve[1:]):
+                    if t0 <= v <= t1:
+                        y = y0 + (y1 - y0) * ((v - t0) / (t1 - t0) if t1 > t0 else 1.0)
+                        break
+        else:
+            y = 0.0
+        x = max(0.0, min(1.0, t / VOICE_LEAD))
+        length = self._voice["length"] if self._voice is not None else 1.0
+        read_y = VOICE_READ_Y + (VOICE_READ_END_Y - VOICE_READ_Y) * max(0.0, min(1.0, v / max(1.0, length)))
+        lead = (BASE_HEIGHT - read_y) * (1.0 - x * x * (3.0 - 2.0 * x))           # the text rises into place
+        return max(0.0, BASE_HEIGHT - read_y + y - lead)
+
+    def _voice_scroll(self):
+        """The rising speed (px/s) that brings the text to where the voice is, a moment ahead."""
+        v = (self._voice_t if self._voice is not None else self.intro_t - VOICE_DELAY) + VOICE_CATCH
+        want = self._voice_target(self.intro_t + VOICE_CATCH, v)
+        speed = (want - self.intro_pos) / VOICE_CATCH
+        return max(-VOICE_MAX_SPEED, min(VOICE_MAX_SPEED, speed))
+
+    def _make_voice_curve(self, key, spans, height):
+        """[(second, y)]: the line being said, as a place in the tall text, from the marks of the recording."""
+        voice = self._voice
+        curve = []
+        for line, start, end in voice["marks"]:
+            span = spans.get(line)
+            if span is None:
+                continue
+            curve.append((start, float(span[0])))
+            curve.append((end, float(span[1])))
+        if curve and curve[0][0] > 0.0:
+            curve.insert(0, (0.0, curve[0][1]))
+        return curve
 
     # --- save slots ---
     def open_slots(self):
@@ -844,16 +957,25 @@ class StoryHub:
         """The whole text of the current slide as one tall transparent picture (cached)."""
         _pic, text_key = self.intro_slides[self.intro_index]
         key = (text_key, get_lang(), self.state.get("name"), id(font))
+        self._intro_key = key
         hit = self._intro_blocks.get(key)
         if hit is not None:
             return hit
         rows = []                                  # (text, height); text None = a pause
+        spans = {}                                 # line number -> (top, bottom) in the tall picture
         pitch = font.get_linesize() + 12
-        for line in ss.intro_lines(t, text_key, self.state.get("name")):
+        y_line = 0
+        for number, line in enumerate(ss.intro_lines(t, text_key, self.state.get("name"))):
+            first = len(rows)
             if not line:
                 rows.append((None, pitch // 2))
             else:
                 rows.extend((piece, pitch) for piece in _wrap(font, line, INTRO_TEXT_W))
+            h_line = sum(h for _txt, h in rows[first:])
+            if line:
+                spans[number] = (y_line, y_line + h_line - 12)
+            y_line += h_line
+        self._intro_spans[key] = spans
         height = sum(h for _txt, h in rows)
         block = pygame.Surface((INTRO_TEXT_W, max(1, height)), pygame.SRCALPHA)
         y = 0
@@ -867,6 +989,8 @@ class StoryHub:
             y += h
         if len(self._intro_blocks) > 16:
             self._intro_blocks.clear()
+            self._intro_spans.clear()
+            self._intro_spans[key] = spans
         self._intro_blocks[key] = (block, height)
         return block, height
 
@@ -886,7 +1010,9 @@ class StoryHub:
         return self._intro_mask
 
     def intro_finished_scrolling(self, text_height):
-        """True once the text has risen to its resting place."""
+        """True once the text has risen to its resting place (with a voice: once the voice has said it all)."""
+        if self._voice is not None:
+            return self._voice_t >= self._voice["length"] - 0.5
         return self._intro_top(text_height) <= self._intro_rest(text_height)
 
     @staticmethod
@@ -894,6 +1020,8 @@ class StoryHub:
         return min((BASE_HEIGHT - text_height) // 2, INTRO_END_Y - text_height)
 
     def _intro_top(self, text_height):
+        if self._voice is not None:
+            return BASE_HEIGHT - self.intro_pos          # (the text goes on rising while the voice says it)
         return max(self._intro_rest(text_height), BASE_HEIGHT - self.intro_pos)
 
     # --- video clip as a slide background (see story_state.clip_path and videoclip.py) ---
@@ -978,6 +1106,9 @@ class StoryHub:
 
         block, height = self._intro_block(font)
         self._intro_limit = BASE_HEIGHT - self._intro_rest(height)     # the text cannot rise past this
+        if self._voice is not None and self._voice_curve is None:
+            self._voice_curve = self._make_voice_curve(self._intro_key, self._intro_spans.get(self._intro_key) or {},
+                                                       height)
         top = self._intro_top(height)
         self._draw_intro_text(surface, block, top, cx - INTRO_TEXT_W // 2)
 
