@@ -88,8 +88,8 @@ def test_the_phenix_swarm_is_smaller_than_the_dome_swarm(run):
     assert totals == {k: SWARM_NORMAL_COUNT[k] for k in (1, 2, 3, 4)}
     big = EnemyFormation()
     big.spawn_swarm(1.0)
-    assert sum(f.swarm["reserve"].values()) < sum(big.swarm["reserve"].values()) * 0.75    # 36 against 62 waiting
-    assert ss.mission_by_id("dome_5").get("swarm_screens") is None              # Dôme V: the default, one and a half
+    assert sum(f.swarm["reserve"].values()) < sum(big.swarm["reserve"].values()) * 0.75    # 36 against 67 waiting
+    assert ss.mission_by_id("dome_5").get("swarm_screens") is None              # Dôme V: the default, 1.6
 
 
 def test_the_launch_of_the_phenix_swarm_carries_its_size(run):

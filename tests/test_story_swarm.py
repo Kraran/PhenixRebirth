@@ -11,7 +11,7 @@ from test_smoke import run  # noqa: F401  (fixture)
 
 KINDS = (1, 2, 3, 4)
 ON_SCREEN = {1: 4, 2: 7, 3: 2, 4: 3}       # a third of the normal screens: 13, 22, 7, 10
-TOTAL = {1: 20, 2: 33, 3: 10, 4: 15}                # Dôme V: one and a half normal screens of each kind (78 in all)
+TOTAL = {1: 21, 2: 35, 3: 11, 4: 16}                # Dôme V: 1.6 normal screens of each kind (83 in all)
 
 
 @pytest.fixture(autouse=True)
@@ -40,10 +40,10 @@ def test_the_swarm_shows_a_third_of_a_normal_screen_of_each_kind_and_the_rest_wa
     assert SWARM_NORMAL_COUNT == {1: 13, 2: 22, 3: 7, 4: 10}      # the counts of the normal screens
     assert _kinds(form) == ON_SCREEN == {k: round(n / 3) for k, n in SWARM_NORMAL_COUNT.items()}
     assert sum(_kinds(form).values()) == 16                       # three times fewer at once than before (48)
-    assert form.swarm["reserve"] == {1: 16, 2: 26, 3: 8, 4: 12}   # one and a half times the normal count in all
-    assert TOTAL == {1: 20, 2: 33, 3: 10, 4: 15}                  # (20 / 33 / 10 / 15), 78 in all instead of 104
-    assert form.swarm_remaining() == sum(TOTAL.values()) == 78
-    assert SWARM_SCREENS == 1.5
+    assert form.swarm["reserve"] == {1: 17, 2: 28, 3: 9, 4: 13}   # 1.6 times the normal count in all
+    assert TOTAL == {1: 21, 2: 35, 3: 11, 4: 16}                  # (21 / 35 / 11 / 16), 83 in all instead of 104
+    assert form.swarm_remaining() == sum(TOTAL.values()) == 83 > 80
+    assert SWARM_SCREENS == 1.6
     assert all(isinstance(e, Enemy) for e in form.enemies if e.stage in (1, 2))
     assert all(isinstance(e, BigBird) for e in form.enemies if e.stage in (3, 4))
     assert {e.speed_mult for e in form.enemies} == {1.2}
@@ -294,7 +294,7 @@ def test_the_swarm_mission_starts_at_level_eleven_with_a_third_of_the_screens(ru
     g = _launch(run.game, "dome_5")
     assert g.stage == 11 and g.formation.swarm is not None
     assert _kinds(g.formation) == ON_SCREEN
-    assert g.formation.swarm_remaining() == 78                     # Dôme V: one and a half times the normal count
+    assert g.formation.swarm_remaining() == 83                     # Dôme V: 1.6 times the normal count
     assert {round(e.speed_mult, 6) for e in g.formation.enemies} == {round(1.2 * g.difficulty_speed_mult(), 6)}
 
 
