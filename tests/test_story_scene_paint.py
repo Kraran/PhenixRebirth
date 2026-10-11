@@ -206,3 +206,68 @@ def test_every_scene_text_uses_the_ellipsis_sign_never_three_dots():
     for scene in ss.SCENES.values():
         for _pic, key in scene["slides"]:
             assert "..." not in t(key)
+
+
+# ------------------------------------------------------------------ the video of the workshop
+import re
+import subprocess
+import time
+
+import pytest
+
+import videoclip
+from test_story_clip import FFMPEG, fake, needs_ffmpeg  # noqa: F401,E402  (fixture)
+
+
+def test_the_workshop_picture_is_a_clip_with_its_still_as_the_poster():
+    assert ss.clip_path("atelier_wallems") == asset_path("story", "atelier_wallems.mp4")
+    assert os.path.isfile(ss.clip_path("atelier_wallems"))
+    assert os.path.exists(asset_path("story", "atelier_wallems.jpg"))
+    assert os.path.getsize(ss.clip_path("atelier_wallems")) < 1024 * 1024
+
+
+def test_the_scene_plays_the_workshop_video_and_stops_it_when_it_is_left(run, fake):
+    hub = _hub()
+    hub.confirm()
+    assert hub.screen == "intro" and hub.scene_id == ID
+    hub._intro_backdrop("atelier_wallems")
+    assert len(fake.made) == 1 and fake.made[0].path == ss.clip_path("atelier_wallems")
+    hub.intro_t = 60.0
+    hub.confirm()
+    assert fake.made[0].closed and hub._clip is None
+
+
+def test_the_replay_from_the_journal_plays_the_workshop_video_too(run, fake):
+    hub = _hub(seen_paint=True)
+    hub.start_scene(ID, back_to="log")
+    hub._intro_backdrop("atelier_wallems")
+    assert len(fake.made) == 1 and fake.made[0].path == ss.clip_path("atelier_wallems")
+
+
+@needs_ffmpeg
+def test_the_workshop_clip_is_the_video_given_without_sound():
+    out = subprocess.run([FFMPEG, "-hide_banner", "-i", ss.clip_path("atelier_wallems"), "-f", "null", "-"],
+                         capture_output=True, text=True, encoding="utf-8", errors="replace").stderr
+    assert "752x416" in out and "Video: h264" in out and "Audio:" not in out
+    assert int(re.findall(r"frame=\s*(\d+)", out)[-1]) == 145 - 12                       # 6 s, minus the dissolve of the loop
+
+
+@needs_ffmpeg
+def test_the_real_workshop_video_plays_behind_the_text(run):
+    hub = _hub()
+    hub.confirm()
+    g = run.game
+    surf = pygame.Surface((1280, 720))
+    end = time.time() + 8
+    while time.time() < end and not (hub._clip is not None and hub._clip.playing):
+        hub.update(1 / 60)
+        hub.draw(surf, g.font, g.medium_font, g.font)
+        time.sleep(0.01)
+    assert hub._clip is not None and hub._clip.playing
+    assert hub._intro_backdrop("atelier_wallems") is hub._clip.surface
+    proc = hub._clip._proc
+    hub.back()
+    end = time.time() + 3
+    while proc.poll() is None and time.time() < end:
+        time.sleep(0.05)
+    assert proc.poll() is not None and hub._clip is None
