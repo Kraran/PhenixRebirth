@@ -107,6 +107,9 @@ Current release: **v1.4.5**
   no sound, 24 fps, a loop without a seam, 0.3 to 0.7 MB each). Nothing in the code changed: a slide whose picture has a
   clip plays it (see above), so the same applies to the replay from the journal. The stills stay as posters (shown while
   a clip starts, or without ffmpeg). Tests: `tests/test_intro_videos.py`
+- Adventure scenes: Wallems' workshop (Paint I) is now a video too: `assets/story/atelier_wallems.mp4` (the 752x416 video given,
+  6 s, no sound, loop without a seam, 0.2 MB), made with `tools/encode_clip.py`; the still stays as the poster. No code
+  change (a slide with a clip plays it). Tests: `tests/test_story_scene_paint.py`
 - Adventure: four save slots instead of three (`SLOT_COUNT = 4`, `story_4.json`); the slot list shows four cards
 - Adventure: a mission no longer says the next level out loud when its boss falls (the arcade still does)
 - Adventure scenes: the Paint I text uses the "…" sign instead of three dots, like the other scenes
