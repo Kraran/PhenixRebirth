@@ -3,6 +3,9 @@ Current release: **v1.4.5**
 
 ## Unreleased (towards 1.5.0 — Adventure)
 
+- Adventure, Veteran: when the ship dies, the normal GAME OVER of the game is played (explosion, GAME OVER card, announcer voice,
+  pad rumble) before the slot list where the save is now a memorial. The fall is written into the save at the moment of death,
+  so closing the game during the card does not save the pilot. Normal and Novice are unchanged (quantum anchor return)
 - Adventure, paint missions (Space Invaders): the announcer now says the real level of the mission (Level 1, 2, 3 in the first pass,
   4, 5, 6 in the next one...) instead of always "Level 1" (`Game._announced_level`). Past level 21 (no recording) it stays silent, like elsewhere
 - Help screen: the enemies carry the names of the Bestiary and of the Adventure, with their stage (French: Avioïde éclaireur stage 1,

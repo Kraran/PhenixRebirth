@@ -1558,6 +1558,8 @@ class Game:
             self._start_gameover_card(after="switch" if still else "hs", player_label=label)
         elif pending == "gameover":
             self._start_gameover_card(after="hs", player_label=None)
+        elif pending == "adventure_over":
+            self._start_gameover_card(after="adventure", player_label=None)
 
     def _hotseat_try_switch(self):
         """After a lost life (ship still has lives): other player takes their own run."""
@@ -1865,19 +1867,33 @@ class Game:
             self._anchor_phase = "fade"
             self.input_grace = max(float(self.input_grace or 0.0), 0.3)      # a key held down must not act on the map
 
+    def _veteran_adventure(self):
+        """True while a mission of a Veteran save is played (one death ends the save for good)."""
+        story = getattr(self, "story", None)
+        state = getattr(story, "state", None) or {}
+        return bool(getattr(self, "adventure", None)) and state.get("mode") == "veteran"
+
+    def _bank_adventure(self, cleared):
+        """Write the result of the mission into the save (once)."""
+        spec = getattr(self, "adventure", None) or {}
+        story = getattr(self, "story", None)
+        if story is None or spec.get("banked"):
+            return
+        spec["banked"] = True
+        try:
+            story.apply_result(spec.get("id"), int(getattr(self, "score", 0) or 0), bool(cleared), spec.get("kills"),
+                               loot=spec.get("loot"), used=spec.get("items"))
+        except Exception:
+            log_exc("game._end_adventure")
+
     def _end_adventure(self, cleared):
         """Bank the run into the hangar and return to the mission map."""
         spec = getattr(self, "adventure", None) or {}
         self.sounds.stop_sfx("saucer_pass", 150)
-        snapshot = None if cleared else self._anchor_snapshot()
-        score = int(getattr(self, "score", 0) or 0)
+        banked = bool(spec.get("banked"))                       # a fallen Veteran was already written down at his death
+        snapshot = None if (cleared or banked) else self._anchor_snapshot()
         story = getattr(self, "story", None)
-        if story is not None:
-            try:
-                story.apply_result(spec.get("id"), score, bool(cleared), spec.get("kills"),
-                                   loot=spec.get("loot"), used=spec.get("items"))
-            except Exception:
-                log_exc("game._end_adventure")
+        self._bank_adventure(cleared)
         self.adventure = None
         self.started = False
         self._stop_go_rumble()
@@ -2100,7 +2116,10 @@ class Game:
         after = getattr(self, "go_card_after", "hs")
         self.go_card_after = "hs"
         self.hs_phase = None
-        if after == "switch":
+        if after == "adventure":                       # the Veteran's GAME OVER is over: back to the slot list (a memorial now)
+            self.game_over = False
+            self._end_adventure(False)
+        elif after == "switch":
             self.game_over = False
             self._hotseat_player_eliminated()
         else:
@@ -3856,6 +3875,12 @@ class Game:
                     return
             elif not any(p.alive for p in self._ships()):
                 if getattr(self, "adventure", None):
+                    if self._veteran_adventure():
+                        # a fallen Veteran gets the real GAME OVER of the game (explosion, card, voice), then the slot list.
+                        # The fall is written down at once: closing the game during the card does not save him.
+                        self._bank_adventure(False)
+                        self._hotseat_arm_hold("adventure_over", self.HOTSEAT_HOLD_FINAL)
+                        return
                     self._end_adventure(False)
                     return
                 if self.hotseat:
