@@ -16,6 +16,7 @@ from settings import *
 
 from settings import asset_path
 from errlog import log_exc
+import engine_flame
 from phenix_art import (PHENIX_MORPH_IN_SEC, PHENIX_MORPH_OUT_SEC, SHIELD_IN_SEC, SHIELD_IN_STEPS, SHIELD_OUT_SEC,
                         SHIELD_OUT_STEPS, dissolve, lead_in, morph_sequence)
 SHIP_PATH = asset_path("sprites", "player_ship.png")
@@ -159,13 +160,7 @@ class Player:
         # Hitbox covers fuselage + wings (shots must not pass through wings)
         self.hitbox_w = max(28, int(self.width * 0.78))
         self.hitbox_h = max(32, int(self.height * 0.52))
-        # Twin engines spacing (px from center each side)
-        self.engine_offset = 8
-        self.engine_offsets = (-8, 8)
-        self.engine_ys = (0, 0)
-        self.engine_width_scale = 1.0
-        
-        # Engine animation
+        # Engine animation (the jets: src/engine_flame.py)
         self.moving = False
         self.engine_time = 0.0
         self.engine_intensity = 0.0
@@ -222,10 +217,6 @@ class Player:
         self.rect = self.image.get_rect(center=(int(self.x), int(self.y)))
         self._load_shield_frames()
         if sid == "shield":
-            self.engine_offsets = (-12, 0, 12)
-            self.engine_ys = (0, 6, 0)
-            self.engine_width_scale = 0.58
-            self.engine_offset = 12
             self.phenix_gauge = 10.0
             self.phenix_min_gauge = 0
             self.phenix_cooldown = 0.0
@@ -234,10 +225,6 @@ class Player:
             self.MORPH_IN_SEC = SHIELD_IN_SEC
             self.MORPH_OUT_SEC = SHIELD_OUT_SEC
         else:
-            self.engine_offsets = (-8, 8)
-            self.engine_ys = (0, 0)
-            self.engine_width_scale = 1.0
-            self.engine_offset = 8
             src_p = getattr(self, "_phenix_src", None) or list(self.phenix_frames or [])
             src_m = getattr(self, "_morph_src", None) or list(self.morph_frames or [])
             if not getattr(self, "_phenix_src", None):
@@ -248,6 +235,7 @@ class Player:
             drawn = recolor_phenix_frames(src_m, tint)
             self.morph_frames = morph_sequence(
                 self.image, drawn, self.phenix_frames[0] if self.phenix_frames else None, flash=True) or drawn
+        self._prepare_engines()
 
     @property
     def uses_shield(self):
@@ -833,114 +821,46 @@ class Player:
             self._white_image = white
         return self._white_image
 
-    def _draw_engine_flame(self, surface, cx, cy, intensity):
-        if intensity < 0.05:
+    def _prepare_engines(self):
+        """Have the pictures of the jets of this hull (and of the Phenix, for the Phoenix) ready: nothing is made mid-mission."""
+        try:
+            engine_flame.prepare("shield" if self.uses_shield else "phoenix", self.palette)
+            if not self.uses_shield:
+                engine_flame.prepare("phenix", self.palette)
+        except Exception:
+            log_exc("player._prepare_engines")
+
+    def _engine_plan(self):
+        """What the engines show now: (kind of jet, [(x, y) of each nozzle from the middle of the ship], size of the jets)."""
+        if self.uses_shield:
+            kind, spec = "shield", engine_flame.NOZZLES["shield"]
+            return None if self.is_phenix else (kind, list(zip(spec["xs"], spec["ys"])), 1.0)
+        hull, phenix = engine_flame.NOZZLES["phoenix"], engine_flame.NOZZLES["phenix"]
+        if not self.is_phenix:
+            return "phoenix", list(zip(hull["xs"], hull["ys"])), 1.0
+        if getattr(self, "morph_dir", 0) == 0:
+            return "phenix", list(zip(phenix["xs"], phenix["ys"])), 1.0
+        # the change: the nozzles and the jets go from the hull's to the Phenix's
+        prog = 0.0 if self.morph_duration <= 0 else min(1.0, self.morph_timer / self.morph_duration)
+        f = prog if self.morph_dir > 0 else 1.0 - prog
+        nozzles = [(a + (b - a) * f, c + (d - c) * f) for a, c, b, d in zip(hull["xs"], hull["ys"], phenix["xs"], phenix["ys"])]
+        return "phenix", nozzles, hull["half"] / phenix["half"] + (1.0 - hull["half"] / phenix["half"]) * f
+
+    def _draw_engines(self, surface, grow=1.0, thrust=None):
+        """The jets of the engines, behind the hull. `grow` scales the ship (while it dies), `thrust` replaces the real one."""
+        plan = self._engine_plan()
+        if plan is None:
             return
-        
-        phenix = self.is_phenix
-        # Boost size when transformed
-        if phenix:
-            intensity = max(intensity, 0.85) * 1.55
-        
-        flicker = 0.85 + 0.15 * math.sin(self.engine_time * 28.0 + cx * 0.1)
-        length = intensity * flicker * (18.0 + 4.0 * math.sin(self.engine_time * 19.0 + cx))
-        width = (5 + intensity * 3) * float(getattr(self, "engine_width_scale", 1.0))
-        if phenix:
-            length *= 1.35
-            width *= 1.45
-        
-        for i in range(3, 0, -1):
-            h = length * (0.5 + 0.5 * (i / 3.0))
-            w = width * (1.4 - 0.2 * i)
-            if phenix:
-                if getattr(self, "palette", "red") == "blue":
-                    color = (
-                        (80, 180, 255),
-                        (140, 220, 255),
-                        (200, 245, 255),
-                    )[min(2, 3 - i)]
-                else:
-                    color = (
-                        (160, 20, 5),
-                        (220, 50, 10),
-                        (255, 110, 25),
-                    )[min(2, 3 - i)]
-            else:
-                if getattr(self, "uses_shield", False):
-                    pal = getattr(self, "palette", "red")
-                    if pal == "green":
-                        color = (
-                            (8, 70, 25),
-                            (30, 180, 50),
-                            (180, 255, 90),
-                        )[min(2, 3 - i)]
-                    elif pal == "violet":
-                        color = (
-                            (90, 20, 140),
-                            (180, 40, 200),
-                            (255, 160, 80),
-                        )[min(2, 3 - i)]
-                    else:
-                        color = (
-                            (160, 18, 4),
-                            (230, 70, 12),
-                            (255, 170, 40),
-                        )[min(2, 3 - i)]
-                elif getattr(self, "palette", "argent") == "gold":
-                    color = (
-                        (160, 80, 10),
-                        (230, 160, 30),
-                        (255, 230, 120),
-                    )[min(2, 3 - i)]
-                elif getattr(self, "palette", "argent") == "blue":
-                    color = (20, 60 + i * 20, 200)
-                else:
-                    color = (40, 160 + i * 30, 255)
-            points = [
-                (cx - w, cy),
-                (cx + w, cy),
-                (cx + w * 0.3, cy + h),
-                (cx - w * 0.3, cy + h),
-            ]
-            pygame.draw.polygon(surface, color, points)
-        
-        core_h = length * 0.7
-        core_w = width * 0.45
-        if phenix:
-            if getattr(self, "palette", "red") == "blue":
-                pygame.draw.polygon(surface, (210, 245, 255), [
-                    (cx - core_w, cy),
-                    (cx + core_w, cy),
-                    (cx + core_w * 0.2, cy + core_h),
-                    (cx - core_w * 0.2, cy + core_h),
-                ])
-                pygame.draw.circle(surface, (255, 255, 255), (int(cx), int(cy + core_h * 0.85)), 3)
-            else:
-                pygame.draw.polygon(surface, (255, 200, 60), [
-                    (cx - core_w, cy),
-                    (cx + core_w, cy),
-                    (cx + core_w * 0.2, cy + core_h),
-                    (cx - core_w * 0.2, cy + core_h),
-                ])
-                pygame.draw.circle(surface, (255, 245, 180), (int(cx), int(cy + core_h * 0.85)), 3)
-        else:
-            if getattr(self, "uses_shield", False):
-                pal = getattr(self, "palette", "red")
-                if pal == "green":
-                    core_col = (220, 255, 140)
-                elif pal == "violet":
-                    core_col = (255, 190, 220)
-                else:
-                    core_col = (255, 230, 120)
-            else:
-                core_col = (180, 255, 255)
-            pygame.draw.polygon(surface, core_col, [
-                (cx - core_w, cy),
-                (cx + core_w, cy),
-                (cx + core_w * 0.2, cy + core_h),
-                (cx - core_w * 0.2, cy + core_h),
-            ])
-            pygame.draw.circle(surface, (220, 255, 255), (int(cx), int(cy + core_h * 0.85)), 2)
+        kind, nozzles, size = plan
+        if thrust is None:
+            thrust = self.engine_intensity
+            if thrust < engine_flame.SHOW_FROM:
+                return                                           # engines off: no jets at all
+            if kind == "phenix":
+                thrust = max(thrust, 0.85)                       # the Phenix always burns hard
+        for i, (nx, ny) in enumerate(nozzles):
+            engine_flame.draw(surface, kind, self.palette, self.x + nx * grow, self.y + ny * grow, thrust,
+                              self.engine_time, engine=i, size=size * grow)
 
     def _draw_edge_lightning(self, surface):
         if self.edge_flash < 0.05 and not (self.dying and self.edge_death):
@@ -1002,6 +922,8 @@ class Player:
             alpha = max(0, int(255 * (1.0 - t)))
             scale = 1.0 + 0.45 * t
             
+            if t < 0.5:                                          # dying engine sputter: the jets die down, behind the hull
+                self._draw_engines(surface, grow=scale, thrust=0.6 * (1.0 - t))
             img = self._get_white_image() if (self.death_flash and t < 0.55) else self.image
             w = max(1, int(self.width * scale))
             h = max(1, int(self.height * scale))
@@ -1009,16 +931,6 @@ class Player:
             scaled.set_alpha(alpha)
             surface.blit(scaled, (int(self.x - w // 2), int(self.y - h // 2)))
             
-            # Dying engine sputter
-            if t < 0.5:
-                ship_bottom = self.y + h // 2 - 4
-                offs = getattr(self, "engine_offsets", (-8, 8))
-                yos = getattr(self, "engine_ys", (0,) * len(offs))
-                for i, off in enumerate(offs):
-                    self._draw_engine_flame(
-                        surface, self.x + off, ship_bottom + yos[i] if i < len(yos) else ship_bottom,
-                        0.6 * (1.0 - t),
-                    )
             if self.edge_death:
                 self._draw_edge_lightning(surface)
             return
@@ -1029,6 +941,7 @@ class Player:
         
         punch = 3 if float(getattr(self, "shield_punch", 0.0) or 0.0) > 0 else 0
         flash = int(getattr(self, "shield_flash", 0) or 0) > 0
+        self._draw_engines(surface)                              # the jets come out from behind the hull
 
         def _blit_ship_layer(img, extra=0, do_flash=False):
             if img is None:
@@ -1061,7 +974,6 @@ class Player:
             if self.uses_shield:
                 _blit_ship_layer(self.image, extra, flash)
             _blit_ship_layer(img, extra, flash and self.uses_shield)
-            ship_bottom = self.y + self.height // 2 - 2
         elif self.is_phenix and getattr(self, "phenix_frames", None):
             n = len(self.phenix_frames)
             idx = int(self.phenix_anim_time * self.PHENIX_ANIM_FPS) % n
@@ -1070,23 +982,11 @@ class Player:
             if self.uses_shield:
                 _blit_ship_layer(self.image, extra, flash)
             _blit_ship_layer(img, extra, flash and self.uses_shield)
-            ship_bottom = self.y + self.height // 2 - 2
         else:
             draw_x = int(self.x - self.width // 2)
             draw_y = int(self.y - self.height // 2)
             surface.blit(self.image, (draw_x, draw_y))
-            ship_bottom = self.y + self.height // 2 - 2
 
-        if not (self.uses_shield and self.is_phenix):
-            offs = getattr(self, "engine_offsets", (-8, 8))
-            yos = getattr(self, "engine_ys", (0,) * len(offs))
-            for i, off in enumerate(offs):
-                self._draw_engine_flame(
-                    surface, self.x + off,
-                    ship_bottom + (yos[i] if i < len(yos) else 0),
-                    self.engine_intensity,
-                )
-        
         self._draw_edge_lightning(surface)
         self.shield_flash = 0
         
