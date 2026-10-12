@@ -50,6 +50,7 @@ from mp3_title import title_from_path, title_for_key
 from i18n import set_lang, get_lang, t, t_help, t_list, get_credits_lines, LANGS, LANG_CODES
 from story import StoryHub
 import story_state
+import story_items
 import addon as mame_addon
 from highscores import load_highscores, is_highscore, insert_score, reset_highscores
 from achievements import (
@@ -1774,6 +1775,21 @@ class Game:
             self.player.phenix_sec_per_point *= max(0.1, int(loadout.get("phenix_pct") or 60) / 100.0)
         self.player.adventure_wall = loadout.get("wall") or "instant"
         self.adventure["dome"] = dome
+        # the loot items bought in the hangar for this mission (they are used up when it ends, see _end_adventure)
+        items = list(spec.get("items") or [])
+        fx = story_items.effects(items)
+        self.adventure["items"] = items
+        self.player.lives += fx["extra_lives"]
+        self.player.speed *= fx["speed_mult"]
+        self.player.bullet_speed_mult = fx["fire_mult"]
+        self.player.electric_immune = fx["electric_immune"]
+        # and the one that may fall during it (rare, see story_items.plan_drop)
+        story = getattr(self, "story", None)
+        self.adventure["loot_plan"] = story_items.plan_drop(story.state, random) if story is not None else None
+        self.adventure["loot_clock"] = 0.0
+        self.adventure["loot"] = None
+        self.loot = None
+        self.loot_note = None
         if sid == "shield":
             self.player.SHIELD_DURATION = max(0.4, float(loadout.get("dome_dur") or 1.0))
             self.player.SHIELD_COOLDOWN = max(1.5, float(loadout.get("dome_cd") or 5.0))
@@ -1847,7 +1863,8 @@ class Game:
         story = getattr(self, "story", None)
         if story is not None:
             try:
-                story.apply_result(spec.get("id"), score, bool(cleared), spec.get("kills"))
+                story.apply_result(spec.get("id"), score, bool(cleared), spec.get("kills"),
+                                   loot=spec.get("loot"), used=spec.get("items"))
             except Exception:
                 log_exc("game._end_adventure")
         self.adventure = None
@@ -3513,7 +3530,8 @@ class Game:
                 if self.stage_transition == "fly_up":
                     # the mission was already won: bank it
                     self.story.apply_result(self.adventure.get("id"), int(self.score), True,
-                                            self.adventure.get("kills"))
+                                            self.adventure.get("kills"), loot=self.adventure.get("loot"),
+                                            used=self.adventure.get("items"))
                     toast = self.story.toast
                 else:
                     # leaving a mission by choice: nothing gained, nothing lost, back to the hangar
@@ -3862,6 +3880,7 @@ class Game:
             return
         
         self.formation.update(self.dt, self.player.x)
+        update_play.tick_loot(self)
         self._drain_detach_pops()
         self._check_extra_lives()
         if self.life_flash_timer > 0:

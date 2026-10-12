@@ -17,6 +17,7 @@ import os
 import time
 import unicodedata
 
+import story_items
 from safe_io import atomic_write_json, backup_unreadable
 from settings import asset_path, user_data_dir, ENEMY_VETERAN_BONUS
 
@@ -575,6 +576,7 @@ def default_state():
         "mission_kills": {},     # enemies destroyed in all the runs of a hunt mission, by mission id
         "mission_clears": {},    # how many times a hunt mission was won (its level is one more)
         "paint": {"step": 0, "runs": 0, "token": False},   # the Act 2 paint series (see paint_state)
+        "items": story_items.clean(None),   # the loot items of the current Act (see story_items.py)
     }
 
 
@@ -643,6 +645,8 @@ def migrate_state(data):
                 base["mission_clears"][mid] = max(0, int(_num(n, 0)))
     if isinstance(data.get("paint"), dict):
         base["paint"] = paint_state(data)
+    if isinstance(data.get("items"), dict):
+        base["items"] = story_items.clean(data["items"])
     if isinstance(data.get("mission_kills"), dict):
         for mid, n in data["mission_kills"].items():
             if isinstance(mid, str) and is_hunt(mission_by_id(mid)):
@@ -1271,11 +1275,27 @@ def shop_for(state):
     """Workshop rows of the selected hull: (id, label, cost, flag required)."""
     slot = selected_slot(state) or {}
     if slot.get("id") == "phoenix":
-        return [(u[0], u[1], u[2], u[3]) for sid in PHENIX_SHOP_IDS for u in UPGRADES if u[0] == sid]
-    rows = list(SHOP)
-    if int(_num(state.get("act"), 1)) >= 2:
-        rows.append(PAINT_ROW)                 # the paint shop: PAINT_COST credits, and one change per finished series
-    return rows
+        rows = [(u[0], u[1], u[2], u[3]) for sid in PHENIX_SHOP_IDS for u in UPGRADES if u[0] == sid]
+    else:
+        rows = list(SHOP)
+        if int(_num(state.get("act"), 1)) >= 2:
+            rows.append(PAINT_ROW)             # the paint shop: PAINT_COST credits, and one change per finished series
+    return rows + [item_row(i) for i in story_items.shop(state)]      # the loot items caught, for the hull flown
+
+
+ITEM_PREFIX = "item:"
+
+
+def item_row(item):
+    """Workshop row of a loot item: ("item:<id>", name key, price, no flag)."""
+    return (ITEM_PREFIX + item, "item_%s_name" % item, story_items.PRICES[item], None)
+
+
+def item_of(sid):
+    """The loot item a workshop row id stands for, or None."""
+    if isinstance(sid, str) and sid.startswith(ITEM_PREFIX) and sid[len(ITEM_PREFIX):] in story_items.ITEM_IDS:
+        return sid[len(ITEM_PREFIX):]
+    return None
 
 
 def act_caps(state):
@@ -1299,6 +1319,9 @@ def upgrade_note(state, sid):
     "story_locked" when the story flag is missing, "story_owned" when already
     bought, "story_need_prev" / "story_need_dome" when a step is missing.
     """
+    item = item_of(sid)
+    if item is not None:
+        return "story_item_installed" if story_items.status(state, item) == story_items.INSTALLED else None
     up = _upgrade(sid)
     if up is None:
         return None
@@ -1310,6 +1333,9 @@ def upgrade_note(state, sid):
 
 def buy(state, sid):
     """Buy one upgrade for the selected hull. True when it was bought."""
+    item = item_of(sid)
+    if item is not None:
+        return story_items.buy(state, item)           # a loot item: for the next mission, whichever hull flies it
     up = _upgrade(sid)
     if up is None:
         return False
@@ -1333,21 +1359,27 @@ def failure_penalty(credits):
     return int(credits * PENALTY_RATE + 0.5)
 
 
-def record_result(state, mission_id, score, cleared, kills=None):
+def record_result(state, mission_id, score, cleared, kills=None, loot=None, used=None):
     """Apply the end of a mission.
 
     Cleared: the score is banked as hangar credits, unlock flags and journal line.
     Failed, Normal mode: nothing is gained and 5 % of the credits held are lost.
     Failed, Veteran mode: the pilot falls, the save becomes a memorial.
     `kills` ({kind: n}, the enemies destroyed) always goes into the Bestiary, win or lose.
+    `loot` (the item caught during the mission) goes on sale in the hangar, win or lose; `used` (the items that were
+    installed for the mission) are used up, win or lose (see story_items.py).
 
     Returns {"score", "cleared", "first", "lost", "fallen"}. The journal stores a
     text KEY, not the translated text, so it follows the player's language.
     """
     score = max(0, int(score or 0))
-    res = {"score": score, "cleared": bool(cleared), "first": False, "lost": 0, "fallen": False, "act": 0}
+    res = {"score": score, "cleared": bool(cleared), "first": False, "lost": 0, "fallen": False, "act": 0,
+           "loot": None, "used": []}
     record_kills(state, kills)            # the enemies met count whatever the outcome
     record_mission_kills(state, mission_id, kills)
+    res["used"] = story_items.consume(state, used)           # before the Act can change: they belong to this one
+    if loot and story_items.find(state, loot):
+        res["loot"] = loot
     if not cleared:
         if state.get("mode") == "veteran":
             state["fallen"] = True

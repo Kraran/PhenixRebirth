@@ -14,6 +14,8 @@ import pygame
 from settings import (BASE_HEIGHT, BASE_WIDTH, SCREEN_SHAKE_DECAY, stage_speed_mult)
 from enemy import BigBird, Enemy
 from explosion import TeslaCoilFx
+from i18n import t
+from loot import FallingItem
 
 
 def tick_ships(game):
@@ -71,6 +73,40 @@ def tick_ships(game):
     tesla_on = game.tesla_fx is not None and not game.tesla_fx.is_finished()
     flash_on = any(p.edge_flash > 0.08 and not p.dying for p in game._ships())
     game.sounds.play_electric(tesla_on or flash_on, x=game._sfx_electric_x())
+
+
+LOOT_NOTE_TIME = 2.4
+
+
+def tick_loot(game):
+    """Adventure: an item falls some time into the mission (see story_items.plan_drop). The ship catches it by touching
+    it; it goes on sale in the hangar when the mission ends. An item that reaches the bottom is lost."""
+    adv = getattr(game, "adventure", None)
+    if not adv:
+        return
+    note = getattr(game, "loot_note", None)
+    if note is not None:
+        note["t"] -= game.dt
+        if note["t"] <= 0:
+            game.loot_note = None
+    adv["loot_clock"] = float(adv.get("loot_clock", 0.0) or 0.0) + game.dt
+    plan = adv.get("loot_plan")
+    ship = game.player
+    if plan and getattr(game, "loot", None) is None and adv["loot_clock"] >= plan["t"] and ship and ship.alive:
+        adv["loot_plan"] = None
+        x = FallingItem.pick_x(ship.x, ship.speed, ship.y)
+        game.loot = FallingItem(plan["id"], x)
+    item = getattr(game, "loot", None)
+    if item is None:
+        return
+    item.update(game.dt)
+    if ship and ship.alive and not ship.dying and item.rect().colliderect(ship.get_hitbox()):
+        adv["loot"] = item.item
+        game.loot = None
+        game.loot_note = {"text": t("story_item_caught").format(name=t("item_%s_name" % item.item)), "t": LOOT_NOTE_TIME}
+        game.sounds.play("1up", x=ship.x)
+    elif not item.alive:
+        game.loot = None
 
 
 def tick_fly_up(game):
