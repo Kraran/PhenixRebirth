@@ -311,10 +311,11 @@ T = {
         "ru": "ГЛАВА 1 — СЕКТОР ПТИЦ",
     },
     "story_m_sortie": {
-        "fr": "Premiere sortie", "en": "First sortie", "es": "Primera salida", "de": "Erster Einsatz",
-        "it": "Prima sortita", "pt": "Primeira saida", "nl": "Eerste vlucht", "pl": "Pierwszy wylot",
-        "tr": "Ilk cikis", "sv": "Forsta uppdrag", "no": "Forste tokt", "da": "Forste togt",
-        "ru": "Первый вылет",
+        "fr": "Bestiaire : Premiere sortie", "en": "Bestiary: First sortie", "es": "Bestiario: Primera salida",
+        "de": "Bestiarium: Erster Einsatz", "it": "Bestiario: Prima sortita", "pt": "Bestiario: Primeira saida",
+        "nl": "Bestiarium: Eerste vlucht", "pl": "Bestiariusz: Pierwszy wylot", "tr": "Bestiary: Ilk cikis",
+        "sv": "Bestiarium: Forsta uppdrag", "no": "Bestiarium: Forste tokt", "da": "Bestiarium: Forste togt",
+        "ru": "Бестиарий: Первый вылет",
     },
     "story_m_sortie_b": {
         "fr": "Oiseaux sombres seulement. Le dome est hors ligne.",

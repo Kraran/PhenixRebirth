@@ -154,6 +154,7 @@ Current release: **v1.4.5**
   focused item under the list (six rows at a time). Save: `items` key (additive, version 4 unchanged). The replay reference
   of the `adventure` scenario was regenerated (the drop draw uses the random generator)
 - Adventure, loot items: the paint missions (Space Invaders) never carry an item and do not count in the gap between two drops; an item bought still works in them, like in any other mission. Tests: `tests/test_loot_in_mission.py`
+- Adventure: the first mission is now called "Bestiaire : Premiere sortie" (like the other Bestiary hunts, in every language; `story_m_sortie`). Its scene title ("Première sortie : les oiseaux bleus") is unchanged
 - Adventure, Act 2: new Bestiary hunt "the Avioid commander" (`best_boss`), right after the four Bestiary hunts. It
   flies the arcade boss level (stage 5), can be replayed, and goes up one level at each victory (boss of stage 5, 10,
   15...), like the other hunts. It counts for the Bestiary boss entry
