@@ -193,3 +193,13 @@ def test_the_scene_draws_its_picture_and_its_hints(run):
         story._text, story._text_fit = real, real_fit
     assert t("story_scene_last") in seen
     assert len({tuple(surf.get_at((x, y))) for x in range(0, 1280, 40) for y in range(0, 720, 40)}) > 20
+
+
+def test_the_mission_is_called_bestiary_first_sortie_like_the_other_bestiary_hunts():
+    import i18n
+    mission = next(m for m in ss.MISSIONS if m["id"] == ID)
+    assert t(mission["title"]) == "Bestiaire : Premiere sortie"
+    entry = i18n.T["story_m_sortie"]
+    assert entry["en"] == "Bestiary: First sortie"
+    assert all(entry[lang].split(":")[0] == i18n.T["story_m_best2"][lang].split(":")[0] for lang in entry)   # same word as the others
+    assert all(entry[lang].count(":") == 1 for lang in entry)
