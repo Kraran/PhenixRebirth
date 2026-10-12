@@ -3,6 +3,8 @@ Current release: **v1.4.5**
 
 ## Unreleased (towards 1.5.0 — Adventure)
 
+- Adventure: Dome I is now open from the start of Act 1, like "Bestiaire : Premiere sortie" (it no longer waits for the
+  4th Bestiary hunt). The rest of the dome series is unchanged: each mission opens the next one and is flown once
 - Ships: new engine jets (`src/engine_flame.py`). Each nozzle now gives a straight, dense jet of burning gas (white-hot
   at the nozzle, then yellow / orange, fading at the end, no point), drawn behind the hull. Colours are kept (Phoenix
   argent / blue / gold, Shield red / green / violet, Phenix red / blue). Nozzle places are read on the hull pictures;
