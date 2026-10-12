@@ -1285,6 +1285,11 @@ PAINT_ROW = ("paint", "story_shop_paint", PAINT_COST, None)
 PHENIX_SHOP_IDS = ("speed_80", "lives_2", "wall_slow", "phenix_cap_80")
 
 
+# The workshop sells "Vies 2" (and "Vies 3" in Act 3): the number is the lives you end up with, so a Novice (who starts with 3)
+# reads "Vies 4" (then "Vies 5")
+NOVICE_LABELS = {"story_shop_lives2": "story_shop_lives4", "story_shop_lives3": "story_shop_lives5"}
+
+
 def shop_for(state):
     """Workshop rows of the selected hull: (id, label, cost, flag required)."""
     slot = selected_slot(state) or {}
@@ -1294,6 +1299,8 @@ def shop_for(state):
         rows = list(SHOP)
         if int(_num(state.get("act"), 1)) >= 2:
             rows.append(PAINT_ROW)             # the paint shop: PAINT_COST credits, and one change per finished series
+    if state.get("mode") == "novice":
+        rows = [(sid, NOVICE_LABELS.get(label, label), cost, need) for sid, label, cost, need in rows]
     return rows + [item_row(i) for i in story_items.shop(state)]      # the loot items caught, for the hull flown
 
 

@@ -219,9 +219,13 @@ def draw_help_page(game, surface, page, y_off):
             ps = game._txt(game.font, pts + " " + t_help("pts"), (110, 255, 150))
             surface.blit(ps, (col_r + 60, yy(y + 26)))
             y += 54
-        note = game._txt(game.font, t_help("vet_note"), (180, 160, 200))
-        surface.blit(note, (col_r, yy(y + 2)))
-        y += 26
+        vet = t_help("vet_note")
+        y += 2
+        for line in (vet if isinstance(vet, list) else [vet]):          # one line, or several when the text is long
+            note = game._txt(game.font, line, (180, 160, 200))
+            surface.blit(note, (col_r, yy(y)))
+            y += 26
+        y -= 2
         note2 = game._txt(game.font, t_help("bonus_lives"), (180, 160, 220))
         surface.blit(note2, (col_r, yy(y)))
     else:

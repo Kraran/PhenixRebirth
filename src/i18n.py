@@ -283,6 +283,16 @@ T = {
         "it": "Vite 3", "pt": "Vidas 3", "nl": "Levens 3", "pl": "Zycia 3",
         "tr": "Can 3", "sv": "Liv 3", "no": "Liv 3", "da": "Liv 3", "ru": "Жизни 3",
     },
+    "story_shop_lives4": {
+        "fr": "Vies 4", "en": "Lives 4", "es": "Vidas 4", "de": "Leben 4",
+        "it": "Vite 4", "pt": "Vidas 4", "nl": "Levens 4", "pl": "Zycia 4",
+        "tr": "Can 4", "sv": "Liv 4", "no": "Liv 4", "da": "Liv 4", "ru": "Жизни 4",
+    },
+    "story_shop_lives5": {
+        "fr": "Vies 5", "en": "Lives 5", "es": "Vidas 5", "de": "Leben 5",
+        "it": "Vite 5", "pt": "Vidas 5", "nl": "Levens 5", "pl": "Zycia 5",
+        "tr": "Can 5", "sv": "Liv 5", "no": "Liv 5", "da": "Liv 5", "ru": "Жизни 5",
+    },
     "story_shop_latency": {
         "fr": "Dome latence", "en": "Dome latency", "es": "Latencia domo", "de": "Dom-Latenz",
         "it": "Latenza domo", "pt": "Latencia domo", "nl": "Koepellatentie", "pl": "Opoznienie kopuly",
@@ -2295,14 +2305,14 @@ HELP = {
     "scenario": {
         "fr": [
             "Dans les confins de l'espace, des essaims",
-            "d'oiseaux hostiles et des gargouilles",
+            "d'Avioïdes hostiles et des Gargouilles",
             "menacent la derniere flotte libre.",
             "Seul un chasseur d'elite peut percer",
             "la soucoupe-mere et briser le cycle.",
         ],
         "en": [
-            "In the depths of space, hostile flocks",
-            "of birds and stone gargoyles",
+            "In the depths of space, swarms",
+            "of hostile Avioids and Gargoyles",
             "threaten the last free fleet.",
             "Only an elite fighter can pierce",
             "the mothership and break the cycle.",
@@ -2395,13 +2405,13 @@ HELP = {
         "fr": [
             "Deplace-toi  —  un seul tir a la fois",
             "Detruis les formations, avance stage",
-            "Boss : perce le blindage, vise le coeur",
+            "Commandant : perce le blindage, vise le coeur",
             "Attention aux bords et aux piques !",
         ],
         "en": [
             "Move  —  only one shot on screen",
             "Clear formations, advance stages",
-            "Boss: break the armor, hit the core",
+            "Commander: break the armor, hit the core",
             "Watch the edges and dive attacks!",
         ],
         "es": [
@@ -2497,31 +2507,31 @@ HELP = {
         "no": "POENG", "da": "POINT", "ru": "ОЧКИ",
     },
     "enemy_s1": {
-        "fr": "Oiseau stage 1", "en": "Stage 1 bird", "es": "Pajaro fase 1", "de": "Vogel Stage 1",
+        "fr": "Avioïde éclaireur stage 1", "en": "Scout Avioid stage 1", "es": "Pajaro fase 1", "de": "Vogel Stage 1",
         "it": "Uccello livello 1", "pt": "Passaro fase 1", "nl": "Vogel stage 1", "pl": "Ptak etap 1",
         "tr": "Bolum 1 kus", "sv": "Fagel bana 1", "no": "Fugl level 1", "da": "Fugl bane 1",
         "ru": "Птица ур. 1",
     },
     "enemy_s2": {
-        "fr": "Oiseau stage 2", "en": "Stage 2 bird", "es": "Pajaro fase 2", "de": "Vogel Stage 2",
+        "fr": "Avioïde kaki stage 2", "en": "Khaki Avioid stage 2", "es": "Pajaro fase 2", "de": "Vogel Stage 2",
         "it": "Uccello livello 2", "pt": "Passaro fase 2", "nl": "Vogel stage 2", "pl": "Ptak etap 2",
         "tr": "Bolum 2 kus", "sv": "Fagel bana 2", "no": "Fugl level 2", "da": "Fugl bane 2",
         "ru": "Птица ур. 2",
     },
     "enemy_s3": {
-        "fr": "Gargouille stage 3", "en": "Stage 3 gargoyle", "es": "Gargola fase 3", "de": "Gargoyle Stage 3",
+        "fr": "Gargouille stage 3", "en": "Gargoyle stage 3", "es": "Gargola fase 3", "de": "Gargoyle Stage 3",
         "it": "Gargoyle livello 3", "pt": "Gargula fase 3", "nl": "Gargoyle stage 3", "pl": "Gargulec etap 3",
         "tr": "Bolum 3 gargoil", "sv": "Gargoyle bana 3", "no": "Gargoyle level 3", "da": "Gargoyle bane 3",
         "ru": "Горгулья ур. 3",
     },
     "enemy_s4": {
-        "fr": "Gargouille stage 4", "en": "Stage 4 gargoyle", "es": "Gargola fase 4", "de": "Gargoyle Stage 4",
+        "fr": "Gargouille sombre stage 4", "en": "Dark Gargoyle stage 4", "es": "Gargola fase 4", "de": "Gargoyle Stage 4",
         "it": "Gargoyle livello 4", "pt": "Gargula fase 4", "nl": "Gargoyle stage 4", "pl": "Gargulec etap 4",
         "tr": "Bolum 4 gargoil", "sv": "Gargoyle bana 4", "no": "Gargoyle level 4", "da": "Gargoyle bane 4",
         "ru": "Горгулья ур. 4",
     },
     "enemy_boss": {
-        "fr": "Boss (coeur)", "en": "Boss (core)", "es": "Jefe (nucleo)", "de": "Boss (Kern)",
+        "fr": "Commandant avioïde stage 5", "en": "Avioid commander stage 5", "es": "Jefe (nucleo)", "de": "Boss (Kern)",
         "it": "Boss (nucleo)", "pt": "Chefe (nucleo)", "nl": "Baas (kern)", "pl": "Boss (rdzen)",
         "tr": "Boss (cekirdek)", "sv": "Boss (karna)", "no": "Boss (kjerne)", "da": "Boss (kerne)",
         "ru": "Босс (ядро)",
@@ -2531,8 +2541,8 @@ HELP = {
         "nl": "pnt", "pl": "pkt", "tr": "pn", "sv": "p", "no": "p", "da": "p", "ru": "очк.",
     },
     "vet_note": {
-        "fr": "Veteran : oiseaux +10  /  boss 1000",
-        "en": "Veteran : birds +10  /  boss 1000",
+        "fr": ["Veteran : ennemis +10", "Veteran : Commandant avioïde 1000"],
+        "en": ["Veteran : enemies +10", "Veteran : Avioid commander 1000"],
         "es": "Veterano : pajaros +10  /  jefe 1000",
         "de": "Veteran : Vogel +10  /  Boss 1000",
         "it": "Veterano : uccelli +10  /  boss 1000",
