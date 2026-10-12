@@ -652,3 +652,74 @@ def test_the_texts_exist_in_french_and_english():
     assert T["item_tesla_effect"]["fr"] == "Immunité électrique"
     assert [T["item_%s_name" % i]["fr"] for i in si.ITEM_IDS] == [
         "Singularity Core", "Noyau Genesis", "Réacteur Hyperion", "Tesla Seal"]
+
+
+# ---------------------------------------------------------------- the paint missions
+def _launch_paint(run, **kw):
+    g = run.game
+    _slot(**kw)
+    g.story.open_slot(1)
+    g.story.cheat_unlock = True                                # any mission can be flown
+    g.story.map_index = [m["id"] for m in g.story.missions()].index("paint_1")
+    spec = g.story._launch_selected()
+    assert spec and spec.get("invaders")
+    g._begin_adventure(spec)
+    g.input_grace = 0.0
+    return spec
+
+
+def test_a_paint_mission_never_carries_an_item(run, monkeypatch):
+    monkeypatch.setattr(random, "random", lambda: 0.0)         # the luckiest dice
+    _launch_paint(run)
+    assert run.game.adventure["loot_plan"] is None
+    _in_play(run)
+    run.frames(120)
+    assert run.game.loot is None
+
+
+def test_a_paint_mission_does_not_count_in_the_gap_between_drops(run, monkeypatch):
+    monkeypatch.setattr(random, "random", lambda: 0.0)
+    g = run.game
+    _launch(run)
+    assert g.adventure["loot_plan"]                            # a mission with an item...
+    before = dict(g.story.state["items"])
+    for _ in range(5):
+        g._begin_adventure(_launch_paint_spec(g))
+    assert g.story.state["items"]["since"] == before["since"]   # ...the paint missions do not use up the gap
+
+
+def _launch_paint_spec(g):
+    g.story.cheat_unlock = True
+    g.story.map_index = [m["id"] for m in g.story.missions()].index("paint_1")
+    return g.story._launch_selected()
+
+
+def test_the_other_missions_still_carry_items_after_a_paint_one(run, monkeypatch):
+    monkeypatch.setattr(random, "random", lambda: 0.0)
+    g = run.game
+    _launch_paint(run)
+    g.story.cheat_unlock = False
+    g.story.map_index = 0
+    g._begin_adventure(g.story._launch_selected())
+    assert g.adventure["loot_plan"]
+
+
+@pytest.mark.parametrize("item", si.ITEM_IDS)
+def test_an_item_installed_works_in_a_paint_mission(run, item):
+    spec = _launch_paint(run, credits=20000, found=(item,), buy=(item,))
+    g = run.game
+    assert spec["items"] == [item] and g.adventure["items"] == [item]
+    fx = si.effects([item])
+    p = g.player
+    assert p.bullet_speed_mult == fx["fire_mult"] and p.electric_immune == fx["electric_immune"]
+    assert p.lives == 1 + fx["extra_lives"]
+    assert p.speed == pytest.approx(PLAYER_SPEED * 0.4 * fx["speed_mult"])
+
+
+def test_a_paint_mission_uses_the_installed_items_up(run):
+    _launch_paint(run, credits=20000, found=("tesla", "hyperion"), buy=("tesla",))
+    g = run.game
+    _in_play(run)
+    g._end_adventure(True)
+    assert si.status(g.story.state, "tesla") == "used"
+    assert si.status(g.story.state, "hyperion") == "found"

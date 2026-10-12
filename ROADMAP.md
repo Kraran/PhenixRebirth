@@ -153,6 +153,7 @@ Current release: **v1.4.5**
   `tools/make_item_sprites.py`. The workshop shows a picture, the effect and the price per item, and the description of the
   focused item under the list (six rows at a time). Save: `items` key (additive, version 4 unchanged). The replay reference
   of the `adventure` scenario was regenerated (the drop draw uses the random generator)
+- Adventure, loot items: the paint missions (Space Invaders) never carry an item and do not count in the gap between two drops; an item bought still works in them, like in any other mission. Tests: `tests/test_loot_in_mission.py`
 - Adventure, Act 2: new Bestiary hunt "the Avioid commander" (`best_boss`), right after the four Bestiary hunts. It
   flies the arcade boss level (stage 5), can be replayed, and goes up one level at each victory (boss of stage 5, 10,
   15...), like the other hunts. It counts for the Bestiary boss entry
