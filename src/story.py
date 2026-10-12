@@ -813,6 +813,11 @@ class StoryHub:
         if ss.is_paint(mission):
             spec["level"] = ss.invader_level(self.state, mission)
             spec["invaders"] = True               # a Space Invaders grid, three levels harder each pass
+        if mission.get("hud_title"):
+            spec["hud_title"] = mission["hud_title"]          # a shorter name for the top of the screen
+        if mission.get("galaga"):
+            spec["galaga"] = True                 # waves in chains like Namco's Galaga (src/galaga.py)
+            spec["stage"] = int(mission.get("stage") or ss.GALAGA_STAGE)
         if mission.get("swarm"):
             spec["swarm"] = True                  # the four enemies together, replaced as they fall
             spec["stage"] = int(mission.get("stage") or 11)
@@ -833,6 +838,10 @@ class StoryHub:
                 self.toast = t("story_paint_done_series")
             if res.get("hull") == "phoenix":
                 self.toast = t("story_phenix_gift")
+            if res.get("opened"):
+                self.toast = t("story_bonus_open")
+            if res.get("thrust"):
+                self.toast = t("story_thrust_gift")
         elif res["fallen"]:
             self.toast = t("story_fell_msg").format(name=self.state.get("name") or "")
         elif res["lost"]:

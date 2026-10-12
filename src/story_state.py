@@ -50,6 +50,9 @@ DOME_CD_STEP = 1.0
 DOME_CD_MIN = 3.0
 _EPS = 1e-6
 
+GALAGA_STAGE = 6                       # arcade stage the BONUS mission plays at: level 2 (x1.1 speed, +10 points a bird)
+VERTICAL_FLAG = "vertical_thrust"      # won in the BONUS mission: the ship flies up and down the lower third of the screen
+
 # Chapter 1: main sorties are stage-1 birds only.
 # Other hulls are met (and unlocked) in Bestiary nodes.
 # Phoenix hull is not granted here — end of chapter 2.
@@ -97,6 +100,25 @@ MISSIONS = [
         "speed": 1.0,
         "unlock": ["bestiary_s4"],
         "log": "story_log_best4",
+    },
+    # BONUS: the two-dimensional impulse reactor. Hidden until the dark gargoyles are filed, then on the map in every act
+    # until it is won (once; a won one stays on the Act 1 map only). Waves in the way of Namco's Galaga (src/galaga.py), birds of level 2 (arcade stages 6 / 7).
+    # Winning it gives the ship the power to fly up and down the lower third of the screen for the rest of the Adventure.
+    {
+        "id": "bonus_2d",
+        "secret": True,
+        "carry": True,                      # still on the map of the next acts while it is not won
+        "galaga": True,
+        "title": "story_m_bonus2d",
+        "hud_title": "story_m_bonus2d_hud",
+        "blurb": "story_m_bonus2d_b",
+        "need": "bestiary_s4",
+        "content": 1,
+        "stage": GALAGA_STAGE,
+        "speed": 1.0,
+        "once": True,
+        "unlock": [VERTICAL_FLAG],
+        "log": "story_log_bonus2d",
     },
     # The dome series: Dome I is open from the start, each mission opens the next one and can be flown only once.
     # `waves` are arcade stage numbers (1, 6, 11 = the same wave at 1.0x, 1.1x, 1.2x speed).
@@ -1002,6 +1024,7 @@ def loadout(state, force_ship=None):
         "dome_cd": _num(slot.get("dome_cd"), DOME_CD_START) or DOME_CD_START,
         "wall": slot.get("wall") or "instant",
         "phenix_pct": phenix_cap(slot),
+        "vertical": flag(state, VERTICAL_FLAG),
     }
 
 
@@ -1057,7 +1080,20 @@ def visible_missions(state, cheat=False):
     if cheat:
         return list(MISSIONS)
     act = int(_num(state.get("act"), 1))
-    return [m for m in MISSIONS if mission_in_act(m, act)]
+    return [m for m in MISSIONS if _listed(state, m, act)]
+
+
+def _listed(state, mission, act):
+    """Is this mission on the map of act `act`? A secret mission waits until it is open. A mission that `carry`s over
+    (the BONUS one) is on the map of every act, but once it is won it only stays on the map of the act it was flown in
+    (act 1): the later acts list it only while it is still to do."""
+    if not mission_in_act(mission, act):
+        return False
+    if mission.get("secret") and not mission_open(state, mission):
+        return False
+    if mission.get("carry") and act > 1 and mission.get("id") in (state.get("cleared") or []):
+        return False
+    return True
 
 
 def mission_open(state, mission):
@@ -1399,7 +1435,7 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
     """
     score = max(0, int(score or 0))
     res = {"score": score, "cleared": bool(cleared), "first": False, "lost": 0, "fallen": False, "act": 0,
-           "loot": None, "used": []}
+           "loot": None, "used": [], "opened": [], "thrust": False}
     record_kills(state, kills)            # the enemies met count whatever the outcome
     record_mission_kills(state, mission_id, kills)
     res["used"] = story_items.consume(state, used)           # before the Act can change: they belong to this one
@@ -1430,8 +1466,12 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
         state["mission_clears"][mission_id] = hunt_level(state, mission_id)
     if mission:
         flags = state.setdefault("flags", {})
+        hidden = [m["id"] for m in MISSIONS if m.get("secret") and not mission_open(state, m)]
+        gives_thrust = VERTICAL_FLAG in (mission.get("unlock") or []) and not flags.get(VERTICAL_FLAG)
         for name in mission.get("unlock") or []:
             flags[name] = True
+        res["opened"] = [m_id for m_id in hidden if mission_open(state, mission_by_id(m_id))]    # a secret mission shows up
+        res["thrust"] = bool(gives_thrust)
         if mission.get("grant_hull"):
             for sl in state.get("slots") or []:
                 if sl.get("id") == mission["grant_hull"] and not sl.get("owned"):

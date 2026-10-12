@@ -53,6 +53,9 @@ PLAYER_WIDTH = 48
 PLAYER_HEIGHT = 36
 BULLET_SPEED = 980.0
 PLAYER_MAX_LIVES = 3
+# Adventure BONUS reward (the two-dimensional impulse reactor): the ship's centre flies up and down the lower third
+PLAYER_VERTICAL_TOP = BASE_HEIGHT * 2 // 3 + 30
+PLAYER_VERTICAL_BOTTOM = BASE_HEIGHT - 70
 PLAYER_INVULN_TIME = 1.8          # seconds of invulnerability after hit
 
 # Enemy Stage 1

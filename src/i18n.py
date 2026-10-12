@@ -3438,6 +3438,20 @@ _ADVENTURE_TEXTS.update({
     "story_log_ph5": ("Phenix V — le boss est tombé. Le Phenix est à toi.",
                       "Phenix V — the boss is down. The Phenix is yours."),
     "story_phenix_gift": ("Le Phenix rejoint le hangar !", "The Phenix joins the hangar!"),
+    # --- BONUS: the two-dimensional impulse reactor (waves in the way of Galaga)
+    "story_m_bonus2d": ("BONUS : le réacteur à impulsion bidimensionnelle",
+                        "BONUS: the two-dimensional impulse reactor"),
+    "story_m_bonus2d_hud": ("BONUS : réacteur 2D", "BONUS: 2D reactor"),
+    "story_m_bonus2d_b": ("Quatre vagues d'avioïdes de niveau 2 qui plongent, bouclent et bombardent. "
+                          "Le réacteur te laisse voler en hauteur. Une seule fois.",
+                          "Four waves of level 2 avioids that dive, loop and bomb. "
+                          "The reactor lets you fly up and down. Once only."),
+    "story_log_bonus2d": ("BONUS — le réacteur à impulsion bidimensionnelle est à bord.",
+                          "BONUS — the two-dimensional impulse reactor is on board."),
+    "story_bonus_open": ("Nouvelle mission BONUS sur la carte !", "A new BONUS mission is on the map!"),
+    "story_thrust_gift": ("Réacteur bidimensionnel : haut / bas dans le tiers inférieur !",
+                          "Two-dimensional reactor: up / down in the lower third!"),
+    "story_galaga_hud": ("VAGUE {n}/{m}   RESTE : {left}", "WAVE {n}/{m}   LEFT: {left}"),
     "story_shop_phenix80": ("Jauge du Phenix : 80 %", "Phenix gauge: 80%"),
     "story_stat_phenix": ("PHENIX", "PHENIX"),
     # --- Act 2: the paint series and the paint shop (draft texts, to be reviewed)

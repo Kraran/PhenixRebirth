@@ -23,7 +23,9 @@ def _open(**flags):
 # ------------------------------------------------------------------ the data
 def test_the_series_is_four_chained_missions_after_the_bestiary_hunts_in_the_list():
     ids = [m["id"] for m in ss.MISSIONS]
-    assert ids[ids.index("best_s4") + 1:ids.index("best_s4") + 5] == list(DOME)
+    after = ids.index("best_s4") + 1
+    assert ids[after] == "bonus_2d"                            # the BONUS mission comes right after the last hunt
+    assert ids[after + 1:after + 5] == list(DOME)
     chain = [ss.mission_by_id(i) for i in DOME]
     assert chain[0]["need"] is None                            # Dome I is open from the start, like the first sortie
     assert ss.mission_by_id("ch1_sortie")["need"] is None
