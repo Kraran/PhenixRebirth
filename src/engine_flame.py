@@ -48,6 +48,8 @@ NOZZLES = {
 MIN_LENGTH = 0.30            # the length of the jet at idle (thrust 0), as a part of the full jet; thrust 1 gives the whole of it
 MIN_WIDTH = 0.80             # the same for the width
 SHOW_FROM = 0.05             # under this thrust there is no flame
+BURST_LENGTH = 2.0           # flying up to the next stage (burst 1): the jet is this many times longer...
+BURST_WIDTH = 1.12           # ...and a very little wider
 
 
 def ramp_key(kind, palette):
@@ -167,11 +169,12 @@ def prepare(kind, palette):
     return film(kind, ramp_key(kind, palette)) is not None
 
 
-def draw(surface, kind, palette, x, y, thrust, clock, engine=0, size=1.0, flicker=True):
+def draw(surface, kind, palette, x, y, thrust, clock, engine=0, size=1.0, flicker=True, burst=0.0):
     """One jet whose nozzle is at (x, y) on `surface`.
 
     `thrust` 0..1 (how hard the ship pushes), `clock` the time in seconds, `engine` the number of the nozzle (two nozzles do
-    not show the same picture at the same moment), `size` scales the whole jet (a ship that grows or shrinks).
+    not show the same picture at the same moment), `size` scales the whole jet (a ship that grows or shrinks), `burst` 0..1 the
+    flight up to the next stage (longer jet, a little wider).
     """
     if thrust < SHOW_FROM:
         return False
@@ -184,8 +187,9 @@ def draw(surface, kind, palette, x, y, thrust, clock, engine=0, size=1.0, flicke
     wobble = 1.0
     if flicker:
         wobble = (0.88 + 0.12 * math.sin(clock * 27.0)) * (0.93 + 0.07 * math.sin(clock * 19.0 + engine * 2.1))
-    sx = (MIN_WIDTH + (1.0 - MIN_WIDTH) * thrust) * size
-    sy = (MIN_LENGTH + (1.0 - MIN_LENGTH) * thrust) * wobble * size
+    burst = max(0.0, min(1.0, float(burst)))
+    sx = (MIN_WIDTH + (1.0 - MIN_WIDTH) * thrust) * size * (1.0 + (BURST_WIDTH - 1.0) * burst)
+    sy = (MIN_LENGTH + (1.0 - MIN_LENGTH) * thrust) * wobble * size * (1.0 + (BURST_LENGTH - 1.0) * burst)
     w = max(1, int(round(pic.get_width() * sx)))
     h = max(1, int(round(pic.get_height() * sy)))
     if (w, h) != pic.get_size():

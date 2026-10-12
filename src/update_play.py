@@ -115,6 +115,7 @@ def tick_fly_up(game):
         if ship.alive or ship.dying:
             ship.y -= 420 * game.dt
             ship.engine_intensity = 1.0
+            ship.boost_engines(game.dt, True)               # long jets while flying up
     game._tick_stars(follow=True)
     if all((not s.alive) or s.y < -80 for s in game._ships()):
         if getattr(game, "adventure", None):
@@ -150,6 +151,7 @@ def tick_arrive(game):
         if ship.alive:
             ship.y -= 380 * game.dt
             ship.engine_intensity = 1.0
+            ship.boost_engines(game.dt, False)              # the long jets die back as the ship arrives
     game._tick_stars(follow=True)
     game.formation.update(game.dt, game.player.x)
     game._drain_detach_pops()

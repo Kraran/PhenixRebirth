@@ -8,7 +8,9 @@ Current release: **v1.4.5**
   argent / blue / gold, Shield red / green / violet, Phenix red / blue). Nozzle places are read on the hull pictures;
   the Phenix jets are wider and longer, and the jets follow the morph in both directions. The jets lengthen with the
   thrust and sputter out when the ship dies. Pictures are pre-rendered in `assets/sprites/engines/` by
-  `tools/make_engine_flames.py` (made on the fly if a file is missing); no random numbers are used
+  `tools/make_engine_flames.py` (made on the fly if a file is missing); no random numbers are used.
+  While the ships fly up to the next stage the jets are twice as long and a very little wider (`BURST_LENGTH`, `BURST_WIDTH`),
+  and come back to normal as they arrive
 - Background: the small asteroid Dinkinesh now comes from a video: its little moon circles the rock. One turn takes 48 s
   (the video lasts 6 s), 144 cells in `assets/sprites/planets/asteroid_dinkinesh_anim.png` made by
   `tools/make_planet_strip.py`. The rock keeps its size, two asteroids do not turn in step, other planets are unchanged

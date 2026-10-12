@@ -385,7 +385,7 @@ def test_the_sputter_jets_follow_the_ship_as_it_swells_while_dying(run):
     p.death_timer = 0.3 * p.DEATH_DURATION
     calls = []
     real = ef.draw
-    ef.draw = lambda surface, kind, palette, x, y, thrust, clock, engine=0, size=1.0, flicker=True: calls.append((x, y, size)) or True
+    ef.draw = lambda surface, kind, palette, x, y, thrust, clock, engine=0, size=1.0, flicker=True, burst=0.0: calls.append((x, y, size)) or True
     try:
         p.draw(pygame.Surface((200, 240)))
     finally:
@@ -448,3 +448,88 @@ def test_the_films_are_made_before_the_mission_not_during_it(run):
     Player(100, 90, "shield", "violet")
     assert ("shield", "violet") in ef._films
     ef._films.clear()
+
+
+# --- flying up to the next stage: twice the length, a very little wider ------------------------------------------------------
+
+def _drawn_sizes(monkeypatch, **kw):
+    sizes = []
+    real = pygame.transform.smoothscale
+    monkeypatch.setattr(pygame.transform, "smoothscale", lambda pic, size, *a: sizes.append(size) or real(pic, size, *a))
+    ef.draw(pygame.Surface((200, 300)), "phoenix", "argent", 100, 60, 1.0, 0.3, flicker=False, **kw)
+    return sizes[-1] if sizes else ef.cell_size("phoenix")
+
+
+def test_the_burst_doubles_the_length_and_widens_a_very_little(run, monkeypatch):
+    cw, ch = ef.cell_size("phoenix")
+    assert ef.BURST_LENGTH == 2.0 and 1.0 < ef.BURST_WIDTH <= 1.2
+    assert _drawn_sizes(monkeypatch) == (cw, ch)                         # no burst: the jet as it was
+    w, h = _drawn_sizes(monkeypatch, burst=1.0)
+    assert h == round(ch * 2.0) and cw < w <= cw * 1.2                   # twice as long, hardly wider
+    w5, h5 = _drawn_sizes(monkeypatch, burst=0.5)
+    assert h5 == round(ch * 1.5) and cw < w5 < w                         # in between: the change is smooth
+    assert _drawn_sizes(monkeypatch, burst=7.0) == (w, h)                # out of range is held to 0..1
+    assert _drawn_sizes(monkeypatch, burst=-3.0) == (cw, ch)
+
+
+def test_the_burst_comes_and_goes_smoothly(run):
+    p = Player(100, 90, "phoenix", "argent")
+    assert p.engine_burst == 0.0
+    p.boost_engines(0.1, True)
+    assert 0.3 < p.engine_burst < 0.7
+    for _ in range(30):
+        p.boost_engines(0.1, True)
+    assert p.engine_burst == 1.0
+    p.boost_engines(0.1, False)
+    assert 0.5 < p.engine_burst < 1.0
+    for _ in range(30):
+        p.boost_engines(0.1, False)
+    assert p.engine_burst == 0.0
+
+
+def test_a_ship_under_control_loses_its_burst(run):
+    p = Player(100, 90, "phoenix", "argent")
+    p.engine_burst = 1.0
+    p.update(0.1, pygame.key.get_pressed())
+    assert 0.6 < p.engine_burst < 0.8
+
+
+def test_the_ship_draws_long_jets_only_with_the_burst(run):
+    p = Player(100, 90, "phoenix", "argent")
+    p.engine_intensity = 1.0
+    seen = []
+    real = ef.draw
+    ef.draw = lambda *a, **k: seen.append(k.get("burst")) or True
+    try:
+        p.draw(pygame.Surface((200, 240)))
+        p.boost_engines(1.0, True)
+        p.draw(pygame.Surface((200, 240)))
+        p.dying = True
+        p.death_timer = 0.1 * p.DEATH_DURATION
+        p.draw(pygame.Surface((200, 240)))                               # a dying ship sputters, it does not burst
+    finally:
+        ef.draw = real
+    assert seen == [0.0, 0.0, 1.0, 1.0, 0.0, 0.0]
+
+
+def test_the_fly_up_burns_long_and_the_arrival_brings_the_jets_back(run):
+    g = run.game
+    g.play_mode = "solo"
+    g._begin_run()
+    run.frames(60)
+    p = g.player
+    assert p.engine_burst == 0.0
+    g.stage_transition = "fly_up"
+    g.transition_timer = 0.0
+    run.frames(20)
+    assert g.stage_transition == "fly_up" and p.engine_burst == 1.0      # the jets are long while it climbs
+    for _ in range(400):
+        run.frames(1)
+        if g.stage_transition == "arrive":
+            break
+    assert g.stage_transition == "arrive"
+    run.frames(3)
+    assert 0.5 < p.engine_burst < 1.0                                    # they come back while it arrives
+    for _ in range(120):
+        run.frames(1)
+    assert g.stage_transition is None and p.engine_burst == 0.0
