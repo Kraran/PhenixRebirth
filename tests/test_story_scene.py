@@ -113,8 +113,11 @@ def test_other_missions_fly_straight_away():
 
 def test_a_mission_that_cannot_be_flown_shows_no_scene():
     hub = _hub(cheat=False)
-    assert not hub.mission_playable(hub._mission())
+    hub.map_index = [m["id"] for m in hub.missions()].index("best_s2")      # has a scene, but waits for the first sortie
+    assert ss.scene_of("best_s2") and not hub.mission_playable(hub._mission())
     assert hub.confirm() is None and hub.screen == "hub"
+    hub.map_index = [m["id"] for m in hub.missions()].index("dome_1")       # open from the start: its scene is shown
+    assert hub.mission_playable(hub._mission())
 
 
 def test_each_slot_has_its_own_scene_memory():

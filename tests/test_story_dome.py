@@ -21,11 +21,12 @@ def _open(**flags):
 
 
 # ------------------------------------------------------------------ the data
-def test_the_series_is_four_chained_missions_after_the_bestiary():
+def test_the_series_is_four_chained_missions_after_the_bestiary_hunts_in_the_list():
     ids = [m["id"] for m in ss.MISSIONS]
     assert ids[ids.index("best_s4") + 1:ids.index("best_s4") + 5] == list(DOME)
     chain = [ss.mission_by_id(i) for i in DOME]
-    assert chain[0]["need"] == "bestiary_s4"
+    assert chain[0]["need"] is None                            # Dome I is open from the start, like the first sortie
+    assert ss.mission_by_id("ch1_sortie")["need"] is None
     for prev, nxt in zip(chain, chain[1:]):
         assert nxt["need"] in prev["unlock"], nxt["id"]       # each one opens the next
     for m in chain:
@@ -53,13 +54,19 @@ def test_the_old_gate_mission_is_gone_and_the_teaser_waits_for_act_two():
 
 
 # ------------------------------------------------------------------ the rules
+def test_dome_one_and_the_first_sortie_can_be_flown_on_a_new_save():
+    st = ss.create_slot(1, "NOVA", "normal")
+    assert st["flags"].get("bestiary_s4") is None and not st["cleared"]
+    assert ss.mission_playable(st, ss.mission_by_id("dome_1"))
+    assert ss.mission_playable(st, ss.mission_by_id("ch1_sortie"))
+    for mid in ("best_s2", "best_s3", "best_s4", "dome_2", "dome_3", "dome_4", "dome_5", "act2_gate"):
+        assert not ss.mission_playable(st, ss.mission_by_id(mid)), mid      # the rest still waits its turn
+
+
 def test_a_dome_mission_is_locked_until_the_previous_one_is_cleared():
     st = ss.default_state()
-    for flag in ("bestiary_s2", "bestiary_s3"):
-        st["flags"][flag] = True
-    assert not ss.mission_playable(st, ss.mission_by_id("dome_1"))
-    st["flags"]["bestiary_s4"] = True
-    assert ss.mission_playable(st, ss.mission_by_id("dome_1"))
+    assert ss.mission_playable(st, ss.mission_by_id("dome_1"))               # no Bestiary hunt needed
+    assert not ss.mission_open(st, ss.mission_by_id("dome_2"))
     assert not ss.mission_open(st, ss.mission_by_id("dome_2"))
     ss.record_result(st, "dome_1", 100, True)
     assert ss.mission_open(st, ss.mission_by_id("dome_2"))

@@ -98,14 +98,14 @@ MISSIONS = [
         "unlock": ["bestiary_s4"],
         "log": "story_log_best4",
     },
-    # The dome series: each mission opens the next one and can be flown only once.
+    # The dome series: Dome I is open from the start, each mission opens the next one and can be flown only once.
     # `waves` are arcade stage numbers (1, 6, 11 = the same wave at 1.0x, 1.1x, 1.2x speed).
     {
         "id": "dome_1",
         "acts": (1,),
         "title": "story_m_dome1",
         "blurb": "story_m_dome1_b",
-        "need": "bestiary_s4",
+        "need": None,                       # open from the start, like the first Bestiary sortie
         "content": 1,
         "waves": [1, 6, 11],
         "speed": 1.0,
