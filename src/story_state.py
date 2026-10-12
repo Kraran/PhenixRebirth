@@ -23,11 +23,15 @@ from settings import asset_path, user_data_dir, ENEMY_VETERAN_BONUS
 
 SAVE_VERSION = 4
 SLOT_COUNT = 4
-MODES = ("normal", "veteran")
+MODES = ("novice", "normal", "veteran")
+DEFAULT_MODE = "normal"
 NAME_MAX = 12
-# A failed mission (Normal mode) gains nothing and costs this share of the credits held.
+# A failed mission (Normal and Novice modes) gains nothing and costs this share of the credits held.
 # Veteran: a failure is a permanent death.
 PENALTY_RATE = 0.05
+NOVICE_PENALTY_RATE = 0.02
+# Novice mode: the hulls start with three lives (the workshop sells the fourth, like the second one in Normal).
+NOVICE_LIVES = 3
 NAME_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- "
 
 # Speed steps (% of the arcade ship) and what each act allows the workshop to reach.
@@ -560,13 +564,13 @@ def default_state():
         "slots": [
             {
                 "id": "shield", "owned": True, "tint": "red",
-                "lives": 1, "speed": SPEED_START, "dome": False,
+                "lives": 1, "lives_base": 1, "speed": SPEED_START, "dome": False,
                 "dome_dur": DOME_DUR_START, "dome_cd": DOME_CD_START,
                 "wall": "instant",
             },
             {
                 "id": "phoenix", "owned": False, "tint": "argent",
-                "lives": 1, "speed": 60, "phenix": False,
+                "lives": 1, "lives_base": 1, "speed": 60, "phenix": False,
                 "phenix_cap": 60, "wall": "instant",
             },
         ],
@@ -758,7 +762,10 @@ def create_slot(slot, name, mode):
     """Start a new adventure in `slot` and save it. Returns the new state."""
     state = default_state()
     state["name"] = clean_name(name)
-    state["mode"] = mode if mode in MODES else "normal"
+    state["mode"] = mode if mode in MODES else DEFAULT_MODE
+    if state["mode"] == "novice":
+        for sl in state["slots"]:
+            sl["lives"] = sl["lives_base"] = NOVICE_LIVES      # three lives to begin with, a fourth to buy
     save_state(story_path(slot), state)
     return state
 
@@ -1106,12 +1113,19 @@ def _up_speed_100(slot):
     return _step_to(slot, "speed", SPEED_START, 80, 100)
 
 
+def lives_base(slot):
+    """Lives the hull started with: 1 (3 in Novice mode). The workshop adds one, then one more in Act 3."""
+    return max(1, int(_num((slot or {}).get("lives_base"), 1)))
+
+
 def _up_lives_2(slot):
-    return _step_to(slot, "lives", 1, _NO_MIN, 2)
+    base = lives_base(slot)
+    return _step_to(slot, "lives", base, _NO_MIN, base + 1)
 
 
 def _up_lives_3(slot):
-    return _step_to(slot, "lives", 1, 2, 3)
+    base = lives_base(slot)
+    return _step_to(slot, "lives", base, base + 1, base + 2)
 
 
 def _up_dome_dur(slot):
@@ -1203,13 +1217,13 @@ def _st_speed_100(slot):
 
 
 def _st_lives_2(slot):
-    return "owned" if _lives(slot) >= 2 else None
+    return "owned" if _lives(slot) >= lives_base(slot) + 1 else None
 
 
 def _st_lives_3(slot):
-    if _lives(slot) >= 3:
+    if _lives(slot) >= lives_base(slot) + 2:
         return "owned"
-    if _lives(slot) < 2:
+    if _lives(slot) < lives_base(slot) + 1:
         return "need_prev"
     return None
 
@@ -1300,7 +1314,10 @@ def item_of(sid):
 
 def act_caps(state):
     """Highest speed and lives the workshop of the current act allows."""
-    return ACT_CAPS.get(int(_num(state.get("act"), 1)), ACT_CAPS[1])
+    caps = dict(ACT_CAPS.get(int(_num(state.get("act"), 1)), ACT_CAPS[1]))
+    if state.get("mode") == "novice":
+        caps["lives"] += NOVICE_LIVES - 1                  # the workshop reaches one more life than the cap, like in Normal
+    return caps
 
 _STATUS_KEYS = {
     "owned": "story_owned",
@@ -1353,10 +1370,11 @@ def buy(state, sid):
 
 
 # ----------------------------------------------------------------- results
-def failure_penalty(credits):
-    """Points lost after a failed mission in Normal mode: PENALTY_RATE of the credits held."""
+def failure_penalty(credits, mode="normal"):
+    """Points lost after a failed mission in Normal mode (5 % of the credits held) or Novice mode (2 %)."""
     credits = max(0, int(_num(credits, 0)))
-    return int(credits * PENALTY_RATE + 0.5)
+    rate = NOVICE_PENALTY_RATE if mode == "novice" else PENALTY_RATE
+    return int(credits * rate + 0.5)
 
 
 def record_result(state, mission_id, score, cleared, kills=None, loot=None, used=None):
@@ -1386,7 +1404,7 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
             res["fallen"] = True
         else:
             credits = max(0, int(state.get("credits", 0)))
-            res["lost"] = failure_penalty(credits)
+            res["lost"] = failure_penalty(credits, state.get("mode"))
             state["credits"] = credits - res["lost"]
         return res
     state["credits"] = int(state.get("credits", 0)) + score
