@@ -1783,9 +1783,11 @@ class Game:
         self.player.speed *= fx["speed_mult"]
         self.player.bullet_speed_mult = fx["fire_mult"]
         self.player.electric_immune = fx["electric_immune"]
-        # and the one that may fall during it (rare, see story_items.plan_drop)
+        # and the one that may fall during it (rare, see story_items.plan_drop). The paint missions (Space Invaders)
+        # never carry one, and do not count in the gap between two drops; the items bought still work in them.
         story = getattr(self, "story", None)
-        self.adventure["loot_plan"] = story_items.plan_drop(story.state, random) if story is not None else None
+        can_loot = story is not None and not spec.get("invaders")
+        self.adventure["loot_plan"] = story_items.plan_drop(story.state, random) if can_loot else None
         self.adventure["loot_clock"] = 0.0
         self.adventure["loot"] = None
         self.loot = None
