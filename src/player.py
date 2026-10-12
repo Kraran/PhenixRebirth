@@ -164,6 +164,7 @@ class Player:
         self.moving = False
         self.engine_time = 0.0
         self.engine_intensity = 0.0
+        self.engine_burst = 0.0      # 0..1: flying up to the next stage (long jets), see boost_engines
         
         # Edge collision / lightning
         self.edge_contact = False
@@ -496,6 +497,7 @@ class Player:
         self.engine_intensity += (target - self.engine_intensity) * min(1.0, 8.0 * dt)
         if self.uses_shield and self.is_phenix:
             self.engine_intensity = 0.0
+        self.boost_engines(dt, False)
         
         # Update shots
         for shot in self.shots[:]:
@@ -821,6 +823,10 @@ class Player:
             self._white_image = white
         return self._white_image
 
+    def boost_engines(self, dt, on):
+        """Flight up to the next stage: the jets grow to twice their length (`on`), and come back when it is over."""
+        self.engine_burst = max(0.0, min(1.0, self.engine_burst + (5.0 * dt if on else -3.0 * dt)))
+
     def _prepare_engines(self):
         """Have the pictures of the jets of this hull (and of the Phenix, for the Phoenix) ready: nothing is made mid-mission."""
         try:
@@ -852,6 +858,7 @@ class Player:
         if plan is None:
             return
         kind, nozzles, size = plan
+        thrust_given = thrust
         if thrust is None:
             thrust = self.engine_intensity
             if thrust < engine_flame.SHOW_FROM:
@@ -860,7 +867,7 @@ class Player:
                 thrust = max(thrust, 0.85)                       # the Phenix always burns hard
         for i, (nx, ny) in enumerate(nozzles):
             engine_flame.draw(surface, kind, self.palette, self.x + nx * grow, self.y + ny * grow, thrust,
-                              self.engine_time, engine=i, size=size * grow)
+                              self.engine_time, engine=i, size=size * grow, burst=self.engine_burst if thrust_given is None else 0.0)
 
     def _draw_edge_lightning(self, surface):
         if self.edge_flash < 0.05 and not (self.dying and self.edge_death):
