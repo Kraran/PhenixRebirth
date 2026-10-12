@@ -3,6 +3,9 @@ Current release: **v1.4.5**
 
 ## Unreleased (towards 1.5.0 — Adventure)
 
+- Background: the small asteroid Dinkinesh now comes from a video: its little moon circles the rock. One turn takes 48 s
+  (the video lasts 6 s), 144 cells in `assets/sprites/planets/asteroid_dinkinesh_anim.png` made by
+  `tools/make_planet_strip.py`. The rock keeps its size, two asteroids do not turn in step, other planets are unchanged
 - Adventure code reorganised, nothing changes on screen: rules and save data now live in
   `story_state.py` (tested without a window), `story.py` only draws the menus
 - Adventure save is now one file per slot (`story_1.json` … `story_3.json`, version 4).

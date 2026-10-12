@@ -44,6 +44,14 @@ PLANET_FILES = [
     "asteroid_pallas.png",
 ]
 
+# Rocks drawn as a short film instead of a still picture: the file of the still (it keeps the draw of the
+# planets as it was) -> the strip of FRAMES cells made by tools/make_planet_strip.py, the seconds one turn
+# lasts (the video is 6 s: this is far slower on purpose), and how much bigger the cell is than the still,
+# so that the rock itself keeps the size it had (the cell also holds the whole path of the moon).
+ANIMATED = {
+    "asteroid_dinkinesh.png": {"strip": "asteroid_dinkinesh_anim.png", "frames": 144, "period": 48.0, "size": 1.64},
+}
+
 
 class Star:
     __slots__ = (
@@ -153,6 +161,24 @@ class Planet:
             cls._cache[filename] = img
         return cls._cache[filename]
 
+    @classmethod
+    def _load_film(cls, filename):
+        """The cells of an animated rock, or None (missing file: the still picture is used)."""
+        info = ANIMATED.get(filename)
+        if info is None:
+            return None
+        key = "film:" + info["strip"]                       # the cut cells; the strip itself keeps its own name
+        if key not in cls._cache:
+            try:
+                strip = cls._load_image(info["strip"])
+                n = info["frames"]
+                cw = strip.get_width() // n
+                cls._cache[key] = [strip.subsurface((i * cw, 0, cw, strip.get_height())) for i in range(n)]
+            except Exception:
+                log_exc("starfield.Planet._load_film")
+                cls._cache[key] = None
+        return cls._cache[key]
+
     def reset(self):
         filename = random.choice(PLANET_FILES)
         base = self._load_image(filename)
@@ -163,11 +189,17 @@ class Planet:
             target_h = random.randint(28, 72)
         else:
             target_h = random.randint(36, 88)
+        self.film = self._load_film(filename)
+        self.film_info = ANIMATED.get(filename)
+        if self.film:
+            base = self.film[0]
+            target_h = target_h * self.film_info["size"]
         scale = target_h / max(1, base.get_height())
         w = max(1, int(base.get_width() * scale))
         h = max(1, int(base.get_height() * scale))
         self.image = pygame.transform.smoothscale(base, (w, h))
-        if random.random() < 0.35:
+        self.flipped = random.random() < 0.35
+        if self.flipped:
             self.image = pygame.transform.flip(self.image, True, False)
         self.w = self.image.get_width()
         self.h = self.image.get_height()
@@ -176,8 +208,26 @@ class Planet:
         self.y = random.uniform(-self.h - 80, -self.h // 2 - 10)
         self.speed = random.uniform(14, 28)
         self.alive = True
+        self.t = 0.0
+        self.frames_drawn = {0: self.image}                # film cells already scaled to this size
+        self.first_cell = int(self.x) % len(self.film) if self.film else 0   # two rocks do not turn in step
+
+    def _cell(self):
+        """The picture to draw now: for a rock with a film, the cell of the moment (scaled once, then kept)."""
+        if not self.film:
+            return self.image
+        n = len(self.film)
+        i = (self.first_cell + int(self.t / self.film_info["period"] * n)) % n
+        img = self.frames_drawn.get(i)
+        if img is None:
+            img = pygame.transform.smoothscale(self.film[i], (self.w, self.h))
+            if self.flipped:
+                img = pygame.transform.flip(img, True, False)
+            self.frames_drawn[i] = img
+        return img
 
     def update(self, dt, player_dx=0.0):
+        self.t += dt
         self.y += self.speed * dt
         self.x -= player_dx * self.parallax
         if self.x < -self.w:
@@ -189,7 +239,7 @@ class Planet:
 
     def draw(self, surface):
         surface.blit(
-            self.image,
+            self._cell(),
             (int(self.x - self.w // 2), int(self.y - self.h // 2)),
         )
 
