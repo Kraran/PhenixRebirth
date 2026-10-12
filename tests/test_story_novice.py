@@ -425,3 +425,71 @@ def test_the_hangar_of_a_novice_sells_the_fourth_life_through_the_screen(run):
     assert ss.load_state(ss.story_path(1))["slots"][0]["lives"] == 4
     hub.confirm()
     assert hub.state["credits"] == 500                                  # bought once
+
+
+# ---------------------------------------------------------------- the workshop label: the lives you end up with
+def _drawn_texts(g, hub):
+    seen = []
+    real = story._text
+
+    def spy(surface, font, text, *a, **k):
+        seen.append(text)
+        return real(surface, font, text, *a, **k)
+
+    story._text = spy
+    try:
+        hub.draw(pygame.Surface((1280, 720)), g.font, g.medium_font, g.font)
+    finally:
+        story._text = real
+    return seen
+
+
+def _hangar(mode, hull=None):
+    st = ss.create_slot(1, "NOVA", mode)
+    ss.mark_intro_seen(st)
+    st["flags"]["ch1_life_2"] = True
+    st["credits"] = 5000
+    ss.save_state(ss.story_path(1), st)
+    hub = StoryHub()
+    hub.open_slot(1)
+    hub.pane, hub.zone = "hangar", "shop"
+    return hub
+
+
+def test_the_novice_workshop_sells_vies_4_where_normal_sells_vies_2(run):
+    i18n.set_lang("fr")
+    labels = lambda hub: {sid: i18n.t(lab) for sid, lab, _, _ in hub.shop_rows()}
+    assert labels(_hangar("novice"))["lives_2"] == "Vies 4"
+    assert labels(_hangar("normal"))["lives_2"] == "Vies 2"
+    assert labels(_hangar("veteran"))["lives_2"] == "Vies 2"
+    i18n.set_lang("en")
+    assert labels(_hangar("novice"))["lives_2"] == "Lives 4"
+    assert labels(_hangar("normal"))["lives_2"] == "Lives 2"
+    i18n.set_lang("fr")
+
+
+def test_the_novice_screen_draws_vies_4_and_the_price_is_unchanged(run):
+    g = run.game
+    i18n.set_lang("fr")
+    hub = _hangar("novice")
+    assert any(s.endswith("Vies 4") for s in _drawn_texts(g, hub) if isinstance(s, str))
+    assert not any(s.endswith("Vies 2") for s in _drawn_texts(g, hub) if isinstance(s, str))
+    rows = {sid: cost for sid, _, cost, _ in hub.shop_rows()}
+    assert rows["lives_2"] == 2000
+    hub = _hangar("normal")
+    assert any(s.endswith("Vies 2") for s in _drawn_texts(g, hub) if isinstance(s, str))
+
+
+def test_the_phenix_workshop_and_act_three_follow_the_same_rule(run):
+    assert ss.NOVICE_LABELS == {"story_shop_lives2": "story_shop_lives4", "story_shop_lives3": "story_shop_lives5"}
+    for lang in ("fr", "en", "es", "de", "ru"):
+        i18n.set_lang(lang)
+        assert "4" in i18n.t("story_shop_lives4") and "5" in i18n.t("story_shop_lives5")
+    i18n.set_lang("fr")
+    st = ss.create_slot(1, "NOVA", "novice")
+    st["selected_slot"] = 1
+    assert ss.selected_slot(st)["id"] == "phoenix"
+    rows = {sid: lab for sid, lab, _, _ in ss.shop_for(st)}
+    assert rows.get("lives_2") == "story_shop_lives4"               # the Phenix hull also starts with three lives
+    st["mode"] = "normal"
+    assert {sid: lab for sid, lab, _, _ in ss.shop_for(st)}.get("lives_2") == "story_shop_lives2"

@@ -3,6 +3,11 @@ Current release: **v1.4.5**
 
 ## Unreleased (towards 1.5.0 — Adventure)
 
+- Help screen: the enemies carry the names of the Bestiary and of the Adventure, with their stage (French: Avioïde éclaireur stage 1,
+  Avioïde kaki stage 2, Gargouille stage 3, Gargouille sombre stage 4, Commandant avioïde stage 5; English: Scout Avioid, Khaki Avioid,
+  Gargoyle, Dark Gargoyle, Avioid commander). The story, "how to play" and Veteran lines use the same words (the Veteran note is now two
+  lines). Other languages keep their own translations
+- Adventure, Novice mode: the workshop sells "Vies 4" (the lives you end up with) where Normal sells "Vies 2"; Act 3 will read "Vies 5"
 - Adventure: Dome I is now open from the start of Act 1, like "Bestiaire : Premiere sortie" (it no longer waits for the
   4th Bestiary hunt). The rest of the dome series is unchanged: each mission opens the next one and is flown once
 - Ships: new engine jets (`src/engine_flame.py`). Each nozzle now gives a straight, dense jet of burning gas (white-hot
