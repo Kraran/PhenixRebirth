@@ -203,6 +203,184 @@ def test_the_vortex_is_made_in_a_few_milliseconds(display):
     assert per < 0.06, per                                    # a loose guard: it is about 7 ms here, the frame is 16 ms
 
 
+# --- the vortex is space: the colour of the scrolling, with stars ---------------------------------------------------------
+
+def _stars_only(fx, p):
+    out = pygame.Surface(SIZE)
+    out.fill((0, 0, 0))
+    fx._draw_stars(out, p)
+    return _px(out)
+
+
+def test_what_is_behind_the_picture_is_the_colour_of_the_scrolling_background(display):
+    from settings import COLOR_BG
+    assert ax.SPACE == COLOR_BG
+    fx = AnchorReturn(_snapshot((0, 0, 0)))
+    for p in (0.3, 0.6, 0.9):
+        arr = fx.vortex(p)
+        assert (arr[0, 0] == np.array(COLOR_BG)).all() and (arr[-1, -1] == np.array(COLOR_BG)).all()
+    fx = AnchorReturn(_snapshot(COLOR_BG))                     # a mission whose picture is only the scrolling's colour
+    fx.t = 1.0
+    out = pygame.Surface(SIZE)
+    fx.draw(out)
+    shot = _px(out).reshape(-1, 3)
+    same = (shot == np.array(COLOR_BG)).all(axis=1)
+    assert same.mean() > 0.85                                  # all but the stars and the middle
+
+
+def test_the_swirl_has_no_blue_in_it_but_the_stars(display):
+    fx = AnchorReturn(_snapshot((120, 120, 120)))
+    for p in (0.4, 0.7, 1.0):
+        arr = fx.vortex(p).astype(int)
+        assert float((arr[..., 2] - arr[..., 0]).mean()) < 10, p          # the old arms of light and the blue tint were +60
+
+
+def test_the_middle_and_the_flash_are_white_not_blue(display):
+    fx = AnchorReturn(_snapshot((0, 0, 0)))
+    arr = fx.vortex(1.0).astype(int)
+    mid = arr[int(fx.cx), int(fx.cy)]
+    assert mid.min() > 150 and mid[0] >= mid[2]                # lit and a little warm, never bluish
+    assert FLASH_COLOUR[0] >= FLASH_COLOUR[2] and ax.GLOW_COLOUR[0] >= ax.GLOW_COLOUR[2]
+
+
+def test_the_light_of_the_middle_shines_in_the_space_around_the_picture_too(display):
+    fx = AnchorReturn(_snapshot((0, 0, 0)))
+    p = 0.9
+    colour, alpha = fx._layer(p)
+    ring = np.hypot(fx.dx, fx.dy)
+    around = (alpha < 0.999) & (ring < 0.06 * fx.far)             # near the middle, outside the shrunk picture
+    assert around.sum() > 30
+    assert float(colour[around].mean()) > 100                     # white-ish there, not the colour of space
+    assert float(alpha[around].mean()) > 0.4                      # and it hides the stars behind it a good deal
+
+
+def test_stars_are_drawn_into_the_swirl(display):
+    fx = AnchorReturn(_snapshot((0, 0, 0)))
+    shot = _stars_only(fx, 0.5)
+    lit = shot.sum(axis=2) > 90
+    assert lit.sum() > 600                                       # plenty of them
+    bright = shot[lit]
+    assert (bright[:, 2] >= bright[:, 0]).all()                # the bluish stars of the scrolling
+    out = pygame.Surface(SIZE)
+    fx.t = 1.0
+    fx.draw(out)
+    assert (_px(out).sum(axis=2) > 90).sum() > 600             # and they are on screen
+
+
+def test_they_are_the_colours_of_the_stars_of_the_scrolling(display):
+    import random
+    import starfield
+    random.seed(1)
+    for layer in range(3):
+        seen = {tuple(starfield.Star(layer).color) for _ in range(80)}
+        assert seen <= set(ax.STAR_COLOURS[layer]), layer
+        assert len(seen) == len(ax.STAR_COLOURS[layer]), layer
+        assert ax.STAR_SIZES[layer] in (1, 2, 3)
+
+
+def test_the_stars_are_always_the_same_and_the_games_random_numbers_are_left_alone(display):
+    import random
+    state = random.getstate()
+    a, b = AnchorReturn(_snapshot()), AnchorReturn(_snapshot())
+    assert random.getstate() == state
+    assert (a.star_r0 == b.star_r0).all() and (a.star_a0 == b.star_a0).all() and (a.star_colour == b.star_colour).all()
+    assert (_stars_only(a, 0.6) == _stars_only(b, 0.6)).all()
+    out = pygame.Surface(SIZE)
+    a.t = 1.1
+    a.draw(out)
+    assert random.getstate() == state
+
+
+def test_the_stars_fall_towards_the_middle(display):
+    fx = AnchorReturn(_snapshot())
+    spread = [float(np.median(fx._star_xy(p)[2])) for p in (0.0, 0.2, 0.4, 0.6, 0.8, 1.0)]
+    assert spread == sorted(spread, reverse=True) and spread[-1] < 0.25 * spread[0], spread
+    x, y, r = fx._star_xy(0.0)
+    assert np.allclose(r, fx.star_r0, rtol=1e-3)                 # nothing has moved at the start
+
+
+def test_the_stars_turn_the_same_way_as_the_picture_and_the_middle_turns_more(display):
+    fx = AnchorReturn(_snapshot((0, 0, 255), left=(255, 0, 0)))
+
+    def picture_step(p, dp):
+        def red_angle(q):
+            arr = fx.vortex(q).astype(int)
+            angles = np.linspace(-math.pi, math.pi, 720, endpoint=False)
+            px = arr[np.rint(fx.cx + 12 * np.cos(angles)).astype(int), np.rint(fx.cy + 12 * np.sin(angles)).astype(int)]
+            red = px[:, 0] > px[:, 2]
+            return math.atan2(np.sin(angles[red]).sum(), np.cos(angles[red]).sum())
+        return ((red_angle(p + dp) - red_angle(p)) + math.pi) % (2 * math.pi) - math.pi
+
+    def star_step(p, dp, lo, hi):
+        mid = (SIZE[0] / 2.0, SIZE[1] / 2.0)
+        x0, y0, r0 = fx._star_xy(p)
+        x1, y1, _ = fx._star_xy(p + dp)
+        d = np.arctan2(y1 - mid[1], x1 - mid[0]) - np.arctan2(y0 - mid[1], x0 - mid[0])
+        d = (d + math.pi) % (2 * math.pi) - math.pi
+        pick = (r0 > lo) & (r0 < hi)
+        assert pick.sum() > 3
+        return float(np.median(d[pick]))
+
+    s_pic = picture_step(0.2, 0.1)
+    s_star = star_step(0.2, 0.1, 40, 400)
+    assert s_pic * s_star > 0, (s_pic, s_star)                  # the same way
+    assert abs(star_step(0.2, 0.1, 40, 150)) > abs(star_step(0.2, 0.1, 400, 1200))      # the middle turns more
+
+
+def test_the_stars_are_behind_the_picture_not_over_it(display):
+    fx = AnchorReturn(_snapshot((90, 90, 120)))
+    p = 0.3
+    fx.t = p * SWIRL_SEC
+    out = pygame.Surface(SIZE)
+    fx.draw(out)
+    shot = _px(out)
+    alpha = fx._layer(p)[1]
+    ring = np.hypot(fx.dx, fx.dy)
+    solid = alpha > 0.999
+    for _ in range(2):                                              # not the edge of the picture, which blends with what is behind
+        inner = solid.copy()
+        inner[1:-1, 1:-1] = solid[1:-1, 1:-1] & solid[:-2, 1:-1] & solid[2:, 1:-1] & solid[1:-1, :-2] & solid[1:-1, 2:]
+        inner[0, :] = inner[-1, :] = inner[:, 0] = inner[:, -1] = False
+        solid = inner
+    solid &= ring > 0.4 * fx.far                                    # and well away from the glow of the middle
+    sx, sy = SIZE[0] / alpha.shape[0], SIZE[1] / alpha.shape[1]
+    xs, ys = np.nonzero(solid)
+    assert len(xs) > 2000
+    keep = (xs > 1) & (xs < alpha.shape[0] - 2) & (ys > 1) & (ys < alpha.shape[1] - 2)
+    cx, cy = (xs[keep] * sx + sx / 2).astype(int), (ys[keep] * sy + sy / 2).astype(int)
+    off = np.abs(shot[cx, cy] - np.array((90, 90, 120))).max(axis=1)
+    assert off.max() <= 6, off.max()                                   # (the picture is shrunk and rounded) a star there would show
+
+
+def test_the_trails_get_longer_as_it_goes_faster(display, monkeypatch):
+    fx = AnchorReturn(_snapshot((0, 0, 0)))
+    calls = []
+    real = pygame.draw.lines
+    monkeypatch.setattr(pygame.draw, "lines", lambda surf, col, closed, pts, width=1: (calls.append(pts), real(surf, col, closed, pts, width))[1])
+    lengths = {}
+    for p in (0.02, 0.3, 0.9):
+        del calls[:]
+        _stars_only(fx, p)
+        lengths[p] = (len(calls), float(np.mean([math.hypot(c[0][0] - c[-1][0], c[0][1] - c[-1][1]) for c in calls])) if calls else 0.0)
+    assert lengths[0.02][0] == 0                               # points at the start: no trail yet
+    assert lengths[0.3][0] > 100 and lengths[0.9][0] > 100, lengths
+    assert lengths[0.9][1] > lengths[0.3][1], lengths          # longer at the end
+    assert all(len(c) == 4 for c in calls)                     # a curve, not a straight line
+
+
+def test_a_frame_of_the_swirl_costs_about_what_it_did(display):
+    import time
+    fx = AnchorReturn(_snapshot((90, 90, 120)))
+    out = pygame.Surface(SIZE)
+    fx.t = 1.0
+    fx.draw(out)
+    t0 = time.perf_counter()
+    for _ in range(5):
+        fx.draw(out)
+    per = (time.perf_counter() - t0) / 5
+    assert per < 0.12, per                                    # a loose guard: it is about 20 ms on a slow machine
+
+
 # --- the sound -------------------------------------------------------------------------------------------------------
 
 def test_the_sound_is_there_and_follows_the_picture():
@@ -263,7 +441,7 @@ def test_the_vortex_is_on_screen_and_the_map_after_it(run):
         run.frames(1)
         seen[name] = _px(g.screen)
         g.anchor_fx.t = t
-    assert float(seen["swirl"][..., 2].mean()) > float(seen["swirl"][..., 0].mean()) + 5     # the vortex is blue
+    assert float(seen["swirl"][..., 2].mean()) < float(seen["swirl"][..., 0].mean()) + 14   # no blue wash any more: space
     assert float(seen["flash_end"].mean()) > 200                                              # the flash
     assert float(seen["late"].mean()) < float(seen["flash_end"].mean()) * 0.6                 # then the map
 

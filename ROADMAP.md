@@ -373,10 +373,14 @@ Suggestions welcome via GitHub Issues.
   Esc in the reset question, B on the gamepad), brings the Adventure back on the Extras tab, on the same paragraph, same
   save, nothing reloaded. From the Adventure, Left / Right in the Jukebox do not go on to the high scores. The main menu
   is as it was. Code: `story.DOORS`, `StoryHub._draw_extras`, `Game._open_story_door`, `Game._story_door_tick`
+- Adventure, quantum anchor: the whirlwind is now a vortex of space. What is behind the picture is the colour of the scrolling
+  background (no more blue arms of light or blue tint), and 500 stars of the scrolling's colours are drawn into the spiral,
+  each with a short curved trail that gets longer as it goes faster; the light of the middle and the flash are white. Same
+  timing, same sound. The stars are always the same ones (a generator of their own: the game's random numbers are untouched)
 - Adventure: return to base by the quantum anchor when a mission is lost (Normal mode only: a fallen Veteran has no anchor,
   the anchor was never finished, so the memorial and slot list come at once as before). The last picture of the mission is
   taken (`Game._anchor_snapshot`), then, in 3.1 s (`src/anchor_fx.py`): 1.6 s of whirlwind (the picture turns, more in the
-  middle than outside, shrinks to a point and goes blue; the legend "ANCRAGE QUANTIQUE / Retour à la base..." comes in the
+  middle than outside, shrinks to a point; the legend "ANCRAGE QUANTIQUE / Retour à la base..." comes in the
   second half), 0.3 s of flash that opens from the middle, 0.9 s where the flash fades and shows the mission map. The result
   is banked at once as before (nothing is lost if the game is closed). During the whirlwind and the flash keys and the pad do
   nothing, except Enter / Space / Esc or a pad button, which skip to the end of the flash (and F12 for a screenshot); the map
