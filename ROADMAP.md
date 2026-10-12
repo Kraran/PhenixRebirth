@@ -3,6 +3,8 @@ Current release: **v1.4.5**
 
 ## Unreleased (towards 1.5.0 — Adventure)
 
+- Adventure, paint missions (Space Invaders): the announcer now says the real level of the mission (Level 1, 2, 3 in the first pass,
+  4, 5, 6 in the next one...) instead of always "Level 1" (`Game._announced_level`). Past level 21 (no recording) it stays silent, like elsewhere
 - Help screen: the enemies carry the names of the Bestiary and of the Adventure, with their stage (French: Avioïde éclaireur stage 1,
   Avioïde kaki stage 2, Gargouille stage 3, Gargouille sombre stage 4, Commandant avioïde stage 5; English: Scout Avioid, Khaki Avioid,
   Gargoyle, Dark Gargoyle, Avioid commander). The story, "how to play" and Veteran lines use the same words (the Veteran note is now two

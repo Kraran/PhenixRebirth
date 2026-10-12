@@ -1325,7 +1325,16 @@ class Game:
         self.stage_transition = "arrive"
         self.transition_timer = 0.0
         self.input_grace = 0.5
-        self._play_level_vo(int(getattr(self, "stage", 1) or 1))
+        self._play_level_vo(self._announced_level())
+
+
+    def _announced_level(self):
+        """The level the announcer says at the start: the arcade stage, or, in a paint mission (Space Invaders, whose
+        stage is always 1), the level of the mission (1, 2, 3 in the first pass, 4, 5, 6 in the next...)."""
+        adv = getattr(self, "adventure", None) or {}
+        if adv.get("invaders"):
+            return int(adv.get("level") or 1)
+        return int(getattr(self, "stage", 1) or 1)
 
 
     def _queue_after_welcome(self, action):

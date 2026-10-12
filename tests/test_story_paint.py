@@ -527,3 +527,68 @@ def test_leaving_the_paint_shop_or_keeping_the_colour_costs_nothing():
     hub.confirm()
     hub.confirm()                                                             # red again
     assert hub.state["credits"] == credits and ss.paint_state(hub.state)["token"]
+
+
+# ------------------------------------------------------------------ the announcer says the real level
+class _Voice:
+    def __init__(self, real):
+        self._real = real
+        self.vo = []
+
+    def play_vo(self, name, *a, **k):
+        self.vo.append(name)
+
+    def __getattr__(self, name):
+        return getattr(self._real, name)
+
+
+def test_a_paint_mission_announces_its_own_level_not_always_level_1(run):
+    g = run.game
+    st = _act2()
+    real = g.sounds
+    g.sounds = _Voice(real)
+    try:
+        for mid, level in (("paint_1", 1), ("paint_2", 2), ("paint_3", 3)):
+            del g.sounds.vo[:]
+            _launch(g, st, mid)
+            _win(st, mid)
+            assert g.sounds.vo == ["level%d" % level], (mid, g.sounds.vo)
+        for mid, level in (("paint_1", 4), ("paint_2", 5), ("paint_3", 6)):      # the pass is done: next levels
+            del g.sounds.vo[:]
+            _launch(g, st, mid)
+            _win(st, mid)
+            assert g.sounds.vo == ["level%d" % level], (mid, g.sounds.vo)
+    finally:
+        g.sounds = real
+
+
+def test_the_announcer_goes_silent_past_the_last_recorded_level_like_everywhere(run):
+    g = run.game
+    real = g.sounds
+    g.sounds = _Voice(real)
+    try:
+        g.adventure = {"invaders": True, "level": 22}
+        g._start_arrive_intro()
+        assert g.sounds.vo == []
+        g.adventure = {"invaders": True, "level": 21}
+        g._start_arrive_intro()
+        assert g.sounds.vo == ["level21"]
+    finally:
+        g.sounds = real
+
+
+def test_the_other_missions_and_the_arcade_still_announce_their_stage(run):
+    g = run.game
+    real = g.sounds
+    g.sounds = _Voice(real)
+    try:
+        for adv, stage, said in ((None, 3, "level3"), ({"id": "best_s2", "waves": [6]}, 6, "level6"),
+                                 ({"id": "dome_1", "waves": [1, 6, 11]}, 1, "level1"),
+                                 ({"swarm": True, "stage": 11}, 11, "level11")):
+            del g.sounds.vo[:]
+            g.adventure = adv
+            g.stage = stage
+            g._start_arrive_intro()
+            assert g.sounds.vo == [said], (adv, g.sounds.vo)
+    finally:
+        g.sounds = real
