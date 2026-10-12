@@ -451,7 +451,7 @@ def test_the_empty_second_hull_does_not_name_the_phenix():
 
 
 # ------------------------------------------------------------ the story intro
-def _new_hub(mode_index=0, name="NOVA"):
+def _new_hub(mode_index=1, name="NOVA"):      # (0 novice, 1 normal, 2 veteran)
     ss.delete_slot(1)                                      # always start from an empty first slot
     hub = StoryHub()
     hub.open_slots()
@@ -504,9 +504,9 @@ def test_the_veteran_story_tells_how_kamarasov_died_and_the_normal_one_does_not(
 
 
 def test_intro_runs_after_the_mode_choice_with_the_right_story():
-    normal = _new_hub(0)
+    normal = _new_hub(1)
     assert normal.intro_slides[-1][0] == "kamarasov"
-    vet = _new_hub(1, name="ZED")
+    vet = _new_hub(2, name="ZED")
     assert vet.intro_slides[-1][0] == "kamarasov_veteran"
     assert ss.intro_seen(vet.state) is False               # not seen until it is over
 
@@ -584,11 +584,11 @@ def test_intro_scroll_rises_then_rests(run):
     assert hub._intro_top(small) == (720 - small) // 2     # a short text rests in the middle
 
 
-def test_every_slide_draws_in_both_modes(run):
+def test_every_slide_draws_in_every_mode(run):
     import pygame
     g = run.game
     font = g.font
-    for mode_index in (0, 1):
+    for mode_index in (0, 1, 2):
         hub = _new_hub(mode_index)
         for i in range(len(hub.intro_slides)):
             hub.intro_index = i

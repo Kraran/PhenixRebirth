@@ -11,8 +11,12 @@ Current release: **v1.4.5**
 - The adventure journal follows the language chosen in Options
 - Adventure menus: texts are now centred inside their boxes (hangar, workshop, mission map, journal)
 - No more frozen explosion pieces on the menu after an adventure mission
-- Adventure start: slot list (3 saves with pilot name, act, date and mode), pilot name entry, Normal / Veteran choice
+- Adventure start: slot list (3 saves with pilot name, act, date and mode), pilot name entry, Novice / Normal / Veteran choice
 - Adventure failure rules: a failed mission (death) gives no points and costs 5 % of your points; Veteran mode has permanent death. Quitting a mission by choice changes nothing
+- Adventure, Novice mode: the mode choice now has three cards (Novice, Normal, Veteran; Normal is lit first). A Novice pilot
+  starts with 3 lives (the workshop sells a 4th the way it sells the 2nd in Normal) and loses only 2 % of the points on a failed
+  mission instead of 5 %. Everything else is identical to Normal. The slot keeps its starting lives in `lives_base` (saves made
+  before the mode have none and behave as Normal). Normal's text now reads "5%" so the sign is not split across two lines
 - Act 1 hangar: the Shield starts slow (40 % speed), with one life, no dome, and dies the moment
   it touches the screen edge. The workshop sells speed 60 % then 80 %, a second life, and the arcade
   edge rule (slowdown, then death if you stay too long). The dome becomes a series of quests (Act 2).

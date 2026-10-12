@@ -33,6 +33,7 @@ GREY_MULT = (80, 80, 90, 160)    # the dimming of the ship select screen for the
 CHEAT_NIX = "NIX2"             # typed in the hangar: all the Phenix missions won, the Phenix is yours, nothing saved
 CHEAT_ACT2 = "2222"            # typed on the mission map: go straight to Act 2, save nothing
 LOG_ROWS = 12                  # journal lines shown at once
+MODE_COLORS = {"novice": (120, 200, 255), "normal": (140, 220, 160), "veteran": (255, 110, 100)}   # title of each mode card
 SHOP_WINDOW = 6                # workshop rows shown at once (the line under them describes a loot item)
 
 
@@ -147,7 +148,7 @@ class StoryHub:
         self.sel = 0                   # slot cursor on the slot list (0..2)
         self.col = 0                   # 0 = the slot, 1 = its DELETE button
         self.del_yes = False
-        self.mode_index = 0            # 0 normal, 1 veteran
+        self.mode_index = ss.MODES.index(ss.DEFAULT_MODE)    # 0 novice, 1 normal, 2 veteran
         self.entry = None              # NameEntry while typing a pilot name
         self.new_name = ""
         self.msg = ""
@@ -555,7 +556,7 @@ class StoryHub:
             self.msg = t("story_name_empty")
             return
         self.new_name = self.entry.name
-        self.mode_index = 0
+        self.mode_index = ss.MODES.index(ss.DEFAULT_MODE)       # Normal is lit first
         self.screen = "mode"
         self.msg = ""
 
@@ -582,7 +583,7 @@ class StoryHub:
             self.entry.move(1 if direction > 0 else -1, 0)
             self.msg = ""
         elif self.screen == "mode":
-            self.mode_index = 1 if direction > 0 else 0
+            self.mode_index = max(0, min(len(ss.MODES) - 1, self.mode_index + (1 if direction > 0 else -1)))
 
     def nav_v(self, direction):
         if self.screen == "hub":
@@ -597,7 +598,7 @@ class StoryHub:
         elif self.screen == "name":
             self.entry.move(0, 1 if direction > 0 else -1)
         elif self.screen == "mode":
-            self.mode_index = 1 if direction > 0 else 0
+            self.mode_index = max(0, min(len(ss.MODES) - 1, self.mode_index + (1 if direction > 0 else -1)))
 
     def confirm(self):
         """Hub: shop buy, or a launch spec when a map node is confirmed. Other screens: None."""
@@ -1233,20 +1234,23 @@ class StoryHub:
         if self.msg:
             _text(surface, small, self.msg, (255, 220, 120), gy + 4 * (ch + cg) + 24, centerx=cx)
 
+    @staticmethod
+    def mode_card_rects():
+        """The cards of the mode screen (novice, normal, veteran), side by side and centred."""
+        w, h, gap = 376, 270, 24
+        x0 = BASE_WIDTH // 2 - (w * len(ss.MODES) + gap * (len(ss.MODES) - 1)) // 2
+        return [pygame.Rect(x0 + k * (w + gap), 140, w, h) for k in range(len(ss.MODES))]
+
     def _draw_gate_mode(self, surface, font, medium, small):
         cx = BASE_WIDTH // 2
         _text(surface, small, f"{t('story_pilot')} : {self.new_name}", (170, 175, 195), 100, centerx=cx)
-        w, h, gap = 460, 270, 40
-        x0 = cx - (w * 2 + gap) // 2
-        for k, key in enumerate(ss.MODES):
-            r = pygame.Rect(x0 + k * (w + gap), 140, w, h)
+        for k, (key, r) in enumerate(zip(ss.MODES, self.mode_card_rects())):
             focus = k == self.mode_index
-            vet = key == "veteran"
             _fill(surface, (30, 28, 22) if focus else (16, 18, 28), r, 12)
             pygame.draw.rect(surface, (255, 210, 80) if focus else (70, 80, 100), r, 3 if focus else 2, border_radius=12)
-            col = (255, 110, 100) if vet else (140, 220, 160)
+            col = MODE_COLORS[key]
             _text(surface, medium, t("story_mode_" + key), col if focus else (150, 155, 175), r.y + 46, centerx=r.centerx)
-            for li, line in enumerate(_wrap(small, t("story_mode_%s_d" % key), r.w - 48)):
+            for li, line in enumerate(_wrap(small, t("story_mode_%s_d" % key), r.w - 40)):
                 _text(surface, small, line, (200, 200, 215) if focus else (130, 135, 155), r.y + 112 + li * 36, centerx=r.centerx)
 
     def _draw_log(self, surface, font, small):
