@@ -3174,6 +3174,9 @@ _ADVENTURE_TEXTS = {
     "story_scene_sortie_t": ("Première sortie : les oiseaux bleus", "First sortie: the blue birds"),
     "story_scene_best2_t": ("Bestiaire : les oiseaux kaki", "Bestiary: the khaki birds"),
     "story_scene_paint_1_t": ("Peinture I : l'atelier de Wallems", "Paint I: Wallems' workshop"),
+    "story_scene_bar_t": ("Bar de la station Phobos", "Phobos station bar"),
+    "story_scene_door": ("A/Entrée  jouer (Add-On)   Haut / Bas  vitesse   B/Échap  passer",
+                         "A/Enter  play (Add-On)   Up / Down  speed   B/Esc  skip"),
     "story_mode_hint": ("Gauche / Droite  choisir   A/Entree  commencer   B/Esc  retour",
                         "Left / Right  choose   A/Enter  start   B/Esc  back"),
     "story_pilot": ("PILOTE", "PILOT"),
@@ -3329,6 +3332,21 @@ _INTRO_FR["story_scene_paint_1"] = (
     'Et pourtant la rumeur tient. Wallems prend encore les commandes, choisit ses teintes uniques à l’œil, et livre des coques magnifiques le tout avec en fond sonore des trompettes flamboyantes…\n'
     'Non, je n\'irai pas, ça serait du délire…'
 )
+_INTRO_FR["story_scene_bar"] = (
+    'La porte du sas siffle en s’ouvrant, libérant une bouffée d’air recyclé qui sent le café et le métal rouillé. '
+    'Je pose le pied sur le plancher grinçant du Dernier Rempart, le bar de la station Phobos.\n\n'
+    'Autour de moi, c’est un chaos rouillé de néons roses et bleus qui clignotent sur des bornes d’arcade vintage. '
+    'Des écrans cathodiques connectés à de vieilles consoles de jeux crachotent des scores en pixels verts, '
+    'alors qu’une vieille chanson synthwave grésille dans les haut-parleurs.\n\n'
+    'Je m’avance entre les tables. Personne ne me regarde. Ici, à la frontière de la ceinture d’astéroïdes, '
+    'tout le monde a une histoire, et personne ne pose de questions.\n\n'
+    'C’est l’endroit parfait pour oublier que l’humanité est menacée de disparition.\n\n'
+    'Je m’approche d’une borne d’arcade du jeu *Phoenix* de Taito, dans le coin le plus sombre. '
+    'Un frisson me parcourt la nuque. Sur l’écran noir, une ligne de texte clignote lentement :\n\n'
+    'FREE PLAY. APPUYEZ SUR SELECT(5) POUR METTRE UN CRÉDIT PUIS SUR START(1) POUR JOUER.\n\n'
+    'Je suis les consignes.\n\n'
+    'Et la partie commence…'
+)
 for _k, _v in _INTRO_FR.items():
     _ADVENTURE_TEXTS[_k] = (_v, _v)
 
@@ -3349,6 +3367,9 @@ _ADVENTURE_TEXTS.update({
                            "Display, sound, music, language and controls. The settings are for the whole game."),
     "story_door_jukebox": ("Réécouter les musiques du jeu et revoir la vidéo d'introduction.",
                            "Listen to the music of the game again and watch the introduction video."),
+    "story_door_addon_t": ("Bar de la station Phobos", "Phobos station bar"),
+    "story_door_addon": ("Le Dernier Rempart et ses bornes d’arcade : le menu Add-On, pour choisir un jeu et lancer la partie.",
+                         "The Last Bulwark and its arcade cabinets: the Add-On menu, to pick a game and start playing."),
     "story_door_credits": ("Les crédits du jeu, qui défilent à l'écran.", "The credits of the game, scrolling up the screen."),
     "story_best_empty": ("Aucun ennemi détruit pour l'instant.", "No enemy destroyed yet."),
     "story_best_count": ("Ennemis détruits : {n}", "Enemies destroyed: {n}"),

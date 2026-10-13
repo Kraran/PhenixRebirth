@@ -976,6 +976,17 @@ SCENES = {
 }
 
 
+# The scene of the Phobos station bar belongs to no mission: it is told the first time the Add-On is available (the
+# MAME games found, see addon.addon_ready), then it stays in the journal like the others. At its end the player goes
+# straight to the Add-On menu (`door`), and the Elise theme (`music`) is played softly under the text. Keys are scene ids.
+BAR_SCENE = "bar_phobos"
+ADDON_SCENES = {
+    BAR_SCENE: {"title": "story_scene_bar_t", "slides": [("bar_phobos", "story_scene_bar")],
+                "door": "addon", "music": "nostalgie_elise"},
+}
+BAR_MUSIC_LEVEL = 0.34         # share of the normal music volume while the scene is read over it
+
+
 # A slide picture can be a video clip instead of a still: `assets/story/<name>.mp4` (made by tools/encode_clip.py,
 # no sound, 24 fps, a loop without a seam) plays behind the text. The still `<name>.jpg` stays as the poster, shown
 # while the clip starts and whenever it cannot play (no ffmpeg, damaged file).
@@ -986,7 +997,12 @@ def clip_path(name):
 
 
 def scene_of(mission_id):
-    return SCENES.get(mission_id)
+    return SCENES.get(mission_id) or ADDON_SCENES.get(mission_id)
+
+
+def bar_due(state, addon_ready):
+    """True when the Phobos bar scene has to be told now: the Add-On is available and this save has not seen it."""
+    return bool(addon_ready) and not scene_seen(state, BAR_SCENE)
 
 
 def scene_flag(mission_id):
@@ -1002,8 +1018,8 @@ def mark_scene_seen(state, mission_id):
 
 
 def scenes_seen(state):
-    """Ids of the scenes already watched, in the order of SCENES."""
-    return [mid for mid in SCENES if scene_seen(state, mid)]
+    """Ids of the scenes already watched: those of the missions in the order of SCENES, then the Add-On ones."""
+    return [mid for mid in list(SCENES) + list(ADDON_SCENES) if scene_seen(state, mid)]
 
 
 PHENIX_CAP_START = 60
