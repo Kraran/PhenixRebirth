@@ -8,6 +8,7 @@ from test_smoke import run  # noqa: F401  (fixture)
 
 HUNTS = ["ch1_sortie", "best_s2", "best_s3", "best_s4"]
 BOSS = ["best_boss"]
+BONUS = ["bonus_2d"]                      # the secret BONUS mission: on the map of Act 2 only while it is still to do
 DOME = ["dome_1", "dome_2", "dome_3", "dome_4", "dome_5", "act2_gate"]
 PHENIX = ["phenix_1", "phenix_2", "phenix_3", "phenix_4", "phenix_5"]
 PAINT = ["paint_1", "paint_2", "paint_3"]
@@ -57,6 +58,8 @@ def test_the_map_of_act_1_has_no_phenix_mission():
 
 def test_the_map_of_act_2_keeps_the_hunts_and_drops_the_dome_missions():
     st = _act2()
+    assert _ids(ss.visible_missions(st)) == HUNTS + BONUS + BOSS + PHENIX + PAINT      # BONUS: open and not flown yet
+    st["cleared"].append("bonus_2d")
     assert _ids(ss.visible_missions(st)) == HUNTS + BOSS + PHENIX + PAINT
 
 
@@ -280,7 +283,7 @@ def test_the_map_cursor_walks_the_act_2_list_only():
     hub.pane = "map"
     for _ in range(30):
         hub.nav_v(1)
-    assert hub._mission()["id"] == "paint_3" and hub.map_index == len(HUNTS + BOSS + PHENIX + PAINT) - 1
+    assert hub._mission()["id"] == "paint_3" and hub.map_index == len(HUNTS + BONUS + BOSS + PHENIX + PAINT) - 1
 
 
 def test_winning_the_gate_puts_the_cursor_on_the_new_map():

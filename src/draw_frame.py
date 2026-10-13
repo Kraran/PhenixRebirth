@@ -108,7 +108,7 @@ def draw_play(game):
 
     mission_name = ""
     if getattr(game, "adventure", None):
-        mission_name = t(game.adventure.get("title") or "story")
+        mission_name = t(game.adventure.get("hud_title") or game.adventure.get("title") or "story")
         if game.adventure.get("level"):
             mission_name += "  " + t("story_level").format(n=int(game.adventure["level"]))
     stage_surf = tc.get(
@@ -121,6 +121,12 @@ def draw_play(game):
     adv = getattr(game, "adventure", None)
     if adv and adv.get("swarm") and game.play_mode != "coop":
         left = tc.get(game.font, t("story_swarm_left").format(n=game.formation.swarm_remaining()), (255, 220, 120))
+        game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
+    elif adv and adv.get("galaga") and game.play_mode != "coop":
+        form = game.formation
+        left = tc.get(game.font, t("story_galaga_hud").format(n=max(1, int(getattr(form, "wave", 1))),
+                                                              m=int(getattr(form, "waves", 4)),
+                                                              left=form.remaining()), (255, 220, 120))
         game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
     elif adv and adv.get("invaders") and game.play_mode != "coop":
         left = tc.get(game.font, t("story_swarm_left").format(n=game.formation.remaining()), (255, 220, 120))

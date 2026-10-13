@@ -199,7 +199,7 @@ def _open(**flags):
 
 def test_the_launch_specs_of_the_new_missions():
     hub = _open(dome_s4=True, dome_s5=True)
-    ids = [m["id"] for m in ss.MISSIONS]
+    ids = [m["id"] for m in hub.missions()]                        # the map's own list (the secret BONUS one is hidden)
     hub.map_index = ids.index("dome_5")
     spec = hub._launch_selected()
     assert spec["swarm"] and spec["stage"] == 11 and "waves" not in spec

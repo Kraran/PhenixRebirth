@@ -85,6 +85,7 @@ def test_the_scene_is_saved_with_the_slot():
     hub.state["cleared"] = ["ch1_sortie", "best_s2", "best_s3", "best_s4"]
     hub.state["flags"].update(ch1_speed=True)
     hub.cheat_unlock = True
+    hub.map_index = [m["id"] for m in hub.missions()].index("dome_1")       # the cheat lists every mission (BONUS too)
     hub.confirm()
     _wait(hub)
     hub.confirm()

@@ -40,6 +40,8 @@ from player import Player, recolor_phenix_frames
 from enemy import EnemyFormation, BigBird, Enemy
 import invaders
 from invaders import InvaderFormation
+import galaga
+from galaga import GalagaFormation
 from boss import BossSaucer
 from explosion import Explosion, TeslaCoilFx
 from starfield import Starfield
@@ -1785,6 +1787,9 @@ class Game:
             # the Phenix form lasts a share of the arcade one: 60 % at first, more after the workshop
             self.player.phenix_sec_per_point *= max(0.1, int(loadout.get("phenix_pct") or 60) / 100.0)
         self.player.adventure_wall = loadout.get("wall") or "instant"
+        if loadout.get("vertical"):
+            # the two-dimensional impulse reactor (BONUS mission): up and down in the lower third, for the rest of the Adventure
+            self.player.vertical_range = (PLAYER_VERTICAL_TOP, PLAYER_VERTICAL_BOTTOM)
         self.adventure["dome"] = dome
         # the loot items bought in the hangar for this mission (they are used up when it ends, see _end_adventure)
         items = list(spec.get("items") or [])
@@ -1936,6 +1941,15 @@ class Game:
             self.sounds.prepare_invader_sfx(invaders.STEP_PITCHES, invaders.STEP_PITCH_GAP, invaders.SAUCER_PASS)
             self.boss_saucer = None
             return
+        elif adv and adv.get("galaga"):
+            # the BONUS mission: four waves of birds in chains, like Galaga (src/galaga.py), at level 2
+            number = int(adv.get("stage") or story_state.GALAGA_STAGE)
+            self.stage = number
+            mult = float(adv.get("speed") or 1.0) * stage_speed_mult(number) * self.difficulty_speed_mult()
+            self.formation = GalagaFormation(speed_mult=mult)
+            self.formation.sounds = self.sounds
+            self.boss_saucer = None
+            return
         elif adv and adv.get("swarm"):
             # the swarm mission: all four enemies at once, at the speed of one arcade level
             number = int(adv.get("stage") or 11)
@@ -1948,7 +1962,7 @@ class Game:
         else:
             content = stage_content(stage)
             mult = stage_speed_mult(stage) * self.difficulty_speed_mult()
-        if isinstance(self.formation, InvaderFormation):
+        if isinstance(self.formation, (InvaderFormation, GalagaFormation)):
             self.formation = EnemyFormation()            # back to the ordinary grids
         self.formation.enemies = []
         self.formation.bullets = []

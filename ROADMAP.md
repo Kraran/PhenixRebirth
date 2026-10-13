@@ -3,6 +3,15 @@ Current release: **v1.4.5**
 
 ## Unreleased (towards 1.5.0 — Adventure)
 
+- Adventure, Act 1: new mission "BONUS : le réacteur à impulsion bidimensionnelle" (`src/galaga.py`). It appears on the map (in every
+  act, until it is won) once the "Bestiaire : gargouilles sombres" hunt is won, and is flown once. It is four waves of blue and khaki
+  avioids of level 2 (x1.1 speed, +10 points a bird) that come in like in Namco's Galaga: chains of birds follow curved paths,
+  loop over the screen, bomb the ship (they shoot a lot, more and more) and leave. The birds still alive when their chain leaves join
+  the next wave, which is bigger and deadlier; the fourth and last wave keeps coming back until every bird is destroyed or the ship
+  is. Failure rules are the usual ones (Normal: 5 % lost, can be tried again; Veteran: the pilot falls)
+- Adventure: winning the BONUS mission gives the two-dimensional impulse reactor for the rest of the adventure: in every mission, with
+  both hulls, the ship also flies up and down the lower third of the screen (arrow keys up / down, left stick or d-pad up / down;
+  Z / S in coop keyboard 1). Saved in the save (`vertical_thrust` flag); the arcade game does not change
 - Adventure, Veteran: when the ship dies, the normal GAME OVER of the game is played (explosion, GAME OVER card, announcer voice,
   pad rumble) before the slot list where the save is now a memorial. The fall is written into the save at the moment of death,
   so closing the game during the card does not save the pilot. Normal and Novice are unchanged (quantum anchor return)

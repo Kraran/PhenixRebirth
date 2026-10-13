@@ -138,6 +138,7 @@ class Player:
         self.PHENIX_COOLDOWN_SEC = 1.25
         
         self.lives = PLAYER_MAX_LIVES
+        self.vertical_range = None       # Adventure BONUS reward: (top, bottom) of the ship's centre, it flies up and down there
         self.bullet_speed_mult = 1.0     # Adventure loot (Singularity Core): faster bullets, so the ship fires more often
         self.electric_immune = False     # Adventure loot (Tesla Seal): the electric walls do nothing
         self.infinite_lives = False
@@ -362,6 +363,7 @@ class Player:
                 self.phenix_gauge = min(10.0, self.phenix_gauge + rate * dt)
         
         dx = 0.0
+        dy = 0.0
         shoot_pressed = False
 
         self._joy = joystick
@@ -387,6 +389,11 @@ class Player:
                         dx = -1.0
                     elif hat[0] > 0:
                         dx = 1.0
+                if self.vertical_range is not None:
+                    if abs(joystick.get_axis(1)) > 0.25:
+                        dy = 1.0 if joystick.get_axis(1) > 0 else -1.0
+                    if joystick.get_numhats() > 0 and joystick.get_hat(0)[1] != 0:
+                        dy = -1.0 if joystick.get_hat(0)[1] > 0 else 1.0
                 # Face buttons: 0=A, 1=B, 2=X, 3=Y — also shoulder
                 # B (1) reserved for Phenix activation (edge-triggered in Game)
                 for b in (0, 2, 3, 5):
@@ -403,6 +410,8 @@ class Player:
                     dx -= 1.0
                 if keys[pygame.K_d]:
                     dx += 1.0
+                if self.vertical_range is not None:
+                    dy = (1.0 if keys[pygame.K_s] else 0.0) - (1.0 if (keys[pygame.K_z] or keys[pygame.K_w]) else 0.0)
                 shoot_pressed = keys[pygame.K_LCTRL]
             elif scheme == "kb2":
                 # Coop P2 keyboard (same as 1P kb): arrows, Space / Right Ctrl
@@ -410,6 +419,8 @@ class Player:
                     dx -= 1.0
                 if keys[pygame.K_RIGHT]:
                     dx += 1.0
+                if self.vertical_range is not None:
+                    dy = (1.0 if keys[pygame.K_DOWN] else 0.0) - (1.0 if keys[pygame.K_UP] else 0.0)
                 shoot_pressed = keys[pygame.K_SPACE] or keys[pygame.K_RCTRL]
             else:
                 # 1P / hot-seat keyboard: arrows, Space or Right Ctrl
@@ -417,11 +428,14 @@ class Player:
                     dx -= 1.0
                 if keys[pygame.K_RIGHT]:
                     dx += 1.0
+                if self.vertical_range is not None:
+                    dy = (1.0 if keys[pygame.K_DOWN] else 0.0) - (1.0 if keys[pygame.K_UP] else 0.0)
                 shoot_pressed = keys[pygame.K_SPACE] or keys[pygame.K_RCTRL]
         
         if self.uses_shield and self.is_phenix:
             dx = 0.0
-        self.moving = dx != 0.0
+            dy = 0.0
+        self.moving = dx != 0.0 or dy != 0.0
         
         if self.slowdown_timer > 0:
             self.slowdown_timer = max(0.0, self.slowdown_timer - dt)
@@ -432,6 +446,9 @@ class Player:
             speed_mult *= self.PHENIX_SPEED_MULT
             
         self.x += dx * self.speed * speed_mult * dt
+        if self.vertical_range is not None and dy != 0.0:
+            top, bottom = self.vertical_range
+            self.y = max(float(top), min(float(bottom), self.y + dy * self.speed * speed_mult * dt))
         
         margin = 36
         left_limit = margin
