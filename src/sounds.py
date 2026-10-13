@@ -43,6 +43,8 @@ class SoundManager:
         self._duck = 1.0
         self._dip = 1.0          # the music faded down under a sound (see MUSIC_FADE), 1.0 = not faded
         self._dip_spec = None    # [from, level, down, hold, up, seconds so far] while a fade is on
+        self._level = 1.0        # the music kept low on purpose (a scene read over it), 1.0 = normal (see set_music_level)
+        self._level_spec = None  # [from, to, seconds, seconds so far] while the level moves
         self.DUCK_LEVEL = 0.40   # -8 dB VO
         self.PAUSE_DUCK = 0.32   # ~-10 dB in-game pause
         self.DUCK_IN = 0.10
@@ -319,7 +321,47 @@ class SoundManager:
         """OST is mastered hotter than SFX. Slider 1.0 ≈ 30% mixer, then VO duck."""
         duck = float(getattr(self, "_duck", 1.0) or 1.0)
         dip = float(getattr(self, "_dip", 1.0))
-        return max(0.0, min(1.0, float(self.music_volume) * 0.30 * duck * dip))
+        level = float(getattr(self, "_level", 1.0))
+        return max(0.0, min(1.0, float(self.music_volume) * 0.30 * duck * dip * level))
+
+    def music_level(self):
+        return float(getattr(self, "_level", 1.0))
+
+    def set_music_level(self, level, seconds=1.5):
+        """Bring the music to `level` (a share of its volume, 1.0 = normal) smoothly in `seconds`, whatever theme plays.
+        The same level asked again does nothing (it can be asked every frame)."""
+        level = max(0.0, min(1.0, float(level)))
+        spec = getattr(self, "_level_spec", None)
+        goal = spec[1] if spec is not None else float(getattr(self, "_level", 1.0))
+        if abs(goal - level) < 1e-6:
+            return
+        if float(seconds) <= 0.0:
+            self._level, self._level_spec = level, None
+            self._push_music_volume("sounds.set_music_level")
+            return
+        self._level_spec = [float(getattr(self, "_level", 1.0)), level, float(seconds), 0.0]
+
+    def _push_music_volume(self, where):
+        if not self._end_fading and not self._fading_out:
+            try:
+                pygame.mixer.music.set_volume(self._music_out())
+            except Exception:
+                log_exc(where)
+
+    def _tick_level(self, dt):
+        """Every frame: where the music level is now (a smooth move toward the asked level)."""
+        spec = getattr(self, "_level_spec", None)
+        if spec is None:
+            return
+        start, goal, seconds, clock = spec
+        clock += max(0.0, float(dt))
+        spec[3] = clock
+        x = max(0.0, min(1.0, clock / max(0.01, seconds)))
+        self._level = start + (goal - start) * (x * x * (3.0 - 2.0 * x))
+        if x >= 1.0:
+            self._level = goal
+            self._level_spec = None
+        self._push_music_volume("sounds._tick_level")
 
     def fade_music(self, seconds, level=0.12, down=0.5, up=2.0):
         """Fade the music down to `level` (a share of its volume), keep it there for `seconds` in all, then bring it back
@@ -546,9 +588,11 @@ class SoundManager:
                 self._electric_channel.stop()
                 self._electric_channel = None
 
-    def play_music(self, key, loops=-1, fade_ms=None):
-        """Request a theme. Cross-fades from the current one if needed."""
+    def play_music(self, key, loops=-1, fade_ms=None, fade_in_ms=None):
+        """Request a theme. Cross-fades from the current one if needed: the old one fades out in `fade_ms`, the new one
+        fades in in `fade_in_ms` (default: the same)."""
         fade = int(self.FADE_MS if fade_ms is None else fade_ms)
+        fade_in = fade if fade_in_ms is None else int(fade_in_ms)
         if key not in self._music_paths:
             return
         path = self._music_paths.get(key)
@@ -564,14 +608,14 @@ class SoundManager:
         self._loop_key = None
 
         if self._current_music is None and not self._fading_out:
-            self._start_track(path, key, fade_ms=fade)
+            self._start_track(path, key, fade_ms=fade_in)
             return
 
         if self._current_music == key:
             return
 
         self._pending_music = key
-        self._pending_fade_ms = fade
+        self._pending_fade_ms = fade_in
         if not self._fading_out:
             self._fading_out = True
             self._end_fading = False
@@ -711,6 +755,7 @@ class SoundManager:
         try:
             self._tick_duck(dt)
             self._tick_dip(dt)
+            self._tick_level(dt)
         except Exception:
             log_exc("sounds.update")
         if not self._fading_out:

@@ -235,12 +235,21 @@ class Game:
     def _update_music(self):
         """Menu / attract / optional in-game menu theme. Off silences everything."""
         mix = getattr(self, "audio_mix", "sfx")
+        scene = self._story_scene_music()
+        if scene is None:
+            self.sounds.set_music_level(1.0, 2.0)       # (after a scene read over it, the music comes back to full)
         if mix == "off":
             self.sounds.stop_music()
             return
         if getattr(self, "menu_screen", "") == "jukebox":
             return
-        if self.game_over and self.hs_phase in ("card", "enter", "table"):
+        if scene is not None and not self.started:
+            # a story scene with its own theme (the Phobos bar): the menu theme fades out quickly, the new one comes in
+            # slowly and stays low under the text; it goes on in the Add-On menu, where it comes back to normal
+            key, level = scene
+            self.sounds.play_music(key, fade_ms=600, fade_in_ms=3000)
+            self.sounds.set_music_level(level, 2.5)
+        elif self.game_over and self.hs_phase in ("card", "enter", "table"):
             self.sounds.play_music("gameover")
         elif not self.started:
             if self.menu_screen in ("highscores", "achievements"):
@@ -262,6 +271,13 @@ class Game:
                 self.sounds.play_music("menu")
             else:
                 self.sounds.stop_music()
+
+    def _story_scene_music(self):
+        """(theme, level) of the music of the story scene on screen, or None."""
+        story = getattr(self, "story", None)
+        if story is None or getattr(self, "menu_screen", "") != "story_hub" or getattr(self, "started", False):
+            return None
+        return story.scene_music()
 
     def _juke_catalog(self):
         return (
@@ -321,7 +337,8 @@ class Game:
             self.menu_screen = "highscores"
 
     # --- Options, Jukebox and Credits opened from the Adventure ---
-    DOOR_SCREENS = {"options": ("options", "reset_confirm"), "jukebox": ("jukebox",), "credits": ("credits",)}
+    DOOR_SCREENS = {"options": ("options", "reset_confirm"), "jukebox": ("jukebox",), "credits": ("credits",),
+                    "addon": ("addon",)}
 
     def _open_story_door(self, door):
         """The screen of the main menu that a paragraph of the Extras tab of the Adventure stands for. It looks and works
@@ -339,8 +356,27 @@ class Game:
             self.menu_screen = "credits"
             self.credits_scroll = float(BASE_HEIGHT)
             self.credits_from_start = True
+        elif door == "addon":
+            self.menu_screen = "addon"            # the games of the Add-On: the bar of the Phobos station
         else:
             self._open_jukebox()
+
+    def _story_scene_door(self, door):
+        """The scene that ends in a screen of the main menu (the Phobos bar) has been read: fade to black, then open it
+        (see _apply_fade_action), and the screen comes up from black."""
+        self._scene_door = door
+        self.FADE_SEC = 0.9
+        self._fade_to("story_scene_door")
+
+    def _finish_story_scene_door(self):
+        door = getattr(self, "_scene_door", None)
+        self._scene_door = None
+        story = getattr(self, "story", None)
+        if story is None or not door:
+            return
+        story.finish_scene(door)
+        self.menu_screen = "story_hub"
+        self._open_story_door(door)
 
     def _story_door_tick(self):
         """Every frame: when the screen opened from the Adventure has been left for another one, the Adventure is
@@ -359,7 +395,8 @@ class Game:
         if getattr(self, "menu_screen", "") == "jukebox":
             self._leave_jukebox_audio()
         story.pane = "extras"
-        story.extras_index = ("options", "jukebox", "credits").index(door)
+        doors = story.doors()
+        story.extras_index = doors.index(door) if door in doors else 0
         story.screen = "hub"
         self.menu_screen = "story_hub"
         self.menu_index = 1
@@ -1199,6 +1236,8 @@ class Game:
             self._begin_run()
         elif a == "hotseat_p2":
             self._apply_hotseat_p2_ship()
+        elif a == "story_scene_door":
+            self._finish_story_scene_door()
         elif a == "exit":
             self.running = False
 

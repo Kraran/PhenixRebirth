@@ -8,6 +8,7 @@ drawing code and is tested on its own. Points earned in a mission are
 hangar credits.
 """
 import math
+import re
 
 import pygame
 from settings import BASE_WIDTH, BASE_HEIGHT, asset_path
@@ -19,6 +20,7 @@ import loot
 from text_cache import TextCache
 import bestiary_art
 import videoclip
+import addon as mame_addon
 from story_state import MISSIONS, SHOP, log_text   # noqa: F401  (re-exported for the tests)
 
 
@@ -26,6 +28,8 @@ from story_state import MISSIONS, SHOP, log_text   # noqa: F401  (re-exported fo
 # paragraphs: Up / Down choose, A opens the real screen, B / Esc comes back to the same paragraph. (Left / Right change
 # values in those screens, so they could not also change tab.)
 DOORS = ("options", "jukebox", "credits")
+BAR_DOOR = "addon"             # the fourth paragraph, there only when the Add-On is available: the Phobos station bar
+DOOR_TITLES = {BAR_DOOR: "story_door_addon_t"}      # the paragraphs whose title is not the name of the screen
 PANES = ("extras", "bestiary", "log", "hangar", "map")
 CHEAT_UNLOCK = "UNLK"          # typed on the mission map: play any mission, save nothing
 PORTRAIT_H = 124                 # height of a hull portrait in the hangar (the ship select screen uses 168)
@@ -64,6 +68,72 @@ def _wrap(font, text, width):
     if cur:
         lines.append(cur)
     return lines
+
+
+def _italic_runs(line):
+    """`a *Phoenix* b` -> (`a Phoenix b`, [False, ..., True, ..., False]) : the text without the stars and, for each of
+    its characters, whether it is in italics (the title of a work). A line whose stars do not pair up is left as it is."""
+    parts = str(line).split("*")
+    if len(parts) < 3 or len(parts) % 2 == 0:
+        return str(line), None
+    plain, mask = "", []
+    for i, part in enumerate(parts):
+        plain += part
+        mask.extend([i % 2 == 1] * len(part))
+    return plain, mask
+
+
+def _wrap_marked(font, plain, mask, width):
+    """Like _wrap, for a line with italics: a list of lines, each a tuple of (italic, text) runs."""
+    words = [(m.start(), m.end()) for m in re.finditer(r"\S+", plain)]
+    lines, cur = [], []
+    for w in words:
+        trial = cur + [w]
+        text = " ".join(plain[a:b] for a, b in trial)
+        if cur and font.size(text)[0] > width:
+            lines.append(cur)
+            cur = [w]
+        else:
+            cur = trial
+    if cur:
+        lines.append(cur)
+    out = []
+    for line in lines:
+        chars = []                                   # (character, italic)
+        for k, (a, b) in enumerate(line):
+            if k:
+                chars.append((" ", mask[a - 1] and mask[a]))     # the space between two words of one title
+            chars.extend((plain[i], mask[i]) for i in range(a, b))
+        runs = []
+        for ch, it in chars:
+            if runs and runs[-1][0] == it:
+                runs[-1] = (it, runs[-1][1] + ch)
+            else:
+                runs.append((it, ch))
+        out.append(tuple(runs))
+    return out
+
+
+def _render_runs(font, runs, color):
+    """One text line made of (italic, text) runs, side by side. A slanted run is wider than the same text upright
+    (the slant overhangs on the right); the next run takes that back so the space after a title is a normal one."""
+    pieces = []                                       # (picture, shift of the next run)
+    try:
+        for italic, text in runs:
+            font.set_italic(False)
+            upright = font.size(text)[0]
+            font.set_italic(bool(italic))
+            img = font.render(text, True, color)
+            pieces.append((img, -(img.get_width() - upright) if italic else 0))
+    finally:
+        font.set_italic(False)
+    width = sum(p.get_width() + d for p, d in pieces)
+    img = pygame.Surface((max(1, width), max(p.get_height() for p, _d in pieces)), pygame.SRCALPHA)
+    x = 0
+    for p, d in pieces:
+        img.blit(p, (x, 0))
+        x += p.get_width() + d
+    return img
 
 
 MENU_ALPHA = 195                # the panels of the adventure menus let a little of the background through (0..255)
@@ -174,6 +244,9 @@ class StoryHub:
         self.log_cursor = 0            # which replay line (the intro, then the scenes seen) is selected
         self.scene_id = None           # mission whose scene is being shown (None: the story intro)
         self.scene_launch = False      # the scene came before a launch: A on the last slide flies the mission
+        self.scene_door = None         # the scene is told for the first time and ends in this screen of the main menu
+        self.scene_closing = False     # A was pressed on its last slide: the game fades out and opens that screen
+        self.addon_ready = mame_addon.addon_ready      # (replaced in the tests) is the Add-On available?
         self.cheat_buf = ""            # last letters typed on the mission map
         self.cheat_unlock = False      # UNLK: every mission can be played, nothing is saved any more
         self.cheat_act2 = False        # ACT2: the save jumped to Act 2, nothing is saved any more
@@ -210,8 +283,9 @@ class StoryHub:
         self.scene_launch = False
         self.screen = "intro"
 
-    def start_scene(self, mission_id, back_to="map", launch=False):
-        """Show the scene of a mission (the first time it is launched, or from the journal)."""
+    def start_scene(self, mission_id, back_to="map", launch=False, door=None):
+        """Show the scene of a mission (the first time it is launched, or from the journal). `door`: the screen of the
+        main menu to open when it is over (the scene of the Phobos bar, told for the first time)."""
         scene = ss.scene_of(mission_id)
         if not scene:
             return False
@@ -221,8 +295,44 @@ class StoryHub:
         self.intro_return = back_to
         self.scene_id = mission_id
         self.scene_launch = bool(launch)
+        self.scene_door = door
+        self.scene_closing = False
         self.screen = "intro"
         return True
+
+    # --- the Extras tab: the screens of the main menu, and the bar of Phobos once the Add-On is there ---
+    def doors(self):
+        """The paragraphs of the Extras tab: Options, Jukebox, Credits, and the Phobos bar (the Add-On menu) when the
+        Add-On is available."""
+        return DOORS + ((BAR_DOOR,) if self._addon_available() else ())
+
+    def _addon_available(self):
+        try:
+            return bool(self.addon_ready())
+        except Exception:
+            log_exc("story._addon_available")
+            return False
+
+    def bar_due(self):
+        """True when the scene of the Phobos bar has to be told now (Add-On available, not seen in this save)."""
+        return ss.bar_due(self.state, self._addon_available())
+
+    def maybe_bar(self):
+        """The first time the Add-On is there, the Phobos bar scene is shown, and it ends in the Add-On menu."""
+        if self.screen == "hub" and self.bar_due():
+            self.extras_index = len(DOORS)
+            return self.start_scene(ss.BAR_SCENE, back_to="extras", door=BAR_DOOR)
+        return False
+
+    def scene_music(self):
+        """(theme, level) of the music kept under the scene being read, or None. The level is a share of the normal
+        volume: low while the text goes by, back to normal when the scene is closed."""
+        if self.screen != "intro" or not self.scene_id:
+            return None
+        key = (ss.scene_of(self.scene_id) or {}).get("music")
+        if not key:
+            return None
+        return key, (1.0 if self.scene_closing else ss.BAR_MUSIC_LEVEL)
 
     def _reset_slide(self):
         self._stop_clip()                 # a video starts over with its slide
@@ -238,12 +348,16 @@ class StoryHub:
     def _intro_next(self):
         """A on a slide: the next one; after the last, the story goes on (a scene before a launch flies the
         mission: the launch spec is returned)."""
-        if self.intro_t < INTRO_LOCK:
+        if self.intro_t < INTRO_LOCK or self.scene_closing:
             return None
         if self.intro_index + 1 < len(self.intro_slides):
             self.intro_index += 1
             self._reset_slide()
             return None
+        if self.scene_door:
+            # the player has read it: the game fades to black, then calls finish_scene() and opens the screen
+            self.scene_closing = True
+            return {"door": self.scene_door, "scene": True}
         launch = self.scene_launch
         self._end_intro()
         if launch:
@@ -259,12 +373,24 @@ class StoryHub:
         else:
             ss.mark_intro_seen(self.state)
         self.save()
+        was_story = not self.scene_id
         self.scene_id = None
         self.scene_launch = False
+        self.scene_door = None
+        self.scene_closing = False
         self.screen = "hub"
         self.pane = self.intro_return
         self.zone = "slots"
         self.intro_return = "hangar"
+        if was_story:
+            self.maybe_bar()               # a new pilot's introduction comes first, then the bar if the Add-On is there
+
+    def finish_scene(self, door=None):
+        """The fade to black is done: the scene is over and the Adventure is back on its Extras paragraph."""
+        self._end_intro()
+        self.pane = "extras"
+        if door in self.doors():
+            self.extras_index = self.doors().index(door)
 
     def update(self, dt, scroll=0):
         """Time passes. `scroll` is the speed control of the intro: +1 faster (Down), -1 back (Up)."""
@@ -623,6 +749,7 @@ class StoryHub:
             else:
                 self.open_slot(self.sel + 1)
                 self._maybe_intro()
+                self.maybe_bar()
         elif self.screen == "intro":
             return self._intro_next()
         elif self.screen == "delete":
@@ -659,7 +786,8 @@ class StoryHub:
         elif self.screen == "mode":
             self.screen = "name"
         elif self.screen == "intro":
-            self._end_intro()
+            if not self.scene_closing:
+                self._end_intro()
         else:
             return False
         return True
@@ -712,7 +840,7 @@ class StoryHub:
                 self.log_scroll = max(0, min(top, self.log_scroll + direction))
             return
         if self.pane == "extras":
-            self.extras_index = max(0, min(len(DOORS) - 1, self.extras_index + direction))
+            self.extras_index = max(0, min(len(self.doors()) - 1, self.extras_index + direction))
             return
         if self.pane == "bestiary":
             n = len(ss.bestiary_entries(self.state))
@@ -740,7 +868,8 @@ class StoryHub:
                 return None
             return self._launch_selected()
         if self.pane == "extras":
-            return {"door": DOORS[self.extras_index]}   # the game opens the screen and brings us back here
+            doors = self.doors()
+            return {"door": doors[max(0, min(len(doors) - 1, self.extras_index))]}   # the game opens the screen and brings us back here
         if self.pane == "log":
             replay = self.replay_entries()
             entry = replay[max(0, min(len(replay) - 1, self.log_cursor))]
@@ -994,7 +1123,11 @@ class StoryHub:
             if not line:
                 rows.append((None, pitch // 2))
             else:
-                rows.extend((piece, pitch) for piece in _wrap(font, line, INTRO_TEXT_W))
+                plain, mask = _italic_runs(line)
+                if mask is None:
+                    rows.extend((piece, pitch) for piece in _wrap(font, line, INTRO_TEXT_W))
+                else:        # a title in italics (*Phoenix*): the text goes by runs, a little narrower for the slant
+                    rows.extend((runs, pitch) for runs in _wrap_marked(font, plain, mask, INTRO_TEXT_W - 24))
             h_line = sum(h for _txt, h in rows[first:])
             if line:
                 spans[number] = (y_line, y_line + h_line - 12)
@@ -1005,8 +1138,12 @@ class StoryHub:
         y = 0
         for txt, h in rows:
             if txt:
-                shadow = font.render(txt, True, (0, 0, 0))
-                img = font.render(txt, True, (230, 232, 244))
+                if isinstance(txt, tuple):
+                    shadow = _render_runs(font, txt, (0, 0, 0))
+                    img = _render_runs(font, txt, (230, 232, 244))
+                else:
+                    shadow = font.render(txt, True, (0, 0, 0))
+                    img = font.render(txt, True, (230, 232, 244))
                 x = (INTRO_TEXT_W - img.get_width()) // 2
                 block.blit(shadow, (x + 2, y + 2))
                 block.blit(img, (x, y))
@@ -1142,7 +1279,7 @@ class StoryHub:
         col = (255, 220, 120) if blink else ((235, 235, 245) if done else (140, 145, 170))
         if last:
             hint = "story_scene_last" if self.scene_launch else (
-                "story_scene_end" if self.scene_id else "story_intro_last")
+                "story_scene_door" if self.scene_door else ("story_scene_end" if self.scene_id else "story_intro_last"))
         else:
             hint = "story_intro_hint"
         _text(surface, small, t(hint), col, BASE_HEIGHT - 24, centerx=cx)
@@ -1309,23 +1446,29 @@ class StoryHub:
         return img
 
     def _draw_extras(self, surface, medium, small):
-        """Three paragraphs, one for each screen of the main menu; the chosen one has a frame."""
+        """One paragraph for each screen of the main menu (Options, Jukebox, Credits, and the Add-On when it is there, as
+        the bar of Phobos); the chosen one has a frame. With the fourth the paragraphs are a little smaller."""
         cx = BASE_WIDTH // 2
-        width, top, step = 860, 130, 150
-        for i, door in enumerate(DOORS):
+        doors = self.doors()
+        width, top = 860, 124
+        step = 150 if len(doors) <= 3 else 122
+        tight = len(doors) > 3
+        for i, door in enumerate(doors):
             chosen = i == self.extras_index
             y = top + i * step
-            box = pygame.Rect(cx - width // 2, y, width, step - 24)
+            box = pygame.Rect(cx - width // 2, y, width, step - (24 if not tight else 14))
             if chosen:
                 _fill(surface, (24, 26, 44), box, radius=10)
                 pygame.draw.rect(surface, (255, 215, 90), box, 2, border_radius=10)
             else:
                 _fill(surface, (14, 15, 28), box, radius=10)
                 pygame.draw.rect(surface, (70, 74, 100), box, 1, border_radius=10)
-            head = ("> " if chosen else "  ") + t(door)
-            _text(surface, medium, head, (255, 230, 120) if chosen else (170, 175, 200), y + 30, left=box.x + 28)
+            head = ("> " if chosen else "  ") + t(DOOR_TITLES.get(door, door))
+            _text(surface, medium, head, (255, 230, 120) if chosen else (170, 175, 200), y + (26 if tight else 30),
+                  left=box.x + 28)
             for j, line in enumerate(_wrap(small, t("story_door_" + door), width - 60)[:2]):
-                _text(surface, small, line, (205, 208, 228) if chosen else (140, 145, 170), y + 68 + j * 30, left=box.x + 28)
+                _text(surface, small, line, (205, 208, 228) if chosen else (140, 145, 170),
+                      y + (60 if tight else 68) + j * (27 if tight else 30), left=box.x + 28)
 
     def _draw_bestiary(self, surface, font, medium, small):
         """Left: the enemies met so far. Right: what the pilot has learned about the selected one."""
