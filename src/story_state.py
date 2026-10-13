@@ -974,6 +974,7 @@ SCENES = {
     "best_s3": {"title": "story_scene_best3_t", "slides": [("gargouilles", "story_scene_best3")]},
     "best_s4": {"title": "story_scene_best4_t", "slides": [("gargouilles_sombres", "story_scene_best4")]},
     "dome_1": {"title": "story_scene_dome_1_t", "slides": [("epave_shield", "story_scene_dome_1")]},
+    "best_boss": {"title": "story_scene_bestboss_t", "slides": [("soucoupe_commandement", "story_scene_bestboss")]},
     "paint_1": {"title": "story_scene_paint_1_t", "slides": [("atelier_wallems", "story_scene_paint_1")]},
 }
 
