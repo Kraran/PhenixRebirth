@@ -165,6 +165,7 @@ class Player:
         self.moving = False
         self.engine_time = 0.0
         self.engine_intensity = 0.0
+        self.climbing = False        # True while the reactor (Adventure) moves the ship up: long jets, as in the flight up a stage
         self.engine_burst = 0.0      # 0..1: flying up to the next stage (long jets), see boost_engines
         
         # Edge collision / lightning
@@ -446,9 +447,12 @@ class Player:
             speed_mult *= self.PHENIX_SPEED_MULT
             
         self.x += dx * self.speed * speed_mult * dt
+        self.climbing = False
         if self.vertical_range is not None and dy != 0.0:
             top, bottom = self.vertical_range
+            before = self.y
             self.y = max(float(top), min(float(bottom), self.y + dy * self.speed * speed_mult * dt))
+            self.climbing = self.y < before          # the reactor pushes the ship up: the long jets of the flight up a stage
         
         margin = 36
         left_limit = margin
@@ -514,7 +518,7 @@ class Player:
         self.engine_intensity += (target - self.engine_intensity) * min(1.0, 8.0 * dt)
         if self.uses_shield and self.is_phenix:
             self.engine_intensity = 0.0
-        self.boost_engines(dt, False)
+        self.boost_engines(dt, self.climbing)
         
         # Update shots
         for shot in self.shots[:]:
