@@ -13,7 +13,7 @@ Current release: **v1.4.5**
 - Adventure: the two-dimensional impulse reactor is an item, not a gift. It falls ONCE, at a random moment of the waves (at the latest
   when the last wave comes in), like the other loot items (new picture from a video, `assets/items/reactor*.png`; the random loot is off in the BONUS missions and they do not
   count in the gap between two drops). Caught, it goes on sale in the hangar for its own hull only: **Réacteur 2D (Shield), 2000 points**,
-  installed on the Shield only. Not caught (the waves won or lost without it): the mission is offered again, as often as needed.
+  installed on the Shield only. Not caught (the waves won or lost without it), or caught but the ship is lost before the end of the mission: nothing is acquired and the mission is offered again, as often as needed. The reactor must be caught AND the mission finished (the map says "Réacteur perdu" after a lost mission). The four other loot items are still kept when the mission is lost
   Installed, it is permanent (never used up, kept in the next Acts): the hull flies up and down the lower third of the screen in every
   mission (arrow keys up / down, left stick or d-pad up / down; Z / S in coop keyboard 1). Saves made with the first version of the
   BONUS mission (`vertical_thrust` flag) keep the flight: the Shield reactor is installed for free. The arcade game does not change

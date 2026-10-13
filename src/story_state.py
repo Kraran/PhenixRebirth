@@ -1463,17 +1463,22 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
     Failed, Veteran mode: the pilot falls, the save becomes a memorial.
     `kills` ({kind: n}, the enemies destroyed) always goes into the Bestiary, win or lose.
     `loot` (the item caught during the mission) goes on sale in the hangar, win or lose; `used` (the items that were
-    installed for the mission) are used up, win or lose (see story_items.py).
+    installed for the mission) are used up, win or lose (see story_items.py). The exception is the reactor of a BONUS
+    mission: it must be caught AND the mission finished, a ship lost with it in the hold brings nothing back
+    (`res["reactor_lost"]`) and the mission is offered again.
 
     Returns {"score", "cleared", "first", "lost", "fallen"}. The journal stores a
     text KEY, not the translated text, so it follows the player's language.
     """
     score = max(0, int(score or 0))
     res = {"score": score, "cleared": bool(cleared), "first": False, "lost": 0, "fallen": False, "act": 0,
-           "loot": None, "used": [], "opened": []}
+           "loot": None, "used": [], "opened": [], "reactor_lost": None}
     record_kills(state, kills)            # the enemies met count whatever the outcome
     record_mission_kills(state, mission_id, kills)
     res["used"] = story_items.consume(state, used)           # before the Act can change: they belong to this one
+    if loot in story_items.REACTOR_IDS and not cleared:
+        res["reactor_lost"] = loot if story_items.status(state, loot) is None else None
+        loot = None                                           # caught but the mission was lost: it is not acquired
     if loot and story_items.find(state, loot):
         res["loot"] = loot
         if loot in story_items.REACTOR_IDS:

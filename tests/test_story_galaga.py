@@ -198,10 +198,58 @@ def test_catching_the_reactor_puts_it_on_sale_and_ends_the_offer():
     assert ss.mission_playable(st, m, cheat=True)
 
 
-def test_the_reactor_is_kept_even_when_the_mission_is_lost():
+def test_a_reactor_caught_in_a_lost_mission_is_not_acquired_and_the_mission_comes_back():
     st = _state(bestiary_s4=True)
+    st["credits"] = 1000
     res = ss.record_result(st, "bonus_2d", 0, False, loot="reactor_shield")
-    assert res["loot"] == "reactor_shield" and si.reactor_status(st, "shield") == si.FOUND
+    assert res["loot"] is None and res["reactor_lost"] == "reactor_shield"
+    assert si.reactor_status(st, "shield") is None and ss.loadout(st)["vertical"] is False
+    assert {"key": "story_log_reactor_shield"} not in st["log"]
+    assert ss.mission_playable(st, ss.mission_by_id("bonus_2d")) and not ss.mission_done(st, ss.mission_by_id("bonus_2d"))
+    assert "bonus_2d" not in st["cleared"] and st["credits"] < 1000           # (the usual penalty of a lost mission)
+
+
+def test_a_reactor_caught_by_a_pilot_who_falls_in_veteran_mode_is_not_acquired_either():
+    st = _state(bestiary_s4=True)
+    st["mode"] = "veteran"
+    res = ss.record_result(st, "bonus_2d", 0, False, loot="reactor_phenix")
+    assert res["fallen"] and res["loot"] is None and si.reactor_status(st, "phoenix") is None
+
+
+def test_the_reactor_needs_the_win_and_the_catch_together():
+    for cleared, loot, owned in ((True, "reactor_shield", True), (True, None, False), (False, "reactor_shield", False),
+                                 (False, None, False)):
+        st = _state(bestiary_s4=True)
+        ss.record_result(st, "bonus_2d", 100, cleared, loot=loot)
+        assert (si.reactor_status(st, "shield") is not None) is owned, (cleared, loot)
+
+
+def test_the_other_items_are_still_kept_when_the_mission_is_lost():
+    st = _state()
+    res = ss.record_result(st, "ch1_sortie", 0, False, loot="tesla")
+    assert res["loot"] == "tesla" and res["reactor_lost"] is None and si.status(st, "tesla") == si.FOUND
+
+
+def test_a_reactor_already_owned_is_not_reported_lost_when_caught_again_in_a_lost_mission():
+    st = _state(got={"reactor_shield": si.FOUND})
+    res = ss.record_result(st, "bonus_2d", 0, False, loot="reactor_shield")        # (UNLK cheat flights)
+    assert res["reactor_lost"] is None and si.reactor_status(st, "shield") == si.FOUND
+
+
+def test_the_map_tells_the_reactor_was_lost_and_the_toast_fits_the_screen(run, french):
+    g = run.game
+    st = _state(bestiary_s4=True)
+    st["credits"] = 4000
+    ss.save_state(ss.story_path(1), st)
+    g.story.open_slot(1)
+    from i18n import t
+    g.story.apply_result("bonus_2d", 100, False, loot="reactor_shield")
+    assert t("story_reactor_lost") in g.story.toast and t("story_fail_pen").format(pts=200) in g.story.toast
+    assert si.reactor_status(g.story.state, "shield") is None
+    assert t("story_item_found").split("{")[0] not in g.story.toast
+    assert g.font.size(g.story.toast)[0] < BASE_WIDTH - 140                        # it fits in the box of the map
+    g.story.apply_result("bonus_2d", 100, True, loot="reactor_shield")             # won with it this time
+    assert t("story_reactor_lost") not in g.story.toast and si.reactor_status(g.story.state, "shield") == si.FOUND
 
 
 def test_a_lost_bonus_mission_gives_nothing_and_can_be_tried_again():
@@ -1185,3 +1233,36 @@ def test_the_birds_shoot_more_when_the_fire_is_multiplied():
             n += max(0, len(form.bullets) - before)
         shots.append(n)
     assert shots[1] > shots[0] * 1.2
+
+
+def test_in_the_game_dying_with_the_reactor_caught_brings_nothing_back_but_finishing_does(run):
+    g = run.game
+    _launch(run, bestiary_s4=True)
+    _arrived(run)
+    g.adventure["loot_plan"] = {"id": "reactor_shield", "t": 0.0}
+    run.frames(2)
+    g.player.x, g.player.y = g.loot.x, g.loot.y
+    run.frames(2)
+    assert g.adventure["loot"] == "reactor_shield"                              # caught...
+    g._end_adventure(False)                                                      # ...but the ship is lost
+    assert si.reactor_status(g.story.state, "shield") is None
+    assert ss.mission_playable(g.story.state, ss.mission_by_id("bonus_2d"))
+    _launch(run, bestiary_s4=True)
+    _arrived(run)
+    g.adventure["loot_plan"] = {"id": "reactor_shield", "t": 0.0}
+    run.frames(2)
+    g.player.x, g.player.y = g.loot.x, g.loot.y
+    run.frames(2)
+    g._end_adventure(True)                                                       # caught and finished
+    assert si.reactor_status(g.story.state, "shield") == si.FOUND
+
+
+def test_a_fallen_veteran_is_not_told_about_the_reactor(run, french):
+    g = run.game
+    st = _state(bestiary_s4=True)
+    st["mode"] = "veteran"
+    ss.save_state(ss.story_path(1), st)
+    g.story.open_slot(1)
+    from i18n import t
+    g.story.apply_result("bonus_2d", 100, False, loot="reactor_shield")
+    assert t("story_reactor_lost") not in (g.story.toast or "") and t("story_reactor_lost") not in (g.story.msg or "")
