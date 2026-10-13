@@ -71,7 +71,7 @@ def test_the_picture_is_the_one_given():
 
 
 def test_the_scenes_come_in_the_order_of_the_story():
-    assert list(ss.SCENES) == [ID, "best_s2", "dome_1", "paint_1"]
+    assert list(ss.SCENES) == [ID, "best_s2", "best_s3", "dome_1", "paint_1"]
     st = ss.create_slot(1, "A", "normal")
     ss.mark_scene_seen(st, "paint_1")
     ss.mark_scene_seen(st, ID)
@@ -134,9 +134,9 @@ def test_the_other_scenes_do_not_stand_in_for_this_one():
 def test_the_other_bestiary_missions_fly_straight_away():
     hub = _hub()
     hub.cheat_unlock = True
-    hub.map_index = [m["id"] for m in hub.missions()].index("best_s3")
+    hub.map_index = [m["id"] for m in hub.missions()].index("best_s4")
     spec = hub.confirm()
-    assert isinstance(spec, dict) and spec["id"] == "best_s3" and hub.screen == "hub"
+    assert isinstance(spec, dict) and spec["id"] == "best_s4" and hub.screen == "hub"
 
 
 # ------------------------------------------------------------------ the journal
