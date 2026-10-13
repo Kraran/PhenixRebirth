@@ -855,6 +855,7 @@ def test_a_fast_win_still_sees_the_reactor_fall_and_a_missed_one_brings_the_miss
             break
         if g.loot is not None:
             seen.append(g.loot.item)                                             # it falls, and the pilot lets it go by
+            g.player.x = 60.0 if g.loot.x > BASE_WIDTH / 2 else BASE_WIDTH - 60.0     # (the far side: no catch by chance)
         for b in g.formation.get_hittable_enemies():
             b.kill(flash=False)
         g.formation.carry = []
