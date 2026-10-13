@@ -246,6 +246,7 @@ class StoryHub:
         self.scene_launch = False      # the scene came before a launch: A on the last slide flies the mission
         self.scene_door = None         # the scene is told for the first time and ends in this screen of the main menu
         self.scene_closing = False     # A was pressed on its last slide: the game fades out and opens that screen
+        self._door_request = None      # B / Esc on such a scene: the same request, taken by take_door_request
         self.addon_ready = mame_addon.addon_ready      # (replaced in the tests) is the Add-On available?
         self.cheat_buf = ""            # last letters typed on the mission map
         self.cheat_unlock = False      # UNLK: every mission can be played, nothing is saved any more
@@ -317,12 +318,11 @@ class StoryHub:
         """True when the scene of the Phobos bar has to be told now (Add-On available, not seen in this save)."""
         return ss.bar_due(self.state, self._addon_available())
 
-    def maybe_bar(self):
-        """The first time the Add-On is there, the Phobos bar scene is shown, and it ends in the Add-On menu."""
-        if self.screen == "hub" and self.bar_due():
-            self.extras_index = len(DOORS)
-            return self.start_scene(ss.BAR_SCENE, back_to="extras", door=BAR_DOOR)
-        return False
+    def take_door_request(self):
+        """The game asks every frame: has the player skipped the scene that ends in a screen of the main menu? (Then
+        the same fade to black and the same screen as at the end of the scene.) Returns the request once, or None."""
+        req, self._door_request = self._door_request, None
+        return req
 
     def scene_music(self):
         """(theme, level) of the music kept under the scene being read, or None. The level is a share of the normal
@@ -373,7 +373,6 @@ class StoryHub:
         else:
             ss.mark_intro_seen(self.state)
         self.save()
-        was_story = not self.scene_id
         self.scene_id = None
         self.scene_launch = False
         self.scene_door = None
@@ -382,8 +381,6 @@ class StoryHub:
         self.pane = self.intro_return
         self.zone = "slots"
         self.intro_return = "hangar"
-        if was_story:
-            self.maybe_bar()               # a new pilot's introduction comes first, then the bar if the Add-On is there
 
     def finish_scene(self, door=None):
         """The fade to black is done: the scene is over and the Adventure is back on its Extras paragraph."""
@@ -749,7 +746,6 @@ class StoryHub:
             else:
                 self.open_slot(self.sel + 1)
                 self._maybe_intro()
-                self.maybe_bar()
         elif self.screen == "intro":
             return self._intro_next()
         elif self.screen == "delete":
@@ -786,7 +782,11 @@ class StoryHub:
         elif self.screen == "mode":
             self.screen = "name"
         elif self.screen == "intro":
-            if not self.scene_closing:
+            if self.scene_door:
+                if not self.scene_closing:       # skipped: the same way out as at the end (the scene counts as seen)
+                    self.scene_closing = True
+                    self._door_request = {"door": self.scene_door, "scene": True}
+            else:
                 self._end_intro()
         else:
             return False
@@ -869,7 +869,12 @@ class StoryHub:
             return self._launch_selected()
         if self.pane == "extras":
             doors = self.doors()
-            return {"door": doors[max(0, min(len(doors) - 1, self.extras_index))]}   # the game opens the screen and brings us back here
+            door = doors[max(0, min(len(doors) - 1, self.extras_index))]
+            if door == BAR_DOOR and self.bar_due():
+                # the first time the Phobos bar is opened (it is only there with the Add-On) its scene is told first
+                self.start_scene(ss.BAR_SCENE, back_to="extras", door=BAR_DOOR)
+                return None
+            return {"door": door}   # the game opens the screen and brings us back here
         if self.pane == "log":
             replay = self.replay_entries()
             entry = replay[max(0, min(len(replay) - 1, self.log_cursor))]
