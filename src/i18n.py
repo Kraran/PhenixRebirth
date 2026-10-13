@@ -3173,6 +3173,7 @@ _ADVENTURE_TEXTS = {
     "story_scene_dome_1_t": ("Dôme I : l'épave du Shield", "Dome I: the Shield wreck"),
     "story_scene_sortie_t": ("Première sortie : les oiseaux bleus", "First sortie: the blue birds"),
     "story_scene_best2_t": ("Bestiaire : les oiseaux kaki", "Bestiary: the khaki birds"),
+    "story_scene_best3_t": ("Bestiaire : les gargouilles", "Bestiary: the gargoyles"),
     "story_scene_paint_1_t": ("Peinture I : l'atelier de Wallems", "Paint I: Wallems' workshop"),
     "story_scene_bar_t": ("Bar de la station Phobos", "Phobos station bar"),
     "story_scene_door": ("A/Entrée  jouer (Add-On)   Haut / Bas  vitesse   B/Échap  passer",
@@ -3325,6 +3326,11 @@ _INTRO_FR["story_scene_best2"] = (
     'Les bleus ne sont pas les seuls. Sur les relevés de la première sortie, d’autres signatures reviennent, plus denses, plus vives, loin de Mars, au-dessus d’une lune de Jupiter que la géante écrase de sa masse rayée. Ce sont encore des Avioïdes. Des oiseaux kaki, disent les rares survivants, à cause du vert militaire de leur peau, un vert de blindage, un vert de mousse sombre, et de ces braises orange qui brillent dans leurs yeux et au creux de leur poitrine.\n\n'
     'Là où les bleus plongent en ligne, les kakis arrivent en grappes et changent de cap sans prévenir. Leurs ailes de cuir battent plus vite, leurs serres claquent plus tôt, et leurs tirs de plasma se rapprochent. Ils se perdent dans la poussière des stations détruites. On ne les voit pas venir, ou alors trop tard.\n\n'
     'Cette fois, je ne sors pas pour regarder. Je sors pour apprendre à les battre. Ce qu’il y a derrière ces yeux orange, je le saurai en les voyant tomber, un par un, et chaque page ajoutée au Bestiaire rendra la suite moins périlleuse.'
+)
+_INTRO_FR["story_scene_best3"] = (
+    'Les kakis ne sont pas les seuls à rôder. Plus loin, dans les anneaux de Saturne, les capteurs relèvent une signature que je ne reconnais pas. Plus massive, plus lente, et d’une froideur étrange. Ce ne sont plus des oiseaux. Les rares survivants parlent de gargouilles, à cause de leur carcasse de métal sombre, hérissée de plaques, et de ces yeux rouges qui s’allument sans un bruit, au fond d’un masque de pierre et d’acier.\n\n'
+    'Les bleus plongent en ligne, les kakis arrivent en grappes. Les gargouilles, elles, ne forment rien. Elles dérivent seules entre les blocs de glace, patientes, puis fondent sur la première lueur de moteur qu’elles croisent. Leurs ailes encaissent les tirs comme un blindage, et si l’on tarde à les abattre, elles repoussent. Ce que le feu a arraché, la machine le reconstruit.\n\n'
+    'Alors il faudra frapper vite, et frapper juste. Je sais ce que je risque, à tourner dans leurs anneaux avec un vaisseau qui tient à peine en l’air. Mais chaque gargouille tombée remplira une page de plus du Bestiaire, et m’apprendra comment venir à bout des suivantes. Si l’ancrage quantique fait ce que Kamarasov a promis, je reviendrai avec de quoi les faire plier. Sinon…'
 )
 _INTRO_FR["story_scene_paint_1"] = (
     'L’atelier clandestin du vieux Wallems, creusé dans le flanc de l’astéroïde 434-Hungaria, tourne encore. Malgré l’invasion. Malgré les patrouilles. On y voit toujours des coques posées sur tréteaux, des bidons ouverts, des masques penchés sur le métal…\n\n'

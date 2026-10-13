@@ -971,6 +971,7 @@ def mark_intro_seen(state):
 SCENES = {
     "ch1_sortie": {"title": "story_scene_sortie_t", "slides": [("oiseaux_bleus", "story_scene_sortie")]},
     "best_s2": {"title": "story_scene_best2_t", "slides": [("oiseaux_kaki", "story_scene_best2")]},
+    "best_s3": {"title": "story_scene_best3_t", "slides": [("gargouilles", "story_scene_best3")]},
     "dome_1": {"title": "story_scene_dome_1_t", "slides": [("epave_shield", "story_scene_dome_1")]},
     "paint_1": {"title": "story_scene_paint_1_t", "slides": [("atelier_wallems", "story_scene_paint_1")]},
 }

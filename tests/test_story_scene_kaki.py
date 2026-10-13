@@ -73,7 +73,7 @@ def test_the_title_and_text_are_in_every_language_table():
 
 
 def test_the_scene_comes_right_after_the_first_sortie():
-    assert list(ss.SCENES)[:2] == ["ch1_sortie", ID]
+    assert list(ss.SCENES)[:3] == ["ch1_sortie", ID, "best_s3"]
 
 
 # ------------------------------------------------------------------ the first launch
@@ -119,9 +119,9 @@ def test_the_scene_of_the_first_sortie_does_not_stand_in_for_this_one():
 def test_the_other_hunts_do_not_show_this_scene():
     hub = _hub()
     hub.cheat_unlock = True
-    hub.map_index = [m["id"] for m in hub.missions()].index("best_s3")
+    hub.map_index = [m["id"] for m in hub.missions()].index("best_s4")
     spec = hub.confirm()
-    assert isinstance(spec, dict) and spec["id"] == "best_s3" and hub.screen == "hub"
+    assert isinstance(spec, dict) and spec["id"] == "best_s4" and hub.screen == "hub"
 
 
 # ------------------------------------------------------------------ the journal
@@ -129,7 +129,7 @@ def test_the_replay_line_follows_the_first_sortie_scene():
     hub = _hub(seen=True, seen_others=("ch1_sortie", "dome_1", "paint_1"))
     entries = hub.log_entries()
     assert entries[:5] == [{"intro": True}, {"scene": "ch1_sortie"}, {"scene": ID}, {"scene": "dome_1"},
-                           {"scene": "paint_1"}]
+                           {"scene": "paint_1"}]          # (the gargoyle scene, not seen here, comes after the khaki one)
     assert ss.log_text(entries[2], t) == "Revoir : Bestiaire : les oiseaux kaki"
 
 
