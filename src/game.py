@@ -1803,7 +1803,11 @@ class Game:
         # never carry one, and do not count in the gap between two drops; the items bought still work in them.
         story = getattr(self, "story", None)
         can_loot = story is not None and not spec.get("invaders")
-        self.adventure["loot_plan"] = story_items.plan_drop(story.state, random) if can_loot else None
+        if can_loot and spec.get("reactor"):
+            # a BONUS mission: the reactor of its hull falls once, whenever in the waves (the random loot is off)
+            self.adventure["loot_plan"] = story_items.reactor_plan(story.state, spec["reactor"], random)
+        else:
+            self.adventure["loot_plan"] = story_items.plan_drop(story.state, random) if can_loot else None
         self.adventure["loot_clock"] = 0.0
         self.adventure["loot"] = None
         self.loot = None
@@ -1946,7 +1950,7 @@ class Game:
             number = int(adv.get("stage") or story_state.GALAGA_STAGE)
             self.stage = number
             mult = float(adv.get("speed") or 1.0) * stage_speed_mult(number) * self.difficulty_speed_mult()
-            self.formation = GalagaFormation(speed_mult=mult)
+            self.formation = GalagaFormation(speed_mult=mult, fire_mult=float(adv.get("fire_mult") or 1.0))
             self.formation.sounds = self.sounds
             self.boss_saucer = None
             return

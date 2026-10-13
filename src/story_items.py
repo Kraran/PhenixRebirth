@@ -1,4 +1,4 @@
-"""The loot items of the Adventure: four single-use objects that fall during a mission.
+"""The loot items of the Adventure: four single-use objects that fall during a mission, and the two reactors.
 
 The life of one item, in one Act:
     lootable   (nothing in the save)  -> it may fall during a mission;
@@ -7,6 +7,11 @@ The life of one item, in one Act:
     "used"     that mission is over   -> it is gone for the rest of the Act: it does not fall again.
 A new Act gives every item back (the book is stamped with the Act it belongs to).
 Only one copy of an item exists at a time: an item that is found, installed or used never falls again.
+
+The two reactors (the two-dimensional impulse reactor of the BONUS missions, one for the Shield and one for the Phenix)
+are the exception: they only fall in their own BONUS mission, once, never in the random loot; once installed they
+are not used up (the hull flies up and down the lower third of the screen for good) and the new Act keeps them.
+Each one is sold for its own hull only (the workshop lists the one of the hull selected).
 
 No pygame here: the rules only read and write the save dict (see story_state.py).
 """
@@ -17,9 +22,17 @@ ITEMS = [
     ("genesis", 6000),         # one more life
     ("hyperion", 4000),        # speed +40 %
     ("tesla", 2000),           # electric immunity
+    ("reactor_shield", 2000),  # two-dimensional impulse reactor for the Shield: flight in the lower third, for good
+    ("reactor_phenix", 4000),  # the same for the Phenix
 ]
 ITEM_IDS = tuple(i for i, _ in ITEMS)
 PRICES = dict(ITEMS)
+
+# The reactors: hull id (as in the save slots) -> item. They have no random drop and are never used up.
+REACTORS = {"shield": "reactor_shield", "phoenix": "reactor_phenix"}
+REACTOR_IDS = tuple(REACTORS.values())
+RANDOM_IDS = tuple(i for i in ITEM_IDS if i not in REACTOR_IDS)     # what may fall in an ordinary mission
+SPRITES = {"reactor_shield": "reactor", "reactor_phenix": "reactor"}   # items that share a picture (assets/items)
 
 FOUND, INSTALLED, USED = "found", "installed", "used"
 _STATES = (FOUND, INSTALLED, USED)
@@ -29,6 +42,7 @@ _STATES = (FOUND, INSTALLED, USED)
 MIN_GAP = 2                        # missions without an item between two that have one
 DROP_CHANCE = 0.40
 DROP_DELAY = (6.0, 30.0)           # seconds into the mission when the item appears
+REACTOR_DELAY = (8.0, 45.0)        # the reactor of a BONUS mission falls somewhere in its four waves
 
 FIRE_RATE_MULT = 2.0               # Singularity Core: the bullets fly twice as fast, so the ship fires twice as often
 SPEED_MULT = 1.4                   # Réacteur Hyperion: +40 % speed
@@ -58,7 +72,7 @@ def clean(data):
     got = data.get("got")
     if isinstance(got, dict):
         for item, st in got.items():
-            if item in ITEM_IDS and st in _STATES:
+            if item in ITEM_IDS and st in _STATES and not (item in REACTOR_IDS and st == USED):
                 book["got"][item] = st
     return book
 
@@ -69,7 +83,8 @@ def book(state):
     act = _act(state)
     current = clean(state.get("items"))
     if current["act"] != act:
-        current = {"act": act, "got": {}, "since": current["since"]}
+        keep = {i: st for i, st in current["got"].items() if i in REACTOR_IDS}      # a reactor stays for good
+        current = {"act": act, "got": keep, "since": current["since"]}
     state["items"] = current
     return current
 
@@ -82,18 +97,41 @@ def status(state, item):
 def lootable(state):
     """Items that may still fall in a mission of this Act."""
     got = book(state)["got"]
-    return [i for i in ITEM_IDS if i not in got]
+    return [i for i in RANDOM_IDS if i not in got]
 
 
-def shop(state):
-    """What the hangar shop lists: the items found or installed, in the fixed order."""
+def shop(state, hull=None):
+    """What the hangar shop lists: the items found or installed, in the fixed order. A reactor is listed only for
+    its own hull (`hull`: the id of the hull selected); with no hull given no reactor is listed."""
     got = book(state)["got"]
-    return [i for i in ITEM_IDS if got.get(i) in (FOUND, INSTALLED)]
+    return [i for i in ITEM_IDS if got.get(i) in (FOUND, INSTALLED) and (i not in REACTOR_IDS or REACTORS.get(hull) == i)]
 
 
 def installed(state):
+    """The single-use items installed for the next mission (a reactor is not one: it is never used up)."""
     got = book(state)["got"]
-    return [i for i in ITEM_IDS if got.get(i) == INSTALLED]
+    return [i for i in RANDOM_IDS if got.get(i) == INSTALLED]
+
+
+def reactor_status(state, hull):
+    """None, "found" (caught, on sale) or "installed" for the reactor of `hull` ("shield" or "phoenix")."""
+    item = REACTORS.get(hull)
+    return book(state)["got"].get(item) if item else None
+
+
+def reactor_on(state, hull):
+    """Does this hull fly up and down the lower third of the screen?"""
+    return reactor_status(state, hull) == INSTALLED
+
+
+def reactor_plan(state, hull, rand):
+    """A BONUS mission starts: the reactor of `hull` falls once, some time into the waves ("last_wave": at the latest
+    when the last wave comes in, so a quick pilot still sees it). {"id", "t", "last_wave"} or None when there is
+    nothing to drop (the pilot has it already)."""
+    item = REACTORS.get(hull)
+    if item is None or item in book(state)["got"]:
+        return None
+    return {"id": item, "t": float(rand.uniform(*REACTOR_DELAY)), "last_wave": True}
 
 
 def find(state, item):
@@ -124,7 +162,7 @@ def consume(state, items):
     b = book(state)
     used = []
     for item in items or ():
-        if b["got"].get(item) == INSTALLED:
+        if b["got"].get(item) == INSTALLED and item not in REACTOR_IDS:
             b["got"][item] = USED
             used.append(item)
     return used
@@ -137,7 +175,7 @@ def plan_drop(state, rand):
     left to find, so the gap between two drops never depends on what is lootable."""
     b = book(state)                      # (book() makes a new dict each time: only this one is changed below)
     b["since"] = min(99, b["since"] + 1)
-    pool = [i for i in ITEM_IDS if i not in b["got"]]
+    pool = [i for i in RANDOM_IDS if i not in b["got"]]
     if not pool or b["since"] <= MIN_GAP or rand.random() >= DROP_CHANCE:
         return None
     b["since"] = 0

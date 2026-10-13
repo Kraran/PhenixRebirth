@@ -818,6 +818,10 @@ class StoryHub:
         if mission.get("galaga"):
             spec["galaga"] = True                 # waves in chains like Namco's Galaga (src/galaga.py)
             spec["stage"] = int(mission.get("stage") or ss.GALAGA_STAGE)
+            if mission.get("fire_mult"):
+                spec["fire_mult"] = float(mission["fire_mult"])    # the birds shoot more (the Phenix version)
+        if mission.get("reactor"):
+            spec["reactor"] = mission["reactor"]      # the hull whose reactor falls in this mission, once
         if mission.get("swarm"):
             spec["swarm"] = True                  # the four enemies together, replaced as they fall
             spec["stage"] = int(mission.get("stage") or 11)
@@ -839,9 +843,8 @@ class StoryHub:
             if res.get("hull") == "phoenix":
                 self.toast = t("story_phenix_gift")
             if res.get("opened"):
-                self.toast = t("story_bonus_open")
-            if res.get("thrust"):
-                self.toast = t("story_thrust_gift")
+                gift = self.toast if res.get("hull") == "phoenix" else ""     # the Phenix comes with its own BONUS mission
+                self.toast = (gift + "   " if gift else "") + t("story_bonus_open")
         elif res["fallen"]:
             self.toast = t("story_fell_msg").format(name=self.state.get("name") or "")
         elif res["lost"]:

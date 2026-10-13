@@ -240,7 +240,7 @@ class _Chain:
 class GalagaFormation:
     """Four waves of birds that come in in chains, loop, bomb and leave; the survivors come back in the next wave."""
 
-    def __init__(self, speed_mult=1.0, rng=None, fresh=FRESH):
+    def __init__(self, speed_mult=1.0, rng=None, fresh=FRESH, fire_mult=1.0):
         self.enemies = []
         self.bullets = []
         self.offset_x = 0.0
@@ -249,6 +249,8 @@ class GalagaFormation:
         self.time = 0.0
         self.stage = 1
         self.speed_mult = float(speed_mult)
+        self.fire_mult = max(0.1, float(fire_mult))      # 1.5: the birds shoot one and a half times as often
+        self.max_bullets = max(1, round(MAX_BULLETS * self.fire_mult))
         self.sounds = None
         self.swarm = None
         self.rng = rng if rng is not None else random.Random()
@@ -303,7 +305,7 @@ class GalagaFormation:
         per = -(-len(squad) // n_chains)
         speed = BASE_SPEED * self.speed_mult * (1.0 + WAVE_SPEEDUP * idx)
         self._speed = speed
-        self._fire_mean = FIRE_MEAN[min(idx, len(FIRE_MEAN) - 1)]
+        self._fire_mean = FIRE_MEAN[min(idx, len(FIRE_MEAN) - 1)] / self.fire_mult
         for j in range(n_chains):
             birds = squad[j * per:(j + 1) * per]
             side = 1 if j % 2 == 0 else -1
@@ -336,7 +338,7 @@ class GalagaFormation:
             return
         step = dt * (FIRE_NEAR_BOOST if abs(b.x - player_x) < FIRE_NEAR else 1.0)
         b.fire_t -= step
-        if b.fire_t > 0.0 or len(self.bullets) >= MAX_BULLETS:
+        if b.fire_t > 0.0 or len(self.bullets) >= self.max_bullets:
             return
         b.fire_t = self.rng.uniform(0.6, 1.4) * self._fire_mean
         bullet = EnemyBullet(b.x, b.y + 16, stage=b.kind)

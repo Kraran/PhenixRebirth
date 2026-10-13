@@ -3,16 +3,25 @@ Current release: **v1.4.5**
 
 ## Unreleased (towards 1.5.0 — Adventure)
 
-- Adventure, Act 1: new mission "BONUS : le réacteur à impulsion bidimensionnelle" (`src/galaga.py`). It appears on the map (in every
-  act, until it is won) once the "Bestiaire : gargouilles sombres" hunt is won, and is flown once. It is four waves of blue and khaki
-  avioids of level 2 (x1.1 speed, +10 points a bird) that come in like in Namco's Galaga: chains of birds follow curved paths,
-  loop over the screen, bomb the ship (they shoot a lot, more and more) and leave. The birds still alive when their chain leaves join
-  the next wave, which is bigger and deadlier; the fourth and last wave keeps coming back until every bird is destroyed or the ship
-  is. Failure rules are the usual ones (Normal: 5 % lost, can be tried again; Veteran: the pilot falls)
+- Adventure, Act 1: new mission "BONUS : le réacteur à impulsion bidimensionnelle (Shield)" (`src/galaga.py`). It appears on the map
+  (in every act, until its reactor is caught) once the "Bestiaire : gargouilles sombres" hunt is won, and flies the Shield. It is four
+  waves of blue and khaki avioids of level 2 (x1.1 speed, +10 points a bird) that come in like in Namco's Galaga: chains of birds follow
+  curved paths, loop over the screen, bomb the ship (they shoot a lot, more and more) and leave. The birds still alive when their chain
+  leaves join the next wave, which is bigger and deadlier; the fourth and last wave keeps coming back until every bird is destroyed or
+  the ship is. Failure rules are the usual ones (Normal: 5 % lost, can be tried again; Veteran: the pilot falls)
 - Adventure, BONUS mission: almost twice as many birds in the waves (11 / 11 / 14 / 14 new birds instead of 6 / 6 / 8 / 8, 50 in all; the survivors still come on top). Each bird shoots a little less often (4.0 / 3.5 / 3.0 / 2.6 s between two shots instead of 3.2 to 2.1) and up to 44 shots can be in the sky (34 before), so the sky is fuller without being twice as deadly
-- Adventure: winning the BONUS mission gives the two-dimensional impulse reactor for the rest of the adventure: in every mission, with
-  both hulls, the ship also flies up and down the lower third of the screen (arrow keys up / down, left stick or d-pad up / down;
-  Z / S in coop keyboard 1). Saved in the save (`vertical_thrust` flag); the arcade game does not change
+- Adventure: the two-dimensional impulse reactor is an item, not a gift. It falls ONCE, at a random moment of the waves (at the latest
+  when the last wave comes in), like the other loot items (new picture from a video, `assets/items/reactor*.png`; the random loot is off in the BONUS missions and they do not
+  count in the gap between two drops). Caught, it goes on sale in the hangar for its own hull only: **Réacteur 2D (Shield), 2000 points**,
+  installed on the Shield only. Not caught (the waves won or lost without it): the mission is offered again, as often as needed.
+  Installed, it is permanent (never used up, kept in the next Acts): the hull flies up and down the lower third of the screen in every
+  mission (arrow keys up / down, left stick or d-pad up / down; Z / S in coop keyboard 1). Saves made with the first version of the
+  BONUS mission (`vertical_thrust` flag) keep the flight: the Shield reactor is installed for free. The arcade game does not change
+- Adventure: second BONUS mission "BONUS : le réacteur à impulsion bidimensionnelle (Phenix)", offered once the Phenix is in the hangar
+  (and until its reactor is caught, in the maps of Acts 2 and 3). Same four waves flown with the Phenix, but the avioids shoot one and
+  a half times as often (`PHENIX_FIRE_MULT`; up to 66 shots in the sky). Its reactor, **Réacteur 2D (Phenix), 4000 points**, is sold
+  with the Phenix hull selected and installed on the Phenix only. The two missions are independent. The title, the HUD title, the
+  item name and its text say "(Shield)" or "(Phenix)"
 - Adventure, Veteran: when the ship dies, the normal GAME OVER of the game is played (explosion, GAME OVER card, announcer voice,
   pad rumble) before the slot list where the save is now a memorial. The fall is written into the save at the moment of death,
   so closing the game during the card does not save the pilot. Normal and Novice are unchanged (quantum anchor return)

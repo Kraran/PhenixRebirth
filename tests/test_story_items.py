@@ -20,13 +20,14 @@ def _state(credits=0, act=1):
 
 
 def test_the_four_items_and_their_prices():
-    assert si.ITEM_IDS == ("singularity", "genesis", "hyperion", "tesla")
-    assert si.PRICES == {"singularity": 6000, "genesis": 6000, "hyperion": 4000, "tesla": 2000}
+    assert si.RANDOM_IDS == ("singularity", "genesis", "hyperion", "tesla")
+    assert si.PRICES == {"singularity": 6000, "genesis": 6000, "hyperion": 4000, "tesla": 2000,
+                         "reactor_shield": 2000, "reactor_phenix": 4000}
 
 
 def test_a_new_pilot_has_every_item_to_find():
     st = _state()
-    assert si.lootable(st) == list(si.ITEM_IDS)
+    assert si.lootable(st) == list(si.RANDOM_IDS)
     assert si.shop(st) == [] and si.installed(st) == []
 
 
@@ -67,7 +68,7 @@ def test_buying_needs_the_item_and_the_credits():
     assert si.installed(st) == ["genesis"]
 
 
-@pytest.mark.parametrize("item", si.ITEM_IDS)
+@pytest.mark.parametrize("item", si.RANDOM_IDS)
 def test_each_item_costs_its_price(item):
     st = _state(credits=10000)
     si.find(st, item)
@@ -105,12 +106,12 @@ def test_consuming_nothing_changes_nothing():
 
 def test_a_new_act_gives_every_item_back():
     st = _state(credits=20000)
-    for i in si.ITEM_IDS:
+    for i in si.RANDOM_IDS:
         si.find(st, i)
     si.buy(st, "tesla")
     si.consume(st, ["tesla"])
     st["act"] = 2
-    assert si.lootable(st) == list(si.ITEM_IDS)
+    assert si.lootable(st) == list(si.RANDOM_IDS)
     assert si.shop(st) == [] and si.installed(st) == []
     assert si.find(st, "tesla") is True                       # and it can be caught again, once, in Act 2
 
@@ -130,7 +131,7 @@ def test_the_effects():
     assert si.effects(["genesis"])["extra_lives"] == 1
     assert si.effects(["hyperion"])["speed_mult"] == pytest.approx(1.4)
     assert si.effects(["tesla"])["electric_immune"] is True
-    both = si.effects(list(si.ITEM_IDS))
+    both = si.effects(list(si.RANDOM_IDS))
     assert both == {"fire_mult": 2.0, "extra_lives": 1, "speed_mult": 1.4, "electric_immune": True}
 
 
@@ -165,7 +166,7 @@ def test_loot_does_fall_sometimes():
 
 def test_nothing_falls_when_every_item_is_held_or_used():
     st = _state(credits=99999)
-    for i in si.ITEM_IDS:
+    for i in si.RANDOM_IDS:
         si.find(st, i)
     assert not any(_missions(200, state=st))
 
@@ -180,7 +181,7 @@ def test_an_item_held_never_falls_again_in_the_act():
 
 def test_every_lootable_item_can_fall():
     seen = {p["id"] for p in _missions(3000, seed=5, take=False) if p}
-    assert seen == set(si.ITEM_IDS)
+    assert seen == set(si.RANDOM_IDS)
 
 
 def test_the_item_falls_some_time_into_the_mission():
@@ -224,7 +225,7 @@ def test_an_old_save_without_items_loads_with_every_item_to_find():
     st = ss.default_state()
     del st["items"]
     st = ss.migrate_state(st)
-    assert si.lootable(st) == list(si.ITEM_IDS)
+    assert si.lootable(st) == list(si.RANDOM_IDS)
 
 
 @pytest.mark.parametrize("junk", [None, 5, "x", [], {"got": 3}, {"got": {"tesla": "bogus", "nope": "found", "genesis": 7}},
@@ -233,7 +234,7 @@ def test_a_damaged_item_book_is_cleaned(junk):
     st = ss.default_state()
     st["items"] = junk
     st = ss.migrate_state(st)
-    assert set(st["items"]["got"]) <= set(si.ITEM_IDS)
+    assert set(st["items"]["got"]) <= set(si.RANDOM_IDS)
     assert all(v in ("found", "installed", "used") for v in st["items"]["got"].values())
     assert si.lootable(st) is not None
 
@@ -323,4 +324,4 @@ def test_an_item_caught_in_a_mission_that_ends_the_act_belongs_to_the_old_act():
     mission = next(m for m in ss.MISSIONS if m.get("act") == 2 and m.get("playable") is not False)
     ss.record_result(st, mission["id"], 100, True, {}, loot="tesla")
     assert st["act"] == 2
-    assert si.lootable(st) == list(si.ITEM_IDS)               # the new Act starts clean
+    assert si.lootable(st) == list(si.RANDOM_IDS)               # the new Act starts clean
