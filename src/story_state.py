@@ -51,7 +51,8 @@ DOME_CD_MIN = 3.0
 _EPS = 1e-6
 
 GALAGA_STAGE = 6                       # arcade stage the BONUS mission plays at: level 2 (x1.1 speed, +10 points a bird)
-VERTICAL_FLAG = "vertical_thrust"      # won in the BONUS mission: the ship flies up and down the lower third of the screen
+LEGACY_VERTICAL_FLAG = "vertical_thrust"   # the first BONUS mission (v1.5) gave the flight outright: such a save keeps it
+PHENIX_FIRE_MULT = 1.5                 # the Phenix BONUS mission: the birds shoot one and a half times as often
 
 # Chapter 1: main sorties are stage-1 birds only.
 # Other hulls are met (and unlocked) in Bestiary nodes.
@@ -101,14 +102,20 @@ MISSIONS = [
         "unlock": ["bestiary_s4"],
         "log": "story_log_best4",
     },
-    # BONUS: the two-dimensional impulse reactor. Hidden until the dark gargoyles are filed, then on the map in every act
-    # until it is won (once; a won one stays on the Act 1 map only). Waves in the way of Namco's Galaga (src/galaga.py), birds of level 2 (arcade stages 6 / 7).
-    # Winning it gives the ship the power to fly up and down the lower third of the screen for the rest of the Adventure.
+    # BONUS: the two-dimensional impulse reactor, in two versions. Hidden until the dark gargoyles are filed (the Phenix
+    # one: until the Phenix is in the hangar), then on the map until the reactor is caught. Waves in the way of Namco's
+    # Galaga (src/galaga.py), birds of level 2 (arcade stages 6 / 7). The reactor is an item that falls ONCE at a random
+    # moment of the waves (src/story_items.py); a mission that ends without it is offered again. Caught, it goes on sale
+    # in the hangar for its hull only (Shield 2000, Phenix 4000) and, installed, lets that hull fly up and down the
+    # lower third of the screen for good. `ship` imposes the hull, `home` is the act the mission stays on the map for.
     {
         "id": "bonus_2d",
         "secret": True,
-        "carry": True,                      # still on the map of the next acts while it is not won
+        "carry": True,                      # still on the map of the next acts while the reactor is not caught
+        "home": 1,
         "galaga": True,
+        "reactor": "shield",
+        "ship": "shield",
         "title": "story_m_bonus2d",
         "hud_title": "story_m_bonus2d_hud",
         "blurb": "story_m_bonus2d_b",
@@ -116,9 +123,25 @@ MISSIONS = [
         "content": 1,
         "stage": GALAGA_STAGE,
         "speed": 1.0,
-        "once": True,
-        "unlock": [VERTICAL_FLAG],
         "log": "story_log_bonus2d",
+    },
+    {
+        "id": "bonus_2d_phenix",
+        "secret": True,
+        "carry": True,
+        "home": 2,
+        "galaga": True,
+        "reactor": "phoenix",
+        "ship": "phoenix",
+        "fire_mult": PHENIX_FIRE_MULT,      # the birds shoot more
+        "title": "story_m_bonus2dp",
+        "hud_title": "story_m_bonus2dp_hud",
+        "blurb": "story_m_bonus2dp_b",
+        "need": "phenix_owned",
+        "content": 1,
+        "stage": GALAGA_STAGE,
+        "speed": 1.0,
+        "log": "story_log_bonus2dp",
     },
     # The dome series: Dome I is open from the start, each mission opens the next one and can be flown only once.
     # `waves` are arcade stage numbers (1, 6, 11 = the same wave at 1.0x, 1.1x, 1.2x speed).
@@ -531,6 +554,8 @@ def mission_done(state, mission):
     """Has the mission been won (for a paint mission: in the pass under way)?"""
     if is_paint(mission):
         return paint_state(state)["step"] >= int(mission["paint"])
+    if (mission or {}).get("reactor"):
+        return story_items.reactor_status(state, mission["reactor"]) is not None     # done = the reactor was caught
     return bool(mission) and mission.get("id") in (state.get("cleared") or [])
 
 
@@ -673,6 +698,10 @@ def migrate_state(data):
         base["paint"] = paint_state(data)
     if isinstance(data.get("items"), dict):
         base["items"] = story_items.clean(data["items"])
+    if base["flags"].get(LEGACY_VERTICAL_FLAG):
+        # a save made when the first BONUS mission gave the flight outright: the Shield keeps its reactor, installed
+        base["items"] = story_items.clean(base["items"])
+        base["items"]["got"].setdefault(story_items.REACTORS["shield"], story_items.INSTALLED)
     if isinstance(data.get("mission_kills"), dict):
         for mid, n in data["mission_kills"].items():
             if isinstance(mid, str) and is_hunt(mission_by_id(mid)):
@@ -1024,7 +1053,7 @@ def loadout(state, force_ship=None):
         "dome_cd": _num(slot.get("dome_cd"), DOME_CD_START) or DOME_CD_START,
         "wall": slot.get("wall") or "instant",
         "phenix_pct": phenix_cap(slot),
-        "vertical": flag(state, VERTICAL_FLAG),
+        "vertical": story_items.reactor_on(state, sid),         # the reactor of the hull flown, installed
     }
 
 
@@ -1085,13 +1114,13 @@ def visible_missions(state, cheat=False):
 
 def _listed(state, mission, act):
     """Is this mission on the map of act `act`? A secret mission waits until it is open. A mission that `carry`s over
-    (the BONUS one) is on the map of every act, but once it is won it only stays on the map of the act it was flown in
-    (act 1): the later acts list it only while it is still to do."""
+    (the BONUS ones) is on the map of every act, but once its reactor is caught it only stays on the map of the act
+    it belongs to (`home`): the later acts list it only while it is still to do."""
     if not mission_in_act(mission, act):
         return False
     if mission.get("secret") and not mission_open(state, mission):
         return False
-    if mission.get("carry") and act > 1 and mission.get("id") in (state.get("cleared") or []):
+    if mission.get("carry") and act > int(_num(mission.get("home"), 1)) and mission_done(state, mission):
         return False
     return True
 
@@ -1119,6 +1148,8 @@ def mission_playable(state, mission, cheat=False):
         return False
     if mission.get("once") and mission.get("id") in (state.get("cleared") or []):
         return False                       # a story mission is flown once; hunts stay replayable
+    if mission.get("reactor") and mission_done(state, mission):
+        return False                       # the reactor is caught: a BONUS mission is offered until then
     if is_paint(mission) and paint_state(state)["step"] != int(mission["paint"]) - 1:
         return False                       # only the next mission of the pass; a won one waits for the next pass
     return True
@@ -1337,7 +1368,8 @@ def shop_for(state):
             rows.append(PAINT_ROW)             # the paint shop: PAINT_COST credits, and one change per finished series
     if state.get("mode") == "novice":
         rows = [(sid, NOVICE_LABELS.get(label, label), cost, need) for sid, label, cost, need in rows]
-    return rows + [item_row(i) for i in story_items.shop(state)]      # the loot items caught, for the hull flown
+    # the loot items caught (a reactor only for the hull flown)
+    return rows + [item_row(i) for i in story_items.shop(state, slot.get("id"))]
 
 
 ITEM_PREFIX = "item:"
@@ -1395,7 +1427,10 @@ def buy(state, sid):
     """Buy one upgrade for the selected hull. True when it was bought."""
     item = item_of(sid)
     if item is not None:
-        return story_items.buy(state, item)           # a loot item: for the next mission, whichever hull flies it
+        hull = (selected_slot(state) or {}).get("id")
+        if item in story_items.REACTOR_IDS and story_items.REACTORS.get(hull) != item:
+            return False                              # a reactor fits its own hull only
+        return story_items.buy(state, item)           # a loot item: for the next mission (a reactor: for good)
     up = _upgrade(sid)
     if up is None:
         return False
@@ -1435,12 +1470,14 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
     """
     score = max(0, int(score or 0))
     res = {"score": score, "cleared": bool(cleared), "first": False, "lost": 0, "fallen": False, "act": 0,
-           "loot": None, "used": [], "opened": [], "thrust": False}
+           "loot": None, "used": [], "opened": []}
     record_kills(state, kills)            # the enemies met count whatever the outcome
     record_mission_kills(state, mission_id, kills)
     res["used"] = story_items.consume(state, used)           # before the Act can change: they belong to this one
     if loot and story_items.find(state, loot):
         res["loot"] = loot
+        if loot in story_items.REACTOR_IDS:
+            state.setdefault("log", []).append({"key": "story_log_" + loot})      # story_log_reactor_shield / _phenix
     if not cleared:
         if state.get("mode") == "veteran":
             state["fallen"] = True
@@ -1467,11 +1504,9 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
     if mission:
         flags = state.setdefault("flags", {})
         hidden = [m["id"] for m in MISSIONS if m.get("secret") and not mission_open(state, m)]
-        gives_thrust = VERTICAL_FLAG in (mission.get("unlock") or []) and not flags.get(VERTICAL_FLAG)
         for name in mission.get("unlock") or []:
             flags[name] = True
         res["opened"] = [m_id for m_id in hidden if mission_open(state, mission_by_id(m_id))]    # a secret mission shows up
-        res["thrust"] = bool(gives_thrust)
         if mission.get("grant_hull"):
             for sl in state.get("slots") or []:
                 if sl.get("id") == mission["grant_hull"] and not sl.get("owned"):

@@ -278,7 +278,7 @@ def _launch(g, mission_id, **flags):
     base.update(flags)
     _open(**base)
     g.story.open_slot(1)
-    g.story.map_index = [m["id"] for m in ss.MISSIONS].index(mission_id)
+    g.story.map_index = [m["id"] for m in g.story.missions()].index(mission_id)
     spec = g.story._launch_selected()
     assert spec, mission_id
     g._begin_adventure(spec)

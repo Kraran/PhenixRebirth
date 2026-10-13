@@ -1,5 +1,5 @@
-"""BONUS mission of the Adventure: the two-dimensional impulse reactor (waves of birds like Namco's Galaga, and the
-power to fly up and down the lower third of the screen as the reward)."""
+"""BONUS missions of the Adventure: the two-dimensional impulse reactor (waves of birds like Namco's Galaga; the reactor
+falls once, goes on sale in the hangar for one hull and lets it fly up and down the lower third of the screen)."""
 import math
 import os
 
@@ -7,6 +7,7 @@ import pygame
 import pytest
 
 import galaga
+import story_items as si
 import story_state as ss
 from galaga import GalagaBird, GalagaFormation, Path, path_for
 from player import Player
@@ -42,19 +43,28 @@ def french():
     set_lang(before)
 
 
-def _state(**flags):
+def _state(got=None, **flags):
     st = ss.create_slot(1, "NOVA", "normal")
     ss.mark_intro_seen(st)
     st["flags"].update(flags)
+    st["items"]["got"].update(got or {})
     return st
 
 
-def _launch(run, **flags):
+SHIELD_ON = {"reactor_shield": si.INSTALLED}
+PHENIX_ON = {"reactor_phenix": si.INSTALLED}
+
+
+def _launch(run, mission="bonus_2d", got=None, cheat=False, **flags):
     g = run.game
-    st = _state(**flags)
+    st = _state(got, **flags)
+    if mission == "bonus_2d_phenix":
+        st["flags"]["phenix_owned"] = True
+        st["slots"][1]["owned"] = True
     ss.save_state(ss.story_path(1), st)
     g.story.open_slot(1)
-    g.story.map_index = [m["id"] for m in g.story.missions()].index("bonus_2d")
+    g.story.cheat_unlock = cheat
+    g.story.map_index = [m["id"] for m in g.story.missions()].index(mission)
     spec = g.story._launch_selected()
     g._begin_adventure(spec)
     g.input_grace = 0.0
@@ -97,33 +107,63 @@ def _kill(form, birds):
 def test_the_bonus_mission_follows_the_last_hunt_and_waits_for_the_dark_gargoyles():
     m = ss.mission_by_id("bonus_2d")
     assert m["need"] == "bestiary_s4" and "bestiary_s4" in ss.mission_by_id("best_s4")["unlock"]
-    assert m["once"] and m["secret"] and m["galaga"]
-    assert ss.VERTICAL_FLAG in m["unlock"]
-    assert not m.get("acts")                                 # on the map of every act until it is flown
+    assert m["secret"] and m["galaga"] and m["reactor"] == "shield" and m["ship"] == "shield"
+    assert not m.get("once") and not m.get("unlock")           # nothing is given outright any more: the reactor falls
+    assert not m.get("acts")                                 # on the map of every act until the reactor is caught
     assert ss.GALAGA_STAGE == 6 and (m["stage"] - 1) // 5 == 1      # level 2 (x1.1 speed)
     ids = [x["id"] for x in ss.MISSIONS]
     assert ids[ids.index("best_s4") + 1] == "bonus_2d"
+    assert ids[ids.index("bonus_2d") + 1] == "bonus_2d_phenix"
+
+
+def test_the_phenix_version_comes_with_the_phenix_and_the_birds_shoot_more():
+    m = ss.mission_by_id("bonus_2d_phenix")
+    assert m["need"] == "phenix_owned" and m["reactor"] == "phoenix" and m["ship"] == "phoenix"
+    assert m["galaga"] and m["secret"] and m["stage"] == ss.GALAGA_STAGE
+    assert m["fire_mult"] == ss.PHENIX_FIRE_MULT > 1.0
+    assert not ss.mission_by_id("bonus_2d").get("fire_mult")
+    assert ss.mission_by_id("phenix_5")["unlock"].count("phenix_owned") == 1
+    assert ss.mission_by_id("bonus_2d_phenix")["title"] != ss.mission_by_id("bonus_2d")["title"]
+
+
+def _ids(st, **kw):
+    return [m["id"] for m in ss.visible_missions(st, **kw)]
 
 
 def test_the_mission_is_hidden_until_it_is_unlocked_then_stays_through_the_acts():
     st = _state()
-    assert "bonus_2d" not in [m["id"] for m in ss.visible_missions(st)]
+    assert "bonus_2d" not in _ids(st)
     st["flags"]["bestiary_s4"] = True
-    assert "bonus_2d" in [m["id"] for m in ss.visible_missions(st)]
+    assert "bonus_2d" in _ids(st)
     st["act"] = 2
-    assert "bonus_2d" in [m["id"] for m in ss.visible_missions(st)]            # it stays between the acts
-    st["cleared"].append("bonus_2d")                                           # ...unless it was won: no clutter later
-    assert "bonus_2d" not in [m["id"] for m in ss.visible_missions(st)]
+    assert "bonus_2d" in _ids(st)                                                # it stays between the acts
+    st["cleared"].append("bonus_2d")                                             # won, but the reactor was missed: still there
+    assert "bonus_2d" in _ids(st)
+    st["items"]["got"]["reactor_shield"] = si.FOUND                              # caught: no clutter in the later acts
+    assert "bonus_2d" not in _ids(st)
     st["act"] = 1
-    assert "bonus_2d" in [m["id"] for m in ss.visible_missions(st)]            # (it stays listed as done in its own act)
-    assert "bonus_2d" in [m["id"] for m in ss.visible_missions(_state(), cheat=True)]     # the UNLK cheat lists all
+    assert "bonus_2d" in _ids(st)                                                # (it stays listed as done in its own act)
+    assert "bonus_2d" in _ids(_state(), cheat=True)                              # the UNLK cheat lists all
 
 
-def test_the_act_2_cheat_counts_the_bonus_mission_as_won_and_keeps_the_act_2_map_clean():
+def test_the_phenix_mission_appears_with_the_phenix_and_goes_when_its_reactor_is_caught():
+    st = _state(bestiary_s4=True)
+    assert "bonus_2d_phenix" not in _ids(st)
+    st["flags"]["phenix_owned"] = True
+    st["act"] = 2
+    assert "bonus_2d_phenix" in _ids(st) and "bonus_2d" in _ids(st)              # the two are independent
+    st["items"]["got"]["reactor_phenix"] = si.FOUND
+    assert "bonus_2d_phenix" in _ids(st)                                         # it is in its own act (2): listed as done
+    st["act"] = 3
+    assert "bonus_2d_phenix" not in _ids(st)
+
+
+def test_the_act_2_cheat_leaves_the_bonus_missions_to_play():
     st = _state()
-    ss.jump_to_act2(st)                                                       # "every mission of Act 1 is won"
-    assert "bonus_2d" in st["cleared"] and ss.flag(st, ss.VERTICAL_FLAG)
-    assert "bonus_2d" not in [m["id"] for m in ss.visible_missions(st)]
+    ss.jump_to_act2(st)                                                          # "every mission of Act 1 is won"
+    assert not ss.flag(st, "vertical_thrust") and ss.loadout(st)["vertical"] is False
+    assert "bonus_2d" in _ids(st)                                                # no reactor yet: it is still to do
+    assert ss.mission_playable(st, ss.mission_by_id("bonus_2d"))
 
 
 def test_winning_the_last_hunt_opens_the_bonus_mission_once():
@@ -135,47 +175,91 @@ def test_winning_the_last_hunt_opens_the_bonus_mission_once():
     assert again["opened"] == []
 
 
-def test_the_bonus_mission_gives_the_reactor_once_and_cannot_be_flown_again():
+def test_the_waves_alone_give_nothing_and_the_mission_is_offered_again():
     st = _state(bestiary_s4=True)
     m = ss.mission_by_id("bonus_2d")
-    assert not ss.flag(st, ss.VERTICAL_FLAG)
-    res = ss.record_result(st, "bonus_2d", 500, True)
-    assert res["thrust"] is True and ss.flag(st, ss.VERTICAL_FLAG)
-    assert "bonus_2d" in st["cleared"] and {"key": "story_log_bonus2d"} in st["log"]
-    assert not ss.mission_playable(st, m)                                      # once only
-    assert "bonus_2d" in [x["id"] for x in ss.visible_missions(st)]            # still listed, as done
-    assert ss.mission_done(st, m)
-    assert ss.record_result(st, "bonus_2d", 10, True)["thrust"] is False
+    res = ss.record_result(st, "bonus_2d", 500, True)                           # the waves are beaten, the reactor missed
+    assert res["loot"] is None and si.reactor_status(st, "shield") is None
+    assert st["credits"] == 500 and "bonus_2d" in st["cleared"]
+    assert not ss.flag(st, "vertical_thrust") and ss.loadout(st)["vertical"] is False
+    assert ss.mission_playable(st, m) and not ss.mission_done(st, m)            # offered again
+    assert ss.record_result(st, "bonus_2d", 400, True)["first"] is False
+
+
+def test_catching_the_reactor_puts_it_on_sale_and_ends_the_offer():
+    st = _state(bestiary_s4=True)
+    m = ss.mission_by_id("bonus_2d")
+    res = ss.record_result(st, "bonus_2d", 500, True, loot="reactor_shield")
+    assert res["loot"] == "reactor_shield" and si.reactor_status(st, "shield") == si.FOUND
+    assert {"key": "story_log_reactor_shield"} in st["log"]
+    assert ss.loadout(st)["vertical"] is False                                  # on sale, not installed yet
+    assert ss.mission_done(st, m) and not ss.mission_playable(st, m)
+    assert "bonus_2d" in _ids(st)                                               # listed as done in Act 1
+    assert ss.mission_playable(st, m, cheat=True)
+
+
+def test_the_reactor_is_kept_even_when_the_mission_is_lost():
+    st = _state(bestiary_s4=True)
+    res = ss.record_result(st, "bonus_2d", 0, False, loot="reactor_shield")
+    assert res["loot"] == "reactor_shield" and si.reactor_status(st, "shield") == si.FOUND
 
 
 def test_a_lost_bonus_mission_gives_nothing_and_can_be_tried_again():
     st = _state(bestiary_s4=True)
     st["credits"] = 1000
     res = ss.record_result(st, "bonus_2d", 300, False)
-    assert res["thrust"] is False and not ss.flag(st, ss.VERTICAL_FLAG)
+    assert res["loot"] is None and ss.loadout(st)["vertical"] is False
     assert st["credits"] < 1000 and "bonus_2d" not in st["cleared"]
     assert ss.mission_playable(st, ss.mission_by_id("bonus_2d"))
 
 
-def test_the_hangar_loadout_carries_the_reactor():
+def test_the_hangar_loadout_carries_the_reactor_of_the_hull_flown_only():
     assert ss.loadout(_state())["vertical"] is False
-    assert ss.loadout(_state(**{ss.VERTICAL_FLAG: True}))["vertical"] is True
+    assert ss.loadout(_state(got=SHIELD_ON))["vertical"] is True
+    assert ss.loadout(_state(got={"reactor_shield": si.FOUND}))["vertical"] is False        # on sale is not installed
+    st = _state(got=PHENIX_ON)                                                   # the Phenix reactor does not help the Shield
+    assert ss.loadout(st)["vertical"] is False
+    st["slots"][1]["owned"] = True
+    st["selected_slot"] = 1
+    assert ss.loadout(st)["ship_id"] == "phoenix" and ss.loadout(st)["vertical"] is True
+    assert ss.loadout(_state(got=SHIELD_ON), force_ship="phoenix")["vertical"] is True     # (Phenix not owned: Shield)
 
 
 def test_the_launch_spec_and_the_texts(run, french):
     spec = _launch(run, bestiary_s4=True)
     assert spec["galaga"] is True and spec["stage"] == 6 and spec["id"] == "bonus_2d"
-    assert spec["hud_title"] == "story_m_bonus2d_hud"
+    assert spec["hud_title"] == "story_m_bonus2d_hud" and spec["reactor"] == "shield" and spec["ship"] == "shield"
+    assert "fire_mult" not in spec
     from i18n import set_lang, t
     for lang in ("fr", "en"):
         set_lang(lang)
         for key in ("story_m_bonus2d", "story_m_bonus2d_hud", "story_m_bonus2d_b", "story_log_bonus2d",
-                    "story_bonus_open", "story_thrust_gift", "story_galaga_hud"):
+                    "story_m_bonus2dp", "story_m_bonus2dp_hud", "story_m_bonus2dp_b", "story_log_bonus2dp",
+                    "story_log_reactor_shield", "story_log_reactor_phenix",
+                    "item_reactor_shield_name", "item_reactor_shield_effect", "item_reactor_shield_desc",
+                    "item_reactor_phenix_name", "item_reactor_phenix_effect", "item_reactor_phenix_desc",
+                    "story_bonus_open", "story_galaga_hud"):
             assert t(key) != key, (lang, key)
     set_lang("fr")
-    assert t("story_m_bonus2d") == "BONUS : le réacteur à impulsion bidimensionnelle"
+    assert t("story_m_bonus2d") == "BONUS : le réacteur à impulsion bidimensionnelle (Shield)"
+    assert t("story_m_bonus2dp") == "BONUS : le réacteur à impulsion bidimensionnelle (Phenix)"
+    assert "Shield" in t("item_reactor_shield_name") and "Shield" in t("item_reactor_shield_desc")
+    assert "Phenix" in t("item_reactor_phenix_name") and "Phenix" in t("item_reactor_phenix_desc")
+    assert "Phenix" in t("story_m_bonus2dp_hud") and "Shield" in t("story_m_bonus2d_hud")
     set_lang("en")
-    assert t("story_m_bonus2d") == "BONUS: the two-dimensional impulse reactor"
+    assert t("story_m_bonus2d") == "BONUS: the two-dimensional impulse reactor (Shield)"
+    assert t("story_m_bonus2dp") == "BONUS: the two-dimensional impulse reactor (Phenix)"
+    assert "Shield" in t("item_reactor_shield_name") and "Phenix" in t("item_reactor_phenix_name")
+
+
+def test_the_phenix_launch_spec_flies_the_phenix_with_more_enemy_fire(run):
+    spec = _launch(run, mission="bonus_2d_phenix", bestiary_s4=True)
+    g = run.game
+    assert spec["id"] == "bonus_2d_phenix" and spec["reactor"] == "phoenix" and spec["ship"] == "phoenix"
+    assert spec["fire_mult"] == ss.PHENIX_FIRE_MULT and spec["galaga"] is True
+    assert spec["hud_title"] == "story_m_bonus2dp_hud"
+    assert g.ship_id == "phoenix" and g.formation.fire_mult == ss.PHENIX_FIRE_MULT
+    assert g.adventure["loot_plan"]["id"] == "reactor_phenix"
 
 
 def test_the_map_lists_the_mission_and_the_toasts_tell_what_happened(run):
@@ -187,8 +271,8 @@ def test_the_map_lists_the_mission_and_the_toasts_tell_what_happened(run):
     g.story.apply_result("best_s4", 100, True)
     assert g.story.toast == t("story_bonus_open")
     assert "bonus_2d" in [m["id"] for m in g.story.missions()]
-    g.story.apply_result("bonus_2d", 100, True)
-    assert g.story.toast == t("story_thrust_gift")
+    g.story.apply_result("bonus_2d", 100, True, loot="reactor_shield")
+    assert t("item_reactor_shield_name") in g.story.toast
     g.story.map_index = [m["id"] for m in g.story.missions()].index("bonus_2d")
     surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
     g.story._draw_map(surf, g.font, g.medium_font, g.font)                       # a long title must not break the map
@@ -316,12 +400,15 @@ def test_the_coop_keyboards_have_their_own_vertical_keys():
     assert p.y < y2
 
 
-def test_the_ship_of_a_mission_flies_up_and_down_only_once_the_reactor_is_won(run):
+def test_the_ship_of_a_mission_flies_up_and_down_only_once_the_reactor_is_installed(run):
     g = run.game
     _launch(run, bestiary_s4=True)
     assert g.player.vertical_range is None
     g._end_adventure(False)
-    _launch(run, bestiary_s4=True, **{ss.VERTICAL_FLAG: True})
+    _launch(run, bestiary_s4=True, got={"reactor_shield": si.FOUND}, cheat=True)      # on sale: not yet
+    assert g.player.vertical_range is None
+    g._end_adventure(False)
+    _launch(run, bestiary_s4=True, got=SHIELD_ON, cheat=True)
     assert g.player.vertical_range == (PLAYER_VERTICAL_TOP, PLAYER_VERTICAL_BOTTOM)
     _arrived(run)
     y0 = g.player.y
@@ -333,7 +420,7 @@ def test_the_ship_of_a_mission_flies_up_and_down_only_once_the_reactor_is_won(ru
 
 def test_the_reactor_works_in_the_other_missions_too(run):
     g = run.game
-    st = _state(**{ss.VERTICAL_FLAG: True})
+    st = _state(SHIELD_ON)
     ss.save_state(ss.story_path(1), st)
     g.story.open_slot(1)
     g.story.map_index = [m["id"] for m in g.story.missions()].index("ch1_sortie")
@@ -728,14 +815,16 @@ def test_a_bird_shot_down_is_worth_points_and_a_ram_costs_a_life(run):
     assert g.player.lives == lives - 1 or g.player.dying
 
 
-def test_winning_the_mission_banks_the_reactor(run):
+def _win(run, catch):
+    """Play the mission by killing every bird the moment it can be hit; `catch`: put the ship under the reactor."""
     g = run.game
-    _launch(run, bestiary_s4=True)
-    _arrived(run)
-    for _ in range(60 * 90):
+    for _ in range(60 * 120):
         run.frames(1)
         if g.adventure is None:
             break
+        if catch and g.loot is not None:
+            g.player.x = g.loot.x
+            g.player.y = g.loot.y
         for b in g.formation.get_hittable_enemies():
             b.kill(flash=False)
         g.formation.carry = [b for b in g.formation.carry if b.alive]
@@ -743,13 +832,303 @@ def test_winning_the_mission_banks_the_reactor(run):
             b.kill(flash=False)
         g.formation.carry = []
     assert g.adventure is None                                                   # the mission ended, back to the map
+    return g.story.state
+
+
+def test_winning_the_mission_and_catching_the_reactor_puts_it_on_sale(run):
+    g = run.game
+    _launch(run, bestiary_s4=True)
+    _arrived(run)
+    st = _win(run, catch=True)
+    assert "bonus_2d" in st["cleared"] and si.reactor_status(st, "shield") == si.FOUND
+    assert ss.loadout(st)["vertical"] is False                                   # to be bought in the hangar
+
+
+def test_a_fast_win_still_sees_the_reactor_fall_and_a_missed_one_brings_the_mission_back(run):
+    g = run.game
+    _launch(run, bestiary_s4=True)
+    _arrived(run)
+    seen = []
+    for _ in range(60 * 120):
+        run.frames(1)
+        if g.adventure is None:
+            break
+        if g.loot is not None:
+            seen.append(g.loot.item)                                             # it falls, and the pilot lets it go by
+            g.player.x = 60.0 if g.loot.x > BASE_WIDTH / 2 else BASE_WIDTH - 60.0     # (the far side: no catch by chance)
+        for b in g.formation.get_hittable_enemies():
+            b.kill(flash=False)
+        g.formation.carry = []
+    assert g.adventure is None
     st = g.story.state
-    assert ss.flag(st, ss.VERTICAL_FLAG) and "bonus_2d" in st["cleared"]
+    assert set(seen) == {"reactor_shield"}                                       # it did fall, once
+    assert "bonus_2d" in st["cleared"] and si.reactor_status(st, "shield") is None
+    assert ss.mission_playable(st, ss.mission_by_id("bonus_2d"))                 # offered again
 
 
 def test_the_mission_plays_with_a_ship_that_flies_up_and_down(run):
     g = run.game
-    _launch(run, bestiary_s4=True, **{ss.VERTICAL_FLAG: True})
+    _launch(run, bestiary_s4=True, got=SHIELD_ON, cheat=True)
     _arrived(run)
     run.frames(int(galaga.START_DELAY * 60) + 120)
     assert PLAYER_VERTICAL_TOP <= g.player.y <= PLAYER_VERTICAL_BOTTOM
+
+
+# ------------------------------------------------------------------ the reactor in the hangar
+def _hangar(got=(), credits=0, phenix=False, **flags):
+    st = _state(**flags)
+    st["credits"] = credits
+    for item in got:
+        assert si.find(st, item)
+    if phenix:
+        st["slots"][1]["owned"] = True
+        st["selected_slot"] = 1
+    ss.save_state(ss.story_path(1), st)
+    hub = StoryHub()
+    hub.open_slot(1)
+    hub.pane = "hangar"
+    hub.zone = "shop"
+    return hub
+
+
+def _item_rows(hub):
+    return [r for r in hub.shop_rows() if r[0].startswith("item:")]
+
+
+def test_the_two_reactors_cost_2000_for_the_shield_and_4000_for_the_phenix():
+    assert si.PRICES["reactor_shield"] == 2000 and si.PRICES["reactor_phenix"] == 4000
+    assert si.REACTORS == {"shield": "reactor_shield", "phoenix": "reactor_phenix"}
+
+
+def test_the_shield_shop_sells_the_shield_reactor_only():
+    hub = _hangar(got=("reactor_shield", "reactor_phenix"), credits=9000)
+    assert [(r[0], r[1], r[2]) for r in _item_rows(hub)] == [
+        ("item:reactor_shield", "item_reactor_shield_name", 2000)]
+
+
+def test_the_phenix_shop_sells_the_phenix_reactor_only():
+    hub = _hangar(got=("reactor_shield", "reactor_phenix"), credits=9000, phenix=True)
+    assert [(r[0], r[1], r[2]) for r in _item_rows(hub)] == [
+        ("item:reactor_phenix", "item_reactor_phenix_name", 4000)]
+
+
+def test_nothing_is_listed_before_the_reactor_is_caught():
+    assert _item_rows(_hangar(credits=9000)) == []
+    assert _item_rows(_hangar(credits=9000, phenix=True)) == []
+
+
+def test_buying_the_shield_reactor_installs_it_for_good_and_saves():
+    hub = _hangar(got=("reactor_shield",), credits=2500)
+    hub.shop_index = [r[0] for r in hub.shop_rows()].index("item:reactor_shield")
+    hub.confirm()
+    assert hub.state["credits"] == 500 and si.reactor_on(hub.state, "shield")
+    assert hub.take_sounds() == ["1up"]
+    hub.confirm()                                                              # a second press buys nothing more
+    assert hub.state["credits"] == 500
+    saved = ss.load_state(ss.story_path(1))
+    assert si.reactor_on(saved, "shield") and ss.loadout(saved)["vertical"] is True
+    assert hub._shop_extra("item:reactor_shield", 2000, False) in ("INSTALLÉ", "INSTALLED")
+
+
+def test_the_reactor_is_too_dear_with_too_few_points():
+    hub = _hangar(got=("reactor_shield",), credits=1999)
+    hub.shop_index = [r[0] for r in hub.shop_rows()].index("item:reactor_shield")
+    hub.confirm()
+    assert hub.state["credits"] == 1999 and si.reactor_status(hub.state, "shield") == si.FOUND
+
+
+def test_the_phenix_reactor_costs_4000():
+    hub = _hangar(got=("reactor_phenix",), credits=3999, phenix=True)
+    hub.shop_index = [r[0] for r in hub.shop_rows()].index("item:reactor_phenix")
+    hub.confirm()
+    assert si.reactor_status(hub.state, "phoenix") == si.FOUND
+    hub.state["credits"] = 4100
+    hub.confirm()
+    assert hub.state["credits"] == 100 and si.reactor_on(hub.state, "phoenix")
+
+
+def test_a_reactor_cannot_be_bought_for_the_other_hull():
+    st = _state(got={"reactor_phenix": si.FOUND})
+    st["credits"] = 9000
+    assert ss.buy(st, "item:reactor_phenix") is False                          # the Shield is selected
+    assert st["credits"] == 9000 and si.reactor_status(st, "phoenix") == si.FOUND
+    st["slots"][1]["owned"] = True
+    st["selected_slot"] = 1
+    assert ss.buy(st, "item:reactor_shield") is False                          # (not even found)
+    st2 = _state(got={"reactor_shield": si.FOUND})
+    st2["credits"] = 9000
+    st2["slots"][1]["owned"] = True
+    st2["selected_slot"] = 1
+    assert ss.buy(st2, "item:reactor_shield") is False and st2["credits"] == 9000
+
+
+def test_the_hangar_draws_the_reactor_rows(run):
+    g = run.game
+    for phenix in (False, True):
+        hub = _hangar(got=("reactor_phenix" if phenix else "reactor_shield",), credits=9000, phenix=phenix)
+        g.story = hub
+        g.menu_screen = "story_hub"
+        hub.shop_index = [r[0] for r in hub.shop_rows()].index(_item_rows(hub)[0][0])
+        surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+        hub.draw(surf, g.font, g.medium_font, g.font)
+        run.frames(2)
+
+
+# ------------------------------------------------------------------ a reactor is not a single-use item
+def test_a_reactor_is_never_used_up():
+    st = _state(got=SHIELD_ON)
+    assert si.installed(st) == []                                              # not among the items of a mission
+    assert si.consume(st, ["reactor_shield"]) == []
+    res = ss.record_result(st, "ch1_sortie", 100, True, used=["reactor_shield"])
+    assert res["used"] == [] and si.reactor_on(st, "shield")
+
+
+def test_the_reactor_is_kept_in_the_next_acts_while_the_single_use_items_start_again():
+    st = _state(got={"reactor_shield": si.INSTALLED, "reactor_phenix": si.FOUND, "tesla": si.USED})
+    st["act"] = 2
+    assert si.reactor_on(st, "shield") and si.reactor_status(st, "phoenix") == si.FOUND
+    assert si.status(st, "tesla") is None                                      # a new Act gives the items back
+    st["act"] = 3
+    assert si.reactor_on(st, "shield") and ss.loadout(st)["vertical"] is True
+
+
+def test_a_reactor_never_falls_in_an_ordinary_mission_and_is_not_lootable():
+    st = _state()
+    assert si.lootable(st) == list(si.RANDOM_IDS) and not set(si.REACTOR_IDS) & set(si.lootable(st))
+    import random
+    rng = random.Random(1)
+    seen = set()
+    for _ in range(400):
+        st["items"]["since"] = 9
+        plan = si.plan_drop(st, rng)
+        if plan:
+            seen.add(plan["id"])
+    assert seen and not seen & set(si.REACTOR_IDS)
+
+
+def test_a_used_reactor_in_a_save_file_is_dropped():
+    book = si.clean({"act": 1, "got": {"reactor_shield": "used", "reactor_phenix": "installed", "tesla": "used"}})
+    assert book["got"] == {"reactor_phenix": "installed", "tesla": "used"}
+
+
+# ------------------------------------------------------------------ the fall
+def test_the_reactor_plan_falls_once_at_a_random_moment_and_only_if_it_is_not_owned():
+    import random
+    st = _state()
+    times = set()
+    for seed in range(40):
+        plan = si.reactor_plan(st, "shield", random.Random(seed))
+        assert plan["id"] == "reactor_shield" and plan["last_wave"] is True
+        assert si.REACTOR_DELAY[0] <= plan["t"] <= si.REACTOR_DELAY[1]
+        times.add(round(plan["t"], 3))
+    assert len(times) > 30                                                     # not always the same moment
+    assert si.reactor_plan(st, "phoenix", random.Random(1))["id"] == "reactor_phenix"
+    assert si.reactor_plan(st, "nobody", random.Random(1)) is None
+    st["items"]["got"]["reactor_shield"] = si.FOUND
+    assert si.reactor_plan(st, "shield", random.Random(1)) is None             # caught already: it does not fall again
+    assert si.reactor_plan(_state(got={"reactor_shield": si.INSTALLED}), "shield", random.Random(1)) is None
+    assert si.reactor_plan(st, "phoenix", random.Random(1)) is not None        # the other hull's one is separate
+
+
+def test_the_bonus_mission_plans_its_reactor_and_not_a_random_item(run):
+    g = run.game
+    _launch(run, bestiary_s4=True)
+    plan = g.adventure["loot_plan"]
+    assert plan["id"] == "reactor_shield"
+    assert g.story.state["items"]["since"] == si.MIN_GAP                       # it does not count in the gap of ordinary loot
+
+
+def test_nothing_falls_in_the_bonus_mission_when_the_reactor_is_owned(run):
+    g = run.game
+    _launch(run, bestiary_s4=True, got={"reactor_shield": si.FOUND}, cheat=True)
+    assert g.adventure["loot_plan"] is None
+
+
+def test_the_reactor_falls_at_the_latest_when_the_last_wave_comes_in(run):
+    g = run.game
+    _launch(run, bestiary_s4=True)
+    _arrived(run)
+    g.adventure["loot_plan"] = {"id": "reactor_shield", "t": 10 ** 6, "last_wave": True}
+    run.frames(5)
+    assert g.loot is None and g.formation.wave < g.formation.waves
+    g.formation.wave = g.formation.waves
+    run.frames(2)
+    assert g.loot is not None and g.loot.item == "reactor_shield"
+    assert g.adventure["loot_plan"] is None                                    # once
+
+
+def test_the_reactor_falls_at_its_own_time_when_the_waves_are_not_over(run):
+    g = run.game
+    _launch(run, bestiary_s4=True)
+    _arrived(run)
+    g.adventure["loot_plan"] = {"id": "reactor_shield", "t": 0.0, "last_wave": True}
+    run.frames(2)
+    assert g.loot is not None and g.formation.wave < g.formation.waves
+
+
+def test_catching_the_reactor_in_flight_is_remembered_for_the_end_of_the_mission(run):
+    g = run.game
+    _launch(run, bestiary_s4=True)
+    _arrived(run)
+    g.adventure["loot_plan"] = {"id": "reactor_phenix", "t": 0.0}
+    run.frames(2)
+    g.player.x, g.player.y = g.loot.x, g.loot.y
+    run.frames(2)
+    assert g.adventure["loot"] == "reactor_phenix" and g.loot is None
+
+
+def test_both_reactors_share_the_picture_of_the_item(run):
+    import loot
+    a, b = loot.frames("reactor_shield"), loot.frames("reactor_phenix")
+    assert len(a) == loot.FRAMES and len(b) == loot.FRAMES
+    assert pygame.image.tobytes(a[7], "RGBA") == pygame.image.tobytes(b[7], "RGBA")       # the same picture
+    assert len({pygame.image.tobytes(c, "RGBA") for c in a}) > loot.FRAMES // 2           # and it turns
+    assert loot.icon("reactor_shield", 30, 40) is not None
+    assert max(loot.icon("reactor_phenix").get_size()) >= 90
+
+
+# ------------------------------------------------------------------ the old saves
+def test_a_save_that_got_the_flight_outright_keeps_it_as_an_installed_reactor():
+    st = _state(vertical_thrust=True)
+    ss.save_state(ss.story_path(1), st)
+    back = ss.load_state(ss.story_path(1))
+    assert si.reactor_on(back, "shield") and ss.loadout(back)["vertical"] is True
+    assert si.reactor_status(back, "phoenix") is None
+    ss.save_state(ss.story_path(1), back)
+    again = ss.load_state(ss.story_path(1))
+    assert si.reactor_on(again, "shield")
+
+
+def test_a_save_without_the_old_flag_has_no_reactor():
+    st = _state()
+    ss.save_state(ss.story_path(1), st)
+    assert si.reactor_status(ss.load_state(ss.story_path(1)), "shield") is None
+
+
+def test_an_old_save_that_was_in_act_2_keeps_the_reactor_too():
+    st = _state(vertical_thrust=True)
+    st["act"] = 2
+    ss.save_state(ss.story_path(1), st)
+    back = ss.load_state(ss.story_path(1))
+    assert si.reactor_on(back, "shield")
+
+
+# ------------------------------------------------------------------ the birds of the Phenix version
+def test_the_birds_shoot_more_when_the_fire_is_multiplied():
+    import random
+    base = GalagaFormation(speed_mult=1.0, rng=random.Random(3))
+    hot = GalagaFormation(speed_mult=1.0, rng=random.Random(3), fire_mult=ss.PHENIX_FIRE_MULT)
+    assert base.fire_mult == 1.0 and hot.fire_mult == ss.PHENIX_FIRE_MULT
+    assert hot.max_bullets == round(galaga.MAX_BULLETS * ss.PHENIX_FIRE_MULT) > base.max_bullets == galaga.MAX_BULLETS
+    for form in (base, hot):
+        _until(lambda f=form: f.wave >= 1 and f.chains, form)
+    assert hot._fire_mean == pytest.approx(base._fire_mean / ss.PHENIX_FIRE_MULT)
+    shots = []
+    for form in (base, hot):
+        n = 0
+        for _ in range(int(40 / DT)):
+            before = len(form.bullets)
+            form.update(DT, 640.0)
+            n += max(0, len(form.bullets) - before)
+        shots.append(n)
+    assert shots[1] > shots[0] * 1.2

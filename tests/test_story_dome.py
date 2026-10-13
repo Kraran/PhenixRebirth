@@ -24,8 +24,8 @@ def _open(**flags):
 def test_the_series_is_four_chained_missions_after_the_bestiary_hunts_in_the_list():
     ids = [m["id"] for m in ss.MISSIONS]
     after = ids.index("best_s4") + 1
-    assert ids[after] == "bonus_2d"                            # the BONUS mission comes right after the last hunt
-    assert ids[after + 1:after + 5] == list(DOME)
+    assert ids[after:after + 2] == ["bonus_2d", "bonus_2d_phenix"]      # the BONUS missions come right after the last hunt
+    assert ids[after + 2:after + 6] == list(DOME)
     chain = [ss.mission_by_id(i) for i in DOME]
     assert chain[0]["need"] is None                            # Dome I is open from the start, like the first sortie
     assert ss.mission_by_id("ch1_sortie")["need"] is None
@@ -111,7 +111,7 @@ def test_the_whole_series_in_order_gives_one_journal_line_each():
 
 def test_the_launch_spec_carries_the_waves():
     hub = _open(bestiary_s4=True, dome_s1=True)
-    hub.map_index = [m["id"] for m in ss.MISSIONS].index("dome_2")
+    hub.map_index = [m["id"] for m in hub.missions()].index("dome_2")
     spec = hub._launch_selected()
     assert spec["waves"] == [2, 7, 12] and spec["id"] == "dome_2"
     hub.map_index = 0
@@ -145,7 +145,7 @@ def test_the_map_shows_a_cleared_dome_mission_as_done(run):
 def _launch(g, mission_id):
     hub = _open(bestiary_s4=True, dome_s1=True, dome_s2=True, dome_s3=True)
     g.story.open_slot(1)
-    g.story.map_index = [m["id"] for m in ss.MISSIONS].index(mission_id)
+    g.story.map_index = [m["id"] for m in g.story.missions()].index(mission_id)
     spec = g.story._launch_selected()
     assert spec, mission_id
     g._begin_adventure(spec)

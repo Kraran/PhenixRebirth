@@ -92,7 +92,11 @@ def tick_loot(game):
     adv["loot_clock"] = float(adv.get("loot_clock", 0.0) or 0.0) + game.dt
     plan = adv.get("loot_plan")
     ship = game.player
-    if plan and getattr(game, "loot", None) is None and adv["loot_clock"] >= plan["t"] and ship and ship.alive:
+    due = bool(plan) and adv["loot_clock"] >= plan["t"]
+    if plan and not due and plan.get("last_wave"):
+        form = getattr(game, "formation", None)            # a BONUS mission: it falls at the latest when the last wave is in
+        due = getattr(form, "waves", None) is not None and getattr(form, "wave", 0) >= form.waves
+    if plan and getattr(game, "loot", None) is None and due and ship and ship.alive:
         adv["loot_plan"] = None
         x = FallingItem.pick_x(ship.x, ship.speed, ship.y)
         game.loot = FallingItem(plan["id"], x)

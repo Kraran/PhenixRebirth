@@ -81,7 +81,7 @@ def _fall(run, g, item="tesla", t=0.0):
 
 
 # ---------------------------------------------------------------- the pictures
-@pytest.mark.parametrize("item", si.ITEM_IDS)
+@pytest.mark.parametrize("item", si.RANDOM_IDS)
 def test_every_item_has_its_animated_sprite_the_size_of_a_bird(run, item):
     cells = loot.frames(item)
     assert len(cells) == loot.FRAMES
@@ -91,7 +91,7 @@ def test_every_item_has_its_animated_sprite_the_size_of_a_bird(run, item):
     assert any(c.get_bounding_rect().w > 10 for c in cells)
 
 
-@pytest.mark.parametrize("item", si.ITEM_IDS)
+@pytest.mark.parametrize("item", si.RANDOM_IDS)
 def test_the_sprite_has_a_transparent_background_and_really_moves(run, item):
     cells = loot.frames(item)
     corner = [c.get_at((0, 0)).a for c in cells]
@@ -102,7 +102,7 @@ def test_the_sprite_has_a_transparent_background_and_really_moves(run, item):
     assert len(data) > loot.FRAMES // 2                       # animated, not one picture repeated
 
 
-@pytest.mark.parametrize("item", si.ITEM_IDS)
+@pytest.mark.parametrize("item", si.RANDOM_IDS)
 def test_every_item_has_an_icon_for_the_shop(run, item):
     pic = loot.icon(item, 30, 40)
     assert pic is not None and pic.get_height() <= 30 and pic.get_width() <= 40 and max(pic.get_size()) >= 26
@@ -273,7 +273,7 @@ def test_a_lucky_mission_plans_an_item(run, monkeypatch):
     monkeypatch.setattr(random, "random", lambda: 0.0)
     _launch(run)
     plan = run.game.adventure["loot_plan"]
-    assert plan and plan["id"] in si.ITEM_IDS and si.DROP_DELAY[0] <= plan["t"] <= si.DROP_DELAY[1]
+    assert plan and plan["id"] in si.RANDOM_IDS and si.DROP_DELAY[0] <= plan["t"] <= si.DROP_DELAY[1]
 
 
 def test_the_planned_item_is_not_one_held(run, monkeypatch):
@@ -284,7 +284,7 @@ def test_the_planned_item_is_not_one_held(run, monkeypatch):
 
 def test_no_plan_when_everything_is_held(run, monkeypatch):
     monkeypatch.setattr(random, "random", lambda: 0.0)
-    _launch(run, found=si.ITEM_IDS)
+    _launch(run, found=si.RANDOM_IDS)
     assert run.game.adventure["loot_plan"] is None
 
 
@@ -617,7 +617,7 @@ def test_a_workshop_row_that_is_not_an_item_has_no_description(run):
 
 def test_every_row_of_a_long_list_can_be_reached_and_drawn(run):
     g = run.game
-    hub = _hangar(found=si.ITEM_IDS, credits=0)
+    hub = _hangar(found=si.RANDOM_IDS, credits=0)
     g.story = hub
     g.menu_screen = "story_hub"
     rows = hub.shop_rows()
@@ -638,7 +638,7 @@ def test_the_item_news_is_on_the_map_after_the_mission(run):
 
 def test_the_texts_exist_in_french_and_english():
     from i18n import T
-    for item in si.ITEM_IDS:
+    for item in si.RANDOM_IDS:
         for part in ("name", "effect", "desc"):
             entry = T["item_%s_%s" % (item, part)]
             assert entry["fr"] and entry["en"]
@@ -650,7 +650,7 @@ def test_the_texts_exist_in_french_and_english():
     assert T["item_genesis_effect"]["fr"] == "Vie supplémentaire"
     assert T["item_hyperion_effect"]["fr"] == "Vitesse +40 %"
     assert T["item_tesla_effect"]["fr"] == "Immunité électrique"
-    assert [T["item_%s_name" % i]["fr"] for i in si.ITEM_IDS] == [
+    assert [T["item_%s_name" % i]["fr"] for i in si.RANDOM_IDS] == [
         "Singularity Core", "Noyau Genesis", "Réacteur Hyperion", "Tesla Seal"]
 
 
@@ -704,7 +704,7 @@ def test_the_other_missions_still_carry_items_after_a_paint_one(run, monkeypatch
     assert g.adventure["loot_plan"]
 
 
-@pytest.mark.parametrize("item", si.ITEM_IDS)
+@pytest.mark.parametrize("item", si.RANDOM_IDS)
 def test_an_item_installed_works_in_a_paint_mission(run, item):
     spec = _launch_paint(run, credits=20000, found=(item,), buy=(item,))
     g = run.game

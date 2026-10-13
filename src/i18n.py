@@ -3195,6 +3195,19 @@ _ADVENTURE_TEXTS = {
     "item_tesla_effect": ("Immunité électrique", "Electric immunity"),
     "item_tesla_desc": ("Protège intégralement le vaisseau contre les décharges électriques.",
                         "Fully protects the ship against electric discharges."),
+    # the two-dimensional impulse reactors: one per hull, never used up (BONUS missions)
+    "item_reactor_shield_name": ("Réacteur 2D (Shield)", "2D Reactor (Shield)"),
+    "item_reactor_shield_effect": ("Vol haut / bas, Shield", "Up / down flight, Shield"),
+    "item_reactor_shield_desc": ("Réacteur à impulsion bidimensionnelle, pour le Shield uniquement : il vole aussi "
+                                 "vers le haut et vers le bas, dans le tiers inférieur de l'écran. Définitif.",
+                                 "Two-dimensional impulse reactor, for the Shield only: it also flies up and down "
+                                 "in the lower third of the screen. Permanent."),
+    "item_reactor_phenix_name": ("Réacteur 2D (Phenix)", "2D Reactor (Phenix)"),
+    "item_reactor_phenix_effect": ("Vol haut / bas, Phenix", "Up / down flight, Phenix"),
+    "item_reactor_phenix_desc": ("Réacteur à impulsion bidimensionnelle, pour le Phenix uniquement : il vole aussi "
+                                 "vers le haut et vers le bas, dans le tiers inférieur de l'écran. Définitif.",
+                                 "Two-dimensional impulse reactor, for the Phenix only: it also flies up and down "
+                                 "in the lower third of the screen. Permanent."),
     "story_item_installed": ("INSTALLÉ", "INSTALLED"),
     "story_item_caught": ("OBJET RÉCUPÉRÉ : {name}", "ITEM CAUGHT: {name}"),
     "story_item_found": ("Nouvel objet au hangar : {name}", "New item in the hangar: {name}"),
@@ -3439,18 +3452,29 @@ _ADVENTURE_TEXTS.update({
                       "Phenix V — the boss is down. The Phenix is yours."),
     "story_phenix_gift": ("Le Phenix rejoint le hangar !", "The Phenix joins the hangar!"),
     # --- BONUS: the two-dimensional impulse reactor (waves in the way of Galaga)
-    "story_m_bonus2d": ("BONUS : le réacteur à impulsion bidimensionnelle",
-                        "BONUS: the two-dimensional impulse reactor"),
-    "story_m_bonus2d_hud": ("BONUS : réacteur 2D", "BONUS: 2D reactor"),
-    "story_m_bonus2d_b": ("Quatre vagues d'avioïdes de niveau 2 qui plongent, bouclent et bombardent. "
-                          "Le réacteur te laisse voler en hauteur. Une seule fois.",
-                          "Four waves of level 2 avioids that dive, loop and bomb. "
-                          "The reactor lets you fly up and down. Once only."),
-    "story_log_bonus2d": ("BONUS — le réacteur à impulsion bidimensionnelle est à bord.",
-                          "BONUS — the two-dimensional impulse reactor is on board."),
+    "story_m_bonus2d": ("BONUS : le réacteur à impulsion bidimensionnelle (Shield)",
+                        "BONUS: the two-dimensional impulse reactor (Shield)"),
+    "story_m_bonus2d_hud": ("BONUS : réacteur 2D (Shield)", "BONUS: 2D reactor (Shield)"),
+    "story_m_bonus2d_b": ("Quatre vagues d'avioïdes de niveau 2. Le réacteur tombe une fois, attrape-le. "
+                          "Raté ? La mission revient.",
+                          "Four waves of level 2 avioids. The reactor falls once: catch it. "
+                          "Missed it? The mission comes back."),
+    "story_m_bonus2dp": ("BONUS : le réacteur à impulsion bidimensionnelle (Phenix)",
+                         "BONUS: the two-dimensional impulse reactor (Phenix)"),
+    "story_m_bonus2dp_hud": ("BONUS : réacteur 2D (Phenix)", "BONUS: 2D reactor (Phenix)"),
+    "story_m_bonus2dp_b": ("Les mêmes quatre vagues, mais les avioïdes tirent bien plus. Le réacteur tombe une fois, "
+                           "attrape-le. Raté ? La mission revient.",
+                           "The same four waves, but the avioids shoot a lot more. The reactor falls once: catch it. "
+                           "Missed it? The mission comes back."),
+    "story_log_bonus2d": ("BONUS — vagues d'avioïdes de niveau 2 repoussées (Shield).",
+                          "BONUS — the level 2 avioid waves are beaten (Shield)."),
+    "story_log_bonus2dp": ("BONUS — vagues d'avioïdes de niveau 2 repoussées (Phenix).",
+                           "BONUS — the level 2 avioid waves are beaten (Phenix)."),
+    "story_log_reactor_shield": ("BONUS — le réacteur à impulsion bidimensionnelle du Shield est récupéré.",
+                                 "BONUS — the Shield's two-dimensional impulse reactor is recovered."),
+    "story_log_reactor_phenix": ("BONUS — le réacteur à impulsion bidimensionnelle du Phenix est récupéré.",
+                                 "BONUS — the Phenix's two-dimensional impulse reactor is recovered."),
     "story_bonus_open": ("Nouvelle mission BONUS sur la carte !", "A new BONUS mission is on the map!"),
-    "story_thrust_gift": ("Réacteur bidimensionnel : haut / bas dans le tiers inférieur !",
-                          "Two-dimensional reactor: up / down in the lower third!"),
     "story_galaga_hud": ("VAGUE {n}/{m}   RESTE : {left}", "WAVE {n}/{m}   LEFT: {left}"),
     "story_shop_phenix80": ("Jauge du Phenix : 80 %", "Phenix gauge: 80%"),
     "story_stat_phenix": ("PHENIX", "PHENIX"),

@@ -11,6 +11,7 @@ import pygame
 
 from errlog import log_exc
 from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
+import story_items
 
 FRAMES = 36              # cells in a sprite strip
 ANIM_FPS = 8.0           # a little faster than the source video (6 s for the 36 cells)
@@ -30,10 +31,15 @@ def _load(name):
         return None
 
 
+def _picture(item):
+    """Name of the picture of `item` (the two reactors share one)."""
+    return story_items.SPRITES.get(item, item)
+
+
 def frames(item):
     """The cells of the falling sprite of `item` (a list of Surfaces; [] if the picture is missing)."""
     if item not in _frames:
-        strip = _load(item + ".png")
+        strip = _load(_picture(item) + ".png")
         out = []
         if strip is not None:
             w = strip.get_width() // FRAMES
@@ -46,7 +52,7 @@ def icon(item, height=None, width=None):
     """The picture of `item` for menus and the HUD, shrunk to fit `height` and `width` pixels (None: as it is)."""
     key = (item, height, width)
     if key not in _icons:
-        img = _load(item + "_icon.png")
+        img = _load(_picture(item) + "_icon.png")
         if img is not None and (height or width):
             k = min((height or 10 ** 6) / img.get_height(), (width or 10 ** 6) / img.get_width())
             if k != 1.0:
