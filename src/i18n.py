@@ -3174,6 +3174,7 @@ _ADVENTURE_TEXTS = {
     "story_scene_sortie_t": ("Première sortie : les oiseaux bleus", "First sortie: the blue birds"),
     "story_scene_best2_t": ("Bestiaire : les oiseaux kaki", "Bestiary: the khaki birds"),
     "story_scene_best3_t": ("Bestiaire : les gargouilles", "Bestiary: the gargoyles"),
+    "story_scene_best4_t": ("Bestiaire : les gargouilles sombres", "Bestiary: the dark gargoyles"),
     "story_scene_paint_1_t": ("Peinture I : l'atelier de Wallems", "Paint I: Wallems' workshop"),
     "story_scene_bar_t": ("Bar de la station Phobos", "Phobos station bar"),
     "story_scene_door": ("A/Entrée  jouer (Add-On)   Haut / Bas  vitesse   B/Échap  passer",
@@ -3331,6 +3332,11 @@ _INTRO_FR["story_scene_best3"] = (
     'Les kakis ne sont pas les seuls à rôder. Plus loin, dans les anneaux de Saturne, les capteurs relèvent une signature que je ne reconnais pas. Plus massive, plus lente, et d’une froideur étrange. Ce ne sont plus des oiseaux. Les rares survivants parlent de gargouilles, à cause de leur carcasse de métal sombre, hérissée de plaques, et de ces yeux rouges qui s’allument sans un bruit, au fond d’un masque de pierre et d’acier.\n\n'
     'Les bleus plongent en ligne, les kakis arrivent en grappes. Les gargouilles, elles, ne forment rien. Elles dérivent seules entre les blocs de glace, patientes, puis fondent sur la première lueur de moteur qu’elles croisent. Leurs ailes encaissent les tirs comme un blindage, et si l’on tarde à les abattre, elles repoussent. Ce que le feu a arraché, la machine le reconstruit.\n\n'
     'Alors il faudra frapper vite, et frapper juste. Je sais ce que je risque, à tourner dans leurs anneaux avec un vaisseau qui tient à peine en l’air. Mais chaque gargouille tombée remplira une page de plus du Bestiaire, et m’apprendra comment venir à bout des suivantes. Si l’ancrage quantique fait ce que Kamarasov a promis, je reviendrai avec de quoi les faire plier. Sinon…'
+)
+_INTRO_FR["story_scene_best4"] = (
+    'Les gargouilles ne sont pas les dernières. Bien au-delà de Saturne, là où le Soleil n’est plus qu’une étoile parmi d’autres, devant la pâle géante de glace d’Uranus, les relevés signalent des échos plus nombreux, plus vifs, presque invisibles. Ce sont encore des gargouilles, mais d’un violet si profond qu’il en paraît noir, un violet qui boit la lumière et ne laisse rien voir de leur carcasse. Seuls leurs yeux rouges les trahissent, deux braises fixes qui s’approchent bien plus vite qu’elles ne le devraient.\n\n'
+    'Les survivants n’aiment pas en parler. Ceux qui l’ont fait disent qu’elles chassent en meute, qu’elles frappent avant même qu’on les ait vues, et que leurs ailes, quand elles se déploient, avalent jusqu’à la dernière lueur de la géante de glace. Certains jurent qu’elles repoussent plus vite que la gargouille. D’autres ne jurent plus de rien.\n\n'
+    'Je ne sais pas si le NX01 est fait pour ça. Mais le Bestiaire n’aura de valeur que s’il est complet, et il ne le sera pas tant que cette page restera blanche. Alors j’y vais, avec la peur au ventre et le doigt sur la détente. Si l’ancrage quantique tient sa promesse, je reviendrai avec ce qu’il manque. Sinon, au moins, je n’aurai pas eu à le raconter.'
 )
 _INTRO_FR["story_scene_paint_1"] = (
     'L’atelier clandestin du vieux Wallems, creusé dans le flanc de l’astéroïde 434-Hungaria, tourne encore. Malgré l’invasion. Malgré les patrouilles. On y voit toujours des coques posées sur tréteaux, des bidons ouverts, des masques penchés sur le métal…\n\n'

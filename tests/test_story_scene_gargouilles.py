@@ -118,12 +118,12 @@ def test_the_scenes_of_the_other_hunts_do_not_stand_in_for_this_one():
     assert hub.screen == "intro" and hub.scene_id == ID
 
 
-def test_the_next_hunt_has_no_scene_of_its_own_yet():
+def test_a_mission_without_a_scene_flies_straight_away():
     hub = _hub()
     hub.cheat_unlock = True
-    hub.map_index = [m["id"] for m in hub.missions()].index("best_s4")
+    hub.map_index = [m["id"] for m in hub.missions()].index("dome_2")
     spec = hub.confirm()
-    assert isinstance(spec, dict) and spec["id"] == "best_s4" and hub.screen == "hub"
+    assert isinstance(spec, dict) and spec["id"] == "dome_2" and hub.screen == "hub"
 
 
 # ------------------------------------------------------------------ the journal

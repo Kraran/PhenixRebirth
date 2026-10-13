@@ -119,9 +119,9 @@ def test_the_scene_of_the_first_sortie_does_not_stand_in_for_this_one():
 def test_the_other_hunts_do_not_show_this_scene():
     hub = _hub()
     hub.cheat_unlock = True
-    hub.map_index = [m["id"] for m in hub.missions()].index("best_s4")
+    hub.map_index = [m["id"] for m in hub.missions()].index("dome_2")
     spec = hub.confirm()
-    assert isinstance(spec, dict) and spec["id"] == "best_s4" and hub.screen == "hub"
+    assert isinstance(spec, dict) and spec["id"] == "dome_2" and hub.screen == "hub"
 
 
 # ------------------------------------------------------------------ the journal
