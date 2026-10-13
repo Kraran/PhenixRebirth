@@ -71,7 +71,7 @@ def test_the_picture_is_the_one_given():
 
 
 def test_the_scenes_come_in_the_order_of_the_story():
-    assert list(ss.SCENES) == [ID, "best_s2", "best_s3", "best_s4", "dome_1", "paint_1"]
+    assert list(ss.SCENES) == [ID, "best_s2", "best_s3", "best_s4", "dome_1", "best_boss", "paint_1"]
     st = ss.create_slot(1, "A", "normal")
     ss.mark_scene_seen(st, "paint_1")
     ss.mark_scene_seen(st, ID)

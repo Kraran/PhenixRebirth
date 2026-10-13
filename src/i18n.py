@@ -3175,6 +3175,7 @@ _ADVENTURE_TEXTS = {
     "story_scene_best2_t": ("Bestiaire : les oiseaux kaki", "Bestiary: the khaki birds"),
     "story_scene_best3_t": ("Bestiaire : les gargouilles", "Bestiary: the gargoyles"),
     "story_scene_best4_t": ("Bestiaire : les gargouilles sombres", "Bestiary: the dark gargoyles"),
+    "story_scene_bestboss_t": ("Bestiaire : le commandant avioïde", "Bestiary: the Avioid commander"),
     "story_scene_paint_1_t": ("Peinture I : l'atelier de Wallems", "Paint I: Wallems' workshop"),
     "story_scene_bar_t": ("Bar de la station Phobos", "Phobos station bar"),
     "story_scene_door": ("A/Entrée  jouer (Add-On)   Haut / Bas  vitesse   B/Échap  passer",
@@ -3337,6 +3338,11 @@ _INTRO_FR["story_scene_best4"] = (
     'Les gargouilles ne sont pas les dernières. Bien au-delà de Saturne, là où le Soleil n’est plus qu’une étoile parmi d’autres, devant la pâle géante de glace d’Uranus, les relevés signalent des échos plus nombreux, plus vifs, presque invisibles. Ce sont encore des gargouilles, mais d’un violet si profond qu’il en paraît noir, un violet qui boit la lumière et ne laisse rien voir de leur carcasse. Seuls leurs yeux rouges les trahissent, deux braises fixes qui s’approchent bien plus vite qu’elles ne le devraient.\n\n'
     'Les survivants n’aiment pas en parler. Ceux qui l’ont fait disent qu’elles chassent en meute, qu’elles frappent avant même qu’on les ait vues, et que leurs ailes, quand elles se déploient, avalent jusqu’à la dernière lueur de la géante de glace. Certains jurent qu’elles repoussent plus vite que la gargouille. D’autres ne jurent plus de rien.\n\n'
     'Je ne sais pas si le NX01 est fait pour ça. Mais le Bestiaire n’aura de valeur que s’il est complet, et il ne le sera pas tant que cette page restera blanche. Alors j’y vais, avec la peur au ventre et le doigt sur la détente. Si l’ancrage quantique tient sa promesse, je reviendrai avec ce qu’il manque. Sinon, au moins, je n’aurai pas eu à le raconter.'
+)
+_INTRO_FR["story_scene_bestboss"] = (
+    'Il reste une page du Bestiaire que je n’ai pas osé ouvrir. Tout au bout de l’espace connu, en orbite de Neptune, au-dessus de tempêtes bleues qui s’enroulent sur elles-mêmes depuis des millions d’années, les relevés ne signalent plus des meutes mais un seul écho, immense et immobile. Une soucoupe noire, craquelée comme une vieille cuirasse, ceinte de feux rouges qui pulsent lentement. Au sommet de son dôme, derrière une baie obscure, on devine une créature tentaculaire que personne n’a pu approcher sans y laisser la vie.\n\n'
+    'C’est lui qui commande : le cerveau télépathique, le centre de l’intelligence collective des Avioïdes. Des gargouilles, vertes et sombres, tournent autour de la soucoupe sans jamais s’en éloigner. Terré en son cœur, derrière le blindage, il n’apparaît que lorsque la voie est dégagée, et il suffit alors d’un seul tir. Un seul. Encore faut-il l’atteindre. Nous en avons déjà abattu un. Un autre a pris sa place, plus coriace, puis un autre après lui.\n\n'
+    'Je ne sais pas si l’on peut vraiment vaincre une chose pareille. Mais chaque fois qu’il tombera, je pourrai écrire une ligne de plus, et chaque ligne rendra la suivante moins incertaine. Alors j’y vais. Si l’ancrage quantique tient bon, je lui dirai ce que je pense de son élevage. Sinon, ce sera au prochain pilote de remplir la dernière page.'
 )
 _INTRO_FR["story_scene_paint_1"] = (
     'L’atelier clandestin du vieux Wallems, creusé dans le flanc de l’astéroïde 434-Hungaria, tourne encore. Malgré l’invasion. Malgré les patrouilles. On y voit toujours des coques posées sur tréteaux, des bidons ouverts, des masques penchés sur le métal…\n\n'
