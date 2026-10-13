@@ -3197,17 +3197,19 @@ _ADVENTURE_TEXTS = {
                         "Fully protects the ship against electric discharges."),
     # the two-dimensional impulse reactors: one per hull, never used up (BONUS missions)
     "item_reactor_shield_name": ("Réacteur 2D (Shield)", "2D Reactor (Shield)"),
-    "item_reactor_shield_effect": ("Vol haut / bas, Shield", "Up / down flight, Shield"),
+    "item_reactor_shield_effect": ("Vol haut / bas", "Up / down flight"),
     "item_reactor_shield_desc": ("Réacteur à impulsion bidimensionnelle, pour le Shield uniquement : il vole aussi "
                                  "vers le haut et vers le bas, dans le tiers inférieur de l'écran. Définitif.",
                                  "Two-dimensional impulse reactor, for the Shield only: it also flies up and down "
                                  "in the lower third of the screen. Permanent."),
     "item_reactor_phenix_name": ("Réacteur 2D (Phenix)", "2D Reactor (Phenix)"),
-    "item_reactor_phenix_effect": ("Vol haut / bas, Phenix", "Up / down flight, Phenix"),
+    "item_reactor_phenix_effect": ("Vol haut / bas", "Up / down flight"),
     "item_reactor_phenix_desc": ("Réacteur à impulsion bidimensionnelle, pour le Phenix uniquement : il vole aussi "
                                  "vers le haut et vers le bas, dans le tiers inférieur de l'écran. Définitif.",
                                  "Two-dimensional impulse reactor, for the Phenix only: it also flies up and down "
                                  "in the lower third of the screen. Permanent."),
+    "story_item_single": ("USAGE UNIQUE", "SINGLE USE"),
+    "story_item_permanent": ("PERMANENT", "PERMANENT"),
     "story_item_installed": ("INSTALLÉ", "INSTALLED"),
     "story_item_caught": ("OBJET RÉCUPÉRÉ : {name}", "ITEM CAUGHT: {name}"),
     "story_item_found": ("Nouvel objet au hangar : {name}", "New item in the hangar: {name}"),

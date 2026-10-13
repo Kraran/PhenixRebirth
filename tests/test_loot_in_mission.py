@@ -723,3 +723,77 @@ def test_a_paint_mission_uses_the_installed_items_up(run):
     g._end_adventure(True)
     assert si.status(g.story.state, "tesla") == "used"
     assert si.status(g.story.state, "hyperion") == "found"
+
+
+# ---------------------------------------------------------------- the hangar rows turn and say how long the item lasts
+def _row_picture(g, hub, index, t):
+    """The picture area of the row number `index` of the shop (as listed) with the hub clock at `t`."""
+    hub.anim_t = t
+    surf = _hub_picture(g, hub)
+    box = pygame.Rect(70, 308, BASE_WIDTH - 140, 328)
+    y = box.y + 46 + 40 * (index - max(0, len(hub.shop_rows()) - 6)) if len(hub.shop_rows()) > 6 else box.y + 46 + 40 * index
+    area = pygame.Rect(box.x + 12 + 30, y, 40, 38)
+    return pygame.image.tobytes(surf.subsurface(area), "RGB")
+
+
+def test_the_item_pictures_in_the_hangar_turn_with_the_clock(run):
+    g = run.game
+    hub = _hangar(found=("tesla",), credits=0)
+    last = len(hub.shop_rows()) - 1
+    pictures = {_row_picture(g, hub, last, t) for t in (0.0, 0.13, 0.26, 0.5, 1.0, 2.0)}
+    assert len(pictures) >= 4                                   # a different cell as the time goes by
+    assert _row_picture(g, hub, last, 0.0) == _row_picture(g, hub, last, 0.0)
+    assert _row_picture(g, hub, last, 0.0) == _row_picture(g, hub, last, loot.FRAMES / loot.ANIM_FPS)      # one loop
+
+
+def test_the_shop_frame_is_the_sprite_cell_shrunk_to_the_row(run):
+    for item in si.ITEM_IDS:
+        a, b = loot.shop_frame(item, 0.0, 34), loot.shop_frame(item, 0.5, 34)
+        assert a.get_height() <= 34 and a.get_width() <= 40 and max(a.get_size()) >= 30
+        assert pygame.image.tobytes(a, "RGBA") != pygame.image.tobytes(b, "RGBA")
+        assert loot.shop_frame(item, 0.0, 34) is a                # cached
+    assert loot.shop_frame("tesla", -3.0, 34) is loot.shop_frame("tesla", 0.0, 34)
+
+
+def test_the_shop_clock_runs_in_the_hub(run):
+    hub = _hangar(found=("tesla",))
+    t0 = hub.anim_t
+    hub.update(0.1)
+    hub.update(0.1)
+    assert hub.anim_t == pytest.approx(t0 + 0.2)
+
+
+def _texts(monkeypatch, g, hub):
+    import story
+    seen = []
+    real = story._text
+
+    def spy(surface, font, text, *a, **k):
+        seen.append(text)
+        return real(surface, font, text, *a, **k)
+    monkeypatch.setattr(story, "_text", spy)
+    _hub_picture(g, hub)
+    return seen
+
+
+def test_each_row_says_single_use_or_permanent(run, monkeypatch):
+    g = run.game
+    from i18n import set_lang, t
+    set_lang("fr")
+    hub = _hangar(found=("tesla", "reactor_shield"), credits=9000)
+    hub.shop_index = len(hub.shop_rows()) - 1                   # (both rows are in the window of six)
+    seen = _texts(monkeypatch, g, hub)
+    assert seen.count("USAGE UNIQUE") == 1 and seen.count("PERMANENT") == 1
+    after = lambda text: seen[seen.index(text) + 1]                # the tag is written right after the effect of its row
+    assert after("Immunité électrique") == "USAGE UNIQUE"          # Tesla Seal
+    assert after("Vol haut / bas") == "PERMANENT"                  # the Shield reactor
+    set_lang("en")
+    seen = _texts(monkeypatch, g, hub)
+    assert "SINGLE USE" in seen and "PERMANENT" in seen
+    set_lang("fr")
+
+
+def test_only_the_reactors_are_permanent():
+    assert [i for i in si.ITEM_IDS if si.permanent(i)] == ["reactor_shield", "reactor_phenix"]
+    assert not any(si.permanent(i) for i in si.RANDOM_IDS)
+    assert not si.permanent("nothing")

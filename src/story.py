@@ -1573,12 +1573,16 @@ class StoryHub:
             extra = self._shop_extra(sid, cost, locked)
             if item:
                 _text(surface, small, mark.strip(), col, row.centery, left=row.x + 8)
-                pic = loot.icon(item, 30, 40)
+                pic = loot.shop_frame(item, self.anim_t, 34)          # it turns, like when it falls in a mission
                 if pic is not None:
                     surface.blit(pic, (row.x + 30 + (40 - pic.get_width()) // 2, row.centery - pic.get_height() // 2))
                 _text(surface, small, t(label), col, row.centery, left=row.x + 80)
                 _text(surface, small, t("item_%s_effect" % item), col if locked else (150, 195, 235),
                       row.centery, left=row.x + 400)
+                perm = story_items.permanent(item)
+                _text(surface, small, t("story_item_permanent" if perm else "story_item_single"),
+                      col if locked else ((130, 220, 150) if perm else (235, 175, 110)),
+                      row.centery, right=row.right - 180)
             else:
                 _text(surface, small, f"{mark}{t(label)}", col, row.centery, left=row.x + 8)
             _text(surface, small, extra, col, row.centery, right=row.right - 12)
