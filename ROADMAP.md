@@ -9,6 +9,7 @@ Current release: **v1.4.5**
   loop over the screen, bomb the ship (they shoot a lot, more and more) and leave. The birds still alive when their chain leaves join
   the next wave, which is bigger and deadlier; the fourth and last wave keeps coming back until every bird is destroyed or the ship
   is. Failure rules are the usual ones (Normal: 5 % lost, can be tried again; Veteran: the pilot falls)
+- Adventure, BONUS mission: almost twice as many birds in the waves (11 / 11 / 14 / 14 new birds instead of 6 / 6 / 8 / 8, 50 in all; the survivors still come on top). Each bird shoots a little less often (4.0 / 3.5 / 3.0 / 2.6 s between two shots instead of 3.2 to 2.1) and up to 44 shots can be in the sky (34 before), so the sky is fuller without being twice as deadly
 - Adventure: winning the BONUS mission gives the two-dimensional impulse reactor for the rest of the adventure: in every mission, with
   both hulls, the ship also flies up and down the lower third of the screen (arrow keys up / down, left stick or d-pad up / down;
   Z / S in coop keyboard 1). Saved in the save (`vertical_thrust` flag); the arcade game does not change

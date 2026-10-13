@@ -21,7 +21,7 @@ from settings import BASE_WIDTH, BASE_HEIGHT
 from enemy import Enemy, EnemyBullet
 
 WAVES = 4                                  # the waves of the mission
-FRESH = (6, 6, 8, 8)                       # new birds of each wave (the survivors of the one before come on top)
+FRESH = (11, 11, 14, 14)                     # new birds of each wave (the survivors of the one before come on top)
 CHAIN_MAX = 8                              # birds in one chain; more than that makes another chain
 CHAIN_GAP = 58.0                           # distance between two birds of a chain, along the path (pixels)
 BASE_SPEED = 330.0                         # pixels per second along the path, before the level speed
@@ -29,10 +29,10 @@ WAVE_SPEEDUP = 0.07                        # every wave goes a little faster
 START_DELAY = 1.6                          # seconds before the first wave comes in
 WAVE_PAUSE = 1.1                           # seconds of calm between the end of a wave and the next
 CHAIN_STAGGER = 1.7                        # a wave with more than two chains sends them one pair after the other
-FIRE_MEAN = (3.2, 2.8, 2.4, 2.1)           # seconds between two shots of one bird, by wave (they shoot a lot)
+FIRE_MEAN = (4.0, 3.5, 3.0, 2.6)           # seconds between two shots of one bird, by wave (they shoot a lot)
 FIRE_NEAR = 150                            # a bird above the ship (this close in x) shoots faster
 FIRE_NEAR_BOOST = 1.8
-MAX_BULLETS = 34
+MAX_BULLETS = 44
 SOUND_GAP = 0.07                           # seconds between two shot sounds (a wave would saturate the mixer)
 BANK_MAX = 70.0                            # degrees the bird leans into its turns
 
