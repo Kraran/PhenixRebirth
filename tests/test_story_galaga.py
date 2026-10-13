@@ -424,12 +424,17 @@ def test_the_first_wave_mixes_blue_and_khaki_birds_in_two_chains_from_both_sides
     _step(f, galaga.START_DELAY + 0.1)
     assert {e.stage for e in f.enemies} == {1, 2}                                # blue and khaki
     assert all(isinstance(e, GalagaBird) for e in f.enemies)
-    assert len(f.chains) == 1                                                    # six birds: one chain
-    f2 = _form(fresh=(10, 6, 8, 8))
-    _step(f2, galaga.START_DELAY + 0.1)
-    assert len(f2.chains) == 2
-    sides = {c.path.at(0)[0] < 0 for c in f2.chains}
+    assert len(f.chains) == 2 and galaga.FRESH[0] > galaga.CHAIN_MAX             # eleven birds: two chains
+    sides = {c.path.at(0)[0] < 0 for c in f.chains}
     assert sides == {True, False}                                                # one comes from each side
+    small = _form(fresh=(6, 6, 8, 8))
+    _step(small, galaga.START_DELAY + 0.1)
+    assert len(small.chains) == 1                                                # six birds: one chain
+
+
+def test_the_waves_are_almost_twice_as_big_as_the_first_version():
+    assert sum(galaga.FRESH) >= 48 and len(galaga.FRESH) == galaga.WAVES == 4    # was 6 + 6 + 8 + 8 = 28
+    assert list(galaga.FRESH) == sorted(galaga.FRESH)                            # never smaller than the one before
 
 
 def test_the_birds_of_a_chain_follow_the_same_path_one_behind_the_other():
@@ -453,20 +458,20 @@ def test_a_wave_with_no_shots_fired_leaves_and_its_birds_wait_for_the_next_one()
     birds = list(f.enemies)
     _until(lambda: not f.chains, f, step=0.5)
     assert f.enemies == [] and sorted(map(id, f.carry)) == sorted(map(id, birds))     # nobody was lost on the way
-    assert f.remaining() == 6 + 6 + 8 + 8 and not f.all_dead()
+    assert f.remaining() == 28 and not f.all_dead()
 
 
 def test_the_survivors_join_the_next_wave_which_gets_bigger():
     f = _form()
     _step(f, galaga.START_DELAY + 0.1)
-    assert len(f.enemies) == 6
+    assert len(f.enemies) == galaga.FRESH[0]
     _kill(f, f.enemies[:2])                                                      # two are shot down
     survivors = {id(e) for e in _alive(f)}
-    assert len(survivors) == 4
+    assert len(survivors) == galaga.FRESH[0] - 2
     _until(lambda: f.wave == 2, f, step=0.25)
     assert f.wave == 2
     assert survivors <= {id(e) for e in f.enemies}                               # the same birds come back...
-    assert len(_alive(f)) == 4 + galaga.FRESH[1]                                 # ...with the new ones
+    assert len(_alive(f)) == galaga.FRESH[0] - 2 + galaga.FRESH[1]                               # ...with the new ones
     n2 = len(_alive(f))
     _kill(f, _alive(f)[:3])
     _until(lambda: f.wave == 3, f, step=0.25)
