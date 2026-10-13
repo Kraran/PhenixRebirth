@@ -303,6 +303,59 @@ def test_without_the_reactor_the_ship_stays_on_its_line():
     assert p.y == y0
 
 
+def test_the_long_jets_burn_while_the_reactor_climbs():
+    """Going up with the reactor uses the long jets of the flight up a stage (`engine_burst`), and they die back after."""
+    p = _ship()
+    p.speed = 100.0                                                            # slow, so that the top of the range is far
+    p.y = float(PLAYER_VERTICAL_BOTTOM)
+    assert p.engine_burst == 0.0 and p.climbing is False
+    for _ in range(6):
+        p.update(DT, _Keys(pygame.K_UP))
+    assert p.climbing is True and 0.3 < p.engine_burst <= 1.0
+    for _ in range(14):
+        p.update(DT, _Keys(pygame.K_UP))
+    assert p.engine_burst == 1.0                                               # the full long jets
+    p.update(DT, _Keys())                                                      # the key is let go: the jets come back
+    assert p.climbing is False and 0.5 < p.engine_burst < 1.0
+    for _ in range(60):
+        p.update(DT, _Keys())
+    assert p.engine_burst == 0.0
+
+
+def test_the_long_jets_do_not_burn_going_down_or_across_or_without_the_reactor():
+    p = _ship()
+    p.y = PLAYER_VERTICAL_TOP + 40.0
+    for _ in range(20):
+        p.update(DT, _Keys(pygame.K_DOWN))
+    assert p.engine_burst == 0.0 and p.climbing is False
+    for _ in range(20):
+        p.update(DT, _Keys(pygame.K_LEFT))
+    assert p.engine_burst == 0.0
+    q = _ship(vertical=False)
+    for _ in range(20):
+        q.update(DT, _Keys(pygame.K_UP))
+    assert q.engine_burst == 0.0 and q.climbing is False                       # no reactor: the ship does not climb
+
+
+def test_the_jets_do_not_burn_when_the_ship_is_stopped_at_the_top_of_its_range():
+    p = _ship()
+    p.y = float(PLAYER_VERTICAL_TOP)
+    for _ in range(20):
+        p.update(DT, _Keys(pygame.K_UP))
+    assert p.y == PLAYER_VERTICAL_TOP and p.climbing is False and p.engine_burst == 0.0
+
+
+def test_the_phenix_climbs_with_the_long_jets_too():
+    p = Player(640, BASE_HEIGHT - 95, ship_id="phoenix")
+    p.input_scheme = "solo"
+    p.vertical_range = (PLAYER_VERTICAL_TOP, PLAYER_VERTICAL_BOTTOM)
+    p.speed = 100.0
+    p.y = float(PLAYER_VERTICAL_BOTTOM)
+    for _ in range(20):
+        p.update(DT, _Keys(pygame.K_UP))
+    assert p.engine_burst == 1.0
+
+
 def test_up_and_down_move_the_ship_inside_the_range():
     p = _ship()
     y0 = p.y

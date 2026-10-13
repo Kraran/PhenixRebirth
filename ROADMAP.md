@@ -22,6 +22,7 @@ Current release: **v1.4.5**
   a half times as often (`PHENIX_FIRE_MULT`; up to 66 shots in the sky). Its reactor, **Réacteur 2D (Phenix), 4000 points**, is sold
   with the Phenix hull selected and installed on the Phenix only. The two missions are independent. The title, the HUD title, the
   item name and its text say "(Shield)" or "(Phenix)"
+- Adventure, reactor: while the ship climbs with the two-dimensional impulse reactor (key / stick up) the jets are the long ones of the flight up to the next stage (`Player.climbing`, `boost_engines`); they grow while it climbs and die back when it stops, goes down or across, or reaches the top of its range. Both hulls
 - Adventure, Veteran: when the ship dies, the normal GAME OVER of the game is played (explosion, GAME OVER card, announcer voice,
   pad rumble) before the slot list where the save is now a memorial. The fall is written into the save at the moment of death,
   so closing the game during the card does not save the pilot. Normal and Novice are unchanged (quantum anchor return)
