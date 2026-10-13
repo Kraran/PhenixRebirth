@@ -69,7 +69,7 @@ def test_the_picture_is_the_one_given():
 
 
 def test_the_two_scenes_are_independent():
-    assert list(ss.SCENES) == ["ch1_sortie", "best_s2", "best_s3", "dome_1", ID]
+    assert list(ss.SCENES) == ["ch1_sortie", "best_s2", "best_s3", "best_s4", "dome_1", ID]
     st = ss.create_slot(1, "A", "normal")
     ss.mark_scene_seen(st, ID)
     assert ss.scene_seen(st, ID) and not ss.scene_seen(st, "dome_1")
