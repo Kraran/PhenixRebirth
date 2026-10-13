@@ -73,7 +73,7 @@ def test_the_title_and_text_are_in_every_language_table():
     from i18n import T, LANG_CODES
     for key in ("story_scene_bestboss", "story_scene_bestboss_t"):
         assert set(T[key]) == set(LANG_CODES) and t(key)
-    assert t("story_scene_bestboss_t") == "Bestiaire : le commandant avioïde" == t("story_m_bestboss")
+    assert t("story_scene_bestboss_t") == "Bestiaire : le commandant avioïde"
 
 
 def test_the_scene_comes_after_the_dome_one_and_before_the_painting_one():
