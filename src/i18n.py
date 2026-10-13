@@ -3367,7 +3367,7 @@ _ADVENTURE_TEXTS.update({
                            "Display, sound, music, language and controls. The settings are for the whole game."),
     "story_door_jukebox": ("Réécouter les musiques du jeu et revoir la vidéo d'introduction.",
                            "Listen to the music of the game again and watch the introduction video."),
-    "story_door_addon_t": ("Bar de la station Phobos", "Phobos station bar"),
+    "story_door_addon_t": ("BAR DE LA STATION PHOBOS", "PHOBOS STATION BAR"),
     "story_door_addon": ("Le Dernier Rempart et ses bornes d’arcade : le menu Add-On, pour choisir un jeu et lancer la partie.",
                          "The Last Bulwark and its arcade cabinets: the Add-On menu, to pick a game and start playing."),
     "story_door_credits": ("Les crédits du jeu, qui défilent à l'écran.", "The credits of the game, scrolling up the screen."),

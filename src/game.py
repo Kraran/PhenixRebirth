@@ -381,10 +381,16 @@ class Game:
     def _story_door_tick(self):
         """Every frame: when the screen opened from the Adventure has been left for another one, the Adventure is
         back on the Extras tab, on the paragraph it was opened from."""
+        story = getattr(self, "story", None)
+        if (story is not None and getattr(self, "menu_screen", "") == "story_hub"
+                and not getattr(self, "started", False) and not getattr(self, "fade_phase", None)):
+            req = story.take_door_request()
+            if req:
+                self._story_scene_door(req["door"])      # (B / Esc on the Phobos bar scene)
+                return
         door = getattr(self, "story_door", None)
         if not door:
             return
-        story = getattr(self, "story", None)
         if (getattr(self, "started", False) or getattr(self, "attract_mode", False) or story is None
                 or getattr(self, "menu_screen", "") == "story_hub"):
             self.story_door = None

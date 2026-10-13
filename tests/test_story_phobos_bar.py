@@ -32,6 +32,14 @@ def _hub(addon=True, seen=False, intro=True):
     return hub
 
 
+def _open_bar(hub):
+    """A on the Phobos bar paragraph of the Extras tab."""
+    hub.screen = "hub"
+    hub.pane = "extras"
+    hub.extras_index = len(DOORS)
+    return hub.confirm()
+
+
 def _wait(hub, seconds=1.0):
     for _ in range(int(seconds / 0.25) + 1):
         hub.update(0.25)
@@ -51,6 +59,7 @@ def test_the_scene_has_a_picture_a_clip_a_title_and_the_text():
     assert os.path.getsize(ss.clip_path("bar_phobos")) > 50000
     assert scene["door"] == "addon" and scene["music"] == "nostalgie_elise"
     assert t(scene["title"]) == "Bar de la station Phobos"
+    assert t("story_door_addon_t") == "BAR DE LA STATION PHOBOS" == t("story_door_addon_t").upper()    # like OPTIONS, JUKEBOX...
     text = t("story_scene_bar")
     assert text.startswith("La porte du sas siffle en s’ouvrant")
     assert text.endswith("Et la partie commence…")
@@ -86,6 +95,7 @@ def test_the_extras_tab_has_the_bar_as_a_fourth_paragraph_only_with_the_addon():
     assert hub.extras_index == 3
     hub.nav_v(1)
     assert hub.extras_index == 3                                      # the last one
+    ss.mark_scene_seen(hub.state, ID)                                 # (the first time its scene comes first)
     assert hub.confirm() == {"door": "addon"}
 
 
@@ -120,7 +130,7 @@ def test_the_tab_draws_four_paragraphs_with_the_bar_title(run):
         _draw(hub, run)
     finally:
         story_mod._text = real
-    assert any(x == "> Bar de la station Phobos" for x in texts)
+    assert any(x == "> BAR DE LA STATION PHOBOS" for x in texts)
     for door in DOORS:
         assert any(t(door) in x for x in texts), door
     assert any(t("story_door_addon").split()[0] in x for x in texts)
@@ -148,64 +158,67 @@ def test_the_four_paragraphs_fit_between_the_title_and_the_tabs(run):
 
 
 # ------------------------------------------------------------------ when it is told
-def test_opening_a_save_the_first_time_with_the_addon_tells_the_scene(run):
+def test_opening_a_save_or_a_new_pilot_never_tells_the_scene_by_itself(run):
     hub = _hub(addon=True)
-    assert hub.screen == "hub" and hub.maybe_bar()
+    assert hub.screen == "hub" and hub.scene_id is None and hub.bar_due()      # nothing started on its own
+    st = ss.create_slot(2, "ACE", "normal")
+    ss.save_state(ss.story_path(2), st)
+    hub.open_slots()
+    hub.sel, hub.col = 1, 0
+    hub.confirm()
+    assert hub.screen == "intro" and hub.scene_id is None                       # the story introduction, as always
+    _wait(hub)
+    for _ in range(len(hub.intro_slides)):
+        hub.confirm()
+        _wait(hub)
+    assert hub.screen == "hub" and hub.scene_id is None                         # and then the hangar, not the bar
+
+
+def test_the_first_a_on_the_bar_paragraph_tells_the_scene(run):
+    hub = _hub(addon=True)
+    assert _open_bar(hub) is None
     assert hub.screen == "intro" and hub.scene_id == ID and hub.scene_door == "addon" and not hub.scene_launch
     assert hub.intro_slides == ss.scene_of(ID)["slides"] and hub.extras_index == 3
+    assert hub.intro_return == "extras"
     _draw(hub, run)
 
 
-def test_the_slot_list_opens_the_scene_with_the_addon_and_not_without_it():
-    st = ss.create_slot(1, "NOVA", "normal")
-    ss.mark_intro_seen(st)
-    ss.save_state(ss.story_path(1), st)
-    for addon, screen in ((False, "hub"), (True, "intro")):
-        hub = StoryHub()
-        hub.addon_ready = lambda: addon
-        hub.open_slots()
-        hub.sel, hub.col = 0, 0
-        hub.confirm()
-        assert hub.screen == screen, addon
+def test_the_other_paragraphs_never_tell_it():
+    hub = _hub(addon=True)
+    for i, door in enumerate(DOORS):
+        hub.pane, hub.extras_index = "extras", i
+        assert hub.confirm() == {"door": door} and hub.screen == "hub"
 
 
-def test_a_save_that_has_seen_it_goes_straight_to_the_hangar():
+def test_once_seen_a_on_the_bar_paragraph_opens_the_addon_menu_at_once():
     hub = _hub(addon=True, seen=True)
-    assert not hub.maybe_bar() and hub.screen == "hub"
+    assert _open_bar(hub) == {"door": "addon"} and hub.screen == "hub"
 
 
-def test_a_new_pilot_reads_the_story_intro_first_then_the_bar():
-    hub = _hub(addon=True, intro=False)
-    hub.start_intro()
-    assert hub.scene_id is None
-    _wait(hub)
-    for _ in range(len(hub.intro_slides)):
-        assert hub.confirm() is None                                   # slide after slide, nothing else yet
-        _wait(hub)
-    assert hub.screen == "intro" and hub.scene_id == ID                # the intro is over: the bar follows
-    assert ss.intro_seen(hub.state)
+def test_it_is_told_again_in_a_save_that_has_not_seen_it():
+    seen = _hub(addon=True, seen=True)
+    assert _open_bar(seen) == {"door": "addon"}
+    fresh = _hub(addon=True)
+    assert _open_bar(fresh) is None and fresh.scene_id == ID
 
 
-def test_a_new_pilot_without_the_addon_gets_no_bar():
-    hub = _hub(addon=False, intro=False)
-    hub.start_intro()
-    for _ in range(len(hub.intro_slides)):
-        _wait(hub)
-        hub.confirm()
-    assert hub.screen == "hub" and hub.scene_id is None
+def test_without_the_addon_the_cursor_cannot_reach_a_bar_and_no_scene_is_told():
+    hub = _hub(addon=False)
+    hub.pane, hub.extras_index = "extras", 5
+    assert hub.confirm() == {"door": "credits"} and hub.screen == "hub" and hub.scene_id is None
 
 
-def test_the_intro_replayed_from_the_journal_does_not_tell_the_bar_when_it_is_seen():
-    hub = _hub(addon=True, seen=True)
+def test_the_intro_replayed_from_the_journal_does_not_tell_the_bar():
+    hub = _hub(addon=True)
     hub.start_intro(back_to="log")
     hub.back()
-    assert hub.screen == "hub" and hub.pane == "log"
+    assert hub.screen == "hub" and hub.pane == "log" and hub.scene_id is None
 
 
 # ------------------------------------------------------------------ how it ends
 def test_the_last_press_asks_for_the_addon_menu_and_locks_the_scene():
     hub = _hub()
-    hub.maybe_bar()
+    _open_bar(hub)
     assert hub.confirm() is None                                       # a press at the very start is ignored
     _wait(hub)
     spec = hub.confirm()
@@ -219,14 +232,14 @@ def test_the_last_press_asks_for_the_addon_menu_and_locks_the_scene():
 
 def test_finishing_the_scene_remembers_it_and_puts_the_tab_on_the_addon():
     hub = _hub()
-    hub.maybe_bar()
+    _open_bar(hub)
     _wait(hub)
     hub.confirm()
     hub.finish_scene("addon")
     assert hub.screen == "hub" and hub.pane == "extras" and hub.extras_index == 3
     assert ss.scene_seen(hub.state, ID) and not hub.scene_closing and hub.scene_door is None
     assert ss.load_state(ss.story_path(1))["flags"][ss.scene_flag(ID)] is True      # saved
-    assert not hub.bar_due() and not hub.maybe_bar()
+    assert not hub.bar_due() and _open_bar(hub) == {"door": "addon"}
 
 
 def test_finishing_a_scene_with_a_door_always_lands_on_that_paragraph_of_the_extras_tab():
@@ -237,17 +250,24 @@ def test_finishing_a_scene_with_a_door_always_lands_on_that_paragraph_of_the_ext
     assert hub.pane == "extras" and hub.extras_index == 3 and hub.screen == "hub"
 
 
-def test_skipping_the_scene_counts_as_seen_and_lands_on_the_addon_paragraph():
+def test_skipping_the_scene_asks_for_the_addon_menu_like_its_end():
     hub = _hub()
-    hub.maybe_bar()
+    _open_bar(hub)
+    assert hub.take_door_request() is None
     hub.back()
+    assert hub.scene_closing and hub.screen == "intro"                  # still on the picture: the game fades to black
+    assert hub.take_door_request() == {"door": "addon", "scene": True}
+    assert hub.take_door_request() is None                              # asked once
+    hub.back()
+    assert hub.take_door_request() is None                              # a second Esc does not ask again
+    hub.finish_scene("addon")
     assert hub.screen == "hub" and hub.pane == "extras" and hub.extras_index == 3
     assert ss.scene_seen(hub.state, ID) and hub.scene_door is None
 
 
 def test_the_last_slide_says_where_it_leads(run):
     hub = _hub()
-    hub.maybe_bar()
+    _open_bar(hub)
     texts = []
     real = story_mod._text
 
@@ -288,7 +308,7 @@ def test_the_journal_lists_the_mission_scenes_before_the_bar():
 def test_the_scene_asks_for_its_theme_low_and_back_to_normal_when_closed():
     hub = _hub()
     assert hub.scene_music() is None
-    hub.maybe_bar()
+    _open_bar(hub)
     assert hub.scene_music() == ("nostalgie_elise", ss.BAR_MUSIC_LEVEL) and ss.BAR_MUSIC_LEVEL < 0.5
     _wait(hub)
     hub.confirm()
@@ -381,7 +401,7 @@ def test_a_title_made_of_two_words_stays_in_italics_across_the_space(run):
 
 def test_the_font_is_upright_again_after_the_text_is_drawn(run):
     hub = _hub()
-    hub.maybe_bar()
+    _open_bar(hub)
     font = run.game.font
     block, height = hub._intro_block(font)
     assert not font.get_italic() and height > 0
@@ -413,6 +433,14 @@ def game(run):
     return g
 
 
+def _game_open_bar(g):
+    """A on the Phobos bar paragraph (the game's own confirm, as the player does it)."""
+    g.story.pane = "extras"
+    g.story.extras_index = 3
+    g.story.screen = "hub"
+    return g.story.confirm() is None and g.story.screen == "intro"
+
+
 def _key(run, key, frames=2):
     pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=key, unicode="", mod=0, scancode=0))
     run.frames(frames)
@@ -420,6 +448,7 @@ def _key(run, key, frames=2):
 
 def test_a_on_the_bar_paragraph_opens_the_addon_menu_and_escape_brings_the_tab_back(game, run):
     g = game
+    ss.mark_scene_seen(g.story.state, ID)                              # (the first time the scene comes first, see below)
     g.story.pane = "extras"
     g.story.extras_index = 3
     _key(run, pygame.K_RETURN)
@@ -435,7 +464,7 @@ def test_a_on_the_bar_paragraph_opens_the_addon_menu_and_escape_brings_the_tab_b
 
 def test_the_scene_ends_with_a_fade_to_black_then_the_addon_menu(game, run):
     g = game
-    assert g.story.maybe_bar()
+    assert _game_open_bar(g)
     run.frames(3)
     g.story.intro_t = 5.0
     g.input_grace = 0
@@ -457,7 +486,7 @@ def test_the_scene_ends_with_a_fade_to_black_then_the_addon_menu(game, run):
 def test_the_scene_music_is_low_and_comes_back_to_normal_in_the_addon_menu(game, run):
     g = game
     snd = g.sounds
-    g.story.maybe_bar()
+    _game_open_bar(g)
     run.frames(240)
     assert snd.current_music_key() == "nostalgie_elise"
     assert snd.music_level() < 0.5
@@ -495,9 +524,41 @@ def test_the_scene_theme_comes_in_slowly_after_a_quick_fade_of_the_menu_one(game
         return real(key, *a, **k)
     g.sounds.play_music = spy
     try:
-        g.story.maybe_bar()
+        _game_open_bar(g)
         run.frames(5)
     finally:
         g.sounds.play_music = real
     scene = [k for key, k in calls if key == "nostalgie_elise"]
     assert scene and scene[0]["fade_in_ms"] >= 2000 and scene[0]["fade_ms"] <= 1000
+
+
+def test_the_first_a_on_the_bar_paragraph_of_the_game_shows_the_scene_not_the_menu(game, run):
+    g = game
+    g.story.pane = "extras"
+    g.story.extras_index = 3
+    _key(run, pygame.K_RETURN)
+    assert g.menu_screen == "story_hub" and g.story.screen == "intro" and g.story.scene_id == ID
+    assert getattr(g, "story_door", None) is None
+    run.frames(30)
+    assert g.menu_screen == "story_hub" and g.story.screen == "intro"
+
+
+def test_escape_on_the_scene_also_fades_to_black_then_opens_the_addon_menu(game, run):
+    g = game
+    g.story.pane = "extras"
+    g.story.extras_index = 3
+    _key(run, pygame.K_RETURN)
+    run.frames(3)
+    _key(run, pygame.K_ESCAPE, frames=2)
+    assert g.story.scene_closing and g.fade_action == "story_scene_door" or g.fade_phase == "out"
+    assert g.story.screen == "intro"
+    run.frames(int(g.FADE_SEC * 60) + 5)
+    assert g.menu_screen == "addon" and g.story_door == "addon" and ss.scene_seen(g.story.state, ID)
+    run.frames(int(g.FADE_SEC * 60) + 30)
+    _key(run, pygame.K_ESCAPE, frames=3)
+    assert g.menu_screen == "story_hub" and g.story.pane == "extras" and g.story.extras_index == 3
+    g.input_grace = 0
+    _key(run, pygame.K_RETURN)
+    g.input_grace = 0
+    run.frames(2)
+    assert g.menu_screen == "addon"                                    # the second time: no scene
