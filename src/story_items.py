@@ -89,6 +89,11 @@ def book(state):
     return current
 
 
+def permanent(item):
+    """True for the reactors (kept for good once installed), False for the four single-use items."""
+    return item in REACTOR_IDS
+
+
 def status(state, item):
     """None (lootable), "found", "installed" or "used"."""
     return book(state)["got"].get(item)

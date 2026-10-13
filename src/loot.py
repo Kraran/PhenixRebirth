@@ -62,6 +62,25 @@ def icon(item, height=None, width=None):
     return _icons[key]
 
 
+_shop_cells = {}
+
+
+def shop_frame(item, t, height=34, width=40):
+    """The picture of `item` for a hangar row at time `t` (seconds): the turning sprite of the mission, shrunk to fit
+    `height` x `width` pixels (the still icon if the sprite is missing)."""
+    cells = frames(item)
+    if not cells:
+        return icon(item, height, width)
+    i = int(max(0.0, t) * ANIM_FPS) % len(cells)
+    key = (item, i, height, width)
+    if key not in _shop_cells:
+        cell = cells[i]
+        k = min(height / max(1, cell.get_height()), width / max(1, cell.get_width()))
+        _shop_cells[key] = pygame.transform.smoothscale(
+            cell, (max(1, round(cell.get_width() * k)), max(1, round(cell.get_height() * k))))
+    return _shop_cells[key]
+
+
 class FallingItem:
     """One item falling from the top of the screen to the bottom, in a straight line."""
 

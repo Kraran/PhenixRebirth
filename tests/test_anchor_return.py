@@ -14,7 +14,7 @@ import pytest
 import story_state as ss
 
 import anchor_fx as ax
-from anchor_fx import AnchorReturn, BLEND_SEC, FADE_SEC, FLASH_COLOUR, FLASH_SEC, SWIRL_SEC, TOTAL_SEC
+from anchor_fx import AnchorReturn, BLEND_SEC, FADE_SEC, FLASH_COLOUR, FLASH_SEC, SKIP_LOCK_SEC, SWIRL_SEC, TOTAL_SEC
 from test_smoke import run  # noqa: F401  (fixture)
 
 SIZE = (1280, 720)
@@ -158,6 +158,7 @@ def test_update_moves_the_time_and_skip_goes_to_the_end_of_the_flash(display):
     fx.update(0.5)
     fx.update(-3.0)                                           # time never goes back
     assert fx.t == pytest.approx(0.5)
+    fx.update(SKIP_LOCK_SEC)                                  # (past the first moment, where skipping is locked)
     fx.skip()
     assert fx.t == pytest.approx(SWIRL_SEC + FLASH_SEC) and fx.phase == "fade"
     fx.t = TOTAL_SEC - 0.1
@@ -452,6 +453,7 @@ def test_keys_do_nothing_during_the_vortex_but_confirm_skips_it(run):
         pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=key, unicode="", mod=0, scancode=0))
     run.frames(3)
     assert g.story.pane == "map" and g.anchor_fx.phase == "swirl"
+    g.anchor_fx.t = SKIP_LOCK_SEC + 0.01                                 # (the lock of the first moment is over)
     pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RETURN, unicode="", mod=0, scancode=0))
     run.frames(1)
     assert g.anchor_fx is not None and g.anchor_fx.phase == "fade"
@@ -519,6 +521,7 @@ def test_the_vortex_takes_the_picture_of_the_ships_and_the_caption_with_it(run):
 
 def test_a_pad_button_skips_it_too(run):
     g, _ = _lose(run)
+    g.anchor_fx.t = SKIP_LOCK_SEC + 0.01
     pygame.event.post(pygame.event.Event(pygame.JOYBUTTONDOWN, button=0, instance_id=0, joy=0))
     run.frames(1)
     assert g.anchor_fx.phase == "fade" and g.started is False
@@ -562,3 +565,40 @@ def test_it_is_not_made_without_numpy(run, monkeypatch):
     monkeypatch.setattr(ax, "np", None)
     g, _ = _lose(run)
     assert g.anchor_fx is None and g.menu_screen == "story_hub" and g.story.pane == "map"
+
+
+# ------------------------------------------------------------------ the fire button hit while dying must not skip it
+def test_skipping_is_locked_for_the_first_moment(display):
+    fx = AnchorReturn(_snapshot())
+    assert 0.3 <= SKIP_LOCK_SEC <= 1.2 and SKIP_LOCK_SEC < SWIRL_SEC          # long enough for a mash, short enough to be fair
+    assert not fx.can_skip
+    fx.skip()
+    assert fx.t == 0.0
+    fx.update(SKIP_LOCK_SEC - 0.01)
+    fx.skip()
+    assert fx.t == pytest.approx(SKIP_LOCK_SEC - 0.01) and not fx.can_skip
+    fx.update(0.02)
+    assert fx.can_skip
+    fx.skip()
+    assert fx.phase == "fade"
+
+
+@pytest.mark.parametrize("key", [pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE, pygame.K_ESCAPE])
+def test_the_fire_and_confirm_keys_pressed_at_once_do_not_skip_the_vortex(run, key):
+    g, _ = _lose(run)
+    assert g.anchor_fx.t < SKIP_LOCK_SEC
+    pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=key, unicode="", mod=0, scancode=0))
+    run.frames(1)
+    assert g.anchor_fx is not None and g.anchor_fx.phase == "swirl" and g.anchor_fx.t < SKIP_LOCK_SEC
+    assert g.started is False and g.adventure is None                       # and the key did nothing else either
+
+
+def test_a_pad_button_pressed_at_once_does_not_skip_the_vortex_but_does_a_moment_later(run):
+    g, _ = _lose(run)
+    pygame.event.post(pygame.event.Event(pygame.JOYBUTTONDOWN, button=0, instance_id=0, joy=0))
+    run.frames(1)
+    assert g.anchor_fx.phase == "swirl"
+    g.anchor_fx.t = SKIP_LOCK_SEC + 0.01
+    pygame.event.post(pygame.event.Event(pygame.JOYBUTTONDOWN, button=0, instance_id=0, joy=0))
+    run.frames(1)
+    assert g.anchor_fx.phase == "fade"

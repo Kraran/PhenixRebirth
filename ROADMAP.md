@@ -23,6 +23,8 @@ Current release: **v1.4.5**
   with the Phenix hull selected and installed on the Phenix only. The two missions are independent. The title, the HUD title, the
   item name and its text say "(Shield)" or "(Phenix)"
 - Adventure, reactor: while the ship climbs with the two-dimensional impulse reactor (key / stick up) the jets are the long ones of the flight up to the next stage (`Player.climbing`, `boost_engines`); they grow while it climbs and die back when it stops, goes down or across, or reaches the top of its range. Both hulls
+- Adventure, hangar: the pictures of the loot items in the workshop rows now turn (the same animation as when they fall in a mission, `loot.shop_frame`, driven by the hub clock), and each row says in colour if the item is "USAGE UNIQUE" (the four loot items: used up by the next mission) or "PERMANENT" (the two reactors)
+- Adventure, quantum anchor return (after a lost mission in Normal / Novice): for the first 0.8 s of the vortex (`SKIP_LOCK_SEC`) the confirm keys (Enter, Space, Esc) and the pad buttons no longer skip it, so the fire button still being hit as the ship dies does not cut the animation short. After that they skip it as before
 - Adventure, Veteran: when the ship dies, the normal GAME OVER of the game is played (explosion, GAME OVER card, announcer voice,
   pad rumble) before the slot list where the save is now a memorial. The fall is written into the save at the moment of death,
   so closing the game during the card does not save the pilot. Normal and Novice are unchanged (quantum anchor return)

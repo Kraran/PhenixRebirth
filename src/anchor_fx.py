@@ -29,6 +29,7 @@ SWIRL_SEC = 1.6              # the picture turns and is drawn into the middle
 FLASH_SEC = 0.30             # the point opens in a flash
 FADE_SEC = 0.90              # the flash fades, the map is back
 TOTAL_SEC = SWIRL_SEC + FLASH_SEC + FADE_SEC
+SKIP_LOCK_SEC = 0.8          # a key or button pressed in this first moment does not skip: it is the fire button still being hit
 BLEND_SEC = 0.15             # at the start the real picture shows through, so nothing jumps
 SHRINK = 3.2                 # the picture is divided in size by exp(SHRINK * progress ** SHRINK_POW) at the end
 SHRINK_POW = 1.8
@@ -106,9 +107,15 @@ class AnchorReturn:
     def update(self, dt):
         self.t += max(0.0, float(dt))
 
+    @property
+    def can_skip(self):
+        """False in the first moment: the pilot who dies is still hitting the fire button, and that must not skip it."""
+        return self.t >= SKIP_LOCK_SEC
+
     def skip(self):
-        """Go on to the end of the flash: the map comes back at once."""
-        self.t = max(self.t, SWIRL_SEC + FLASH_SEC)
+        """Go on to the end of the flash: the map comes back at once (nothing happens in the first SKIP_LOCK_SEC)."""
+        if self.can_skip:
+            self.t = max(self.t, SWIRL_SEC + FLASH_SEC)
 
     # --- the picture ---
     def _layer(self, progress, flash=0.0):
