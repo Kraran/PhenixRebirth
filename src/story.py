@@ -851,6 +851,8 @@ class StoryHub:
             self.toast = t("story_fail_pen").format(pts=res["lost"])
         else:
             self.toast = t("story_fail_none")
+        if res.get("reactor_lost") and not res["fallen"]:
+            self.toast += "   " + t("story_reactor_lost")
         if res.get("loot") and not res["fallen"]:
             self.toast += "   " + t("story_item_found").format(name=t("item_%s_name" % res["loot"]))
         self.pane = "map"

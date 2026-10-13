@@ -3208,6 +3208,8 @@ _ADVENTURE_TEXTS = {
                                  "vers le haut et vers le bas, dans le tiers inférieur de l'écran. Définitif.",
                                  "Two-dimensional impulse reactor, for the Phenix only: it also flies up and down "
                                  "in the lower third of the screen. Permanent."),
+    "story_reactor_lost": ("Réacteur perdu : attrape-le ET finis la mission.",
+                           "Reactor lost: catch it AND finish the mission."),
     "story_item_single": ("USAGE UNIQUE", "SINGLE USE"),
     "story_item_permanent": ("PERMANENT", "PERMANENT"),
     "story_item_installed": ("INSTALLÉ", "INSTALLED"),
@@ -3457,17 +3459,17 @@ _ADVENTURE_TEXTS.update({
     "story_m_bonus2d": ("BONUS : le réacteur à impulsion bidimensionnelle (Shield)",
                         "BONUS: the two-dimensional impulse reactor (Shield)"),
     "story_m_bonus2d_hud": ("BONUS : réacteur 2D (Shield)", "BONUS: 2D reactor (Shield)"),
-    "story_m_bonus2d_b": ("Quatre vagues d'avioïdes de niveau 2. Le réacteur tombe une fois, attrape-le. "
-                          "Raté ? La mission revient.",
-                          "Four waves of level 2 avioids. The reactor falls once: catch it. "
-                          "Missed it? The mission comes back."),
+    "story_m_bonus2d_b": ("Quatre vagues d'avioïdes de niveau 2. Le réacteur tombe une fois : attrape-le ET finis la mission. "
+                          "Sinon, elle revient.",
+                          "Four waves of level 2 avioids. The reactor falls once: catch it AND finish the mission. "
+                          "Otherwise it comes back."),
     "story_m_bonus2dp": ("BONUS : le réacteur à impulsion bidimensionnelle (Phenix)",
                          "BONUS: the two-dimensional impulse reactor (Phenix)"),
     "story_m_bonus2dp_hud": ("BONUS : réacteur 2D (Phenix)", "BONUS: 2D reactor (Phenix)"),
-    "story_m_bonus2dp_b": ("Les mêmes quatre vagues, mais les avioïdes tirent bien plus. Le réacteur tombe une fois, "
-                           "attrape-le. Raté ? La mission revient.",
-                           "The same four waves, but the avioids shoot a lot more. The reactor falls once: catch it. "
-                           "Missed it? The mission comes back."),
+    "story_m_bonus2dp_b": ("Les mêmes vagues, mais les avioïdes tirent bien plus. Le réacteur tombe une fois : attrape-le ET "
+                           "finis la mission. Sinon, elle revient.",
+                           "The same waves, but the avioids shoot a lot more. The reactor falls once: catch it AND finish "
+                           "the mission. Otherwise it comes back."),
     "story_log_bonus2d": ("BONUS — vagues d'avioïdes de niveau 2 repoussées (Shield).",
                           "BONUS — the level 2 avioid waves are beaten (Shield)."),
     "story_log_bonus2dp": ("BONUS — vagues d'avioïdes de niveau 2 repoussées (Phenix).",
