@@ -10,6 +10,8 @@ import pygame
 import addon as mame_addon
 import credits_screen
 import highscores_screen
+import hint_bar
+import menu_ui
 import loot
 from i18n import LANGS, t, t_help
 from settings import BASE_HEIGHT, BASE_WIDTH, COLOR_BG
@@ -229,14 +231,12 @@ def draw_menu_screens(game):
             game._draw_help_page(game.game_surface, 1, BASE_HEIGHT - off)
         else:
             game._draw_help_page(game.game_surface, game.help_page, 0)
-        hint = game._txt(game.font, t("help_return"), (255, 220, 100))
-        game.game_surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 36))
         page_lbl = game._txt(
-            game.font,
+            getattr(game, "menu_font", None) or game.font,
             f"{t_help('help_page')} {int(game.help_page) + 1}/2",
             (140, 140, 180),
         )
-        game.game_surface.blit(page_lbl, (BASE_WIDTH - page_lbl.get_width() - 20, BASE_HEIGHT - 36))
+        hint_bar.draw_for(game, game.game_surface, right=page_lbl)
 
     elif game.menu_screen == "ship_select":
         game._draw_ship_select(game.game_surface)
@@ -264,29 +264,16 @@ def draw_menu_screens(game):
             t("quit"),
         ]
         sub_y = int(getattr(game, "_title_sub_y", 200))
-        sub_h = 22
-        base_y = sub_y + sub_h + 28
-        foot = 80
-        room = max(160, BASE_HEIGHT - foot - base_y)
-        spacing = max(18, min(24, room // max(1, len(options))))
+        sub_h = 33                                           # the subtitle line (game.font)
         menu_font = getattr(game, "menu_font", None) or game.font
-        for i, label in enumerate(options):
-            selected = (i == game.menu_index)
-            disabled = (i == 2) and not mame_addon.addon_ready()
-            if disabled:
-                col = (255, 230, 120) if selected else (90, 90, 105)
-            else:
-                col = (255, 230, 120) if selected else (160, 160, 190)
-            prefix = "> " if selected else "  "
-            surf = game._txt(menu_font, prefix + label, col)
-            game.game_surface.blit(surf, (BASE_WIDTH // 2 - surf.get_width() // 2, base_y + i * spacing))
-
-        if game.gamepad_detected:
-            status = game._txt(game.font, t("gamepad_detected"), (100, 200, 140))
-        else:
-            status = game._txt(game.font, t("gamepad_none"), (180, 140, 120))
-        status_y = min(BASE_HEIGHT - 64, base_y + len(options) * spacing + 6)
-        game.game_surface.blit(status, (BASE_WIDTH // 2 - status.get_width() // 2, status_y))
+        row_h = menu_font.get_linesize()
+        base_y = sub_y + sub_h + 22
+        room = hint_bar.BAND_Y - 26 - base_y                 # down to the help bar, panel margin kept
+        spacing = max(row_h, min(32, room // max(1, len(options))))
+        disabled = () if mame_addon.addon_ready() else (2,)
+        menu_ui.draw_rows(game, game.game_surface, menu_font, options, base_y, spacing, game.menu_index,
+                          disabled=disabled, pad_y=max(1, (spacing - row_h) // 2), min_width=300,
+                          panel_pad=(30, 10))
 
     elif game.menu_screen == "highscores":
         highscores_screen.draw_highscores(game)
@@ -298,16 +285,8 @@ def draw_menu_screens(game):
         credits_screen.draw_credits(game)
 
     elif game.menu_screen == "reset_confirm":
-        hdr = game._txt(game.medium_font, t("reset_hs_title"), (255, 120, 100))
-        game.game_surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 280))
-        warn = game._txt(game.font, t("reset_hs_warn"), (180, 160, 160))
-        game.game_surface.blit(warn, (BASE_WIDTH // 2 - warn.get_width() // 2, 340))
-        for i, label in enumerate([t("yes_u"), t("no_u")]):
-            selected = (i == game.menu_index)
-            col = (255, 230, 120) if selected else (160, 160, 190)
-            prefix = "> " if selected else "  "
-            surf = game._txt(game.medium_font, prefix + label, col)
-            game.game_surface.blit(surf, (BASE_WIDTH // 2 - surf.get_width() // 2, 400 + i * 50))
+        draw_question(game, game.medium_font, t("reset_hs_title"), t("reset_hs_warn"), game.menu_index)
+        hint_bar.draw_for(game, game.game_surface)
 
     elif game.menu_screen == "options":
         # OPTIONS screen
@@ -326,50 +305,37 @@ def draw_menu_screens(game):
         fps_label = t("yes") if game.show_fps else t("no")
         mus_pct = int(round(game.music_volume * 100))
         lang_label = next((n for c, n in LANGS if c == game.language), game.language)
-        lines = game._options_labels()
-        n = max(1, len(lines))
-        top = 128
-        reserved = 96
-        spacing = min(34, max(24, (BASE_HEIGHT - reserved - top) // n))
-        left_x = 48
-        for i, label in enumerate(lines):
-            selected = (i == game.menu_index)
-            col = (255, 230, 120) if selected else (160, 160, 190)
-            prefix = "> " if selected else "  "
-            surf = game._txt(game.font, prefix + label, col)
-            game.game_surface.blit(surf, (left_x, top + i * spacing))
+        draw_option_rows(game, top=128)
         spec = game._options_spec()
         if 0 <= game.menu_index < len(spec):
             game._draw_option_help(spec[game.menu_index])
-        hint = game._txt(game.font, t("opt_hint"), (120, 120, 150))
-        game.game_surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 78))
+
+
+def draw_option_rows(game, top):
+    """The option rows (menu and pause), on their panel, the chosen one in the lit frame."""
+    lines = game._options_labels()
+    font = getattr(game, "menu_font", None) or game.font
+    row_h = font.get_linesize()
+    room = hint_bar.BAND_Y - 24 - top
+    spacing = max(row_h, min(34, room // max(1, len(lines))))
+    menu_ui.draw_rows(game, game.game_surface, font, lines, top, spacing, game.menu_index, left=84,
+                      pad_y=max(1, (spacing - row_h) // 2), min_width=470, pad_x=18, panel_pad=(18, 10))
 
 
 def draw_menu_footer(game):
     """Press-confirm blink, version, controls hint and season decor."""
+    bar = not game.quit_confirm                  # the quit question draws its own bar, over the dimmed menu
     if game.menu_screen == "main":
-        if int(game.title_timer * 2.5) % 2 == 0:
-            press = game._txt(game.font, t("press_confirm"), (255, 220, 100))
-            game.game_surface.blit(press, (BASE_WIDTH // 2 - press.get_width() // 2, BASE_HEIGHT - 70))
         ver = getattr(game, "_ver_surf", None)
         if ver is None:
             vf = pygame.font.SysFont(pygame.font.get_default_font(), 16)
             ver = vf.render("v1.4.5", True, (110, 110, 130))
             game._ver_surf = ver
-        game.game_surface.blit(ver, (BASE_WIDTH - ver.get_width() - 10, BASE_HEIGHT - ver.get_height() - 8))
-
-        if game.input_mode == "gamepad":
-            controls = game._txt(game.font, t("controls_pad"), (140, 140, 180))
-        else:
-            controls = game._txt(game.font, t("controls_kb"), (140, 140, 180))
-        game.game_surface.blit(controls, (BASE_WIDTH // 2 - controls.get_width() // 2, BASE_HEIGHT - 40))
+        if bar:
+            hint_bar.draw_for(game, game.game_surface, right=ver)
         game._draw_season_title(game.game_surface)
-    elif game.menu_screen == "options":
-        if game.input_mode == "gamepad":
-            controls = game._txt(game.font, t("controls_pad"), (140, 140, 180))
-        else:
-            controls = game._txt(game.font, t("controls_kb"), (140, 140, 180))
-        game.game_surface.blit(controls, (BASE_WIDTH // 2 - controls.get_width() // 2, BASE_HEIGHT - 40))
+    elif game.menu_screen == "options" and bar:
+        hint_bar.draw_for(game, game.game_surface)
 
 
 def draw_hs_enter(game):
@@ -400,10 +366,7 @@ def draw_hs_enter(game):
                 (lx, 400), (lx + letter.get_width(), 400), 3
             )
 
-    controls = game._txt(game.font, t("hs_entry_controls"), (140, 140, 180))
-    game.game_surface.blit(controls, (BASE_WIDTH // 2 - controls.get_width() // 2, 480))
-    ok = game._txt(game.font, t("press_confirm"), (255, 220, 100))
-    game.game_surface.blit(ok, (BASE_WIDTH // 2 - ok.get_width() // 2, 540))
+    hint_bar.draw_for(game, game.game_surface)
 
 
 def draw_hs_table(game):
@@ -422,6 +385,7 @@ def draw_hs_table(game):
     entries = game.hs_entries if game.hs_entries else []
     base_y = 160
     score_right = BASE_WIDTH // 2 + 170
+    menu_ui.panel(game.game_surface, pygame.Rect(BASE_WIDTH // 2 - 260, base_y - 14, 520, 15 * 28 + 30))
     for i in range(15):
         rank = i + 1
         if i < len(entries):
@@ -447,8 +411,7 @@ def draw_hs_table(game):
                 "---", None, (100, 100, 120), score_right,
             )
 
-    restart = game._txt(game.font, t("back_to_menu"), (255, 220, 100))
-    game.game_surface.blit(restart, (BASE_WIDTH // 2 - restart.get_width() // 2, BASE_HEIGHT - 50))
+    hint_bar.draw_for(game, game.game_surface)
 
 
 def draw_hotseat_overlays(game):
@@ -475,55 +438,51 @@ def draw_pause(game):
         hdr = game._txt(game.medium_font, t("options"), (255, 180, 255))
         game.game_surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 36))
         if game.menu_screen == "reset_confirm":
-            rh = game._txt(game.medium_font, t("reset_hs_title"), (255, 120, 100))
-            game.game_surface.blit(rh, (BASE_WIDTH // 2 - rh.get_width() // 2, 280))
-            for i, label in enumerate([t("yes_u"), t("no_u")]):
-                selected = (i == game.menu_index)
-                col = (255, 230, 120) if selected else (160, 160, 190)
-                prefix = "> " if selected else "  "
-                surf = game._txt(game.medium_font, prefix + label, col)
-                game.game_surface.blit(surf, (BASE_WIDTH // 2 - surf.get_width() // 2, 360 + i * 50))
+            draw_question(game, game.medium_font, t("reset_hs_title"), t("reset_hs_warn"), game.menu_index)
         else:
-            lines = game._options_labels()
-            n = max(1, len(lines))
-            top = 92
-            reserved = 48
-            spacing = min(32, max(22, (BASE_HEIGHT - reserved - top) // n))
-            left_x = 48
-            for i, label in enumerate(lines):
-                selected = (i == game.menu_index)
-                col = (255, 230, 120) if selected else (160, 160, 190)
-                prefix = "> " if selected else "  "
-                surf = game._txt(game.font, prefix + label, col)
-                game.game_surface.blit(surf, (left_x, top + i * spacing))
+            draw_option_rows(game, top=100)
             spec = game._options_spec()
             if 0 <= game.menu_index < len(spec):
                 game._draw_option_help(spec[game.menu_index], box=(700, 100, 520, 460))
     else:
         title = game._txt(game.big_font, t("pause"), (255, 220, 100))
         game.game_surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 200))
-        for i, label in enumerate([t("resume"), t("options"), t("quit_run")]):
-            selected = (i == game.pause_index)
-            col = (255, 230, 120) if selected else (160, 160, 190)
-            prefix = "> " if selected else "  "
-            surf = game._txt(game.medium_font, prefix + label, col)
-            game.game_surface.blit(surf, (BASE_WIDTH // 2 - surf.get_width() // 2, 300 + i * 55))
+        row_h = game.medium_font.get_linesize()
+        menu_ui.draw_rows(game, game.game_surface, game.medium_font,
+                          [t("resume"), t("options"), t("quit_run")], 300, 55, game.pause_index,
+                          pad_y=(55 - row_h) // 2 - 3, min_width=360, panel_pad=(26, 16))
+    hint_bar.draw_for(game, game.game_surface)
 
 
 def draw_quit_confirm(game):
     """Quit-the-game confirmation (menus)."""
     overlay = game._dim_overlay(180)
     game.game_surface.blit(overlay, (0, 0))
-    title = game._txt(game.big_font, t("quit_game"), (255, 120, 100))
-    game.game_surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 220))
-    q = game._txt(game.medium_font, t("quit_game_q"), (220, 220, 240))
-    game.game_surface.blit(q, (BASE_WIDTH // 2 - q.get_width() // 2, 300))
-    for i, label in enumerate([t("yes_u"), t("no_u")]):
-        selected = (i == game.quit_index)
-        col = (255, 230, 120) if selected else (160, 160, 190)
-        prefix = "> " if selected else "  "
-        surf = game._txt(game.medium_font, prefix + label, col)
-        game.game_surface.blit(surf, (BASE_WIDTH // 2 - surf.get_width() // 2, 360 + i * 50))
+    draw_question(game, game.big_font, t("quit_game"), t("quit_game_q"), game.quit_index)
+    hint_bar.draw_for(game, game.game_surface)
+
+
+def draw_question(game, title_font, title, question, index, title_col=(255, 120, 100)):
+    """A YES / NO question in its own panel, in the middle of the screen (quit the game, erase the scores).
+    YES is the first row, NO the second, as before."""
+    surf = game.game_surface
+    head = game._txt(title_font, title, title_col)
+    ask = game._txt(game.font, question, (220, 220, 240))
+    font = game.medium_font
+    row_h = font.get_linesize()
+    spacing = row_h + 14
+    w = max(520, head.get_width() + 80, ask.get_width() + 80)
+    h = head.get_height() + ask.get_height() + spacing * 2 + 84
+    box = pygame.Rect(0, 0, w, h)
+    box.center = (BASE_WIDTH // 2, BASE_HEIGHT // 2 - 20)
+    menu_ui.panel(surf, box, radius=14, alpha=230)
+    y = box.top + 22
+    surf.blit(head, (BASE_WIDTH // 2 - head.get_width() // 2, y))
+    y += head.get_height() + 6
+    surf.blit(ask, (BASE_WIDTH // 2 - ask.get_width() // 2, y))
+    y += ask.get_height() + 24
+    menu_ui.draw_rows(game, surf, font, [t("yes_u"), t("no_u")], y, spacing, index,
+                      pad_y=6, min_width=160, back_panel=False)
 
 
 def draw_fps_counter(game):

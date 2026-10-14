@@ -72,6 +72,9 @@ import update_idle
 import anchor_fx
 import update_play
 import input_events
+import menu_sfx
+import hint_bar
+import menu_ui
 import draw_frame
 import ach_helpers
 import addon_launch
@@ -559,8 +562,7 @@ class Game:
             img = clip.surface if clip is not None else None
             if img is not None:
                 surface.blit(img, ((BASE_WIDTH - img.get_width()) // 2, 70 + (BASE_HEIGHT - 80 - img.get_height()) // 2))
-            hint = self._txt(self.font, t("juke_hint_video"), (255, 220, 100))
-            surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 40))
+            hint_bar.draw_for(self, surface)
             return
         cat = self._juke_catalog()
         cur = None
@@ -569,17 +571,17 @@ class Game:
         except Exception:
             cur = None
         y0 = 100
+        labels = []
         for i, (key, title_k, kind) in enumerate(cat):
-            selected = i == int(getattr(self, "juke_index", 0) or 0)
             playing = (cur == key and kind == "music" and self.sounds.music_busy()) or (
                 cur == key and kind == "music" and self.juke_paused
             )
-            col = (255, 230, 120) if selected else (160, 160, 190)
-            mark = "> " if selected else "  "
             extra = "  ||" if playing and self.juke_paused else ("  >" if playing else "")
-            label = mark + self._juke_title(key) + extra
-            surf = self._txt(self.medium_font, label, col)
-            surface.blit(surf, (BASE_WIDTH // 2 - surf.get_width() // 2, y0 + i * 46))
+            labels.append(self._juke_title(key) + extra)
+        row_h = self.medium_font.get_linesize()
+        menu_ui.draw_rows(self, surface, self.medium_font, labels, y0, 46,
+                          int(getattr(self, "juke_index", 0) or 0) % max(1, len(cat)),
+                          pad_y=max(1, (46 - row_h) // 2), panel_pad=(24, 12))
         # Spectrum + progress of current audio
         i = int(getattr(self, "juke_index", 0) or 0) % len(cat)
         key, _tk, kind = cat[i]
@@ -609,8 +611,7 @@ class Game:
                     (180, 180, 210),
                 )
                 surface.blit(clock, (BASE_WIDTH // 2 - clock.get_width() // 2, pheq_clock_y(BASE_HEIGHT)))
-        hint = self._txt(self.font, t("juke_hint"), (255, 220, 100))
-        surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 40))
+        hint_bar.draw_for(self, surface)
 
     # --- Difficulty & scoring helpers ---
 
@@ -3086,8 +3087,7 @@ class Game:
         panel = cache.get(ckey)
         if panel is None:
             panel = pygame.Surface((w, h), pygame.SRCALPHA)
-            panel.fill((8, 8, 22, 170))
-            pygame.draw.rect(panel, (180, 140, 255), panel.get_rect(), 2, border_radius=10)
+            menu_ui.panel(panel, panel.get_rect())                   # the same panel as the option list
             title = t({
                 "control": "opt_control", "autofire": "opt_autofire", "sfx": "opt_sfx",
                 "music": "opt_music", "audio_mix": "opt_audio", "rumble": "opt_rumble", "display": "opt_display",
@@ -3098,11 +3098,12 @@ class Game:
             hdr = self._txt(self.font, title, (255, 210, 140))
             panel.blit(hdr, (18, 14))
             body = t("opt_help_" + key)
-            yy = 52
-            for line in self._wrap_ui(body, self.font, w - 36):
-                surf = self._txt(self.font, line, (200, 200, 230))
+            yy = 58
+            body_font = getattr(self, "menu_font", None) or self.font
+            for line in self._wrap_ui(body, body_font, w - 36):
+                surf = self._txt(body_font, line, (200, 200, 230))
                 panel.blit(surf, (18, yy))
-                yy += 26
+                yy += body_font.get_linesize() + 4
             cache[ckey] = panel
         self.game_surface.blit(panel, (x, y))
 
@@ -3251,12 +3252,19 @@ class Game:
         sets = mame_addon.available_sets()
         list_x = 72
         frame = pygame.Rect(720, 160, 480, 360)
-        pygame.draw.rect(surface, (16, 18, 28), frame, border_radius=18)
-        pygame.draw.rect(surface, (200, 140, 60), frame, 3, border_radius=18)
         if not sets:
-            empty = self._txt(self.font, t("addon_missing"), (160, 160, 180))
-            surface.blit(empty, (list_x, 280))
+            # nothing installed: the message alone, in a panel (no empty preview frame)
+            empty = self._txt(self.font, t("addon_missing"), (190, 190, 210))
+            box = pygame.Rect(0, 0, empty.get_width() + 80, empty.get_height() + 50)
+            box.center = (BASE_WIDTH // 2, BASE_HEIGHT // 2 - 20)
+            menu_ui.panel(surface, box)
+            surface.blit(empty, (box.centerx - empty.get_width() // 2, box.centery - empty.get_height() // 2))
         else:
+            pygame.draw.rect(surface, (16, 18, 28), frame, border_radius=18)
+            pygame.draw.rect(surface, (200, 140, 60), frame, 3, border_radius=18)
+            fams = [mame_addon.family_of(sid) for sid, _label in sets]
+            gaps = sum(1 for a, b in zip(fams, fams[1:]) if a != b)
+            menu_ui.panel(surface, pygame.Rect(list_x - 30, 132, 664, len(sets) * 32 + gaps * 16 + 30))
             y = 148
             focus = None
             prev_fam = None
@@ -3268,9 +3276,8 @@ class Game:
                 selected = (i == self.menu_index)
                 if selected:
                     focus = sid
-                col = (255, 230, 120) if selected else (160, 160, 190)
-                prefix = "> " if selected else "  "
-                surf = self._txt(self.font, prefix + label, col)
+                    menu_ui.highlight(surface, pygame.Rect(list_x - 16, y, 600, 32))
+                surf = self._txt(self.font, label, menu_ui.row_colour(selected))
                 surface.blit(surf, (list_x, y))
                 y += 32
             if focus:
@@ -3280,8 +3287,7 @@ class Game:
                 if snap is not None:
                     surface.blit(snap, (frame.centerx - snap.get_width() // 2,
                                        frame.centery - snap.get_height() // 2))
-        hint = self._txt(self.font, t("addon_hint"), (255, 220, 100))
-        surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 48))
+        hint_bar.draw_for(self, surface)
 
     def _draw_logo(self, surface, center_x, top_y, ox=0.0, oy=0.0, angle=0.0):
         """Draw current animated logo frame centered horizontally."""
@@ -3844,18 +3850,25 @@ class Game:
                 continue
             elif self._anchor_blocks(event):
                 continue
-            elif event.type == pygame.KEYDOWN:
-                input_events.on_keydown(self, event)
-
             elif event.type == pygame.KEYUP:
                 input_events.on_keyup(self, event)
-            
-            elif event.type == pygame.JOYBUTTONDOWN:
-                input_events.on_joy_button(self, event)
-            elif event.type == pygame.JOYHATMOTION:
-                input_events.on_joy_hat(self, event)
-            elif event.type == pygame.JOYAXISMOTION:
-                input_events.on_joy_axis(self, event)
+            elif event.type in (pygame.KEYDOWN, pygame.JOYBUTTONDOWN, pygame.JOYHATMOTION, pygame.JOYAXISMOTION):
+                # the help bar shows the buttons of the device used last (a stick that drifts back to rest is not a choice)
+                if event.type == pygame.KEYDOWN:
+                    self.last_input_pad = False
+                elif not (event.type == pygame.JOYAXISMOTION and abs(getattr(event, "value", 0.0)) < 0.5):
+                    self.last_input_pad = True
+                before = menu_sfx.safe_snapshot(self) if menu_sfx.watching(self, event) else None
+                if event.type == pygame.KEYDOWN:
+                    input_events.on_keydown(self, event)
+                elif event.type == pygame.JOYBUTTONDOWN:
+                    input_events.on_joy_button(self, event)
+                elif event.type == pygame.JOYHATMOTION:
+                    input_events.on_joy_hat(self, event)
+                else:
+                    input_events.on_joy_axis(self, event)
+                if before is not None:
+                    menu_sfx.react(self, before, menu_sfx.safe_snapshot(self), menu_sfx.kind_of(self, event))
 
     def _anchor_blocks(self, event):
         """While the vortex and the flash are on screen the map is not in sight: keys do nothing, except that a confirm /

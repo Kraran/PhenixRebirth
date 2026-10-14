@@ -115,6 +115,10 @@ class SoundManager:
                 ("welcome_shield", 1.00),
                 ("paint_fanfare", 0.85),          # the Shield is painted (adventure paint shop)
                 ("anchor_return", 0.80),          # a mission is lost: back to base by the quantum anchor
+                ("menu_move", 0.32),              # menus: the cursor moves or a value changes (src/menu_sfx.py)
+                ("menu_confirm", 0.45),           # menus: a choice is validated
+                ("menu_back", 0.40),              # menus: back / cancel
+                ("menu_deny", 0.45),              # menus: refused (a greyed entry)
             ]:
                 self._load(name, f"{name}.wav", vol)
             self.enabled = len(self.sounds) > 0
