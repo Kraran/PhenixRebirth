@@ -6,6 +6,9 @@ as `game`; behaviour is unchanged. Game keeps a thin method with the old name.
 """
 import pygame
 
+import hint_bar
+import menu_ui
+
 from settings import BASE_WIDTH, BASE_HEIGHT
 from i18n import t
 from achievements import (
@@ -40,6 +43,7 @@ def draw_achievements_inner(game, surface):
     scroll = float(getattr(game, "ach_scroll", 0.0) or 0.0)
     scroll = max(0.0, min(max_s, scroll))
     game.ach_scroll = scroll
+    menu_ui.panel(surface, pygame.Rect(x - 28, top - 2, col_w + 70, bottom - top + 12))
 
     # No surface.set_clip — SCALED/GPU present can freeze on clip changes.
     for i, (aid, kind) in enumerate(CATALOG):
@@ -111,6 +115,4 @@ def draw_achievements_inner(game, surface):
         thumb_y = bar_y + int((bar_h - thumb_h) * scroll / max_s)
         pygame.draw.rect(surface, (200, 180, 120), (bar_x, thumb_y, 6, thumb_h), border_radius=3)
 
-    hint = (tc.get(game.font, t("ach_hint_back"), (255, 220, 100))
-            if tc else game._txt(game.font, t("ach_hint_back"), (255, 220, 100)))
-    surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 42))
+    hint_bar.draw_for(game, surface)

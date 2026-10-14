@@ -7,6 +7,9 @@ and behave exactly as before; Game keeps thin methods with the old names.
 """
 import pygame
 
+import hint_bar
+import menu_ui
+
 from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
 from i18n import t
 from highscores import load_highscores
@@ -105,6 +108,7 @@ def draw_highscores(game):
     entries = game.hs_entries if game.hs_entries else load_highscores()
     base_y = 140
     score_right = BASE_WIDTH // 2 + 170
+    menu_ui.panel(game.game_surface, pygame.Rect(BASE_WIDTH // 2 - 260, base_y - 14, 520, 15 * 28 + 30))
     for i in range(15):
         rank = i + 1
         if i < len(entries):
@@ -123,6 +127,5 @@ def draw_highscores(game):
                 game.game_surface, base_y + i * 28, rank,
                 "---", None, (100, 100, 120), score_right,
             )
-    back = game._txt(game.font, t("ach_hint_hs"), (255, 220, 100))
-    game.game_surface.blit(back, (BASE_WIDTH // 2 - back.get_width() // 2, BASE_HEIGHT - 60))
+    hint_bar.draw_for(game, game.game_surface)
     game._draw_cheat_message()

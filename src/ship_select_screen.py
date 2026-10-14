@@ -10,6 +10,8 @@ import os
 
 import pygame
 
+import hint_bar
+
 from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
 from i18n import t
 from player import recolor_phenix_frames
@@ -294,5 +296,4 @@ def draw_ship_select(game, surface):
             by = box.bottom + 48
             pygame.draw.rect(surface, (40, 40, 50), pygame.Rect(bx, by, bw, bh), border_radius=3)
             pygame.draw.rect(surface, (255, 200, 80), pygame.Rect(bx, by, max(2, int(bw * pbar)), bh), border_radius=3)
-    hint = game._txt(game.font, t("ship_hint"), (160, 160, 190))
-    surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 42))
+    hint_bar.draw_for(game, surface)

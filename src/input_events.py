@@ -183,7 +183,7 @@ def on_keydown(game, event):
                 pygame.K_ESCAPE, pygame.K_BACKSPACE,
             ) or game._is_menu_confirm(event.key):
                 game.menu_screen = "main"
-                game.menu_index = 6
+                game.menu_index = 7                  # back on CREDITS (as with B on the pad, see Game._menu_back)
         elif game.menu_screen == "achievements":
             if event.key in (
                 pygame.K_UP, pygame.K_DOWN, pygame.K_w, pygame.K_s, pygame.K_z,
@@ -231,7 +231,7 @@ def on_keydown(game, event):
                 pygame.K_ESCAPE, pygame.K_BACKSPACE,
             ):
                 game.menu_screen = "main"
-                game.menu_index = 4
+                game.menu_index = 6                  # back on HIGH SCORES (as with B on the pad, see Game._menu_back)
                 game.cheat_buffer = ""
         elif game._is_menu_up(event.key):
             game._reset_menu_idle()
