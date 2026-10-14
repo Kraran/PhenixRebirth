@@ -276,9 +276,9 @@ def test_the_focused_card_title_wears_the_colour_of_its_mode(run):
 
 
 def test_the_texts_of_the_three_modes():
-    for lang_index, lang in enumerate(("fr", "en")):
+    for lang, veteran in (("fr", "VÉTÉRAN"), ("en", "VETERAN")):
         names = [i18n.T["story_mode_" + m][lang] for m in ss.MODES]
-        assert names == ["NOVICE", "NORMAL", "VETERAN"]
+        assert names == ["NOVICE", "NORMAL", veteran]
     novice = i18n.T["story_mode_novice_d"]["fr"]
     assert "3 vies" in novice and "2%" in novice
     assert "5%" in i18n.T["story_mode_normal_d"]["fr"]

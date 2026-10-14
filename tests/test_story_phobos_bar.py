@@ -130,7 +130,7 @@ def test_the_tab_draws_four_paragraphs_with_the_bar_title(run):
         _draw(hub, run)
     finally:
         story_mod._text = real
-    assert any(x == "> BAR DE LA STATION PHOBOS" for x in texts)
+    assert any(x == "BAR DE LA STATION PHOBOS" for x in texts)
     for door in DOORS:
         assert any(t(door) in x for x in texts), door
     assert any(t("story_door_addon").split()[0] in x for x in texts)
@@ -141,16 +141,16 @@ def test_the_four_paragraphs_fit_between_the_title_and_the_tabs(run):
     hub = _hub(addon=True)
     hub.pane = "extras"
     boxes = []
-    real = story_mod.pygame.draw.rect
+    real = story_mod.menu_ui.panel                  # the paragraphs are menu panels (the chosen one lit)
 
-    def spy(surface, color, rect, *a, **k):
+    def spy(surface, rect, *a, **k):
         boxes.append(pygame.Rect(rect))
-        return real(surface, color, rect, *a, **k)
-    story_mod.pygame.draw.rect = spy
+        return real(surface, rect, *a, **k)
+    story_mod.menu_ui.panel = spy
     try:
         _draw(hub, run)
     finally:
-        story_mod.pygame.draw.rect = real
+        story_mod.menu_ui.panel = real
     paragraphs = [b for b in boxes if b.width == 860]
     assert len(paragraphs) == 4 and paragraphs[-1].bottom < BASE_HEIGHT - 90
     assert all(a.bottom < b.top for a, b in zip(paragraphs, paragraphs[1:]))        # they do not touch
@@ -279,7 +279,7 @@ def test_the_last_slide_says_where_it_leads(run):
         _draw(hub, run)
     finally:
         story_mod._text = real
-    assert t("story_scene_door") in texts
+    assert hub.help_items()[0][0] == ("ok", "hint_play_addon")        # the help bar says where it leads
 
 
 # ------------------------------------------------------------------ the journal

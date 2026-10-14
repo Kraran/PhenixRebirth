@@ -243,6 +243,8 @@ def draw_menu_screens(game):
     elif game.menu_screen == "story_hub":
         if getattr(game, "story", None):
             game.story.draw(game.game_surface, game.font, game.medium_font, game.font)
+            if not game.quit_confirm:
+                hint_bar.draw_for(game, game.game_surface)        # the same help bar as the classic menus
     elif game.menu_screen == "addon":
         game._draw_addon_menu(game.game_surface)
     elif game.menu_screen == "jukebox":

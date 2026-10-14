@@ -50,9 +50,9 @@ def test_every_classic_menu_has_a_bar(run, screen):
     drawn = []
     real = hint_bar.draw
 
-    def spy(game, surface, its, right=None):
+    def spy(game, surface, its, right=None, lit=None):
         drawn.append(list(its))
-        return real(game, surface, its, right=right)
+        return real(game, surface, its, right=right, lit=lit)
 
     hint_bar.draw = spy
     try:

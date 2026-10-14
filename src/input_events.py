@@ -80,7 +80,8 @@ def on_keydown(game, event):
                 game._reset_menu_idle()
             elif game.quit_confirm:
                 game.quit_confirm = False
-            elif game.menu_screen in ("options", "credits", "reset_confirm", "ship_select", "jukebox", "story_hub", "addon"):
+            elif game.menu_screen in ("options", "credits", "reset_confirm", "ship_select", "jukebox", "story_hub", "addon",
+                                      "highscores", "achievements"):
                 game._menu_back()
             else:
                 game.quit_confirm = True
@@ -197,8 +198,7 @@ def on_keydown(game, event):
                 pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE,
                 pygame.K_ESCAPE, pygame.K_BACKSPACE,
             ):
-                game.ach_data = load_achievements()
-                game.menu_screen = "highscores"
+                game._menu_back()                    # up to the main menu, like Esc and the pad's B
         elif game.menu_screen == "jukebox":
             if getattr(game, "juke_video", False):
                 if event.key in (
@@ -230,9 +230,7 @@ def on_keydown(game, event):
                 pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE,
                 pygame.K_ESCAPE, pygame.K_BACKSPACE,
             ):
-                game.menu_screen = "main"
-                game.menu_index = 6                  # back on HIGH SCORES (as with B on the pad, see Game._menu_back)
-                game.cheat_buffer = ""
+                game._menu_back()                    # back on HIGH SCORES in the main menu (as with B on the pad)
         elif game._is_menu_up(event.key):
             game._reset_menu_idle()
             game._menu_nav(-1)
@@ -321,7 +319,8 @@ def on_joy_button(game, event):
                 game._reset_menu_idle()
             elif game.quit_confirm:
                 game.quit_confirm = False
-            elif game.menu_screen in ("options", "credits", "reset_confirm", "ship_select", "jukebox", "story_hub", "addon"):
+            elif game.menu_screen in ("options", "credits", "reset_confirm", "ship_select", "jukebox", "story_hub", "addon",
+                                      "highscores", "achievements"):
                 game._menu_back()
             else:
                 game.quit_confirm = True

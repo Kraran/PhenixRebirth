@@ -99,25 +99,30 @@ def test_the_three_paragraphs_and_the_chosen_one_are_drawn(hub):
     import story
     from i18n import t
     texts = []
-    real = story._text
+    lit = []
+    real, real_lit = story._text, story.menu_ui.highlight
 
     def spy(surface, font, text, *a, **k):
         texts.append(text)
         return real(surface, font, text, *a, **k)
-    story._text = spy
+
+    def spy_lit(surface, rect, *a, **k):
+        lit.append(pygame.Rect(rect))
+        return real_lit(surface, rect, *a, **k)
+    story._text, story.menu_ui.highlight = spy, spy_lit
     try:
         hub.story.pane = "extras"
         hub.story.extras_index = 1
         hub.draw()
     finally:
-        story._text = real
+        story._text, story.menu_ui.highlight = real, real_lit
     for door in DOORS:
         assert any(t(door) in x for x in texts), door
         assert any(t("story_door_" + door).split()[0] in x for x in texts), door
-    assert any(x.startswith("> ") and t("jukebox") in x for x in texts)
-    assert not any(x.startswith("> ") and (t("options") in x or t("credits") in x) for x in texts)
-    row = [x for x in texts if t("story_extras") in x and t("story_tab_best") in x]
-    assert row and row[0].index(t("story_extras")) < row[0].index(t("story_tab_best"))
+    assert not any(str(x).startswith("> ") for x in texts)          # no cursor mark: the lit frame shows it
+    paragraphs = [r for r in lit if r.width == 860]
+    assert len(paragraphs) == 1 and 124 + 150 <= paragraphs[0].y < 124 + 300     # the second one (Jukebox) is lit
+    assert story.PANES.index("extras") < story.PANES.index("bestiary")         # Extras is the first tab
 
 
 # --- opening and coming back ---------------------------------------------------------------------------------------
