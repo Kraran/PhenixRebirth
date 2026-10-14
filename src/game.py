@@ -313,9 +313,15 @@ class Game:
         self.juke_paused = False
 
     def _close_jukebox(self):
-        """Esc / B from jukebox → high scores (same drawer)."""
+        """Esc / B from the jukebox: up to the main menu, on HIGH SCORES (the three screens of that entry are
+        side by side; Left / Right go from one to the other, Esc leaves them). A video playing is only stopped."""
+        if getattr(self, "juke_video", False):
+            self._juke_play_or_pause()
+            return
         self._leave_jukebox_audio()
-        self.menu_screen = "highscores"
+        self.menu_screen = "main"
+        self.menu_index = 6
+        self.cheat_buffer = ""
 
     def _extra_enter(self, screen):
         """HS ↔ Hauts faits ↔ Jukebox."""
@@ -3789,12 +3795,12 @@ class Game:
         elif self.menu_screen == "options":
             self.menu_screen = "main"
             self.menu_index = 5  # OPTIONS
-        elif self.menu_screen == "highscores":
-            self.menu_screen = "main"
-            self.menu_index = 6
-        elif self.menu_screen == "achievements":
-            self.ach_data = load_achievements()
-            self.menu_screen = "highscores"
+        elif self.menu_screen in ("highscores", "achievements"):
+            if self.menu_screen == "achievements":
+                self.ach_data = load_achievements()
+            self.menu_screen = "main"                # High Scores, Achievements and Jukebox sit side by side: Esc
+            self.menu_index = 6                      # leaves all three, back on HIGH SCORES
+            self.cheat_buffer = ""
         elif self.menu_screen == "jukebox":
             self._close_jukebox()
         elif self.menu_screen == "credits":
