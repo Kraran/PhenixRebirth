@@ -332,6 +332,7 @@ def init_input_menu(game):
     game.anchor_fx = None            # the return to base by the quantum anchor, while it is playing (src/anchor_fx.py)
     game.story = StoryHub()
     game.menu_index = 0
+    game._menu_slide = None      # [direction, seconds] while a menu screen slides in (src/menu_fx.py)
     # Difficulty is session-only (not in settings.json) but must survive soft resets
     if not hasattr(game, "difficulty"):
         game.difficulty = "normal"  # novice | normal | veteran

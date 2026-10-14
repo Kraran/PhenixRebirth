@@ -73,6 +73,7 @@ import anchor_fx
 import update_play
 import input_events
 import menu_sfx
+import menu_fx
 import hint_bar
 import menu_ui
 import main_menu
@@ -561,7 +562,7 @@ class Game:
 
 
     def _draw_jukebox(self, surface):
-        hdr = self._txt(self.medium_font, t("jukebox"), (255, 180, 90))
+        hdr = self._txt(self.medium_font, t("jukebox"), menu_ui.TITLE)
         surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 28))
         if getattr(self, "juke_video", False):
             clip = getattr(self, "juke_clip", None)
@@ -3351,11 +3352,9 @@ class Game:
         return clip.surface
 
     def _draw_addon_menu(self, surface):
-        hdr = self._txt(self.medium_font, t("addon"), (255, 180, 90))
-        surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 70))
+        hdr = self._txt(self.medium_font, t("addon"), menu_ui.TITLE)
+        surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 40))
         sets = mame_addon.available_sets()
-        list_x = 72
-        frame = pygame.Rect(720, 160, 480, 360)
         if not sets:
             # nothing installed: the message alone, in a panel (no empty preview frame)
             empty = self._txt(self.font, t("addon_missing"), (190, 190, 210))
@@ -3364,12 +3363,16 @@ class Game:
             menu_ui.panel(surface, box)
             surface.blit(empty, (box.centerx - empty.get_width() // 2, box.centery - empty.get_height() // 2))
         else:
-            pygame.draw.rect(surface, (16, 18, 28), frame, border_radius=18)
-            pygame.draw.rect(surface, (200, 140, 60), frame, 3, border_radius=18)
+            # the list and the preview side by side, same top, same height, the pair centred on the screen
             fams = [mame_addon.family_of(sid) for sid, _label in sets]
             gaps = sum(1 for a, b in zip(fams, fams[1:]) if a != b)
-            menu_ui.panel(surface, pygame.Rect(list_x - 30, 132, 664, len(sets) * 32 + gaps * 16 + 30))
-            y = 148
+            list_w, prev_w, gap, top = 650, 480, 28, 110
+            height = max(380, len(sets) * 32 + gaps * 16 + 40)
+            x0 = (BASE_WIDTH - (list_w + gap + prev_w)) // 2
+            box = menu_ui.panel(surface, pygame.Rect(x0, top, list_w, height))
+            frame = menu_ui.panel(surface, pygame.Rect(box.right + gap, top, prev_w, height))
+            list_x = box.x + 30
+            y = box.y + 20
             focus = None
             prev_fam = None
             for i, (sid, label) in enumerate(sets):
@@ -3380,9 +3383,9 @@ class Game:
                 selected = (i == self.menu_index)
                 if selected:
                     focus = sid
-                    menu_ui.highlight(surface, pygame.Rect(list_x - 16, y, 600, 32))
+                    menu_ui.highlight(surface, pygame.Rect(box.x + 12, y, box.w - 24, 32))
                 surf = self._txt(self.font, label, menu_ui.row_colour(selected))
-                surface.blit(surf, (list_x, y))
+                surface.blit(surf, (list_x, y + 16 - surf.get_height() // 2))
                 y += 32
             if focus:
                 snap = self._addon_clip_frame()
@@ -3971,6 +3974,8 @@ class Game:
                 elif not (event.type == pygame.JOYAXISMOTION and abs(getattr(event, "value", 0.0)) < 0.5):
                     self.last_input_pad = True
                 before = menu_sfx.safe_snapshot(self) if menu_sfx.watching(self, event) else None
+                screen_before = menu_fx.screen_key(self) if before is not None else None
+                started_before = bool(self.started)
                 if event.type == pygame.KEYDOWN:
                     input_events.on_keydown(self, event)
                 elif event.type == pygame.JOYBUTTONDOWN:
@@ -3980,7 +3985,12 @@ class Game:
                 else:
                     input_events.on_joy_axis(self, event)
                 if before is not None:
-                    menu_sfx.react(self, before, menu_sfx.safe_snapshot(self), menu_sfx.kind_of(self, event))
+                    kind = menu_sfx.kind_of(self, event)
+                    menu_sfx.react(self, before, menu_sfx.safe_snapshot(self), kind)
+                    try:
+                        menu_fx.note(self, screen_before, started_before, kind, event)   # the screen slides in
+                    except Exception:
+                        log_exc("game.handle_events")
 
     def _anchor_blocks(self, event):
         """While the vortex and the flash are on screen the map is not in sight: keys do nothing, except that a confirm /
@@ -4242,6 +4252,11 @@ class Game:
             return False
         return True
 
+    def _paint_menus(self):
+        draw_frame.draw_menu_title(self)
+        draw_frame.draw_menu_screens(self)
+        draw_frame.draw_menu_footer(self)
+
     def _draw_canvas(self):
         story = getattr(self, "story", None)
         if not (not self.started and self.menu_screen == "story_hub" and story is not None
@@ -4258,11 +4273,10 @@ class Game:
         
         # Title / Menu Screen
         if not self.started:
-            draw_frame.draw_menu_title(self)
-            
-            draw_frame.draw_menu_screens(self)
-            
-            draw_frame.draw_menu_footer(self)
+            if menu_fx.active(self) and not self.quit_confirm:
+                menu_fx.draw_sliding(self, self._paint_menus)      # a new screen slides in (src/menu_fx.py)
+            else:
+                self._paint_menus()
         
         # High score / Game Over screens
         if self.game_over and self.hs_phase == "card":

@@ -10,6 +10,8 @@ import os
 
 import pygame
 
+import menu_ui
+
 import hint_bar
 
 from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
@@ -177,7 +179,7 @@ def draw_ship_select(game, surface):
         heading = t("choose_ship_p").replace("{n}", str(slot))
     else:
         heading = t("choose_ship")
-    title = game._txt(game.medium_font, heading, (255, 230, 140))
+    title = game._txt(game.medium_font, heading, menu_ui.TITLE)
     surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 72))
     ids = ("phoenix", "shield")
     labels = (t("ship_phoenix"), t("ship_shield"))

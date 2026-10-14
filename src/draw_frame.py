@@ -278,16 +278,17 @@ def draw_menu_screens(game):
         credits_screen.draw_credits(game)
 
     elif game.menu_screen == "reset_confirm":
-        draw_question(game, game.medium_font, t("reset_hs_title"), t("reset_hs_warn"), game.menu_index)
+        draw_question(game, game.medium_font, t("reset_hs_title"), t("reset_hs_warn"), game.menu_index,
+                      title_col=menu_ui.DANGER)
         hint_bar.draw_for(game, game.game_surface)
 
     elif game.menu_screen == "options":
-        hdr = game._txt(game.medium_font, t("options"), (255, 180, 255))
+        hdr = game._txt(game.medium_font, t("options"), menu_ui.TITLE)
         game.game_surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 40))
         draw_options(game, top=108)
 
 
-TITLE_COLOR = (255, 180, 90)          # the titles of the classic menus' own screens
+TITLE_COLOR = menu_ui.TITLE          # the titles of the menu screens (one colour for all of them)
 
 
 def _title(game, key, y=40):
@@ -366,7 +367,7 @@ def draw_options(game, top):
         if chosen:
             menu_ui.highlight(surf, pygame.Rect(box.x + 10, cy - row_h // 2 + 3, box.w - 20, row_h - 6))
         if key == "reset_hs":
-            col = (255, 150, 130) if chosen else (230, 110, 100)      # it erases something: red
+            col = (255, 150, 130) if chosen else menu_ui.DANGER       # it erases something: red
         elif greyed:
             col = menu_ui.TEXT_OFF_SEL if chosen else menu_ui.TEXT_OFF
         else:
@@ -520,7 +521,7 @@ def draw_hs_enter(game):
 
 def draw_hs_table(game):
     """High-score table after a game."""
-    title = game._txt(game.big_font, t("high_scores"), (255, 120, 255))
+    title = game._txt(game.big_font, t("high_scores"), menu_ui.TITLE)
     game.game_surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 40))
 
     added = getattr(game, "hs_just_added", None) or []
@@ -584,14 +585,15 @@ def draw_pause(game):
     overlay = game._dim_overlay(160)
     game.game_surface.blit(overlay, (0, 0))
     if game.pause_options:
-        hdr = game._txt(game.medium_font, t("options"), (255, 180, 255))
+        hdr = game._txt(game.medium_font, t("options"), menu_ui.TITLE)
         game.game_surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 36))
         if game.menu_screen == "reset_confirm":
-            draw_question(game, game.medium_font, t("reset_hs_title"), t("reset_hs_warn"), game.menu_index)
+            draw_question(game, game.medium_font, t("reset_hs_title"), t("reset_hs_warn"), game.menu_index,
+                      title_col=menu_ui.DANGER)
         else:
             draw_options(game, top=92)
     else:
-        title = game._txt(game.big_font, t("pause"), (255, 220, 100))
+        title = game._txt(game.big_font, t("pause"), menu_ui.TITLE)
         game.game_surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 200))
         row_h = game.medium_font.get_linesize()
         menu_ui.draw_rows(game, game.game_surface, game.medium_font,
@@ -608,7 +610,7 @@ def draw_quit_confirm(game):
     hint_bar.draw_for(game, game.game_surface)
 
 
-def draw_question(game, title_font, title, question, index, title_col=(255, 120, 100)):
+def draw_question(game, title_font, title, question, index, title_col=menu_ui.TITLE):
     """A YES / NO question in its own panel, in the middle of the screen (quit the game, erase the scores).
     YES is the first row, NO the second, as before."""
     surf = game.game_surface
