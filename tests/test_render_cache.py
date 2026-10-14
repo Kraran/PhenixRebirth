@@ -18,6 +18,7 @@ def _hub_on_intro():
     ss.save_state(ss.story_path(1), st)
     hub = StoryHub()
     hub.open_slot(1)
+    hub._clip_file = lambda name: None          # a still picture: a video clip that starts on its own time made these tests random
     hub.start_intro()
     return hub
 
@@ -188,6 +189,7 @@ def test_a_slide_frame_has_the_same_pixels_without_the_starfield(run, monkeypatc
     g = run.game
     g.menu_screen, g.started = "story_hub", False
     g.story.open_slots()
+    g.story._clip_file = lambda name: None      # a still picture: a video clip that starts on its own time made this test random
     g.story.start_intro()
     g.story.intro_pos, g.story.intro_t = 300, 5.0
     monkeypatch.setattr(pygame.time, "get_ticks", lambda: 0)
