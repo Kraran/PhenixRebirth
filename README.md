@@ -33,7 +33,7 @@ Free to play · Open source · MIT License
 - **Return to base** — a lost mission (Normal mode) is drawn into a blue whirlwind, a flash, and the mission map comes back; Enter / Esc / a pad button skips it (`python tools/make_anchor_sound.py` makes its sound, numpy only)
 - **Shield ship** — second craft: freeze + explosive barrier (2 s, 5 s cooldown)
 - Ship select at start (and P2 in hot-seat); blue tint only when both pick the same hull
-- Achievements (scrollable, dated)
+- Achievements: a grid of 32 icons (bronze, silver, gold frames) and a panel that tells how to get the one under the cursor, its tiers and the date; five are secret until found (Tab / LB / RB: High Scores, Jukebox)
 - Jukebox (ID3 titles, PHEQ1 equalizer, intro video)
 - In-game music picker (Off + the 5 soundtrack themes)
 - Stereo SFX panned to the event

@@ -330,9 +330,6 @@ class Game:
             self._leave_jukebox_audio()
         if screen == "achievements":
             self.ach_data = load_achievements()
-            self.ach_scroll = 0.0
-            self.ach_speed = 0.0
-            self.ach_hold = 0.0
             self.menu_screen = "achievements"
             try:
                 for _aid, kind in CATALOG:
@@ -848,49 +845,9 @@ class Game:
         """32px catalog icon, color or grey."""
         return ach_helpers.ach_icon(self, kind, unlocked)
 
-    def _ach_view(self):
-        """List metrics: row height, clip top/bottom, max pixel scroll."""
-        row_h = 112
-        top, bottom = 88, BASE_HEIGHT - 56
-        view_h = max(1, bottom - top)
-        max_s = max(0.0, len(CATALOG) * row_h - view_h)
-        return row_h, top, bottom, max_s
-
-    def _update_ach_scroll(self):
-        """Smooth scroll; hold time ramps speed (credits-style inertia)."""
-        row_h, top, bottom, max_s = self._ach_view()
-        axis = self._credits_scroll_axis()
-        hold = float(getattr(self, "ach_hold", 0.0))
-        last = int(getattr(self, "ach_hold_dir", 0))
-        if axis == 0:
-            hold = 0.0
-            last = 0
-            target = 0.0
-        else:
-            if axis != last:
-                hold = 0.0
-            hold += self.dt
-            last = axis
-            # 0.0s → 140 px/s, ~1.1s → 560 px/s (quadratic ease-in)
-            t = min(1.0, hold / 1.10)
-            mag = 140.0 + 420.0 * (t * t)
-            target = mag if axis < 0 else -mag
-        self.ach_hold = hold
-        self.ach_hold_dir = last
-        k = min(1.0, 9.0 * self.dt)
-        self.ach_speed = float(getattr(self, "ach_speed", 0.0))
-        self.ach_speed += (target - self.ach_speed) * k
-        dt = min(0.05, max(0.0, float(self.dt or 0.0)))
-        y = float(getattr(self, "ach_scroll", 0.0)) + self.ach_speed * dt
-        if y < 0.0:
-            y = 0.0
-            self.ach_speed = 0.0
-            self.ach_hold = 0.0
-        elif y > max_s:
-            y = max_s
-            self.ach_speed = 0.0
-            self.ach_hold = 0.0
-        self.ach_scroll = y
+    def _ach_move(self, dx, dy):
+        """The cursor of the achievements grid (see achievements_screen.move)."""
+        achievements_screen.move(self, dx, dy)
 
     def _fmt_ach_date(self, raw):
         """ISO stamp → JJ/MM/AAAA."""
@@ -906,7 +863,7 @@ class Game:
             return s[:10]
 
     def _draw_achievements(self, surface):
-        """Single-column hauts faits, scrollable, date when unlocked."""
+        """Hauts faits: a grid of icons and the panel of the one under the cursor."""
         try:
             self._draw_achievements_inner(surface)
         except Exception as e:

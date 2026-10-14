@@ -184,10 +184,7 @@ def init_run_state(game):
     game.hs_entries = load_highscores()
     game.ach_data = load_achievements()
     game._ach_icon_cache = {}
-    game.ach_scroll = 0.0
-    game.ach_speed = 0.0
-    game.ach_hold = 0.0
-    game.ach_hold_dir = 0
+    game.ach_index = 0                  # the cursor of the achievements grid
     game._listen = {"menu": 0.0, "gameover": 0.0, "credits": 0.0}
     game._listen_key = None
     game._listen_pos = 0

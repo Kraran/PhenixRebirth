@@ -172,7 +172,7 @@ def fingerprint(g):
         _r(getattr(g, "credits_scroll", 0)), _r(getattr(g, "credits_x", 0)),
         int(getattr(g, "logo_index", 0) or 0), _r(getattr(g, "input_grace", 0)),
         _r(getattr(g, "ship_anim_t", 0)), _r(getattr(g, "shield_slide", 0)),
-        _r(getattr(g, "ach_scroll", 0)), int(getattr(g, "juke_index", 0) or 0),
+        _r(getattr(g, "ach_index", 0)), int(getattr(g, "juke_index", 0) or 0),
         # pause / quit menus, high-score entry, joystick latches, options, side effects
         int(getattr(g, "pause_index", 0) or 0), bool(getattr(g, "pause_options", False)),
         bool(getattr(g, "quit_confirm", False)), int(getattr(g, "quit_index", 0) or 0),

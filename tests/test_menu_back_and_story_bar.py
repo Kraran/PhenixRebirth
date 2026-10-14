@@ -78,12 +78,15 @@ def test_esc_goes_back_up_to_extras(run, steps, how):
     assert _on_extras(g, ("highscores", "achievements", "jukebox")[steps])
 
 
-def test_enter_also_leaves_the_achievements(run):
+def test_enter_does_not_leave_the_achievements_grid(run):
+    """(Enter used to leave the list; on the grid it would be a trap: the panel follows the cursor already.)"""
     g = run.game
     _open_scores(run)
     run.key(pygame.K_RIGHT)
     assert g.menu_screen == "achievements"
     run.key(pygame.K_RETURN)
+    assert g.menu_screen == "achievements"
+    run.key(pygame.K_ESCAPE)
     assert _on_extras(g, "achievements")
 
 
