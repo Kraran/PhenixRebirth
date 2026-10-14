@@ -214,10 +214,10 @@ class StoryHub:
         self.slot_no = None            # save slot (1..4) being played; None before one is opened
         self.sound_events = []         # sounds the hub asks for (the game plays them, see take_sounds)
         self.state = ss.default_state()
-        self.screen = "slots"          # slots | delete | name | mode | intro | hub
+        self.screen = "slots"          # slots | delete | leave | name | mode | intro | hub
         self.sel = 0                   # slot cursor on the slot list (0..2)
         self.col = 0                   # 0 = the slot, 1 = its DELETE button
-        self.del_yes = False
+        self.del_yes = False            # the lit button of the YES / NO questions (delete a slot, leave the Adventure)
         self.mode_index = ss.MODES.index(ss.DEFAULT_MODE)    # 0 novice, 1 normal, 2 veteran
         self.entry = None              # NameEntry while typing a pilot name
         self.new_name = ""
@@ -700,7 +700,7 @@ class StoryHub:
         if self.screen == "slots":
             self.msg = ""
             self.col = max(0, min(1, self.col + direction)) if self._summary().get("status") != "missing" else 0
-        elif self.screen == "delete":
+        elif self.screen in ("delete", "leave"):
             self.del_yes = direction > 0
         elif self.screen == "name":
             self.entry.move(1 if direction > 0 else -1, 0)
@@ -716,7 +716,7 @@ class StoryHub:
             self.sel = max(0, min(ss.SLOT_COUNT - 1, self.sel + direction))
             if self._summary().get("status") == "missing":
                 self.col = 0
-        elif self.screen == "delete":
+        elif self.screen in ("delete", "leave"):
             self.del_yes = direction > 0
         elif self.screen == "name":
             self.entry.move(0, 1 if direction > 0 else -1)
@@ -754,6 +754,11 @@ class StoryHub:
                 self.open_slots()
             else:
                 self.screen = "slots"
+        elif self.screen == "leave":
+            self.screen = "slots"                        # whatever the answer, the slot list is what is left behind
+            if self.del_yes:
+                self.del_yes = False
+                return {"leave": True}                   # the game goes back to its main menu
         elif self.screen == "name":
             res = self.entry.press()
             if res == "ok":
@@ -770,13 +775,18 @@ class StoryHub:
         return None
 
     def back(self):
-        """B / Esc. True when handled here; False on the slot list (leave the Adventure)."""
-        if self.screen == "hub":
+        """B / Esc. Always handled here: on the slot list it asks whether to leave the Adventure (the answer comes
+        back from confirm() as {"leave": True}); B / Esc on that question cancels it."""
+        if self.screen == "slots":
+            self.screen = "leave"
+            self.del_yes = False                         # NO is lit: a second B / Esc does not leave by accident
+            self.msg = ""
+        elif self.screen == "hub":
             if self.paint_mode:
                 self.paint_mode = False                  # B closes the paint shop, nothing is spent
                 return True
             self.open_slots()
-        elif self.screen in ("delete", "name"):
+        elif self.screen in ("delete", "leave", "name"):
             self.screen = "slots"
             self.msg = ""
         elif self.screen == "mode":
@@ -1302,9 +1312,9 @@ class StoryHub:
     # --- slot list, name, mode, delete ---
     def _draw_gate(self, surface, font, medium, small):
         cx = BASE_WIDTH // 2
-        titles = {"slots": "story_gate_title", "delete": "story_delete_title",
+        titles = {"slots": "story_gate_title", "delete": "story_delete_title", "leave": "story_leave_title",
                   "name": "story_name_title", "mode": "story_mode_title"}
-        hints = {"slots": "story_gate_hint", "delete": "story_delete_hint",
+        hints = {"slots": "story_gate_hint", "delete": "story_delete_hint", "leave": "story_delete_hint",
                  "name": "story_name_hint", "mode": "story_mode_hint"}
         ts = medium.render(t(titles[self.screen]), True, (255, 150, 70))
         surface.blit(ts, (cx - ts.get_width() // 2, 18))
@@ -1357,11 +1367,22 @@ class StoryHub:
         info = self._summary()
         _text(surface, medium, info.get("name") or t("story_slot_damaged"), (255, 230, 140), 200, centerx=cx)
         _text(surface, small, t("story_delete_warn"), (255, 120, 100), 270, centerx=cx)
+        self._draw_yes_no(surface, small, cx, danger=True)
+
+    def _draw_gate_leave(self, surface, font, medium, small):
+        cx = BASE_WIDTH // 2
+        _text(surface, medium, t("story_leave_ask"), (255, 230, 140), 200, centerx=cx)
+        _text(surface, small, t("story_leave_warn"), (170, 175, 195), 270, centerx=cx)
+        self._draw_yes_no(surface, small, cx, danger=False)
+
+    def _draw_yes_no(self, surface, small, cx, danger):
+        """The NO / YES buttons of a question (NO on the left); `del_yes` tells which one is lit. YES is red when
+        the answer destroys something (the delete question)."""
         for k, (label, yes) in enumerate(((t("story_no"), False), (t("story_yes"), True))):
             b = pygame.Rect(cx - 230 + k * 260, 340, 200, 60)
             focus = self.del_yes == yes
             _fill(surface, (40, 36, 20) if focus else (22, 24, 36), b, 10)
-            pygame.draw.rect(surface, ((255, 90, 80) if yes else (255, 210, 80)) if focus else (80, 85, 105),
+            pygame.draw.rect(surface, ((255, 90, 80) if yes and danger else (255, 210, 80)) if focus else (80, 85, 105),
                              b, 3 if focus else 2, border_radius=10)
             _text(surface, small, label, (255, 230, 140) if focus else (150, 155, 175), b.centery, centerx=b.centerx)
 
