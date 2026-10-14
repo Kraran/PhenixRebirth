@@ -198,8 +198,25 @@ def test_the_scene_draws_its_picture_and_its_hints(run):
 def test_the_mission_is_called_bestiary_first_sortie_like_the_other_bestiary_hunts():
     import i18n
     mission = next(m for m in ss.MISSIONS if m["id"] == ID)
-    assert t(mission["title"]) == "Bestiaire : Premiere sortie"
+    assert t(mission["title"]) == "Bestiaire I : Première sortie"
     entry = i18n.T["story_m_sortie"]
-    assert entry["en"] == "Bestiary: First sortie"
-    assert all(entry[lang].split(":")[0] == i18n.T["story_m_best2"][lang].split(":")[0] for lang in entry)   # same word as the others
+    assert entry["en"] == "Bestiary I: First sortie"
+    assert all(entry[lang].split(":")[0].split()[0] == i18n.T["story_m_best2"][lang].split(":")[0].split()[0]
+               for lang in entry)                                   # same word as the others
     assert all(entry[lang].count(":") == 1 for lang in entry)
+
+
+def test_the_five_bestiary_hunts_are_numbered_in_roman_numerals_in_every_language():
+    import i18n
+    keys = [("story_m_sortie", "I"), ("story_m_best2", "II"), ("story_m_best3", "III"), ("story_m_best4", "IV"),
+            ("story_m_bestboss", "V")]
+    assert [ss.mission_by_id(i)["title"] for i in ("ch1_sortie", "best_s2", "best_s3", "best_s4", "best_boss")] == \
+        [k for k, _ in keys]
+    for key, numeral in keys:
+        for lang in i18n.LANG_CODES:
+            title = i18n.T[key][lang]
+            word, rest = title.split(":", 1)
+            assert word.split()[-1] == numeral and len(word.split()) == 2, (key, lang, title)
+            assert rest.strip()
+    assert t("story_m_bestboss") == "Bestiaire V : le commandant avioïde"
+    assert i18n.T["story_m_bestboss"]["en"] == "Bestiary V: the Avioid commander"
