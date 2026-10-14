@@ -65,6 +65,7 @@ from desktop_cover import show_cover, hide_cover
 from intro import play_intro
 import help_screen
 import achievements_screen
+import story_feats
 import ship_select_screen
 import highscores_screen
 import credits_screen
@@ -332,9 +333,7 @@ class Game:
             self.ach_data = load_achievements()
             self.menu_screen = "achievements"
             try:
-                for _aid, kind in CATALOG:
-                    self._ach_icon(kind, True)
-                    self._ach_icon(kind, False)
+                achievements_screen.warm(self)             # the cards of both pages, before the first frame
             except Exception:
                 log_exc("game._extra_enter")
         elif screen == "jukebox":
@@ -821,6 +820,20 @@ class Game:
                 self.cheat_msg_timer = 4.0
             return True
         return False
+
+    def _tick_story_feats(self):
+        """The achievements of the Adventure page (src/story_feats.py): one banner after the other, in the menus."""
+        if getattr(self, "started", False) or getattr(self, "attract_mode", False):
+            return
+        queue = self.__dict__.setdefault("_feat_queue", [])
+        queue.extend(story_feats.take_news())
+        if not queue or self.cheat_msg_timer > 0:
+            return
+        aid, tier = queue.pop(0)
+        extra = " — " + t("ach_tier_" + tier) if tier in ("bronze", "silver", "gold") else ""
+        self.cheat_msg = f"{t('ach_unlocked')} — {t('ach_' + aid)}{extra}"
+        self.cheat_kind = "ach"
+        self.cheat_msg_timer = 3.2
 
     def _tick_listen_achs(self):
         """Unlock when the current theme finishes a full play (loop wrap).
@@ -1903,7 +1916,7 @@ class Game:
         spec["banked"] = True
         try:
             story.apply_result(spec.get("id"), int(getattr(self, "score", 0) or 0), bool(cleared), spec.get("kills"),
-                               loot=spec.get("loot"), used=spec.get("items"))
+                               loot=spec.get("loot"), used=spec.get("items"), flawless=not spec.get("life_lost"))
         except Exception:
             log_exc("game._end_adventure")
 
@@ -3700,7 +3713,8 @@ class Game:
                     # the mission was already won: bank it
                     self.story.apply_result(self.adventure.get("id"), int(self.score), True,
                                             self.adventure.get("kills"), loot=self.adventure.get("loot"),
-                                            used=self.adventure.get("items"))
+                                            used=self.adventure.get("items"),
+                                            flawless=not self.adventure.get("life_lost"))
                     toast = self.story.toast
                 else:
                     # leaving a mission by choice: nothing gained, nothing lost, back to the hangar

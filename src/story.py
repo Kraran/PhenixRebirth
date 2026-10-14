@@ -14,6 +14,7 @@ import pygame
 from settings import BASE_WIDTH, BASE_HEIGHT, asset_path
 from i18n import t, get_lang
 from errlog import log_exc
+import story_feats
 import story_items
 import story_state as ss
 import loot
@@ -543,14 +544,16 @@ class StoryHub:
         self.shop_index = 0
         self.map_index = 0
         self.toast = ""
+        story_feats.check(self.state)             # a save made before the Adventure page gets what it has earned
 
     def save(self):
         if self.slot_no is None or self.cheating:
-            return                                # a cheated adventure is never written
+            return                                # a cheated adventure is never written (and earns nothing)
         try:
             ss.save_state(ss.story_path(self.slot_no), self.state)
         except Exception:
             log_exc("story.save")
+        story_feats.check(self.state)             # the achievements of the Adventure page
 
     def _ensure_art(self):
         if self._loaded_img:
@@ -974,10 +977,12 @@ class StoryHub:
                 spec["swarm_screens"] = float(mission["swarm_screens"])    # a smaller swarm
         return spec
 
-    def apply_result(self, mission_id, score, cleared, kills=None, loot=None, used=None):
+    def apply_result(self, mission_id, score, cleared, kills=None, loot=None, used=None, flawless=False):
         """End of a mission: credits, penalty or fall (see story_state.record_result). `loot` is the item caught
-        during the mission, `used` the items that were installed for it."""
+        during the mission, `used` the items that were installed for it; `flawless`: no life was lost."""
         res = ss.record_result(self.state, mission_id, score, cleared, kills, loot=loot, used=used)
+        if res["cleared"] and flawless and not self.cheating:
+            story_feats.note_flawless()
         if res["cleared"]:
             self.toast = t("story_clear").format(pts=res["score"])
             if res.get("act"):
@@ -1026,6 +1031,8 @@ class StoryHub:
             return False
         if ss.item_of(row[0]):
             self.sound_events.append("1up")                  # a loot item is installed for the next mission
+        elif not self.cheating:
+            story_feats.note_upgrade()                       # a workshop upgrade (achievement "Mécano")
         self.save()
         return True
 

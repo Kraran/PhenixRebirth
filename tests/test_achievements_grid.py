@@ -78,12 +78,37 @@ def test_the_arrows_move_in_the_grid(run):
     run.key(pygame.K_DOWN)
     assert g.ach_index == 1 + scr.COLS
     run.key(pygame.K_LEFT)
-    run.key(pygame.K_LEFT)
-    assert g.ach_index == scr.COLS - 1                     # Left goes on to the end of the row above
+    assert g.ach_index == scr.COLS
     run.key(pygame.K_UP)
-    assert g.ach_index == len(CATALOG) - 1                 # Up from the first row: the last row, same column
+    run.key(pygame.K_UP)
+    assert g.ach_index == len(CATALOG) - scr.COLS          # Up from the first row: the last row, same column
+    assert g.ach_page == 0
+
+
+def test_the_edges_of_the_grid_turn_the_page(run):
+    g = run.game
+    g.ach_index = scr.COLS - 1                              # last card of the first row
     run.key(pygame.K_RIGHT)
-    assert g.ach_index == 0                                # after the last one, the first one
+    assert (g.ach_page, g.ach_index) == (1, 0)              # AVENTURE, first card of the first row
+    run.key(pygame.K_LEFT)
+    assert (g.ach_page, g.ach_index) == (0, scr.COLS - 1)   # back on ARCADE, where it was
+    g.ach_index = 3 * scr.COLS                              # ARCADE, fourth row: AVENTURE has three rows only
+    run.key(pygame.K_LEFT)
+    n = len(achievements.CATALOG_ADV)
+    assert g.ach_page == 1 and g.ach_index == n - 1         # the last card of its last row
+    run.key(pygame.K_RIGHT)
+    assert (g.ach_page, g.ach_index) == (0, 2 * scr.COLS)   # the pages go round: ARCADE, third row
+
+
+def test_a_page_change_slides_and_ticks(run):
+    import menu_fx
+    import menu_sfx
+    g = run.game
+    before_key, before = menu_fx.screen_key(g), menu_sfx.snapshot(g)
+    g.ach_index = scr.COLS - 1
+    g._ach_move(1, 0)
+    assert menu_fx.screen_key(g) != before_key
+    assert menu_sfx.choose(g, before, menu_sfx.snapshot(g), "nav") == menu_sfx.MOVE
 
 
 @pytest.mark.parametrize("key", [pygame.K_z, pygame.K_w, pygame.K_s, pygame.K_q, pygame.K_a, pygame.K_d])
@@ -105,15 +130,13 @@ def test_the_d_pad_moves_in_the_grid(run):
     assert g.ach_index == 0 and g.menu_screen == "achievements"
 
 
-def test_move_skips_the_holes_of_a_last_row(monkeypatch):
+def test_move_skips_the_holes_of_a_last_row():
     class G:
-        ach_index = 0
-    monkeypatch.setattr(scr, "CATALOG", CATALOG[:20])               # 8 + 8 + 4
-    monkeypatch.setattr(scr, "ROWS", 3)
+        ach_index = 6
+        ach_page = 1                                                # AVENTURE: 8 + 8 + 4
     g = G()
-    g.ach_index = 6
     scr.move(g, 0, -1)
-    assert g.ach_index == 14                                        # the third row has no 7th cell
+    assert g.ach_index == 14                                        # the third row has no 7th card
     scr.move(g, 0, 1)
     assert g.ach_index == 6
 
@@ -187,7 +210,7 @@ def test_a_secret_is_hidden_until_it_is_unlocked(run):
 
 
 def test_the_secrets_are_real_achievements():
-    assert SECRETS <= set(achievements.CATALOG_IDS)
+    assert SECRETS <= set(achievements.ALL_IDS)
     assert achievements.is_hidden("pleiades", {"unlocked": {}})
     assert not achievements.is_hidden("pleiades", {"unlocked": {"pleiades": "x"}})
     assert not achievements.is_hidden("first_blood", {"unlocked": {}})
@@ -248,18 +271,24 @@ def _ink(img, rect):
 def test_every_text_fits_in_the_panel_and_under_the_grid(run, lang):
     g = run.game
     i18n.set_lang(lang)
-    full = {"unlocked": {aid: "2026-09-02T20:00:00Z" for aid in achievements.CATALOG_IDS},
+    full = {"unlocked": {aid: "2026-09-02T20:00:00Z" for aid in achievements.ALL_IDS},
             "progress": {aid: steps[-1] for aid, steps in SCALABLE.items()},
             "tiers": {aid: "gold" for aid in SCALABLE}}
     w, h = scr.DETAIL.size
     for data in (g.ach_data, full, {"unlocked": {}, "progress": {"marathon": 99999}, "tiers": {}}):
-        for aid, kind in CATALOG:
+        for aid, kind in CATALOG + achievements.CATALOG_ADV:
             img = scr._detail_layer(g, aid, kind, data)
             assert not _ink(img, pygame.Rect(w - 10, 0, 10, h)), (lang, aid, "right edge")
             assert not _ink(img, pygame.Rect(0, h - 40, w, 40)), (lang, aid, "bottom")
-        grid = scr._grid_layer(g, data)
-        below = pygame.Rect(scr.GRID_W - 6, scr.SUMMARY_Y + 34, 6, scr.LAYER_H - scr.SUMMARY_Y - 34)
-        assert not _ink(grid, below), (lang, "summary")
+        for pg in range(len(achievements.PAGES)):
+            grid = scr._grid_layer(g, data, pg)
+            below = pygame.Rect(scr.GRID_W - 6, scr.SUMMARY_Y + 34, 6, scr.LAYER_H - scr.SUMMARY_Y - 34)
+            assert not _ink(grid, below), (lang, pg, "summary")
+    # the tabs: both fit between the screen's edges, under the title
+    surf = pygame.Surface((1280, 720), pygame.SRCALPHA)
+    scr._tabs(g, surf)
+    box = pygame.mask.from_surface(surf, 40).get_bounding_rects()[0]
+    assert box.left > scr.GRID_X and box.right < scr.DETAIL.right, lang
 
 
 def test_the_screen_draws_and_the_cursor_is_framed(run):
@@ -274,6 +303,30 @@ def test_the_screen_draws_and_the_cursor_is_framed(run):
     # the grid stays left of the panel, both above the help bar
     assert scr.cell_rect(scr.COLS - 1).right < scr.DETAIL.left
     assert scr.GRID_Y + scr.LAYER_H < hint_bar.BAND_Y and scr.DETAIL.bottom < hint_bar.BAND_Y
+    assert scr.TABS_Y + 30 < scr.GRID_Y - 5                                  # the tabs above the cursor's frame
+
+
+def test_the_second_page_draws(run):
+    g = run.game
+    g.ach_page, g.ach_index = 1, 5
+    surf = pygame.Surface((1280, 720))
+    surf.fill((1, 2, 3))
+    scr.draw_achievements_inner(g, surf)
+    r = scr.cell_rect(5).inflate(10, 10)
+    import menu_ui
+    assert surf.get_at((r.centerx, r.top + 1))[:3] == menu_ui.SEL_EDGE
+    assert scr.catalog(g) is achievements.CATALOG_ADV
+    # the room kept for Act 3: nothing drawn after the twentieth card
+    empty = scr.cell_rect(len(achievements.CATALOG_ADV)).inflate(-4, -4)
+    assert surf.get_at(empty.center)[:3] == (1, 2, 3)
+
+
+def test_each_page_counts_its_own(run):
+    g = run.game
+    data = {"unlocked": {"first_blood": "x", "adv_pilot": "x", "adv_act2": "x"}, "progress": {}, "tiers": {}}
+    assert achievements.unlocked_count(data, achievements.CATALOG_IDS) == 1
+    assert achievements.unlocked_count(data, achievements.ADV_IDS) == 2
+    assert achievements.unlocked_count(data) == 3
 
 
 def test_the_layers_are_kept_between_frames(run):

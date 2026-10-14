@@ -25,7 +25,8 @@ _layer = {}
 
 
 def screen_key(game):
-    """What counts as "another screen": the menu screen, the Adventure's screen and pane, the options tab, the help page."""
+    """What counts as "another screen": the menu screen, the Adventure's screen and pane, the options tab, the help page,
+    the page of the achievements."""
     g = game
     screen = getattr(g, "menu_screen", "")
     key = [screen]
@@ -37,6 +38,8 @@ def screen_key(game):
         key.append(int(getattr(g, "opt_tab", 0) or 0))
     elif screen == "help":
         key.append(int(getattr(g, "help_page", 0) or 0))
+    elif screen == "achievements":
+        key.append(int(getattr(g, "ach_page", 0) or 0))          # ARCADE / AVENTURE
     return tuple(key)
 
 
