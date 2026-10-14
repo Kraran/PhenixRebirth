@@ -58,6 +58,9 @@ CATALOG = [
 
 CATALOG_IDS = [aid for aid, _ in CATALOG]
 
+# Secret ones: until they are unlocked, the screen shows a "?" instead of their name and of how to get them
+SECRETS = frozenset(("pleiades", "boldly_go", "razor", "one_up_1337", "elite_8086"))
+
 # aid -> (normal, bronze, silver, gold) thresholds
 SCALABLE = {
     "first_blood": (1, 100, 500, 2000),
@@ -160,6 +163,15 @@ def unlock_achievement(aid, data=None):
     unlocked[aid] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     save_achievements(data)
     return True
+
+
+def is_hidden(aid, data=None):
+    """A secret not found yet."""
+    if aid not in SECRETS:
+        return False
+    if data is None:
+        data = load_achievements()
+    return aid not in (data.get("unlocked") or {})
 
 
 def unlocked_count(data=None):

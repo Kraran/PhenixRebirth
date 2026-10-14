@@ -47,7 +47,7 @@ def kind_of(game, event):
         if event.button == _PAD_BACK or event.button in _PAD_START:
             return "back"
         if event.button in (4, 5):
-            return "nav"                     # LB / RB: the tabs of the options
+            return "nav"                     # LB / RB: the tabs of the options, scores / achievements / jukebox
         return None
     if et in (pygame.JOYHATMOTION, pygame.JOYAXISMOTION):
         return "nav"
@@ -110,7 +110,7 @@ def snapshot(game):
                    getattr(g, "play_mode", ""), getattr(g, "difficulty", ""),
                    getattr(g, "ship_select_index", 0), getattr(g, "juke_index", 0),
                    getattr(g, "hs_char_index", 0), tuple(getattr(g, "hs_name", ()) or ()),
-                   getattr(g, "opt_tab", 0), getattr(g, "help_page", 0)),
+                   getattr(g, "opt_tab", 0), getattr(g, "help_page", 0), getattr(g, "ach_index", 0)),
         "story": _story_part(g),
         "options": None,
     }

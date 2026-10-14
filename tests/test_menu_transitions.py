@@ -1,5 +1,5 @@
-"""Slide transitions between menu screens (src/menu_fx.py), one title colour, the add-on frames, the achievements
-list kept inside its panel."""
+"""Slide transitions between menu screens (src/menu_fx.py), one title colour, the add-on frames (the achievements
+grid: test_achievements_grid.py)."""
 import pygame
 import pytest
 
@@ -160,7 +160,7 @@ def test_red_is_kept_for_what_destroys(run):
     assert colours[i18n.t("quit_game")] == menu_ui.TITLE        # quitting destroys nothing
 
 
-# --- the add-on frames and the achievements list -----------------------------------------------------------------
+# --- the add-on frames -----------------------------------------------------------------------------------------
 def test_addon_list_and_preview_line_up(run, monkeypatch):
     import addon
     monkeypatch.setattr(addon, "available_sets", lambda fresh=False: [("a1", "Game A"), ("b1", "Game B")])
@@ -183,18 +183,3 @@ def test_addon_list_and_preview_line_up(run, monkeypatch):
     left, right = sorted(big, key=lambda r: r.x)
     assert left.top == right.top and left.h == right.h            # same top, same height
     assert abs((left.left - 0) - (1280 - right.right)) <= 1       # the pair is centred
-
-
-def test_achievements_rows_stay_inside_the_panel(run):
-    g = run.game
-    g.menu_screen = "achievements"
-    row_h, top, bottom, max_s = g._ach_view()
-    for scroll in (0.0, row_h * 0.5, max_s / 2, max_s):
-        g.ach_scroll = scroll
-        surf = pygame.Surface((1280, 720))
-        surf.fill((1, 2, 3))
-        import achievements_screen
-        achievements_screen.draw_achievements_inner(g, surf)
-        # just above the panel, between the counter and the panel's top edge, nothing from the rows
-        for x in list(range(80, 520, 7)) + list(range(760, 1100, 7)):     # (the counter sits in the middle)
-            assert surf.get_at((x, top - 4))[:3] == (1, 2, 3), (scroll, x)

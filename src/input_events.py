@@ -192,19 +192,20 @@ def on_keydown(game, event):
             ) or game._is_menu_confirm(event.key):
                 game._menu_back()                    # back on CREDITS in EXTRAS (as with B on the pad)
         elif game.menu_screen == "achievements":
-            if event.key in (
-                pygame.K_UP, pygame.K_DOWN, pygame.K_w, pygame.K_s, pygame.K_z,
-            ) or game._is_menu_up(event.key) or game._is_menu_down(event.key):
-                pass
+            # the arrows move the cursor in the grid; Tab / Page up / Page down go to the scores and the jukebox
+            if game._is_menu_up(event.key):
+                game._ach_move(0, -1)
+            elif game._is_menu_down(event.key):
+                game._ach_move(0, 1)
             elif event.key in (pygame.K_RIGHT, pygame.K_d):
-                game._extra_step(1)
+                game._ach_move(1, 0)
             elif event.key in (pygame.K_LEFT, pygame.K_a, pygame.K_q):
-                game._extra_step(-1)
-            elif event.key in (
-                pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE,
-                pygame.K_ESCAPE, pygame.K_BACKSPACE,
-            ):
-                game._menu_back()                    # up to the main menu, like Esc and the pad's B
+                game._ach_move(-1, 0)
+            elif event.key in (pygame.K_TAB, pygame.K_PAGEUP, pygame.K_PAGEDOWN):
+                shift = bool(getattr(event, "mod", 0) & pygame.KMOD_SHIFT)
+                game._extra_step(-1 if (event.key == pygame.K_PAGEUP or shift) else 1)
+            elif event.key == pygame.K_BACKSPACE:
+                game._menu_back()                    # up to EXTRAS, like Esc and the pad's B
         elif game.menu_screen == "jukebox":
             if getattr(game, "juke_video", False):
                 if event.key in (
@@ -216,6 +217,9 @@ def on_keydown(game, event):
                 game._menu_nav(-1)
             elif game._is_menu_down(event.key):
                 game._menu_nav(1)
+            elif event.key in (pygame.K_TAB, pygame.K_PAGEUP, pygame.K_PAGEDOWN):
+                shift = bool(getattr(event, "mod", 0) & pygame.KMOD_SHIFT)
+                game._extra_step(-1 if (event.key == pygame.K_PAGEUP or shift) else 1)
             elif event.key in (pygame.K_RIGHT, pygame.K_d):
                 game._extra_step(1)
             elif event.key in (pygame.K_LEFT, pygame.K_a, pygame.K_q):
@@ -226,7 +230,10 @@ def on_keydown(game, event):
             # Invisible cheats on this screen. Empty unicode (numlock,
             # dead keys) must NOT kick back to the title.
             ch = (event.unicode or "")
-            if event.key in (pygame.K_RIGHT, pygame.K_d):
+            if event.key in (pygame.K_TAB, pygame.K_PAGEUP, pygame.K_PAGEDOWN):
+                shift = bool(getattr(event, "mod", 0) & pygame.KMOD_SHIFT)
+                game._extra_step(-1 if (event.key == pygame.K_PAGEUP or shift) else 1)
+            elif event.key in (pygame.K_RIGHT, pygame.K_d):
                 game._extra_step(1)
             elif event.key in (pygame.K_LEFT, pygame.K_a, pygame.K_q):
                 game._extra_step(-1)
@@ -396,9 +403,14 @@ def on_joy_button(game, event):
             game._reset_menu_idle()
         elif event.button in (4, 5) and game.menu_screen == "options":
             game._options_tab_step(-1 if event.button == 4 else 1)      # LB / RB: the tabs of the options
+        elif event.button in (4, 5) and game.menu_screen in ("highscores", "achievements", "jukebox"):
+            if not getattr(game, "juke_video", False):
+                game._extra_step(-1 if event.button == 4 else 1)        # LB / RB: scores, achievements, jukebox
+        elif event.button == 0 and game.menu_screen == "achievements":
+            pass                                 # A on the grid: nothing to open (the panel follows the cursor)
         elif event.button == 0:  # A — confirm / enter
             game._reset_menu_idle()
-            if game.menu_screen in ("highscores", "credits", "achievements"):
+            if game.menu_screen in ("highscores", "credits"):
                 game._menu_back()
             else:
                 game._menu_confirm()
@@ -457,7 +469,12 @@ def on_joy_hat(game, event):
                     game._extra_step(1)
                 elif hx < 0:
                     game._extra_step(-1)
-            elif game.menu_screen in ("highscores", "achievements"):
+            elif game.menu_screen == "achievements":
+                if hx != 0:
+                    game._ach_move(1 if hx > 0 else -1, 0)
+                if hy != 0:
+                    game._ach_move(0, -1 if hy > 0 else 1)
+            elif game.menu_screen == "highscores":
                 if hx > 0:
                     game._extra_step(1)
                 elif hx < 0:
@@ -561,8 +578,16 @@ def on_joy_axis(game, event):
                     game._joy_axis_latch_y = 1
                     game._joy_menu_cooldown = 0.28
     elif not game.started and not game.game_over:
-        if game.menu_screen == "achievements" and event.axis == 1:
-            pass
+        if game.menu_screen == "achievements" and event.axis in (0, 1):
+            latch = "_joy_axis_latch_x" if event.axis == 0 else "_joy_axis_latch_y"
+            if abs(event.value) < 0.40:
+                setattr(game, latch, 0)
+            elif game._joy_menu_cooldown <= 0:
+                way = 1 if event.value > DEAD else (-1 if event.value < -DEAD else 0)
+                if way and getattr(game, latch, 0) != way:
+                    setattr(game, latch, way)
+                    game._joy_menu_cooldown = 0.22
+                    game._ach_move(way, 0) if event.axis == 0 else game._ach_move(0, way)
         elif game.menu_screen == "jukebox" and event.axis == 1:
             if getattr(game, "juke_video", False):
                 pass
@@ -577,7 +602,7 @@ def on_joy_axis(game, event):
                     game._menu_nav(1)
                     game._joy_axis_latch_y = 1
                     game._joy_menu_cooldown = 0.22
-        elif game.menu_screen in ("highscores", "achievements", "jukebox") and event.axis == 0:
+        elif game.menu_screen in ("highscores", "jukebox") and event.axis == 0:
             if abs(event.value) < 0.40:
                 game._joy_axis_latch_x = 0
             elif game._joy_menu_cooldown <= 0:

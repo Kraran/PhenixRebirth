@@ -317,7 +317,8 @@ def menu_items(game):
     if screen == "highscores":
         return [("l", "hint_jukebox"), ("r", "hint_feats"), BACK]
     if screen == "achievements":
-        return [("ud", "hint_scroll"), ("l", "hint_scores"), ("r", "hint_jukebox"), BACK]
+        tabs = [] if getattr(g, "story_door", None) else [("sh", "hint_scores_jukebox")]
+        return [("all", "hint_choose")] + tabs + [BACK]
     if screen == "jukebox":
         if getattr(g, "juke_video", False):
             return [("ok", "hint_stop")]

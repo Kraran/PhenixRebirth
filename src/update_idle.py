@@ -82,8 +82,6 @@ def tick_menu_or_gameover(game):
         game.story.update(game.dt, -game._credits_scroll_axis())
     if not game.started and game.menu_screen == "jukebox":
         game._update_jukebox()
-    if not game.started and game.menu_screen == "achievements":
-        game._update_ach_scroll()
     if not game.started and game.menu_screen == "credits":
         axis = game._credits_scroll_axis()
         # signed px/s: negative = normal (text rises)

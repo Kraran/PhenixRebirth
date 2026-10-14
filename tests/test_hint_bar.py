@@ -46,7 +46,7 @@ def test_every_classic_menu_has_a_bar(run, screen):
     items = hint_bar.menu_items(g)
     assert items, screen
     for kind, label in items:
-        assert kind in (None, "ud", "lr", "l", "r", "ok", "back", "sh")
+        assert kind in (None, "ud", "lr", "l", "r", "all", "ok", "back", "sh")
         assert i18n.t(label) != label, label                  # a real text, not a raw key
     drawn = []
     real = hint_bar.draw
