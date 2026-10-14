@@ -146,7 +146,7 @@ PhenixRebirth/
 ├── requirements.txt
 ├── LICENSE
 ├── VERSION
-├── assets/          # sprites, music, SFX, logo
+├── assets/          # sprites, music, SFX, logo, fonts
 ├── docs/screenshots/
 └── src/             # game, player, enemies, boss, i18n…
 ```
@@ -157,11 +157,13 @@ Franck Fornasari (Kraran)
 
 Music: *Phenix — Eternal Dawn*, *Eternal Dawn (Game Over)*, *Last Coin (Credits)* — created with [Suno](https://suno.com).
 
+Fonts: [Audiowide](https://fonts.google.com/specimen/Audiowide) (titles) and [Play](https://fonts.google.com/specimen/Play) (text), SIL Open Font License 1.1; [DejaVu Sans](https://dejavu-fonts.github.io/) Bold, reduced to Latin, Greek, Cyrillic and symbols, for what they lack (Bitstream Vera licence). The licences ship with them in `assets/fonts`.
+
 Tech: Python 3, Pygame 2 (SCALED GPU present), delta-time action loop.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE). The fonts in `assets/fonts` keep their own licences (the `.txt` files next to them).
 
 ## Disclaimer
 

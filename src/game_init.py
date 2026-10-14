@@ -24,6 +24,7 @@ from story import StoryHub
 from text_cache import TextCache
 from user_settings import load_user_settings
 from errlog import log_exc
+import fonts
 
 
 def init_display(game):
@@ -262,12 +263,14 @@ def init_run_state(game):
 
 def init_fonts_and_logo(game):
     """Fonts, text caches and the animated title logo."""
-    # Fonts with broad Unicode coverage (Cyrillic, accents, etc.)
-    _font_names = "dejavusans,segoe ui,arial,consolas,notosans"
-    game.font = pygame.font.SysFont(_font_names, 28, bold=True)
-    game.menu_font = pygame.font.SysFont(_font_names, 22, bold=True)
-    game.big_font = pygame.font.SysFont(_font_names, 64, bold=True)
-    game.medium_font = pygame.font.SysFont(_font_names, 32, bold=True)
+    # The game's own fonts (assets/fonts, see fonts.py): Audiowide for the titles, Play for the rest
+    game.font = fonts.text(28)
+    game.menu_font = fonts.text(22)
+    game.big_font = fonts.title(64)
+    game.medium_font = fonts.title(32)
+    game.body_font = fonts.body(22)              # what is read at length: help of the options, descriptions
+    game.read_font = fonts.body(28)              # the Adventure's story
+    game.help_small = fonts.body(20)             # the help pages, the achievements' descriptions
     game.text_cache = TextCache()
     game._opt_help_cache = {}
     game._credits_layout_cache = None

@@ -96,6 +96,7 @@ def test_no_slide_in_a_game_or_under_a_fade(run):
 
 def test_the_new_screen_moves_and_the_bar_stays(run):
     g = run.game
+    g.starfield.draw = lambda surface: None                    # the stars flow behind the see-through bar
     run.key(pygame.K_RETURN)
     first = pygame.Surface.copy(g.screen)
     run.frames(int(menu_fx.SLIDE_SEC * 60) + 3)

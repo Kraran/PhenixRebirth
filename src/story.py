@@ -1045,10 +1045,12 @@ class StoryHub:
         return self.screen == "intro"
 
     # --- draw ---
-    def draw(self, surface, font, medium, small):
+    def draw(self, surface, font, medium, small, body=None):
+        """`body`: the font of what is read at length (the story, the descriptions); `font` when not given."""
         self._ensure_art()
+        self._body = body or small
         if self.screen == "intro":
-            self._draw_intro(surface, font, small)
+            self._draw_intro(surface, body or font, small)
             return
         if self.screen != "hub":
             self._draw_gate(surface, font, medium, small)
@@ -1462,8 +1464,9 @@ class StoryHub:
                              border_radius=12)
             col = MODE_COLORS[key]
             _text(surface, medium, t("story_mode_" + key), col if focus else (150, 155, 175), r.y + 46, centerx=r.centerx)
-            for li, line in enumerate(_wrap(small, t("story_mode_%s_d" % key), r.w - 40)):
-                _text(surface, small, line, (200, 200, 215) if focus else (130, 135, 155), r.y + 112 + li * 36, centerx=r.centerx)
+            body = getattr(self, "_body", None) or small
+            for li, line in enumerate(_wrap(body, t("story_mode_%s_d" % key), r.w - 40)):
+                _text(surface, body, line, (200, 200, 215) if focus else (130, 135, 155), r.y + 112 + li * 36, centerx=r.centerx)
 
     def _draw_log(self, surface, font, small):
         box = pygame.Rect(80, 78, BASE_WIDTH - 160, BASE_HEIGHT - 168)
@@ -1521,8 +1524,9 @@ class StoryHub:
             head = t(DOOR_TITLES.get(door, door))
             _text(surface, medium, head, (255, 230, 120) if chosen else (170, 175, 200), y + (26 if tight else 30),
                   left=box.x + 28)
-            for j, line in enumerate(_wrap(small, t("story_door_" + door), width - 60)[:2]):
-                _text(surface, small, line, (205, 208, 228) if chosen else (140, 145, 170),
+            body = getattr(self, "_body", None) or small
+            for j, line in enumerate(_wrap(body, t("story_door_" + door), width - 60)[:2]):
+                _text(surface, body, line, (205, 208, 228) if chosen else (140, 145, 170),
                       y + (60 if tight else 68) + j * (27 if tight else 30), left=box.x + 28)
 
     def _draw_bestiary(self, surface, font, medium, small):
@@ -1570,8 +1574,9 @@ class StoryHub:
         _text(surface, small, t("story_best_count").format(n=count), (150, 155, 180), frame.bottom + 76, centerx=cx)
         line_y = frame.bottom + 116
         if tiers["text"]:
-            for line in _wrap(small, t(entry["text"]), panel.w - 40):
-                _text(surface, small, line, (215, 218, 232), line_y, centerx=cx)
+            body = getattr(self, "_body", None) or small
+            for line in _wrap(body, t(entry["text"]), panel.w - 40):
+                _text(surface, body, line, (215, 218, 232), line_y, centerx=cx)
                 line_y += 36
         if tiers["bonus"]:
             _text(surface, small, t("story_best_bonus_boss" if entry.get("boss") else "story_best_bonus").format(

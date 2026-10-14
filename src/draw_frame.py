@@ -9,6 +9,7 @@ import pygame
 
 import addon as mame_addon
 import credits_screen
+import fonts
 import highscores_screen
 import hint_bar
 import menu_ui
@@ -243,7 +244,8 @@ def draw_menu_screens(game):
         game._draw_ship_select(game.game_surface)
     elif game.menu_screen == "story_hub":
         if getattr(game, "story", None):
-            game.story.draw(game.game_surface, game.font, game.medium_font, game.font)
+            game.story.draw(game.game_surface, game.font, game.medium_font, game.font,
+                            body=getattr(game, "read_font", None))
             if not game.quit_confirm:
                 hint_bar.draw_for(game, game.game_surface)        # the same help bar as the classic menus
     elif game.menu_screen == "addon":
@@ -429,7 +431,7 @@ def draw_arcade(game):
                            menu_ui.TEXT_SEL if chosen else (205, 205, 230))
         descs.append((t(key), t(key + "_d"), chosen))
     # what the chosen mode and difficulty mean
-    small = getattr(game, "menu_font", None) or font
+    small = getattr(game, "body_font", None) or font
     info = pygame.Rect(box.x, box.bottom + 24, box.w, 0)
     lines = []
     for name, text, chosen in descs:
@@ -449,7 +451,7 @@ def draw_extras(game):
     Extras tab of the Adventure; the chosen one is lit."""
     surf = game.game_surface
     _title(game, "extras_title")
-    small = getattr(game, "menu_font", None) or game.font
+    small = getattr(game, "body_font", None) or game.font
     width, top, step, h = 860, 96, 94, 82
     ready = mame_addon.addon_ready()
     for i, name in enumerate(main_menu.EXTRAS):
@@ -478,7 +480,7 @@ def draw_menu_footer(game):
     if game.menu_screen == "main":
         ver = getattr(game, "_ver_surf", None)
         if ver is None:
-            vf = pygame.font.SysFont(pygame.font.get_default_font(), 16)
+            vf = fonts.text(13)
             ver = vf.render("v1.4.5", True, (110, 110, 130))
             game._ver_surf = ver
         if bar:

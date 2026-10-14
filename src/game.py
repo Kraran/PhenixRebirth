@@ -68,6 +68,7 @@ import achievements_screen
 import ship_select_screen
 import highscores_screen
 import credits_screen
+import fonts
 import update_idle
 import anchor_fx
 import update_play
@@ -585,8 +586,9 @@ class Game:
             )
             extra = "  ||" if playing and self.juke_paused else ("  >" if playing else "")
             labels.append(self._juke_title(key) + extra)
-        row_h = self.medium_font.get_linesize()
-        menu_ui.draw_rows(self, surface, self.medium_font, labels, y0, 46,
+        rows_font = fonts.text(32)                  # the tracks: a list to read, in Play (the titles are Audiowide)
+        row_h = rows_font.get_linesize()
+        menu_ui.draw_rows(self, surface, rows_font, labels, y0, 46,
                           int(getattr(self, "juke_index", 0) or 0) % max(1, len(cat)),
                           pad_y=max(1, (46 - row_h) // 2), panel_pad=(24, 12))
         # Spectrum + progress of current audio
@@ -3176,7 +3178,7 @@ class Game:
             panel.blit(hdr, (18, 14))
             body = t("opt_help_" + key)
             yy = 58
-            body_font = getattr(self, "menu_font", None) or self.font
+            body_font = getattr(self, "body_font", None) or self.font
             for line in self._wrap_ui(body, body_font, w - 36):
                 surf = self._txt(body_font, line, (200, 200, 230))
                 panel.blit(surf, (18, yy))
