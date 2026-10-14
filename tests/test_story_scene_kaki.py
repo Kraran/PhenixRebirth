@@ -69,7 +69,7 @@ def test_the_title_and_text_are_in_every_language_table():
     from i18n import T, LANG_CODES
     for key in ("story_scene_best2", "story_scene_best2_t"):
         assert set(T[key]) == set(LANG_CODES) and t(key)
-    assert t("story_scene_best2_t") == "Bestiaire : les oiseaux kaki"
+    assert t("story_scene_best2_t") == "Bestiaire II : les oiseaux kaki"
 
 
 def test_the_scene_comes_right_after_the_first_sortie():
@@ -130,7 +130,7 @@ def test_the_replay_line_follows_the_first_sortie_scene():
     entries = hub.log_entries()
     assert entries[:5] == [{"intro": True}, {"scene": "ch1_sortie"}, {"scene": ID}, {"scene": "dome_1"},
                            {"scene": "paint_1"}]          # (the gargoyle scene, not seen here, comes after the khaki one)
-    assert ss.log_text(entries[2], t) == "Revoir : Bestiaire : les oiseaux kaki"
+    assert ss.log_text(entries[2], t) == "Revoir : Bestiaire II : les oiseaux kaki"
 
 
 def test_the_journal_replays_the_scene_and_never_launches_the_mission():
