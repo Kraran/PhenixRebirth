@@ -6,6 +6,7 @@ as `game`; behaviour is unchanged. Game keeps a thin method with the old name.
 """
 import pygame
 
+import fonts
 import hint_bar
 import menu_ui
 
@@ -63,7 +64,7 @@ def draw_achievements_inner(game, surface):
     row_h, top, bottom, max_s = game._ach_view()
     x = 72
     col_w = BASE_WIDTH - 180
-    body = getattr(game, "help_small", None) or game.font
+    body = getattr(game, "help_small", None) or fonts.body(20)
     n_items = len(CATALOG)
     scroll = float(getattr(game, "ach_scroll", 0.0) or 0.0)
     scroll = max(0.0, min(max_s, scroll))

@@ -196,7 +196,7 @@ def test_a_slide_frame_has_the_same_pixels_without_the_starfield(run, monkeypatc
     g._draw_canvas()
     quick = pygame.image.tostring(g.game_surface, "RGB")
     g.game_surface.fill((255, 0, 255))                                   # whatever was behind
-    g.story.draw(g.game_surface, g.font, g.medium_font, g.font)
+    g.story.draw(g.game_surface, g.font, g.medium_font, g.font, body=g.read_font)   # as draw_frame does
     import hint_bar
     hint_bar.draw_for(g, g.game_surface)                                 # the help bar is drawn over the slide too
     assert pygame.image.tostring(g.game_surface, "RGB") == quick

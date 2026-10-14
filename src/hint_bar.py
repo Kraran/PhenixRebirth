@@ -19,10 +19,10 @@ import pygame
 
 from i18n import t
 import i18n
+import fonts
 import main_menu
 from settings import BASE_WIDTH, BASE_HEIGHT
 
-FONT_NAMES = "dejavusans,segoe ui,arial,consolas,notosans"   # the same fonts as the menus (game_init.py)
 BAND_H = 46                       # height of the band at the bottom of the screen
 BAND_Y = BASE_HEIGHT - BAND_H
 BAND_ALPHA = 168                  # the band lets the stars show through a little, like the Adventure panels
@@ -51,7 +51,7 @@ def _font(size):
     if f is None:
         if not pygame.font.get_init():
             pygame.font.init()
-        f = _fonts[size] = pygame.font.SysFont(FONT_NAMES, size, bold=True)
+        f = _fonts[size] = fonts.text(size)
     return f
 
 

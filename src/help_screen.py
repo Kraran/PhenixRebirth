@@ -7,6 +7,7 @@ Game keeps thin methods with the old names that call them.
 """
 import pygame
 
+import fonts
 import menu_ui
 import os
 
@@ -235,15 +236,7 @@ def draw_help_page(game, surface, page, y_off):
         def _fit(surf, box_h=90, ship_h=None):
             return fit_art(surf, box_h, ship_h)
 
-        body_font = getattr(game, "help_small", None)
-        if body_font is None:
-            try:
-                body_font = pygame.font.SysFont(
-                    ("segoeui", "tahoma", "verdana", "arial"), 20, bold=True
-                )
-            except Exception:
-                body_font = game.font
-            game.help_small = body_font
+        body_font = getattr(game, "help_small", None) or fonts.body(20)
 
         def _text_col(header, lines, hx, col_w, hcol, y0):
             s = game._txt(game.medium_font, header, hcol)
