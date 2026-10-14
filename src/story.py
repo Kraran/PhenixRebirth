@@ -1060,7 +1060,7 @@ class StoryHub:
             "bestiary": t("story_best"),
             "extras": t("story_extras"),
         }[self.pane]
-        ts = medium.render(title, True, (255, 150, 70))
+        ts = medium.render(title, True, menu_ui.TITLE)
         surface.blit(ts, (BASE_WIDTH // 2 - ts.get_width() // 2, 18))
 
         if self.cheating:
@@ -1350,7 +1350,7 @@ class StoryHub:
         cx = BASE_WIDTH // 2
         titles = {"slots": "story_gate_title", "delete": "story_delete_title", "leave": "story_leave_title",
                   "name": "story_name_title", "mode": "story_mode_title"}
-        ts = medium.render(t(titles[self.screen]), True, (255, 150, 70))
+        ts = medium.render(t(titles[self.screen]), True, menu_ui.TITLE)
         surface.blit(ts, (cx - ts.get_width() // 2, 18))
         getattr(self, "_draw_gate_" + self.screen)(surface, font, medium, small)
 
@@ -1400,7 +1400,7 @@ class StoryHub:
         cx = BASE_WIDTH // 2
         info = self._summary()
         _text(surface, medium, info.get("name") or t("story_slot_damaged"), (255, 230, 140), 200, centerx=cx)
-        _text(surface, small, t("story_delete_warn"), (255, 120, 100), 270, centerx=cx)
+        _text(surface, small, t("story_delete_warn"), menu_ui.DANGER, 270, centerx=cx)
         self._draw_yes_no(surface, small, cx, danger=True)
 
     def _draw_gate_leave(self, surface, font, medium, small):
@@ -1416,7 +1416,7 @@ class StoryHub:
             b = pygame.Rect(cx - 230 + k * 260, 340, 200, 60)
             focus = self.del_yes == yes
             _fill(surface, menu_ui.SEL_FILL if focus else (22, 24, 36), b, 10)
-            pygame.draw.rect(surface, ((255, 90, 80) if yes and danger else menu_ui.SEL_EDGE) if focus else menu_ui.PANEL_EDGE,
+            pygame.draw.rect(surface, (menu_ui.DANGER if yes and danger else menu_ui.SEL_EDGE) if focus else menu_ui.PANEL_EDGE,
                              b, 3 if focus else 2, border_radius=10)
             _text(surface, small, label, (255, 230, 140) if focus else (150, 155, 175), b.centery, centerx=b.centerx)
 

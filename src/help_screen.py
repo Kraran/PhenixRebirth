@@ -6,6 +6,8 @@ The functions take the Game object as `game` and behave exactly as before;
 Game keeps thin methods with the old names that call them.
 """
 import pygame
+
+import menu_ui
 import os
 
 from settings import BASE_WIDTH, asset_path
@@ -151,7 +153,7 @@ def draw_help_page(game, surface, page, y_off):
     def yy(y):
         return int(y + y_off)
 
-    title = game._txt(game.big_font, "PHENIX REBIRTH", (255, 120, 255))
+    title = game._txt(game.big_font, "PHENIX REBIRTH", menu_ui.TITLE)
     surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, yy(28)))
     sub = game._txt(game.font, t("subtitle"), (180, 160, 220))
     surface.blit(sub, (BASE_WIDTH // 2 - sub.get_width() // 2, yy(82)))

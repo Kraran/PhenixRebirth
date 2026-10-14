@@ -9,7 +9,7 @@ import pygame
 import hint_bar
 import menu_ui
 
-from settings import BASE_WIDTH, BASE_HEIGHT
+from settings import BASE_WIDTH
 from i18n import t
 from achievements import (
     CATALOG,
@@ -21,14 +21,39 @@ from achievements import (
 )
 
 
+_LAYERS = {}
+
+
+def _list_layer(w, h):
+    """The see-through layer the rows are drawn on (kept from one frame to the next)."""
+    img = _LAYERS.get(("layer", w, h))
+    if img is None:
+        img = _LAYERS[("layer", w, h)] = pygame.Surface((w, h), pygame.SRCALPHA)
+    return img
+
+
+def _fade_mask(w, h, edge=22):
+    """Opaque in the middle, fading to nothing over `edge` px at the top and the bottom."""
+    img = _LAYERS.get(("mask", w, h))
+    if img is None:
+        img = pygame.Surface((w, h), pygame.SRCALPHA)
+        img.fill((255, 255, 255, 255))
+        for i in range(edge):
+            a = int(255 * (i + 1) / (edge + 1))
+            pygame.draw.line(img, (255, 255, 255, a), (0, i), (w, i))
+            pygame.draw.line(img, (255, 255, 255, a), (0, h - 1 - i), (w, h - 1 - i))
+        _LAYERS[("mask", w, h)] = img
+    return img
+
+
 def draw_achievements_inner(game, surface):
     data = getattr(game, "ach_data", None)
     if not data:
         data = game.ach_data = load_achievements()
     unlocked = data.get("unlocked") or {}
     tc = getattr(game, "text_cache", None)
-    hdr = (tc.get(game.medium_font, t("achievements"), (255, 180, 90))
-           if tc else game._txt(game.medium_font, t("achievements"), (255, 180, 90)))
+    hdr = (tc.get(game.medium_font, t("achievements"), menu_ui.TITLE)
+           if tc else game._txt(game.medium_font, t("achievements"), menu_ui.TITLE))
     surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 18))
     count_txt = f"{unlocked_count(data)} / {len(CATALOG)}"
     count = (tc.get(game.font, count_txt, (180, 180, 210))
@@ -43,9 +68,16 @@ def draw_achievements_inner(game, surface):
     scroll = float(getattr(game, "ach_scroll", 0.0) or 0.0)
     scroll = max(0.0, min(max_s, scroll))
     game.ach_scroll = scroll
-    menu_ui.panel(surface, pygame.Rect(x - 28, top - 2, col_w + 70, bottom - top + 12))
+    panel = menu_ui.panel(surface, pygame.Rect(x - 28, top - 2, col_w + 70, bottom - top + 12))
 
-    # No surface.set_clip — SCALED/GPU present can freeze on clip changes.
+    # The rows are drawn on a layer the size of the inside of the panel, then put on screen: whatever scrolls out
+    # is cut at the panel's edges (no surface.set_clip — SCALED/GPU present can freeze on clip changes), and the
+    # top and bottom lines fade out a little.
+    oy = top                                    # the layer's first line is the list's first line on screen
+    view = _list_layer(BASE_WIDTH, bottom - top + 8)
+    view.fill((0, 0, 0, 0))
+    screen, surface = surface, view
+    top, bottom = 0, bottom - oy
     for i, (aid, kind) in enumerate(CATALOG):
         y = int(top + i * row_h - scroll)
         if y + row_h < top or y > bottom:
@@ -104,6 +136,10 @@ def draw_achievements_inner(game, surface):
             if dy + dsurf.get_height() > top:
                 surface.blit(dsurf, (tx, dy))
             dy += dsurf.get_height() + 4
+
+    view.blit(_fade_mask(view.get_width(), view.get_height()), (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+    surface, top, bottom = screen, oy, bottom + oy
+    surface.blit(view, (panel.x + 2, oy), area=pygame.Rect(panel.x + 2, 0, panel.w - 4, view.get_height()))
 
     if max_s > 1:
         bar_x = BASE_WIDTH - 36

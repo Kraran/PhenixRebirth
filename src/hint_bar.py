@@ -178,6 +178,10 @@ def band():
 
 def draw(game, surface, items, right=None, lit=None):
     """The band and its pairs at the bottom of `surface`. `right`: a small picture shown at the right end."""
+    hold = getattr(game, "_bar_hold", None)
+    if hold is not None:
+        hold.append((items, right, lit))         # a screen is sliding in: the bar is drawn in place afterwards
+        return
     surface.blit(band(), (0, BAND_Y))
     img = render(items, device_is_pad(game), lit)
     surface.blit(img, ((BASE_WIDTH - img.get_width()) // 2, BAND_Y + (BAND_H - img.get_height()) // 2))

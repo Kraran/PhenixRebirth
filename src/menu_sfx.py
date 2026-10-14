@@ -46,6 +46,8 @@ def kind_of(game, event):
             return "confirm"
         if event.button == _PAD_BACK or event.button in _PAD_START:
             return "back"
+        if event.button in (4, 5):
+            return "nav"                     # LB / RB: the tabs of the options
         return None
     if et in (pygame.JOYHATMOTION, pygame.JOYAXISMOTION):
         return "nav"

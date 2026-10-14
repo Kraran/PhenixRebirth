@@ -103,7 +103,7 @@ def draw_hs_row(game, surface, y, rank, name, score, col, score_right_x=None, co
 
 def draw_highscores(game):
     """High-score table (15 rows) drawn on the game surface."""
-    hdr = game._txt(game.big_font, t("high_scores"), (255, 120, 255))
+    hdr = game._txt(game.big_font, t("high_scores"), menu_ui.TITLE)
     game.game_surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 50))
     entries = game.hs_entries if game.hs_entries else load_highscores()
     base_y = 140
