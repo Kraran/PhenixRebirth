@@ -73,7 +73,7 @@ def test_the_title_and_text_are_in_every_language_table():
     from i18n import T, LANG_CODES
     for key in ("story_scene_bestboss", "story_scene_bestboss_t"):
         assert set(T[key]) == set(LANG_CODES) and t(key)
-    assert t("story_scene_bestboss_t") == "Bestiaire : le commandant avioïde"
+    assert t("story_scene_bestboss_t") == "Bestiaire V : le commandant avioïde" == t("story_m_bestboss")
 
 
 def test_the_scene_comes_after_the_dome_one_and_before_the_painting_one():
@@ -134,7 +134,7 @@ def test_the_replay_line_comes_after_the_dome_one_and_before_the_painting_one():
     entries = hub.log_entries()
     assert entries[:8] == [{"intro": True}, {"scene": "ch1_sortie"}, {"scene": "best_s2"}, {"scene": "best_s3"},
                            {"scene": "best_s4"}, {"scene": "dome_1"}, {"scene": ID}, {"scene": "paint_1"}]
-    assert ss.log_text(entries[6], t) == "Revoir : Bestiaire : le commandant avioïde"
+    assert ss.log_text(entries[6], t) == "Revoir : Bestiaire V : le commandant avioïde"
 
 
 def test_the_journal_replays_the_scene_and_never_launches_the_mission():

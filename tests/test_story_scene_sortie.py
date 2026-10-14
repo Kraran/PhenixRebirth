@@ -62,7 +62,7 @@ def test_the_title_and_text_are_in_every_language_table():
     from i18n import T, LANG_CODES
     for key in ("story_scene_sortie", "story_scene_sortie_t"):
         assert set(T[key]) == set(LANG_CODES) and t(key)
-    assert t("story_scene_sortie_t") == "Première sortie : les oiseaux bleus"
+    assert t("story_scene_sortie_t") == "Bestiaire I : les oiseaux bleus"
 
 
 def test_the_picture_is_the_one_given():
@@ -151,7 +151,7 @@ def test_the_replay_line_comes_first_after_the_intro():
     entries = hub.log_entries()
     assert entries[:5] == [{"intro": True}, {"scene": ID}, {"scene": "dome_1"}, {"scene": "paint_1"},
                            {"key": "story_log_sortie"}]
-    assert ss.log_text(entries[1], t) == "Revoir : Première sortie : les oiseaux bleus"
+    assert ss.log_text(entries[1], t) == "Revoir : Bestiaire I : les oiseaux bleus"
 
 
 def test_the_journal_replays_the_scene_and_never_launches_the_mission():
@@ -220,3 +220,17 @@ def test_the_five_bestiary_hunts_are_numbered_in_roman_numerals_in_every_languag
             assert rest.strip()
     assert t("story_m_bestboss") == "Bestiaire V : le commandant avioïde"
     assert i18n.T["story_m_bestboss"]["en"] == "Bestiary V: the Avioid commander"
+
+
+def test_the_journal_lines_of_the_five_hunts_carry_the_same_numeral_as_the_missions():
+    import i18n
+    keys = [("story_scene_sortie_t", "I"), ("story_scene_best2_t", "II"), ("story_scene_best3_t", "III"),
+            ("story_scene_best4_t", "IV"), ("story_scene_bestboss_t", "V")]
+    assert [ss.scene_of(m)["title"] for m in ("ch1_sortie", "best_s2", "best_s3", "best_s4", "best_boss")] == \
+        [k for k, _ in keys]
+    for key, numeral in keys:
+        fr, en = i18n.T[key]["fr"], i18n.T[key]["en"]
+        assert fr.startswith("Bestiaire %s : " % numeral) and en.startswith("Bestiary %s: " % numeral), (fr, en)
+        mission_fr = i18n.T[{"I": "story_m_sortie", "II": "story_m_best2", "III": "story_m_best3", "IV": "story_m_best4",
+                             "V": "story_m_bestboss"}[numeral]]["fr"]
+        assert mission_fr.startswith("Bestiaire %s : " % numeral)
