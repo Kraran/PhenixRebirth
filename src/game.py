@@ -75,6 +75,7 @@ import input_events
 import menu_sfx
 import hint_bar
 import menu_ui
+import main_menu
 import draw_frame
 import ach_helpers
 import addon_launch
@@ -319,9 +320,7 @@ class Game:
             self._juke_play_or_pause()
             return
         self._leave_jukebox_audio()
-        self.menu_screen = "main"
-        self.menu_index = 6
-        self.cheat_buffer = ""
+        self._back_to_extras("jukebox")
 
     def _extra_enter(self, screen):
         """HS ↔ Hauts faits ↔ Jukebox."""
@@ -360,7 +359,8 @@ class Game:
         self.menu_idle = 0.0
         self.input_grace = 0.45          # the same press / key repeat must not act in the screen just opened
         if door == "options":
-            self.menu_screen = "options"
+            self._open_options()
+            self.menu_index = 0
         elif door == "credits":
             self.menu_screen = "credits"
             self.credits_scroll = float(BASE_HEIGHT)
@@ -2988,11 +2988,18 @@ class Game:
             self.menu_index = (self.menu_index + direction) % n
             return
         if self.menu_screen == "main":
-            n = 9  # Jouer, Aventure, Add-on, mode, diff, Options, HS, Credits, Quitter
+            n = len(main_menu.MAIN)
+        elif self.menu_screen == "arcade":
+            n = len(main_menu.ARCADE)
+        elif self.menu_screen == "extras":
+            n = len(main_menu.EXTRAS)
         elif self.menu_screen == "reset_confirm":
             n = 2  # Oui, Non
         else:
+            # the options: the row of tabs (-1) then the rows of the open tab, round and round
             n = len(self._options_spec())
+            self.menu_index = (self.menu_index + 1 + direction) % (n + 1) - 1
+            return
         self.menu_index = (self.menu_index + direction) % n
 
 
@@ -3057,8 +3064,71 @@ class Game:
         return max(-1.0, min(1.0, v))
 
     def _focus_option(self, name):
+        """Put the cursor on the option `name`, in its tab."""
+        self.opt_tab = main_menu.tab_of(name)
         spec = self._options_spec()
         self.menu_index = spec.index(name) if name in spec else 0
+
+    def _open_options(self, pause=False):
+        """The options, on their first tab, the cursor on its first row (in the menus or from the pause)."""
+        self.opt_tab = 0
+        self.menu_index = 0
+        self.menu_screen = "options"
+        if pause:
+            self.pause_options = True
+
+    def _options_tab_step(self, direction):
+        """Next / previous tab (Tab, Page Up / Down, LB / RB, or Left / Right on the row of tabs)."""
+        n = len(main_menu.OPTION_TABS)
+        self.opt_tab = (int(getattr(self, "opt_tab", 0) or 0) + (1 if direction > 0 else -1)) % n
+        if self.menu_index >= 0:
+            self.menu_index = 0
+
+    def _open_extra(self, name):
+        """A screen of EXTRAS. B / Esc brings EXTRAS back on that paragraph (see _back_to_extras)."""
+        self.extras_index = main_menu.extras_index(name)
+        self.menu_idle = 0.0
+        if name == "highscores":
+            self.hs_entries = load_highscores()
+            self.menu_screen = "highscores"
+            self.menu_index = 0
+        elif name in ("achievements", "jukebox"):
+            self._extra_enter(name)
+        elif name == "credits":
+            self.menu_screen = "credits"
+            self.credits_scroll = float(BASE_HEIGHT)
+            self.credits_from_start = True
+            self.menu_index = 0
+        elif name == "help":
+            self.menu_screen = "help"
+            self.help_manual = True                  # opened by hand: no timer, the arrows turn the page
+            self.help_timer = 0.0
+            self.help_page = 0
+            self.help_scroll = 0.0
+            self.help_transitioning = False
+        elif name == "addon":
+            if mame_addon.available_sets(fresh=True):
+                self.menu_screen = "addon"
+                self.menu_index = 0
+                self.input_grace = 0.45              # the same press / key repeat must not launch the first ROM
+
+    def _help_turn(self, direction):
+        """The help opened from EXTRAS: Right / Down shows page 2, Left / Up page 1."""
+        page = 1 if direction > 0 else 0
+        if page != int(getattr(self, "help_page", 0) or 0):
+            self.help_page = page
+            self.help_transitioning = False
+            self.help_scroll = 0.0
+            self.help_timer = 0.0
+
+    def _back_to_extras(self, name=None):
+        """Back to EXTRAS, on the paragraph of `name` (or the one it was left on)."""
+        if name in main_menu.EXTRAS:
+            self.extras_index = main_menu.extras_index(name)
+        self.menu_screen = "extras"
+        self.menu_index = int(getattr(self, "extras_index", 0) or 0) % len(main_menu.EXTRAS)
+        self.menu_idle = 0.0
+        self.cheat_buffer = ""
 
 
 
@@ -3113,52 +3183,80 @@ class Game:
             cache[ckey] = panel
         self.game_surface.blit(panel, (x, y))
 
+    OPTION_LABELS = {
+        "control": "opt_control", "autofire": "opt_autofire", "sfx": "opt_sfx", "music": "opt_music",
+        "audio_mix": "opt_audio", "ingame_music": "opt_ingame", "rumble": "opt_rumble", "display": "opt_display",
+        "bezel": "opt_bezel", "fps": "opt_fps", "scanlines": "opt_scanlines", "gpu": "opt_gpu", "vsync": "opt_vsync",
+        "hz": "opt_hz", "language": "opt_language", "reset_hs": "opt_reset_hs",
+    }
+
+    def _option_label(self, key):
+        return t(self.OPTION_LABELS.get(key, key))
+
+    def _option_greyed(self, key):
+        """True for a row that does nothing now (the bezels outside fullscreen)."""
+        return key == "bezel" and getattr(self, "display_mode", "fullscreen") != "fullscreen"
+
+    def _option_value(self, key):
+        """The value shown for the option `key` ("" for the rows that are actions)."""
+        if key == "control":
+            return t("ctrl_pad") if self.input_mode == "gamepad" else t("ctrl_kb")
+        if key == "autofire":
+            return t("yes") if getattr(self, "autofire", True) else t("no")
+        if key == "sfx":
+            return f"{int(round(self.sfx_volume * 100))}%"
+        if key == "music":
+            return f"{int(round(self.music_volume * 100))}%"
+        if key == "audio_mix":
+            return t("audio_" + getattr(self, "audio_mix", "sfx"))
+        if key == "ingame_music":
+            return ingame_label(getattr(self, "ingame_music", "none"), t, asset_path)
+        if key == "rumble":
+            return f"{int(getattr(self, 'rumble_level', 3))} / 5"
+        if key == "display":
+            return {"window": t("disp_window"), "fullscreen": t("disp_fullscreen"),
+                    "borderless": t("disp_borderless")}.get(self.display_mode, self.display_mode)
+        if key == "bezel":
+            if self._option_greyed("bezel"):
+                return t("bezel_fullscreen_only")
+            styles = getattr(self, "BEZEL_STYLES", [("off", "bezel_off"), ("phoenix", "bezel_phoenix")])
+            return t({k: v for k, v in styles}.get(getattr(self, "bezel_style", "phoenix"), "bezel_phoenix"))
+        if key == "fps":
+            return t("yes") if self.show_fps else t("no")
+        if key == "scanlines":
+            sl = int(getattr(self, "scanlines", 0) or 0)
+            return "OFF" if sl <= 0 else str(sl)
+        if key == "gpu":
+            return t("yes") if getattr(self, "gpu_present", True) else t("no")
+        if key == "vsync":
+            return t("vsync_" + getattr(self, "vsync_mode", "adaptive"))
+        if key == "hz":
+            return f"{int(getattr(self, 'fps_cap', 120))} Hz"
+        if key == "language":
+            return next((n for c, n in LANGS if c == self.language), self.language)
+        return ""
+
+    def _option_fill(self, key):
+        """0..1 for the rows drawn as a gauge (volumes, vibrations), else None."""
+        if key == "sfx":
+            return float(self.sfx_volume)
+        if key == "music":
+            return float(self.music_volume)
+        if key == "rumble":
+            return int(getattr(self, "rumble_level", 3)) / 5.0
+        return None
+
     def _options_labels(self):
-        """Human-readable option rows matching _options_spec order."""
-        mode_labels = {
-            "window": t("disp_window"),
-            "fullscreen": t("disp_fullscreen"),
-            "borderless": t("disp_borderless"),
-        }
-        ctrl = t("ctrl_pad") if self.input_mode == "gamepad" else t("ctrl_kb")
-        vol_pct = int(round(self.sfx_volume * 100))
-        mus_pct = int(round(self.music_volume * 100))
-        disp = mode_labels.get(self.display_mode, self.display_mode)
-        fps_label = t("yes") if self.show_fps else t("no")
-        sl = int(getattr(self, "scanlines", 0) or 0)
-        scan_label = t("no") if sl <= 0 else f"{t('opt_scanlines')} {sl}"
-        lang_label = next((n for c, n in LANGS if c == self.language), self.language)
-        bezel_keys = {s[0]: s[1] for s in getattr(self, "BEZEL_STYLES", [("off", "bezel_off"), ("phoenix", "bezel_phoenix")])}
-        bezel_label = t(bezel_keys.get(getattr(self, "bezel_style", "phoenix"), "bezel_phoenix"))
-        mapping = {
-            "control": f"{t('opt_control')} :  <  {ctrl}  >",
-            "autofire": f"{t('opt_autofire')} :  <  {t('yes') if getattr(self, 'autofire', True) else t('no')}  >",
-            "sfx": f"{t('opt_sfx')} :  <  {vol_pct}%  >",
-            "music": f"{t('opt_music')} :  <  {mus_pct}%  >",
-            "audio_mix": f"{t('opt_audio')} :  <  {t('audio_' + getattr(self, 'audio_mix', 'sfx'))}  >",
-            "ingame_music": f"{t('opt_ingame')} :  <  {ingame_label(getattr(self, 'ingame_music', 'none'), t, asset_path)}  >",
-            "rumble": f"{t('opt_rumble')} :  <  {int(getattr(self, 'rumble_level', 3))} / 5  >",
-            "display": f"{t('opt_display')} :  <  {disp}  >",
-            "bezel": f"{t('opt_bezel')} :  <  {bezel_label}  >",
-            "fps": f"{t('opt_fps')} :  <  {fps_label}  >",
-            "scanlines": f"{t('opt_scanlines')} :  <  {('OFF' if sl <= 0 else str(sl))}  >",
-            "gpu": f"{t('opt_gpu')} :  <  {t('yes') if getattr(self, 'gpu_present', True) else t('no')}  >",
-            "vsync": f"{t('opt_vsync')} :  <  {t('vsync_' + getattr(self, 'vsync_mode', 'adaptive'))}  >",
-            "hz": f"{t('opt_hz')} :  <  {int(getattr(self, 'fps_cap', 120))} Hz  >",
-            "language": f"{t('opt_language')} :  <  {lang_label}  >",
-            "reset_hs": t("opt_reset_hs"),
-            "back": t("opt_back"),
-        }
-        return [mapping[k] for k in self._options_spec() if k in mapping]
+        """One text per row of the open tab ("label :  <  value  >", or the label alone for an action)."""
+        out = []
+        for key in self._options_spec():
+            value = self._option_value(key)
+            out.append(f"{self._option_label(key)} :  <  {value}  >" if value else self._option_label(key))
+        return out
 
     def _options_spec(self):
-        """Ordered option ids (bezel / monitor only when relevant)."""
-        items = ["control", "autofire", "sfx", "music", "audio_mix", "ingame_music", "rumble", "display"]
-        mode = getattr(self, "display_mode", "fullscreen")
-        if mode == "fullscreen":
-            items.append("bezel")
-        items.extend(["fps", "scanlines", "gpu", "vsync", "hz", "language", "reset_hs", "back"])
-        return items
+        """The option ids of the open tab (src/main_menu.py, OPTION_TABS)."""
+        return main_menu.tab_rows(getattr(self, "opt_tab", 0) or 0)
 
     def _menu_adjust(self, direction):
         """direction: -1 left, +1 right — change current option value"""
@@ -3597,8 +3695,12 @@ class Game:
     def _reset_menu_idle(self):
         self.menu_idle = 0.0
         if self.menu_screen == "help":
-            self.menu_screen = "main"
-            self.menu_index = 0
+            if getattr(self, "help_manual", False):
+                self.help_manual = False
+                self._back_to_extras("help")         # opened from EXTRAS: back there
+            else:
+                self.menu_screen = "main"
+                self.menu_index = 0
             self.help_timer = 0.0
 
     # --- Pause / quit-to-menu / app quit confirm ---
@@ -3782,30 +3884,34 @@ class Game:
             if int(getattr(self, "ship_select_slot", 1) or 1) == 2:
                 self._open_ship_select(1)
             else:
-                self.menu_screen = "main"
-                self.menu_index = 0
+                self.menu_screen = "arcade"            # back to the mode and the difficulty
+                self.menu_index = len(main_menu.ARCADE) - 1
         elif self.menu_screen == "story_hub":
             if getattr(self, "story", None) and self.story.back():
                 return              # one step back inside the Adventure (hangar -> slot list ...)
             self.menu_screen = "main"
-            self.menu_index = 1
+            self.menu_index = main_menu.main_index("story")
         elif self.menu_screen == "addon":
-            self.menu_screen = "main"
-            self.menu_index = 2
+            self._back_to_extras("addon")
         elif self.menu_screen == "options":
             self.menu_screen = "main"
-            self.menu_index = 5  # OPTIONS
+            self.menu_index = main_menu.main_index("options")
+        elif self.menu_screen == "arcade":
+            self.menu_screen = "main"
+            self.menu_index = main_menu.main_index("play")
+        elif self.menu_screen == "extras":
+            self.menu_screen = "main"
+            self.menu_index = main_menu.main_index("extras")
         elif self.menu_screen in ("highscores", "achievements"):
             if self.menu_screen == "achievements":
                 self.ach_data = load_achievements()
-            self.menu_screen = "main"                # High Scores, Achievements and Jukebox sit side by side: Esc
-            self.menu_index = 6                      # leaves all three, back on HIGH SCORES
-            self.cheat_buffer = ""
+            self._back_to_extras(self.menu_screen)   # back on its paragraph of EXTRAS
         elif self.menu_screen == "jukebox":
             self._close_jukebox()
         elif self.menu_screen == "credits":
-            self.menu_screen = "main"
-            self.menu_index = 7
+            self._back_to_extras("credits")
+        elif self.menu_screen == "help":
+            self._reset_menu_idle()
         else:
             self.menu_screen = "main"
             self.menu_index = 0

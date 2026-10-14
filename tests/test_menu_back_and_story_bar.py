@@ -46,15 +46,25 @@ def run():
 
 
 def _open_scores(run):
+    import main_menu
     g = run.game
-    g.menu_index = 6
+    g.menu_index = main_menu.main_index("extras")
+    run.key(pygame.K_RETURN)
+    assert g.menu_screen == "extras"
+    g.menu_index = main_menu.extras_index("highscores")
     run.key(pygame.K_RETURN)
     assert g.menu_screen == "highscores"
 
 
+def _on_extras(g, name):
+    import main_menu
+    return g.menu_screen == "extras" and main_menu.EXTRAS[g.menu_index] == name
+
+
 @pytest.mark.parametrize("steps", [0, 1, -1])            # High Scores, Achievements (right), Jukebox (left)
 @pytest.mark.parametrize("how", ["esc", "pad_b"])
-def test_esc_goes_back_up_to_the_main_menu(run, steps, how):
+def test_esc_goes_back_up_to_extras(run, steps, how):
+    """(Since the main menu has five entries, these three screens are behind EXTRAS: Esc goes back there.)"""
     g = run.game
     _open_scores(run)
     if steps:
@@ -65,7 +75,7 @@ def test_esc_goes_back_up_to_the_main_menu(run, steps, how):
     else:
         run.button(1)
     assert not g.quit_confirm, "the quit question must not open"
-    assert g.menu_screen == "main" and g.menu_index == 6
+    assert _on_extras(g, ("highscores", "achievements", "jukebox")[steps])
 
 
 def test_enter_also_leaves_the_achievements(run):
@@ -74,7 +84,7 @@ def test_enter_also_leaves_the_achievements(run):
     run.key(pygame.K_RIGHT)
     assert g.menu_screen == "achievements"
     run.key(pygame.K_RETURN)
-    assert g.menu_screen == "main" and g.menu_index == 6
+    assert _on_extras(g, "achievements")
 
 
 def test_esc_on_the_main_menu_still_asks_to_quit(run):

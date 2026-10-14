@@ -12,8 +12,9 @@ import credits_screen
 import highscores_screen
 import hint_bar
 import menu_ui
+import main_menu
 import loot
-from i18n import LANGS, t, t_help
+from i18n import t, t_help
 from settings import BASE_HEIGHT, BASE_WIDTH, COLOR_BG
 
 
@@ -250,32 +251,22 @@ def draw_menu_screens(game):
     elif game.menu_screen == "jukebox":
         game._draw_jukebox(game.game_surface)
     elif game.menu_screen == "main":
-        diff_key = {"novice": "diff_novice", "normal": "diff_normal", "veteran": "diff_veteran"}.get(game.difficulty, "diff_normal")
-        diff = t(diff_key)
-        mode = getattr(game, "play_mode", "solo")
-        mode_key = {"solo": "mode_solo", "hotseat": "mode_hotseat", "coop": "mode_coop"}.get(mode, "mode_solo")
-        options = [
-            t("play"),
-            t("story"),
-            t("addon"),
-            f"{t('mode')} :  <  {t(mode_key)}  >",
-            f"{t('difficulty')} :  <  {diff}  >",
-            t("options"),
-            t("high_scores"),
-            t("credits"),
-            t("quit"),
-        ]
+        # five entries, in the large font: PLAY, ADVENTURE, EXTRAS, OPTIONS, QUIT
+        labels = [t(main_menu.MAIN_TITLES[name]) for name in main_menu.MAIN]
         sub_y = int(getattr(game, "_title_sub_y", 200))
-        sub_h = 33                                           # the subtitle line (game.font)
-        menu_font = getattr(game, "menu_font", None) or game.font
-        row_h = menu_font.get_linesize()
-        base_y = sub_y + sub_h + 22
-        room = hint_bar.BAND_Y - 26 - base_y                 # down to the help bar, panel margin kept
-        spacing = max(row_h, min(32, room // max(1, len(options))))
-        disabled = () if mame_addon.addon_ready() else (2,)
-        menu_ui.draw_rows(game, game.game_surface, menu_font, options, base_y, spacing, game.menu_index,
-                          disabled=disabled, pad_y=max(1, (spacing - row_h) // 2), min_width=300,
-                          panel_pad=(30, 10))
+        font = game.medium_font
+        row_h = font.get_linesize()
+        base_y = sub_y + 33 + 30
+        room = hint_bar.BAND_Y - 30 - base_y                 # down to the help bar, panel margin kept
+        spacing = max(row_h, min(54, room // len(labels)))
+        menu_ui.draw_rows(game, game.game_surface, font, labels, base_y, spacing, game.menu_index,
+                          pad_y=max(1, (spacing - row_h) // 2 - 2), min_width=330, panel_pad=(34, 12))
+
+    elif game.menu_screen == "arcade":
+        draw_arcade(game)
+
+    elif game.menu_screen == "extras":
+        draw_extras(game)
 
     elif game.menu_screen == "highscores":
         highscores_screen.draw_highscores(game)
@@ -291,37 +282,193 @@ def draw_menu_screens(game):
         hint_bar.draw_for(game, game.game_surface)
 
     elif game.menu_screen == "options":
-        # OPTIONS screen
         hdr = game._txt(game.medium_font, t("options"), (255, 180, 255))
-        game.game_surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 48))
-
-        mode_labels = {
-            "window": t("disp_window"),
-            "fullscreen": t("disp_fullscreen"),
-            "borderless": t("disp_borderless"),
-        }
-        ctrl = t("ctrl_pad") if game.input_mode == "gamepad" else t("ctrl_kb")
-        vol_pct = int(round(game.sfx_volume * 100))
-        disp = mode_labels.get(game.display_mode, game.display_mode)
-
-        fps_label = t("yes") if game.show_fps else t("no")
-        mus_pct = int(round(game.music_volume * 100))
-        lang_label = next((n for c, n in LANGS if c == game.language), game.language)
-        draw_option_rows(game, top=128)
-        spec = game._options_spec()
-        if 0 <= game.menu_index < len(spec):
-            game._draw_option_help(spec[game.menu_index])
+        game.game_surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 40))
+        draw_options(game, top=108)
 
 
-def draw_option_rows(game, top):
-    """The option rows (menu and pause), on their panel, the chosen one in the lit frame."""
-    lines = game._options_labels()
-    font = getattr(game, "menu_font", None) or game.font
-    row_h = font.get_linesize()
-    room = hint_bar.BAND_Y - 24 - top
-    spacing = max(row_h, min(34, room // max(1, len(lines))))
-    menu_ui.draw_rows(game, game.game_surface, font, lines, top, spacing, game.menu_index, left=84,
-                      pad_y=max(1, (spacing - row_h) // 2), min_width=470, pad_x=18, panel_pad=(18, 10))
+TITLE_COLOR = (255, 180, 90)          # the titles of the classic menus' own screens
+
+
+def _title(game, key, y=40):
+    hdr = game._txt(game.medium_font, t(key), TITLE_COLOR)
+    game.game_surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, y))
+
+
+def _value_with_arrows(game, surf, font, text, right, cy, chosen, col):
+    """A value right-aligned on `right`; on the chosen row it sits between ‹ and › (Left / Right change it)."""
+    img = game._txt(font, text, col)
+    x = right - img.get_width()
+    if chosen:
+        arrow_r = game._txt(font, "›", menu_ui.SEL_EDGE)
+        arrow_l = game._txt(font, "‹", menu_ui.SEL_EDGE)
+        surf.blit(arrow_r, (right - arrow_r.get_width(), cy - arrow_r.get_height() // 2))
+        x = right - arrow_r.get_width() - 12 - img.get_width()
+        surf.blit(arrow_l, (x - 12 - arrow_l.get_width(), cy - arrow_l.get_height() // 2))
+        surf.blit(img, (x, cy - img.get_height() // 2))
+        return x - 12 - arrow_l.get_width()                 # the left edge of what was drawn
+    surf.blit(img, (x, cy - img.get_height() // 2))
+    return x
+
+
+def _gauge(surf, right, cy, fill, steps, chosen):
+    """A row of small segments (volume, vibrations), right-aligned on `right`."""
+    seg_w, seg_h, gap = 12, 16, 4
+    width = steps * seg_w + (steps - 1) * gap
+    x0 = right - width
+    lit = int(round(max(0.0, min(1.0, fill)) * steps))
+    on = menu_ui.SEL_EDGE if chosen else (170, 175, 205)
+    for i in range(steps):
+        r = pygame.Rect(x0 + i * (seg_w + gap), cy - seg_h // 2, seg_w, seg_h)
+        pygame.draw.rect(surf, on if i < lit else (50, 52, 72), r, border_radius=3)
+    return x0
+
+
+def draw_tab_strip(game, labels, active, y, focused, font=None):
+    """A row of tabs centred on the screen; the open one is lit (gold frame when the row has the focus)."""
+    surf = game.game_surface
+    font = font or getattr(game, "menu_font", None) or game.font
+    imgs = [game._txt(font, lab, menu_ui.TEXT_SEL if i == active else menu_ui.TEXT) for i, lab in enumerate(labels)]
+    pad, gap, h = 22, 12, 36
+    total = sum(img.get_width() + pad * 2 for img in imgs) + gap * (len(imgs) - 1)
+    x = BASE_WIDTH // 2 - total // 2
+    rects = []
+    for i, img in enumerate(imgs):
+        r = pygame.Rect(x, y, img.get_width() + pad * 2, h)
+        if i == active and focused:
+            menu_ui.highlight(surf, r, radius=8)
+        elif i == active:
+            menu_ui.panel(surf, r, radius=8, edge=menu_ui.SEL_EDGE, edge_w=1)
+        else:
+            menu_ui.panel(surf, r, radius=8, edge_w=1)
+        surf.blit(img, (r.centerx - img.get_width() // 2, r.centery - img.get_height() // 2))
+        rects.append(r)
+        x = r.right + gap
+    return rects
+
+
+def draw_options(game, top):
+    """The options (menu and pause): the four tabs, the rows of the open tab (label on the left, value in a column
+    on the right, gauges for the volumes), and the help of the chosen row on the right."""
+    surf = game.game_surface
+    tab = int(getattr(game, "opt_tab", 0) or 0) % len(main_menu.OPTION_TABS)
+    labels = [t(main_menu.TAB_TITLES[name]) for name, _rows in main_menu.OPTION_TABS]
+    draw_tab_strip(game, labels, tab, top, focused=game.menu_index < 0)
+    keys = game._options_spec()
+    font = game.font
+    row_h = 56
+    box = pygame.Rect(60, top + 60, 600, len(keys) * row_h + 24)
+    menu_ui.panel(surf, box)
+    for i, key in enumerate(keys):
+        cy = box.y + 12 + i * row_h + row_h // 2
+        chosen = i == game.menu_index
+        greyed = game._option_greyed(key)
+        if chosen:
+            menu_ui.highlight(surf, pygame.Rect(box.x + 10, cy - row_h // 2 + 3, box.w - 20, row_h - 6))
+        if key == "reset_hs":
+            col = (255, 150, 130) if chosen else (230, 110, 100)      # it erases something: red
+        elif greyed:
+            col = menu_ui.TEXT_OFF_SEL if chosen else menu_ui.TEXT_OFF
+        else:
+            col = menu_ui.TEXT_SEL if chosen else menu_ui.TEXT
+        lab = game._txt(font, game._option_label(key), col)
+        surf.blit(lab, (box.x + 28, cy - lab.get_height() // 2))
+        value = game._option_value(key)
+        if not value:
+            continue
+        right = box.right - 28
+        small = getattr(game, "menu_font", None) or font
+        if greyed:
+            img = game._txt(small, value, menu_ui.TEXT_OFF)
+            surf.blit(img, (right - img.get_width(), cy - img.get_height() // 2))
+            continue
+        fill = game._option_fill(key)
+        vcol = menu_ui.TEXT_SEL if chosen else (205, 205, 230)
+        if fill is not None:
+            steps = 5 if key == "rumble" else 10
+            x = _value_with_arrows(game, surf, small, value, right, cy, chosen, vcol)
+            _gauge(surf, x - 16, cy, fill, steps, chosen)
+        else:
+            _value_with_arrows(game, surf, font, value, right, cy, chosen, vcol)
+    if 0 <= game.menu_index < len(keys):
+        game._draw_option_help(keys[game.menu_index], box=(700, box.y, 520, box.h))
+
+
+ARCADE_VALUES = {
+    "mode": ("play_mode", {"solo": "mode_solo", "hotseat": "mode_hotseat", "coop": "mode_coop"}),
+    "difficulty": ("difficulty", {"novice": "diff_novice", "normal": "diff_normal", "veteran": "diff_veteran"}),
+}
+
+
+def draw_arcade(game):
+    """PLAY: the mode and the difficulty of the arcade game, then the ship select (Enter on any row goes on)."""
+    surf = game.game_surface
+    _title(game, "arcade_title")
+    font = game.font
+    row_h = 66
+    box = pygame.Rect(BASE_WIDTH // 2 - 380, 120, 760, len(main_menu.ARCADE) * row_h + 28)
+    menu_ui.panel(surf, box)
+    descs = []
+    for i, row in enumerate(main_menu.ARCADE):
+        cy = box.y + 14 + i * row_h + row_h // 2
+        chosen = i == game.menu_index
+        if chosen:
+            menu_ui.highlight(surf, pygame.Rect(box.x + 12, cy - row_h // 2 + 4, box.w - 24, row_h - 8))
+        col = menu_ui.TEXT_SEL if chosen else menu_ui.TEXT
+        if row == "ship":
+            img = game._txt(game.medium_font, t("arcade_ship") + "  ›", col)
+            surf.blit(img, (box.centerx - img.get_width() // 2, cy - img.get_height() // 2))
+            continue
+        lab = game._txt(font, t(row), col)
+        surf.blit(lab, (box.x + 32, cy - lab.get_height() // 2))
+        attr, keys = ARCADE_VALUES[row]
+        cur = getattr(game, attr, "") or ""
+        key = keys.get(cur, next(iter(keys.values())))
+        _value_with_arrows(game, surf, font, t(key), box.right - 32, cy, chosen,
+                           menu_ui.TEXT_SEL if chosen else (205, 205, 230))
+        descs.append((t(key), t(key + "_d"), chosen))
+    # what the chosen mode and difficulty mean
+    small = getattr(game, "menu_font", None) or font
+    info = pygame.Rect(box.x, box.bottom + 24, box.w, 0)
+    lines = []
+    for name, text, chosen in descs:
+        for j, line in enumerate(game._wrap_ui(f"{name} : {text}", small, info.w - 56)):
+            lines.append((line, chosen, j == 0))
+    info.h = len(lines) * (small.get_linesize() + 4) + 40
+    menu_ui.panel(surf, info)
+    y = info.y + 20
+    for line, chosen, first in lines:
+        img = game._txt(small, line, (225, 225, 240) if chosen else (160, 162, 190))
+        surf.blit(img, (info.x + 28, y))
+        y += small.get_linesize() + 4
+
+
+def draw_extras(game):
+    """EXTRAS: one paragraph for each screen (scores, achievements, jukebox, credits, help, add-on), like the
+    Extras tab of the Adventure; the chosen one is lit."""
+    surf = game.game_surface
+    _title(game, "extras_title")
+    small = getattr(game, "menu_font", None) or game.font
+    width, top, step, h = 860, 96, 94, 82
+    ready = mame_addon.addon_ready()
+    for i, name in enumerate(main_menu.EXTRAS):
+        chosen = i == game.menu_index
+        box = pygame.Rect(BASE_WIDTH // 2 - width // 2, top + i * step, width, h)
+        if chosen:
+            menu_ui.highlight(surf, box, radius=10)
+        else:
+            menu_ui.panel(surf, box, radius=10, edge_w=1)
+        off = name == "addon" and not ready
+        if off:
+            col = menu_ui.TEXT_OFF_SEL if chosen else menu_ui.TEXT_OFF
+        else:
+            col = menu_ui.TEXT_SEL if chosen else (170, 175, 200)
+        head = game._txt(game.medium_font, t(main_menu.EXTRAS_TITLES[name]), col)
+        surf.blit(head, (box.x + 28, box.y + 8))
+        text = t("addon_missing") if off else t("extras_%s_d" % name)
+        line = game._wrap_ui(text, small, width - 56)[0]
+        desc = game._txt(small, line, (205, 208, 228) if chosen and not off else (140, 145, 170))
+        surf.blit(desc, (box.x + 28, box.y + 48))
 
 
 def draw_menu_footer(game):
@@ -336,7 +483,7 @@ def draw_menu_footer(game):
         if bar:
             hint_bar.draw_for(game, game.game_surface, right=ver)
         game._draw_season_title(game.game_surface)
-    elif game.menu_screen == "options" and bar:
+    elif game.menu_screen in ("options", "arcade", "extras") and bar:
         hint_bar.draw_for(game, game.game_surface)
 
 
@@ -442,10 +589,7 @@ def draw_pause(game):
         if game.menu_screen == "reset_confirm":
             draw_question(game, game.medium_font, t("reset_hs_title"), t("reset_hs_warn"), game.menu_index)
         else:
-            draw_option_rows(game, top=100)
-            spec = game._options_spec()
-            if 0 <= game.menu_index < len(spec):
-                game._draw_option_help(spec[game.menu_index], box=(700, 100, 520, 460))
+            draw_options(game, top=92)
     else:
         title = game._txt(game.big_font, t("pause"), (255, 220, 100))
         game.game_surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 200))

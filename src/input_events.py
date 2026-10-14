@@ -8,7 +8,6 @@ loop `continue` meant "done with this event": here it is `return`.
 import pygame
 
 from highscores import reset_highscores
-from achievements import load_achievements
 
 
 def on_keydown(game, event):
@@ -81,7 +80,7 @@ def on_keydown(game, event):
             elif game.quit_confirm:
                 game.quit_confirm = False
             elif game.menu_screen in ("options", "credits", "reset_confirm", "ship_select", "jukebox", "story_hub", "addon",
-                                      "highscores", "achievements"):
+                                      "highscores", "achievements", "arcade", "extras"):
                 game._menu_back()
             else:
                 game.quit_confirm = True
@@ -90,7 +89,10 @@ def on_keydown(game, event):
     # Pause menu (in-game)
     if game.paused and game.started and not game.game_over:
         if game.pause_options:
-            if game._is_menu_up(event.key):
+            if event.key in (pygame.K_TAB, pygame.K_PAGEUP, pygame.K_PAGEDOWN) and game.menu_screen == "options":
+                shift = bool(getattr(event, "mod", 0) & pygame.KMOD_SHIFT)
+                game._options_tab_step(-1 if (event.key == pygame.K_PAGEUP or shift) else 1)
+            elif game._is_menu_up(event.key):
                 game._menu_nav(-1)
             elif game._is_menu_down(event.key):
                 game._menu_nav(1)
@@ -129,9 +131,7 @@ def on_keydown(game, event):
                 if game.pause_index == 0:  # Reprendre
                     game.paused = False
                 elif game.pause_index == 1:  # Options
-                    game.pause_options = True
-                    game.menu_screen = "options"
-                    game.menu_index = 0
+                    game._open_options(pause=True)
                 else:  # Quitter la partie
                     game._quit_to_menu()
                     return  # don't also confirm main-menu with same Enter
@@ -170,7 +170,14 @@ def on_keydown(game, event):
                 story.key_delete()
                 return
         if game.menu_screen == "help":
-            game._reset_menu_idle()
+            turn = _help_turn_key(event.key)
+            if getattr(game, "help_manual", False) and turn:
+                game._help_turn(turn)                 # opened from EXTRAS: the arrows turn the page
+            else:
+                game._reset_menu_idle()
+        elif game.menu_screen == "options" and event.key in (pygame.K_TAB, pygame.K_PAGEUP, pygame.K_PAGEDOWN):
+            shift = bool(getattr(event, "mod", 0) & pygame.KMOD_SHIFT)
+            game._options_tab_step(-1 if (event.key == pygame.K_PAGEUP or shift) else 1)
         elif game.menu_screen == "credits":
             # Arrows / WASD / ZQSD drive the scroll — do not leave.
             if event.key in (
@@ -183,8 +190,7 @@ def on_keydown(game, event):
                 pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE,
                 pygame.K_ESCAPE, pygame.K_BACKSPACE,
             ) or game._is_menu_confirm(event.key):
-                game.menu_screen = "main"
-                game.menu_index = 7                  # back on CREDITS (as with B on the pad, see Game._menu_back)
+                game._menu_back()                    # back on CREDITS in EXTRAS (as with B on the pad)
         elif game.menu_screen == "achievements":
             if event.key in (
                 pygame.K_UP, pygame.K_DOWN, pygame.K_w, pygame.K_s, pygame.K_z,
@@ -275,6 +281,15 @@ def on_keydown(game, event):
             return
 
 
+def _help_turn_key(key):
+    """+1 / -1 for the keys that turn the page of the help (opened from EXTRAS), else 0."""
+    if key in (pygame.K_RIGHT, pygame.K_DOWN, pygame.K_d, pygame.K_s, pygame.K_PAGEDOWN):
+        return 1
+    if key in (pygame.K_LEFT, pygame.K_UP, pygame.K_a, pygame.K_q, pygame.K_w, pygame.K_z, pygame.K_PAGEUP):
+        return -1
+    return 0
+
+
 def on_keyup(game, event):
     """Keyboard release: forget the held Shift keys."""
     held = getattr(game, "_special_keys", None)
@@ -320,14 +335,16 @@ def on_joy_button(game, event):
             elif game.quit_confirm:
                 game.quit_confirm = False
             elif game.menu_screen in ("options", "credits", "reset_confirm", "ship_select", "jukebox", "story_hub", "addon",
-                                      "highscores", "achievements"):
+                                      "highscores", "achievements", "arcade", "extras"):
                 game._menu_back()
             else:
                 game.quit_confirm = True
                 game.quit_index = 1
     elif game.paused and game.started and not game.game_over:
         if game.pause_options:
-            if event.button == 0:
+            if event.button in (4, 5) and game.menu_screen == "options":
+                game._options_tab_step(-1 if event.button == 4 else 1)  # LB / RB: the tabs of the options
+            elif event.button == 0:
                 if game.menu_screen == "reset_confirm":
                     if game.menu_index == 0:
                         game.hs_entries = reset_highscores()
@@ -354,9 +371,7 @@ def on_joy_button(game, event):
                 if game.pause_index == 0:
                     game.paused = False
                 elif game.pause_index == 1:
-                    game.pause_options = True
-                    game.menu_screen = "options"
-                    game.menu_index = 0
+                    game._open_options(pause=True)
                 else:
                     game._quit_to_menu()
                     return  # same A must not confirm main menu
@@ -379,6 +394,8 @@ def on_joy_button(game, event):
     elif not game.started and not game.game_over and not game.quit_confirm and getattr(game, "input_grace", 0) <= 0:
         if game.menu_screen == "help":
             game._reset_menu_idle()
+        elif event.button in (4, 5) and game.menu_screen == "options":
+            game._options_tab_step(-1 if event.button == 4 else 1)      # LB / RB: the tabs of the options
         elif event.button == 0:  # A — confirm / enter
             game._reset_menu_idle()
             if game.menu_screen in ("highscores", "credits", "achievements"):
@@ -422,7 +439,10 @@ def on_joy_hat(game, event):
                 game.pause_index = (game.pause_index + 1) % 3
         elif not game.started and not game.game_over:
             if game.menu_screen == "help":
-                game._reset_menu_idle()
+                if getattr(game, "help_manual", False):
+                    game._help_turn(1 if (hx > 0 or hy < 0) else -1)
+                else:
+                    game._reset_menu_idle()
             elif game.menu_screen == "credits":
                 pass
             elif game.menu_screen == "jukebox":
@@ -572,7 +592,13 @@ def on_joy_axis(game, event):
         elif game.menu_screen == "credits":
             pass  # analog stick steers the roll in update()
         elif game.menu_screen == "help":
-            if abs(event.value) > 0.55:
+            if getattr(game, "help_manual", False):
+                if abs(event.value) < 0.40:
+                    game._joy_axis_latch_x = 0
+                elif abs(event.value) > DEAD and game._joy_axis_latch_x == 0:
+                    game._joy_axis_latch_x = 1 if event.value > 0 else -1
+                    game._help_turn(1 if event.value > 0 else -1)
+            elif abs(event.value) > 0.55:
                 game._reset_menu_idle()
         elif event.axis == 1:
             if abs(event.value) < 0.40:

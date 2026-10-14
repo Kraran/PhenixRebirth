@@ -34,7 +34,8 @@ def run():
     i18n.set_lang("fr")
 
 
-SCREENS = ["main", "options", "help", "ship_select", "highscores", "achievements", "jukebox", "addon", "reset_confirm"]
+SCREENS = ["main", "arcade", "extras", "options", "help", "ship_select", "highscores", "achievements", "jukebox",
+           "addon", "reset_confirm"]
 
 
 @pytest.mark.parametrize("screen", SCREENS)
@@ -45,7 +46,7 @@ def test_every_classic_menu_has_a_bar(run, screen):
     items = hint_bar.menu_items(g)
     assert items, screen
     for kind, label in items:
-        assert kind in (None, "ud", "lr", "l", "r", "ok", "back")
+        assert kind in (None, "ud", "lr", "l", "r", "ok", "back", "sh")
         assert i18n.t(label) != label, label                  # a real text, not a raw key
     drawn = []
     real = hint_bar.draw
@@ -71,19 +72,24 @@ def test_the_bar_is_at_the_bottom_on_every_screen(run):
     assert hint_bar.BAND_Y == BASE_HEIGHT - hint_bar.BAND_H
 
 
-def test_main_menu_items_follow_the_cursor(run, monkeypatch):
+def test_menu_items_follow_the_cursor(run, monkeypatch):
     import addon
+    import main_menu
     g = run.game
     g.menu_screen = "main"
-    g.menu_index = 0
-    assert ("ok", "hint_ok") in hint_bar.menu_items(g)
-    g.menu_index = 3                                           # MODE: set with Left / Right
+    for i in range(len(main_menu.MAIN)):
+        g.menu_index = i
+        assert hint_bar.menu_items(g) == [("ud", "hint_nav"), ("ok", "hint_ok"), ("back", "hint_quit")]
+    g.menu_screen = "arcade"
+    g.menu_index = main_menu.ARCADE.index("mode")                 # MODE: set with Left / Right
     assert ("lr", "hint_change") in hint_bar.menu_items(g)
-    assert ("ok", "hint_ok") not in hint_bar.menu_items(g)
+    g.menu_index = main_menu.ARCADE.index("ship")
+    assert ("lr", "hint_change") not in hint_bar.menu_items(g)
     monkeypatch.setattr(addon, "addon_ready", lambda: False)
-    g.menu_index = 2                                           # greyed ADD-ON: nothing to validate
-    assert ("ok", "hint_ok") not in hint_bar.menu_items(g)
-    assert hint_bar.menu_items(g)[-1] == ("back", "hint_quit")
+    g.menu_screen = "extras"
+    g.menu_index = main_menu.extras_index("addon")               # greyed ADD-ON: nothing to open
+    assert ("ok", "hint_open") not in hint_bar.menu_items(g)
+    assert hint_bar.menu_items(g)[-1] == ("back", "hint_back")
 
 
 def test_pause_and_questions(run):

@@ -4,6 +4,7 @@ import os
 import pygame
 import pytest
 
+import main_menu
 import menu_sfx
 from settings import asset_path
 
@@ -70,7 +71,8 @@ def test_moving_the_cursor_ticks(run):
 
 def test_changing_a_value_ticks(run):
     g = run.game
-    g.menu_index = 3                                 # MODE
+    g.menu_screen = "arcade"
+    g.menu_index = main_menu.ARCADE.index("mode")
     before = g.play_mode
     assert run.key(pygame.K_RIGHT) == [menu_sfx.MOVE]
     assert g.play_mode != before
@@ -78,7 +80,7 @@ def test_changing_a_value_ticks(run):
 
 def test_opening_and_leaving_a_screen(run):
     g = run.game
-    g.menu_index = 5                                 # OPTIONS
+    g.menu_index = main_menu.main_index("options")
     assert run.key(pygame.K_RETURN) == [menu_sfx.CONFIRM]
     assert g.menu_screen == "options"
     assert run.key(pygame.K_ESCAPE) == [menu_sfx.BACK]
@@ -87,7 +89,7 @@ def test_opening_and_leaving_a_screen(run):
 
 def test_pad_buttons(run):
     g = run.game
-    g.menu_index = 5
+    g.menu_index = main_menu.main_index("options")
     assert run.button(0) == [menu_sfx.CONFIRM]
     assert g.menu_screen == "options"
     g.input_grace = 0.0
@@ -98,14 +100,26 @@ def test_pad_buttons(run):
 def test_greyed_addon_is_refused(run, monkeypatch):
     import addon
     monkeypatch.setattr(addon, "addon_ready", lambda: False)
-    run.game.menu_index = 2
+    monkeypatch.setattr(addon, "available_sets", lambda fresh=False: [])
+    run.game.menu_screen = "extras"
+    run.game.menu_index = main_menu.extras_index("addon")
     assert run.key(pygame.K_RETURN) == [menu_sfx.DENY]
-    assert run.game.menu_screen == "main"
+    assert run.game.menu_screen == "extras"
 
 
 def test_a_row_set_with_left_right_is_refused(run):
-    run.game.menu_index = 4                          # DIFFICULTE: Enter does nothing
+    g = run.game
+    g._open_options()
+    g.opt_tab = 1
+    g.menu_index = 0                                 # Volume SFX: set with Left / Right, Enter does nothing
     assert run.key(pygame.K_RETURN) == [menu_sfx.DENY]
+
+
+def test_changing_the_tab_of_the_options_ticks(run):
+    g = run.game
+    g._open_options()
+    assert run.key(pygame.K_TAB) == [menu_sfx.MOVE]      # (the Audio tab opens on the effects volume: still a tick)
+    assert g.opt_tab == 1
 
 
 def test_quit_question(run):
@@ -119,7 +133,8 @@ def test_quit_question(run):
 
 def test_switching_score_screens_ticks(run):
     g = run.game
-    g.menu_index = 6
+    g.menu_screen = "extras"
+    g.menu_index = main_menu.extras_index("highscores")
     assert run.key(pygame.K_RETURN) == [menu_sfx.CONFIRM]
     assert g.menu_screen == "highscores"
     assert run.key(pygame.K_RIGHT) == [menu_sfx.MOVE]
@@ -178,7 +193,7 @@ def test_choose_rules():
 
 def test_adventure_menus_tick_too(run):
     g = run.game
-    g.menu_index = 1                                 # AVENTURE
+    g.menu_index = main_menu.main_index("story")
     assert run.key(pygame.K_RETURN) == [menu_sfx.CONFIRM]
     assert g.menu_screen == "story_hub" and g.story.screen == "slots"
     assert run.key(pygame.K_DOWN) == [menu_sfx.MOVE]
@@ -204,10 +219,10 @@ def test_story_scene_is_silent():
 
 def test_effects_volume_plays_only_its_preview(run):
     g = run.game
-    g.menu_index = 5
+    g.menu_index = main_menu.main_index("options")
     run.key(pygame.K_RETURN)
     assert g.menu_screen == "options"
-    g.menu_index = g._options_spec().index("sfx")
+    g._focus_option("sfx")
     run.played.clear()
     pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_LEFT, unicode="", mod=0, scancode=0))
     run.frames(2)
