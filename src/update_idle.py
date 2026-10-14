@@ -129,6 +129,7 @@ def tick_menu_or_gameover(game):
             idle_need = 10.0 if not game.help_first_shown else 5.0
             if game.menu_idle >= idle_need:
                 game.menu_idle = 0.0
+                game.help_manual = False                 # the help of the idle menu turns its pages alone
                 if not game.help_first_shown:
                     game.help_first_shown = True
                     game.menu_screen = "help"
@@ -159,6 +160,8 @@ def tick_menu_or_gameover(game):
                     game.help_transitioning = False
                     game.help_page = 1
                     game.help_timer = 0.0
+            elif getattr(game, "help_manual", False):
+                pass                                     # opened from EXTRAS: it stays until the player leaves
             else:
                 game.help_timer += game.dt
                 if game.help_timer >= game.HELP_PAGE_SEC:

@@ -19,6 +19,7 @@ import pygame
 
 import addon as mame_addon
 from errlog import log_exc
+import main_menu
 
 MOVE, CONFIRM, BACK, DENY = "menu_move", "menu_confirm", "menu_back", "menu_deny"
 
@@ -106,7 +107,8 @@ def snapshot(game):
         "cursor": (g.menu_index, getattr(g, "pause_index", 0), getattr(g, "quit_index", 0),
                    getattr(g, "play_mode", ""), getattr(g, "difficulty", ""),
                    getattr(g, "ship_select_index", 0), getattr(g, "juke_index", 0),
-                   getattr(g, "hs_char_index", 0), tuple(getattr(g, "hs_name", ()) or ())),
+                   getattr(g, "hs_char_index", 0), tuple(getattr(g, "hs_name", ()) or ()),
+                   getattr(g, "opt_tab", 0), getattr(g, "help_page", 0)),
         "story": _story_part(g),
         "options": None,
     }
@@ -136,7 +138,7 @@ def _focused_option(game):
 
 
 def _addon_greyed(game):
-    if game.menu_screen != "main" or game.menu_index != 2:
+    if game.menu_screen != "extras" or main_menu.EXTRAS[game.menu_index % len(main_menu.EXTRAS)] != "addon":
         return False
     try:
         return not mame_addon.addon_ready()
@@ -166,7 +168,8 @@ def choose(game, before, after, kind):
     changed = (before["cursor"] != after["cursor"] or before["options"] != after["options"]
                or (sb is not None and sa is not None and (sb["cursor"] != sa["cursor"] or sb["progress"] != sa["progress"])))
     if changed:
-        if before["options"] != after["options"] and _focused_option(game) == "sfx":
+        if (before["options"] != after["options"] and before["cursor"] == after["cursor"]
+                and _focused_option(game) == "sfx"):
             return None                      # the effects volume already plays a shot at its new level
         if kind == "confirm":
             return CONFIRM
@@ -177,7 +180,7 @@ def choose(game, before, after, kind):
         return None
     if _addon_greyed(game):
         return DENY
-    if game.menu_screen in ("main", "options"):
+    if game.menu_screen == "options":
         return DENY                          # a row that is set with Left / Right: nothing to open
     if sa is not None:
         story = game.story

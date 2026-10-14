@@ -7,6 +7,7 @@ a D-pad with the arms that count lit), depending on the device that was used las
 Game.handle_events). Nothing to set in the options.
 
 Buttons:  "ud" up / down   "lr" left / right   "l" left   "r" right   "all" the four arrows
+          "sh" the tab keys (TAB on the keyboard, LB / RB on the pad)
           "ok" confirm   "back" back   None: a plain label
 
 The Adventure uses the same bar: StoryHub.help_items() gives its pairs (draw_frame draws them).
@@ -18,6 +19,7 @@ import pygame
 
 from i18n import t
 import i18n
+import main_menu
 from settings import BASE_WIDTH, BASE_HEIGHT
 
 FONT_NAMES = "dejavusans,segoe ui,arial,consolas,notosans"   # the same fonts as the menus (game_init.py)
@@ -100,10 +102,28 @@ def _dpad(lit):
     return s
 
 
+def _shoulders():
+    """LB and RB, the two shoulder buttons of the pad."""
+    f = _font(13)
+    caps = [f.render(x, True, CAP_TEXT) for x in ("LB", "RB")]
+    w = sum(c.get_width() + 12 for c in caps) + 4
+    s = pygame.Surface((w, 26), pygame.SRCALPHA)
+    x = 0
+    for c in caps:
+        r = pygame.Rect(x, 4, c.get_width() + 12, 18)
+        pygame.draw.rect(s, CAP_FILL, r, border_radius=9)
+        pygame.draw.rect(s, CAP_EDGE, r, 2, border_radius=9)
+        s.blit(c, (r.centerx - c.get_width() // 2, r.centery - c.get_height() // 2))
+        x = r.right + 4
+    return s
+
+
 def glyph(kind, pad):
     """The picture of one button, for the keyboard or the pad (None for a plain label)."""
     if kind is None:
         return None
+    if kind == "sh":
+        return _shoulders() if pad else _keycap("TAB")
     if pad:
         if kind == "ok":
             return _round_button("A", PAD_A)
@@ -220,11 +240,16 @@ QUESTION = [CHOOSE, OK, ("back", "hint_cancel")]
 
 
 def _options_items(game):
+    if game.menu_index < 0:                                  # the row of tabs has the focus
+        return [("lr", "hint_tab"), NAV, BACK]
     spec = game._options_spec()
     key = spec[game.menu_index] if 0 <= game.menu_index < len(spec) else ""
-    if key in ("reset_hs", "back"):
-        return [NAV, OK, BACK]
-    return [NAV, ("lr", "hint_set"), BACK]
+    tabs = ("sh", "hint_tab")
+    if key == "reset_hs":
+        return [NAV, OK, tabs, BACK]
+    if game._option_greyed(key):
+        return [NAV, tabs, BACK]
+    return [NAV, ("lr", "hint_set"), tabs, BACK]
 
 
 def _ship_colours(game):
@@ -265,16 +290,23 @@ def menu_items(game):
         return QUESTION
     screen = g.menu_screen
     if screen == "main":
-        if g.menu_index in (3, 4):
-            return [NAV, ("lr", "hint_change"), ("back", "hint_quit")]
-        if g.menu_index == 2 and not _addon_ready():
-            return [NAV, ("back", "hint_quit")]
         return [NAV, OK, ("back", "hint_quit")]
+    if screen == "arcade":
+        if g.menu_index < len(main_menu.ARCADE) - 1:
+            return [NAV, ("lr", "hint_change"), ("ok", "hint_hull"), BACK]
+        return [NAV, ("ok", "hint_hull"), BACK]
+    if screen == "extras":
+        name = main_menu.EXTRAS[g.menu_index % len(main_menu.EXTRAS)]
+        if name == "addon" and not _addon_ready():
+            return [CHOOSE, BACK]
+        return [CHOOSE, ("ok", "hint_open"), BACK]
     if screen == "options":
         return _options_items(g)
     if screen == "reset_confirm":
         return QUESTION
     if screen == "help":
+        if getattr(g, "help_manual", False):
+            return [("lr", "hint_page"), BACK]
         return [(None, "hint_any_key")]
     if screen == "ship_select":
         return [("lr", "hint_choose"), ("ud", "hint_colour"), OK, BACK] if _ship_colours(g) else [("lr", "hint_choose"), OK, BACK]

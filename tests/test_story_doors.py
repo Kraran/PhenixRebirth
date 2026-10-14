@@ -161,7 +161,7 @@ def test_options_work_from_the_adventure_and_changes_are_kept(hub, run):
     g = hub
     _open(run, g, "options")
     g.sfx_volume = 0.5
-    g.menu_index = g._options_spec().index("sfx")
+    g._focus_option("sfx")
     _key(run, pygame.K_RIGHT)
     assert g.menu_screen == "options" and g.story.pane == "extras"       # Left / Right change a value, not the tab
     assert g.sfx_volume > 0.5
@@ -182,13 +182,12 @@ def test_the_reset_screen_of_the_options_stays_inside_the_door(hub, run):
     assert g.menu_screen == "story_hub"
 
 
-def test_the_options_back_line_returns_to_the_adventure(hub, run):
+def test_esc_in_the_options_returns_to_the_adventure(hub, run):
+    """(The options have no "Back" row any more since they have tabs: Esc / B leave them.)"""
     g = hub
     _open(run, g, "options")
-    spec = g._options_spec()
-    g.menu_index = spec.index("back")
     g.input_grace = 0
-    _key(run, pygame.K_RETURN, frames=3)
+    _key(run, pygame.K_ESCAPE, frames=3)
     assert g.menu_screen == "story_hub" and g.story.pane == "extras" and g.story.extras_index == 0
 
 
@@ -230,7 +229,9 @@ def test_the_screens_of_the_main_menu_are_as_they_were(run):
     g.menu_index = 0
     run.frames(3)
     _key(run, pygame.K_ESCAPE, frames=3)
-    assert g.menu_screen == "main" and g.menu_index == 5 and not getattr(g, "story_door", None)
+    import main_menu
+    assert g.menu_screen == "main" and g.menu_index == main_menu.main_index("options")
+    assert not getattr(g, "story_door", None)
     g.menu_screen = "highscores"
     run.frames(2)
     g.input_grace = 0

@@ -2383,6 +2383,31 @@ _MENU_HINTS = {
                    "Hastighet", "Fart", "Fart", "Скорость"),
     "hint_skip": ("Passer", "Skip", "Saltar", "Überspringen", "Salta", "Saltar", "Overslaan", "Pomiń", "Geç", "Hoppa över",
                   "Hopp over", "Spring over", "Пропустить"),
+    # main menu, EXTRAS, arcade game screen, option tabs (src/main_menu.py)
+    "extras_title": ("EXTRAS", "EXTRAS", "EXTRAS", "EXTRAS", "EXTRA", "EXTRAS", "EXTRA'S", "DODATKI", "EKSTRALAR",
+                     "EXTRA", "EKSTRA", "EKSTRA", "ДОПОЛНИТЕЛЬНО"),
+    "extras_help": ("AIDE", "HELP", "AYUDA", "HILFE", "AIUTO", "AJUDA", "HULP", "POMOC", "YARDIM", "HJÄLP", "HJELP",
+                    "HJÆLP", "ПОМОЩЬ"),
+    "arcade_title": ("PARTIE ARCADE", "ARCADE GAME", "PARTIDA ARCADE", "ARCADE-SPIEL", "PARTITA ARCADE",
+                     "PARTIDA ARCADE", "ARCADESPEL", "GRA ARCADE", "ARCADE OYUNU", "ARKADSPEL", "ARKADESPILL",
+                     "ARKADESPIL", "АРКАДНАЯ ИГРА"),
+    "arcade_ship": ("CHOISIR LE VAISSEAU", "CHOOSE YOUR SHIP", "ELEGIR NAVE", "SCHIFF WÄHLEN", "SCEGLI LA NAVE",
+                    "ESCOLHER NAVE", "SCHIP KIEZEN", "WYBIERZ STATEK", "GEMİ SEÇ", "VÄLJ SKEPP", "VELG SKIP",
+                    "VÆLG SKIB", "ВЫБРАТЬ КОРАБЛЬ"),
+    "opt_tab_game": ("JEU", "GAME", "JUEGO", "SPIEL", "GIOCO", "JOGO", "SPEL", "GRA", "OYUN", "SPEL", "SPILL", "SPIL",
+                     "ИГРА"),
+    "opt_tab_audio": ("AUDIO", "AUDIO", "AUDIO", "AUDIO", "AUDIO", "ÁUDIO", "AUDIO", "DŹWIĘK", "SES", "LJUD", "LYD",
+                      "LYD", "ЗВУК"),
+    "opt_tab_display": ("AFFICHAGE", "DISPLAY", "PANTALLA", "ANZEIGE", "SCHERMO", "ECRÃ", "BEELD", "OBRAZ", "EKRAN",
+                        "BILD", "SKJERM", "SKÆRM", "ЭКРАН"),
+    "opt_tab_advanced": ("AVANCÉ", "ADVANCED", "AVANZADO", "ERWEITERT", "AVANZATE", "AVANÇADO", "GEAVANCEERD",
+                         "ZAAWANSOWANE", "GELİŞMİŞ", "AVANCERAT", "AVANSERT", "AVANCERET", "РАСШИРЕННЫЕ"),
+    "bezel_fullscreen_only": ("plein écran seulement", "fullscreen only", "solo pantalla completa", "nur Vollbild",
+                              "solo schermo intero", "só ecrã inteiro", "alleen volledig scherm", "tylko pełny ekran",
+                              "yalnızca tam ekran", "endast helskärm", "kun fullskjerm", "kun fuld skærm",
+                              "только полный экран"),
+    "hint_page": ("Page", "Page", "Página", "Seite", "Pagina", "Página", "Pagina", "Strona", "Sayfa", "Sida", "Side",
+                  "Side", "Страница"),
     "pad_notice_found": ("Manette détectée", "Gamepad detected", "Mando detectado", "Gamepad erkannt",
                          "Controller rilevato", "Comando detetado", "Controller gedetecteerd", "Wykryto pad",
                          "Oyun kolu algılandı", "Handkontroll hittad", "Kontroller oppdaget", "Controller fundet",
@@ -2398,6 +2423,34 @@ _MENU_HINTS = {
 }
 for _k, _texts in _MENU_HINTS.items():
     T[_k] = dict(zip(LANG_CODES, _texts))
+
+# Descriptions of the arcade game screen and of EXTRAS: French and English (the other languages show the English)
+_MENU_DESCRIPTIONS = {
+    "mode_solo_d": ("Un seul pilote.", "One pilot."),
+    "mode_hotseat_d": ("Deux joueurs à tour de rôle : chacun joue sa partie, le meilleur score gagne.",
+                       "Two players take turns: each one plays a game, the best score wins."),
+    "mode_coop_d": ("Deux vaisseaux à l'écran en même temps, les vies sont partagées.",
+                    "Two ships on screen at the same time, sharing their lives."),
+    "diff_novice_d": ("5 vies, ennemis plus lents, la jauge du Phenix ne descend jamais à zéro. Pas de high score.",
+                      "5 lives, slower enemies, the Phenix gauge never drops to zero. No high score."),
+    "diff_normal_d": ("3 vies, la vitesse de l'arcade.", "3 lives, the arcade speed."),
+    "diff_veteran_d": ("3 vies, ennemis plus rapides, +10 points par ennemi et le Commandant à 1000.",
+                       "3 lives, faster enemies, +10 points per enemy and the Commander at 1000."),
+    "extras_highscores_d": ("Les 15 meilleurs scores, avec le vaisseau et le mode de chaque partie.",
+                            "The 15 best scores, with the ship and the mode of each game."),
+    "extras_achievements_d": ("Les hauts faits débloqués, et ceux qu'il te reste à découvrir.",
+                              "The achievements unlocked, and those still to find."),
+    "extras_jukebox_d": ("Réécouter les musiques du jeu et revoir la vidéo d'introduction.",
+                         "Listen to the game's music again and watch the intro video."),
+    "extras_credits_d": ("Ceux qui ont fait le jeu, sur un générique qui défile.",
+                         "The people who made the game, on rolling credits."),
+    "extras_help_d": ("Le scénario, les commandes, les ennemis, le Phenix et le Shield.",
+                      "The story, the controls, the enemies, the Phenix and the Shield."),
+    "extras_addon_d": ("Les jeux d'arcade d'origine, lancés avec MAME.", "The original arcade games, run with MAME."),
+}
+for _k, (_fr, _en) in _MENU_DESCRIPTIONS.items():
+    T[_k] = {_code: _en for _code in LANG_CODES}
+    T[_k]["fr"] = _fr
 
 
 HELP = {

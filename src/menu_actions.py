@@ -10,6 +10,7 @@ from i18n import LANG_CODES, set_lang
 from ingame_music import cycle as ingame_cycle
 from settings import BASE_HEIGHT
 from errlog import log_exc
+import main_menu
 
 
 def menu_adjust(game, direction):
@@ -27,17 +28,21 @@ def menu_adjust(game, direction):
         if getattr(game, "story", None):
             game.story.nav_h(1 if direction > 0 else -1)
         return
-    if game.menu_screen == "main":
-        if game.menu_index == 3:
+    if game.menu_screen == "arcade":
+        row = main_menu.ARCADE[game.menu_index] if 0 <= game.menu_index < len(main_menu.ARCADE) else ""
+        if row == "mode":
             modes = getattr(game, "PLAY_MODES", ["solo", "hotseat", "coop"])
             cur = getattr(game, "play_mode", "solo")
             idx = modes.index(cur) if cur in modes else 0
             game.play_mode = modes[(idx + direction) % len(modes)]
-        elif game.menu_index == 4:
+        elif row == "difficulty":
             idx = game.DIFFICULTIES.index(game.difficulty)
             game.difficulty = game.DIFFICULTIES[(idx + direction) % len(game.DIFFICULTIES)]
         return
     if game.menu_screen != "options":
+        return
+    if game.menu_index < 0:
+        game._options_tab_step(direction)        # the row of tabs has the focus: Left / Right change the tab
         return
     spec = game._options_spec()
     if game.menu_index < 0 or game.menu_index >= len(spec):
@@ -86,9 +91,10 @@ def menu_adjust(game, direction):
         idx = modes.index(game.display_mode) if game.display_mode in modes else 0
         game.display_mode = modes[(idx + direction) % len(modes)]
         game.apply_display_mode()
-        game.menu_index = min(game.menu_index, len(game._options_spec()) - 1)
         game.save_settings()
     elif key == "bezel":
+        if getattr(game, "display_mode", "fullscreen") != "fullscreen":
+            return                               # the bezels only show in fullscreen: the row is greyed
         styles = [s[0] for s in getattr(game, "BEZEL_STYLES", [("off", ""), ("phoenix", "")])]
         cur = getattr(game, "bezel_style", "phoenix")
         idx = styles.index(cur) if cur in styles else 0
@@ -145,9 +151,11 @@ def menu_adjust(game, direction):
 def menu_confirm(game):
 
     if game.menu_screen == "main":
-        if game.menu_index == 0:
-            game._fade_to("open_select")
-        elif game.menu_index == 1:
+        entry = main_menu.MAIN[game.menu_index] if 0 <= game.menu_index < len(main_menu.MAIN) else ""
+        if entry == "play":
+            game.menu_screen = "arcade"              # mode and difficulty, then the ship select
+            game.menu_index = 0
+        elif entry == "story":
             if not getattr(game, "story", None):
                 from story import StoryHub
                 game.story = StoryHub()
@@ -155,32 +163,17 @@ def menu_confirm(game):
             game.story.open_slots()
             game.menu_screen = "story_hub"
             game.menu_idle = 0.0
-        elif game.menu_index == 2:
-            sets = mame_addon.available_sets(fresh=True)
-            if sets:
-                game.menu_screen = "addon"
-                game.menu_index = 0
-                game.menu_idle = 0.0
-                # Same press / key repeat must not launch the first ROM.
-                game.input_grace = 0.45
-        elif game.menu_index == 3:
-            pass  # Mode: Left/Right only
-        elif game.menu_index == 4:
-            pass
-        elif game.menu_index == 5:
-            game.menu_screen = "options"
-            game.menu_index = 0
-        elif game.menu_index == 6:
-            game.hs_entries = load_highscores()
-            game.menu_screen = "highscores"
-            game.menu_index = 0
-        elif game.menu_index == 7:
-            game.menu_screen = "credits"
-            game.credits_scroll = float(BASE_HEIGHT)
-            game.credits_from_start = True
-            game.menu_index = 0
-        elif game.menu_index == 8:
+        elif entry == "extras":
+            game.menu_screen = "extras"
+            game.menu_index = int(getattr(game, "extras_index", 0) or 0) % len(main_menu.EXTRAS)
+        elif entry == "options":
+            game._open_options()
+        elif entry == "quit":
             game._quit_app()
+    elif game.menu_screen == "arcade":
+        game._fade_to("open_select")                 # whichever row: Enter goes on to the ship select
+    elif game.menu_screen == "extras":
+        game._open_extra(main_menu.EXTRAS[game.menu_index % len(main_menu.EXTRAS)])
     elif game.menu_screen == "story_hub":
         spec = None
         if getattr(game, "story", None):
@@ -234,18 +227,10 @@ def menu_confirm(game):
         if game.menu_index == 0:  # Oui
             game.hs_entries = reset_highscores()
         game.menu_screen = "options"
-        spec = game._options_spec()
-        game.menu_index = spec.index("reset_hs") if "reset_hs" in spec else 0
+        game._focus_option("reset_hs")
     elif game.menu_screen == "options":
         spec = game._options_spec()
         key = spec[game.menu_index] if 0 <= game.menu_index < len(spec) else ""
         if key == "reset_hs":
             game.menu_screen = "reset_confirm"
             game.menu_index = 1
-        elif key == "back":
-            if game.pause_options:
-                game.pause_options = False
-                game.menu_index = 0
-            else:
-                game.menu_screen = "main"
-                game.menu_index = 3
