@@ -152,7 +152,8 @@ def test_back_walks_up_one_screen_at_a_time():
     assert hub.back() and hub.screen == "name" and hub.entry.text == "NOVA"   # name is kept
     assert hub.back() and hub.screen == "slots"
     assert ss.slot_summary(1)["status"] == "missing"                          # nothing created
-    assert hub.back() is False                                                # leave the Adventure
+    assert hub.back() is True and hub.screen == "leave"                       # leaving the Adventure is asked first
+    assert hub.back() is True and hub.screen == "slots"                       # B / Esc on the question: stay
     hub.confirm(); _type(hub, "NOVA"); hub._submit_name(); hub.confirm()
     assert hub.screen == "intro"
     assert hub.back() and hub.screen == "hub"                                 # B skips the intro
@@ -259,6 +260,13 @@ def test_escape_and_pad_back_leave_step_by_step(run):
     run.frames(2)                                        # pad B
     assert g.story.screen == "slots" and g.menu_screen == "story_hub"
     _key(pygame.K_ESCAPE); run.frames(2)
+    assert g.story.screen == "leave" and g.menu_screen == "story_hub"      # leaving is asked first
+    pygame.event.post(pygame.event.Event(pygame.JOYBUTTONDOWN, button=1, instance_id=0, joy=0))
+    run.frames(2)                                        # pad B cancels the question
+    assert g.story.screen == "slots" and g.menu_screen == "story_hub"
+    _key(pygame.K_ESCAPE); run.frames(2)
+    _key(pygame.K_RIGHT); run.frames(2)
+    _key(pygame.K_RETURN, "\r"); run.frames(2)           # YES
     assert g.menu_screen == "main" and g.menu_index == 1
 
 

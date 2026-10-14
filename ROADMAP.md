@@ -3,6 +3,7 @@ Current release: **v1.4.5**
 
 ## Unreleased (towards 1.5.0 — Adventure)
 
+- Adventure: leaving the Adventure for the normal game asks first. B / Esc (or pad B) on the slot list opens "QUITTER L'AVENTURE ?" ("Retourner au jeu normal ?", NO lit first, same buttons as the delete question); YES goes back to the main menu, NO or B / Esc stays on the slot list. Going up from the hangar to the slot list is unchanged (`StoryHub.back()` / `confirm()`, screen "leave")
 - Adventure, Act 1: new mission "BONUS : le réacteur à impulsion bidimensionnelle (Shield)" (`src/galaga.py`). It appears on the map
   (in every act, until its reactor is caught) once the "Bestiaire : gargouilles sombres" hunt is won, and flies the Shield. It is four
   waves of blue and khaki avioids of level 2 (x1.1 speed, +10 points a bird) that come in like in Namco's Galaga: chains of birds follow
