@@ -6,10 +6,13 @@ the keys of the keyboard as small keycaps (ENTRÉE, ÉCHAP, arrows), or the butt
 a D-pad with the arms that count lit), depending on the device that was used last (Game.last_input_pad, set by
 Game.handle_events). Nothing to set in the options.
 
-Buttons:  "ud" up / down   "lr" left / right   "l" left   "r" right   "ok" confirm   "back" back   None: a plain label
+Buttons:  "ud" up / down   "lr" left / right   "l" left   "r" right   "all" the four arrows
+          "ok" confirm   "back" back   None: a plain label
+
+The Adventure uses the same bar: StoryHub.help_items() gives its pairs (draw_frame draws them).
 
 The pad is not shown as a permanent line any more: a small notice says "Gamepad connected / unplugged" for a few
-seconds above the bar when it happens (and once at launch when a pad is there).
+seconds at the right end of the bar when it happens (and once at launch when a pad is there).
 """
 import pygame
 
@@ -24,6 +27,7 @@ BAND_ALPHA = 168                  # the band lets the stars show through a littl
 BAND_COLOR = (10, 10, 22)
 LINE_COLOR = (70, 70, 110)
 LABEL_COLOR = (190, 190, 220)
+LIT_COLOR = (255, 220, 120)
 CAP_FILL = (36, 36, 56)
 CAP_EDGE = (130, 130, 175)
 CAP_TEXT = (240, 240, 250)
@@ -105,25 +109,26 @@ def glyph(kind, pad):
             return _round_button("A", PAD_A)
         if kind == "back":
             return _round_button("B", PAD_B)
-        return _dpad({"ud": "ud", "lr": "lr", "l": "l", "r": "r"}.get(kind, "udlr"))
+        return _dpad({"ud": "ud", "lr": "lr", "l": "l", "r": "r", "all": "udlr"}.get(kind, "udlr"))
     if kind == "ok":
         return _keycap(t("hint_key_enter"))
     if kind == "back":
         return _keycap(t("hint_key_esc"))
-    return _keycap({"ud": "↑↓", "lr": "←→", "l": "←", "r": "→"}.get(kind, "?"), size=18)
+    return _keycap({"ud": "↑↓", "lr": "←→", "l": "←", "r": "→", "all": "←↑↓→"}.get(kind, "?"), size=18)
 
 
 # --- the bar -----------------------------------------------------------------------------------------------------
-def render(items, pad):
-    """The bar's content (without the band), cached by its pairs, the device and the language."""
-    key = (tuple(items), bool(pad), getattr(i18n, "_lang", ""))
+def render(items, pad, lit=None):
+    """The bar's content (without the band), cached by its pairs, the device and the language.
+    `lit`: index of a pair whose label is drawn gold (the Adventure's "the text is over, press A")."""
+    key = (tuple(items), bool(pad), getattr(i18n, "_lang", ""), lit)
     img = _cache.get(key)
     if img is not None:
         return img
     parts = []
-    for kind, label in items:
+    for i, (kind, label) in enumerate(items):
         g = glyph(kind, pad)
-        txt = _font(20).render(t(label), True, LABEL_COLOR)
+        txt = _font(20).render(t(label), True, LIT_COLOR if i == lit else LABEL_COLOR)
         parts.append((g, txt))
     widths = [(g.get_width() + GAP_GLYPH if g is not None else 0) + txt.get_width() for g, txt in parts]
     w = sum(widths) + GAP_ITEM * max(0, len(parts) - 1)
@@ -151,14 +156,16 @@ def band():
     return _band
 
 
-def draw(game, surface, items, right=None):
+def draw(game, surface, items, right=None, lit=None):
     """The band and its pairs at the bottom of `surface`. `right`: a small picture shown at the right end."""
     surface.blit(band(), (0, BAND_Y))
-    img = render(items, device_is_pad(game))
+    img = render(items, device_is_pad(game), lit)
     surface.blit(img, ((BASE_WIDTH - img.get_width()) // 2, BAND_Y + (BAND_H - img.get_height()) // 2))
+    right_w = 0
     if right is not None:
         surface.blit(right, (BASE_WIDTH - right.get_width() - 14, BAND_Y + (BAND_H - right.get_height()) // 2))
-    draw_pad_notice(game, surface)
+        right_w = right.get_width() + 10
+    draw_pad_notice(game, surface, right_w)
 
 
 # --- the gamepad notice ------------------------------------------------------------------------------------------
@@ -176,8 +183,9 @@ def note_pad(game):
         game._hint_pad_notice = ["pad_notice_on" if now else "pad_notice_off", NOTICE_SEC]
 
 
-def draw_pad_notice(game, surface):
-    """The notice above the bar (its time runs with the game's frame time, like everything on screen)."""
+def draw_pad_notice(game, surface, right_w=0):
+    """The notice at the right end of the bar, clear of the screen above it (the Adventure's tabs...). Its time runs
+    with the game's frame time, like everything on screen. `right_w`: room taken at the right end already."""
     note_pad(game)
     notice = getattr(game, "_hint_pad_notice", None)
     if not notice:
@@ -194,15 +202,15 @@ def draw_pad_notice(game, surface):
     if img is None:
         txt = _font(18).render(t(key), True, (150, 230, 170) if on else (230, 170, 150))
         icon = _dpad("udlr" if on else "")
-        w, h = icon.get_width() + 10 + txt.get_width() + 28, 34
+        w, h = icon.get_width() + 10 + txt.get_width() + 28, BAND_H - 12
         img = pygame.Surface((w, h), pygame.SRCALPHA)
-        pygame.draw.rect(img, (14, 14, 28, 220), img.get_rect(), border_radius=17)
-        pygame.draw.rect(img, (110, 160, 125) if on else (170, 110, 100), img.get_rect(), width=2, border_radius=17)
+        pygame.draw.rect(img, (14, 14, 28, 220), img.get_rect(), border_radius=h // 2)
+        pygame.draw.rect(img, (110, 160, 125) if on else (170, 110, 100), img.get_rect(), width=2, border_radius=h // 2)
         img.blit(icon, (14, (h - icon.get_height()) // 2))
         img.blit(txt, (14 + icon.get_width() + 10, (h - txt.get_height()) // 2))
         _cache[ck] = img
     img.set_alpha(alpha)
-    surface.blit(img, ((BASE_WIDTH - img.get_width()) // 2, BAND_Y - img.get_height() - 10))
+    surface.blit(img, (BASE_WIDTH - 14 - right_w - img.get_width(), BAND_Y + (BAND_H - img.get_height()) // 2))
 
 
 # --- what each screen shows --------------------------------------------------------------------------------------
@@ -217,6 +225,16 @@ def _options_items(game):
     if key in ("reset_hs", "back"):
         return [NAV, OK, BACK]
     return [NAV, ("lr", "hint_set"), BACK]
+
+
+def _ship_colours(game):
+    """True when Up / Down change the colour of the ship under the cursor (more than one colour to choose from)."""
+    try:
+        sid = "shield" if int(getattr(game, "ship_select_index", 0)) % 2 == 1 else "phoenix"
+        slot = int(getattr(game, "ship_select_slot", 1) or 1)
+        return len(game._available_tints(sid, slot)) > 1
+    except Exception:
+        return False
 
 
 def _addon_ready():
@@ -259,7 +277,7 @@ def menu_items(game):
     if screen == "help":
         return [(None, "hint_any_key")]
     if screen == "ship_select":
-        return [("lr", "hint_choose"), OK, BACK]
+        return [("lr", "hint_choose"), ("ud", "hint_colour"), OK, BACK] if _ship_colours(g) else [("lr", "hint_choose"), OK, BACK]
     if screen == "highscores":
         return [("l", "hint_jukebox"), ("r", "hint_feats"), BACK]
     if screen == "achievements":
@@ -271,11 +289,18 @@ def menu_items(game):
         return [CHOOSE, ("ok", "hint_play")] + tabs + [BACK]
     if screen == "addon":
         return [CHOOSE, ("ok", "hint_launch"), BACK] if _addon_ready() else [BACK]
+    if screen == "story_hub" and getattr(g, "story", None) is not None:
+        return g.story.help_items(device_is_pad(g))[0]
     return None
 
 
 def draw_for(game, surface, right=None):
     """The bar of the screen on display, if it has one."""
-    items = menu_items(game)
+    lit = None
+    if (not game.started and not getattr(game, "quit_confirm", False) and game.menu_screen == "story_hub"
+            and getattr(game, "story", None) is not None):
+        items, lit = game.story.help_items(device_is_pad(game))
+    else:
+        items = menu_items(game)
     if items:
-        draw(game, surface, items, right=right)
+        draw(game, surface, items, right=right, lit=lit)

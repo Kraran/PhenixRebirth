@@ -21,6 +21,7 @@ from text_cache import TextCache
 import bestiary_art
 import videoclip
 import addon as mame_addon
+import menu_ui
 from story_state import MISSIONS, SHOP, log_text   # noqa: F401  (re-exported for the tests)
 
 
@@ -1079,28 +1080,71 @@ class StoryHub:
         else:
             self._draw_log(surface, font, small)
 
-        hint_key = {
-            "hangar": "story_hint",
-            "map": "story_hint_map",
-            "log": "story_hint_log",
-            "bestiary": "story_hint_best",
-            "extras": "story_hint_extras",
-        }[self.pane]
+        self._draw_tabs(surface)
+
+    TAB_KEYS = {"bestiary": "story_tab_best", "log": "story_tab_log", "hangar": "story_tab_hangar",
+                "map": "story_tab_map", "extras": "story_extras"}
+    TAB_Y = 652                    # centre of the tab strip, just above the help bar
+
+    def _draw_tabs(self, surface):
+        """The five tabs as small plates over the help bar; the open one wears the lit frame of the menus."""
+        import hint_bar
+        font = hint_bar._font(20)
+        imgs = [(p, _render(font, t(self.TAB_KEYS[p]), menu_ui.TEXT_SEL if p == self.pane else menu_ui.TEXT))
+                for p in PANES]
+        pad, gap, h = 16, 10, 28
+        total = sum(img.get_width() + pad * 2 for _p, img in imgs) + gap * (len(imgs) - 1)
+        x = BASE_WIDTH // 2 - total // 2
+        for p, img in imgs:
+            r = pygame.Rect(x, self.TAB_Y - h // 2, img.get_width() + pad * 2, h)
+            if p == self.pane:
+                menu_ui.highlight(surface, r)
+            else:
+                menu_ui.panel(surface, r, radius=6, edge_w=1)
+            surface.blit(img, (r.centerx - img.get_width() // 2, r.centery - img.get_height() // 2))
+            x = r.right + gap
+
+    def help_items(self, pad=False):
+        """(pairs, lit) of the help bar for the screen on display (see hint_bar). `lit`: the pair drawn gold."""
+        back, choose = ("back", "hint_back"), ("ud", "hint_choose")
+        tab = ("lr", "hint_tab")
+        if self.screen == "intro":
+            last = self.intro_index + 1 >= len(self.intro_slides)
+            if last:
+                ok = "hint_takeoff" if self.scene_launch else (
+                    "hint_play_addon" if self.scene_door else ("hint_close" if self.scene_id else "hint_start"))
+            else:
+                ok = "hint_next"
+            lit = 0 if getattr(self, "_intro_done", False) and (pygame.time.get_ticks() // 500) % 2 == 0 else None
+            return [("ok", ok), ("ud", "hint_speed"), ("back", "hint_skip")], lit
+        if self.screen == "slots":
+            if self.col == 1:
+                return [choose, ("ok", "hint_delete"), ("l", "hint_back"), back], None
+            items = [choose, ("ok", "hint_open")]
+            if self._summary().get("status") != "missing":
+                items.append(("r", "hint_delete"))
+            return items + [back], None
+        if self.screen in ("delete", "leave"):
+            return [("lr", "hint_choose"), ("ok", "hint_ok"), ("back", "hint_cancel")], None
+        if self.screen == "name":
+            items = [("all", "hint_letters"), ("ok", "hint_ok"), ("back", "hint_cancel")]
+            return (items if pad else [(None, "hint_type_name")] + items), None
+        if self.screen == "mode":
+            return [("lr", "hint_choose"), ("ok", "hint_start"), back], None
         if self.paint_mode:
-            hint_key = "story_hint_paint"
-        cx = BASE_WIDTH // 2
-        tabs = "  ".join(
-            ("> " if p == self.pane else "  ") + t({
-                "bestiary": "story_tab_best",
-                "log": "story_tab_log",
-                "hangar": "story_tab_hangar",
-                "map": "story_tab_map",
-                "extras": "story_extras",
-            }[p])
-            for p in PANES
-        )
-        _text(surface, small, tabs, (160, 170, 200), BASE_HEIGHT - 62, centerx=cx)
-        _text(surface, small, t(hint_key), (140, 140, 170), BASE_HEIGHT - 24, centerx=cx)
+            return [("lr", "hint_colour"), ("ok", "hint_paint"), ("back", "hint_cancel")], None
+        if self.pane == "hangar":
+            if self.zone == "shop":
+                return [choose, ("ok", "hint_buy"), tab, back], None
+            owned = sum(1 for sl in (self.state.get("slots") or []) if sl.get("owned"))
+            return [("lr", "hint_hull" if owned > 1 else "hint_tab"), ("ud", "hint_workshop"), back], None
+        if self.pane == "map":
+            return [choose, ("ok", "hint_launch"), tab, back], None
+        if self.pane == "log":
+            return [choose, ("ok", "hint_replay"), tab, back], None
+        if self.pane == "extras":
+            return [choose, ("ok", "hint_open"), tab, back], None
+        return [choose, tab, back], None
 
     # --- intro ---
     def _intro_picture(self, name):
@@ -1288,16 +1332,8 @@ class StoryHub:
         top = self._intro_top(height)
         self._draw_intro_text(surface, block, top, cx - INTRO_TEXT_W // 2)
 
-        done = self.intro_finished_scrolling(height)
-        last = self.intro_index + 1 >= len(self.intro_slides)
-        blink = done and (pygame.time.get_ticks() // 500) % 2 == 0
-        col = (255, 220, 120) if blink else ((235, 235, 245) if done else (140, 145, 170))
-        if last:
-            hint = "story_scene_last" if self.scene_launch else (
-                "story_scene_door" if self.scene_door else ("story_scene_end" if self.scene_id else "story_intro_last"))
-        else:
-            hint = "story_intro_hint"
-        _text(surface, small, t(hint), col, BASE_HEIGHT - 24, centerx=cx)
+        # the help bar (hint_bar, drawn by the game) lights "A" when the text is over
+        self._intro_done = self.intro_finished_scrolling(height)
         if len(self.intro_slides) > 1:
             _text(surface, small, f"{self.intro_index + 1} / {len(self.intro_slides)}", (140, 145, 170),
                   28, right=BASE_WIDTH - 40)
@@ -1314,12 +1350,9 @@ class StoryHub:
         cx = BASE_WIDTH // 2
         titles = {"slots": "story_gate_title", "delete": "story_delete_title", "leave": "story_leave_title",
                   "name": "story_name_title", "mode": "story_mode_title"}
-        hints = {"slots": "story_gate_hint", "delete": "story_delete_hint", "leave": "story_delete_hint",
-                 "name": "story_name_hint", "mode": "story_mode_hint"}
         ts = medium.render(t(titles[self.screen]), True, (255, 150, 70))
         surface.blit(ts, (cx - ts.get_width() // 2, 18))
         getattr(self, "_draw_gate_" + self.screen)(surface, font, medium, small)
-        _text(surface, small, t(hints[self.screen]), (140, 140, 170), BASE_HEIGHT - 24, centerx=cx)
 
     def _draw_gate_slots(self, surface, font, medium, small):
         card_w = min(BASE_WIDTH - 240, 1100)
@@ -1330,10 +1363,11 @@ class StoryHub:
             status = info.get("status")
             focus = i == self.sel
             on_card = focus and self.col == 0
-            border = (80, 220, 255) if on_card else ((70, 80, 100) if status == "missing" else (180, 120, 60))
-            _fill(surface, (16, 18, 28), r, 12)
+            border = menu_ui.SEL_EDGE if on_card else menu_ui.PANEL_EDGE
+            _fill(surface, menu_ui.SEL_FILL if on_card else menu_ui.PANEL_FILL, r, 12)
             pygame.draw.rect(surface, border, r, 3 if on_card else 2, border_radius=12)
-            _text(surface, medium, str(i + 1), border, r.centery, left=r.x + 28)
+            _text(surface, medium, str(i + 1), border if (on_card or status == "missing") else (180, 150, 110),
+                  r.centery, left=r.x + 28)
             tx = r.x + 84
             if status == "missing":
                 _text(surface, small, t("story_slot_empty"), (140, 140, 160), r.centery, left=tx)
@@ -1354,8 +1388,8 @@ class StoryHub:
             if status != "missing":
                 b = pygame.Rect(r.right - 230, r.centery - 26, 206, 52)
                 bf = focus and self.col == 1
-                _fill(surface, (40, 36, 20) if bf else (22, 24, 36), b, 8)
-                pygame.draw.rect(surface, (255, 210, 80) if bf else (80, 85, 105), b, 2, border_radius=8)
+                _fill(surface, menu_ui.SEL_FILL if bf else (22, 24, 36), b, 8)
+                pygame.draw.rect(surface, menu_ui.SEL_EDGE if bf else menu_ui.PANEL_EDGE, b, 2, border_radius=8)
                 _text(surface, small, t("story_slot_delete"), (255, 230, 140) if bf else (150, 155, 175),
                       b.centery, centerx=b.centerx)
             y += h + gap
@@ -1381,16 +1415,16 @@ class StoryHub:
         for k, (label, yes) in enumerate(((t("story_no"), False), (t("story_yes"), True))):
             b = pygame.Rect(cx - 230 + k * 260, 340, 200, 60)
             focus = self.del_yes == yes
-            _fill(surface, (40, 36, 20) if focus else (22, 24, 36), b, 10)
-            pygame.draw.rect(surface, ((255, 90, 80) if yes and danger else (255, 210, 80)) if focus else (80, 85, 105),
+            _fill(surface, menu_ui.SEL_FILL if focus else (22, 24, 36), b, 10)
+            pygame.draw.rect(surface, ((255, 90, 80) if yes and danger else menu_ui.SEL_EDGE) if focus else menu_ui.PANEL_EDGE,
                              b, 3 if focus else 2, border_radius=10)
             _text(surface, small, label, (255, 230, 140) if focus else (150, 155, 175), b.centery, centerx=b.centerx)
 
     def _draw_gate_name(self, surface, font, medium, small):
         cx = BASE_WIDTH // 2
         box = pygame.Rect(cx - 280, 90, 560, 70)
-        _fill(surface, (16, 18, 28), box, 10)
-        pygame.draw.rect(surface, (80, 220, 255), box, 2, border_radius=10)
+        _fill(surface, menu_ui.SEL_FILL, box, 10)
+        pygame.draw.rect(surface, menu_ui.SEL_EDGE, box, 2, border_radius=10)
         text = self.entry.text
         shown = text + ("_" if (pygame.time.get_ticks() // 450) % 2 == 0 and len(text) < ss.NAME_MAX else " ")
         _text(surface, medium, shown, (255, 230, 140), box.centery, left=box.x + 22)
@@ -1404,8 +1438,8 @@ class StoryHub:
                 r = pygame.Rect(gx + ci * (cw + cg), gy + ri * (ch + cg), cw, ch)
                 focus = ri == self.entry.row and ci == self.entry.col
                 tint = (60, 150, 90) if tok == "OK" else ((170, 80, 70) if tok == "DEL" else (80, 85, 105))
-                _fill(surface, (40, 36, 20) if focus else (16, 18, 28), r, 8)
-                pygame.draw.rect(surface, (255, 210, 80) if focus else tint, r, 3 if focus else 2, border_radius=8)
+                _fill(surface, menu_ui.SEL_FILL if focus else menu_ui.PANEL_FILL, r, 8)
+                pygame.draw.rect(surface, menu_ui.SEL_EDGE if focus else tint, r, 3 if focus else 2, border_radius=8)
                 _text(surface, small, labels.get(tok, tok), (255, 230, 140) if focus else (200, 200, 215),
                       r.centery, centerx=r.centerx)
         if self.msg:
@@ -1423,8 +1457,9 @@ class StoryHub:
         _text(surface, small, f"{t('story_pilot')} : {self.new_name}", (170, 175, 195), 100, centerx=cx)
         for k, (key, r) in enumerate(zip(ss.MODES, self.mode_card_rects())):
             focus = k == self.mode_index
-            _fill(surface, (30, 28, 22) if focus else (16, 18, 28), r, 12)
-            pygame.draw.rect(surface, (255, 210, 80) if focus else (70, 80, 100), r, 3 if focus else 2, border_radius=12)
+            _fill(surface, menu_ui.SEL_FILL if focus else menu_ui.PANEL_FILL, r, 12)
+            pygame.draw.rect(surface, menu_ui.SEL_EDGE if focus else menu_ui.PANEL_EDGE, r, 3 if focus else 2,
+                             border_radius=12)
             col = MODE_COLORS[key]
             _text(surface, medium, t("story_mode_" + key), col if focus else (150, 155, 175), r.y + 46, centerx=r.centerx)
             for li, line in enumerate(_wrap(small, t("story_mode_%s_d" % key), r.w - 40)):
@@ -1432,8 +1467,8 @@ class StoryHub:
 
     def _draw_log(self, surface, font, small):
         box = pygame.Rect(80, 78, BASE_WIDTH - 160, BASE_HEIGHT - 168)
-        _fill(surface, (18, 20, 32), box, 10)
-        pygame.draw.rect(surface, (70, 90, 130), box, 2, border_radius=10)
+        _fill(surface, menu_ui.PANEL_FILL, box, 10)
+        pygame.draw.rect(surface, menu_ui.PANEL_EDGE, box, 2, border_radius=10)
         entries = self.log_entries()
         rows, step = LOG_ROWS, 40
         start = self.log_scroll = max(0, min(self.log_scroll, len(entries) - rows))
@@ -1445,8 +1480,7 @@ class StoryHub:
             indent = 0
             row = pygame.Rect(box.x + 12, y - step // 2 + 2, box.w - 24, step - 4)
             if focus:
-                _fill(surface, (40, 36, 20), row, 6)
-                pygame.draw.rect(surface, (255, 210, 80), row, 2, border_radius=6)
+                menu_ui.highlight(surface, row)
             if replay:
                 text = t("story_log_intro") if entry.get("intro") else log_text(entry, t)
                 col = (255, 230, 140) if focus else (255, 190, 90)
@@ -1457,10 +1491,7 @@ class StoryHub:
             else:
                 text = log_text(entry, t)
                 col = (235, 235, 245) if focus else (200, 200, 220)
-            if indent:
-                _text(surface, small, ">" if focus else " ", col, y, left=box.x + 24)
-            _text_fit(surface, small, text if indent else ("> " if focus else "  ") + text, col, y,
-                      box.x + 24 + indent, row.w - 24 - indent)
+            _text_fit(surface, small, text, col, y, box.x + 24 + indent, row.w - 24 - indent)
             y += step
 
     def bestiary_picture(self, kind, count):
@@ -1484,12 +1515,10 @@ class StoryHub:
             y = top + i * step
             box = pygame.Rect(cx - width // 2, y, width, step - (24 if not tight else 14))
             if chosen:
-                _fill(surface, (24, 26, 44), box, radius=10)
-                pygame.draw.rect(surface, (255, 215, 90), box, 2, border_radius=10)
+                menu_ui.highlight(surface, box, radius=10)
             else:
-                _fill(surface, (14, 15, 28), box, radius=10)
-                pygame.draw.rect(surface, (70, 74, 100), box, 1, border_radius=10)
-            head = ("> " if chosen else "  ") + t(DOOR_TITLES.get(door, door))
+                menu_ui.panel(surface, box, radius=10, edge_w=1)
+            head = t(DOOR_TITLES.get(door, door))
             _text(surface, medium, head, (255, 230, 120) if chosen else (170, 175, 200), y + (26 if tight else 30),
                   left=box.x + 28)
             for j, line in enumerate(_wrap(small, t("story_door_" + door), width - 60)[:2]):
@@ -1499,8 +1528,8 @@ class StoryHub:
     def _draw_bestiary(self, surface, font, medium, small):
         """Left: the enemies met so far. Right: what the pilot has learned about the selected one."""
         box = pygame.Rect(70, 78, BASE_WIDTH - 140, BASE_HEIGHT - 168)
-        _fill(surface, (16, 18, 28), box, 10)
-        pygame.draw.rect(surface, (70, 90, 130), box, 2, border_radius=10)
+        _fill(surface, menu_ui.PANEL_FILL, box, 10)
+        pygame.draw.rect(surface, menu_ui.PANEL_EDGE, box, 2, border_radius=10)
         entries = ss.bestiary_entries(self.state)
         if not entries:
             _text(surface, font, t("story_best_empty"), (160, 170, 200), box.centery, centerx=box.centerx)
@@ -1513,11 +1542,9 @@ class StoryHub:
             focus = i == self.best_index
             row = pygame.Rect(box.x + 12, y - 24, list_w, 48)
             if focus:
-                _fill(surface, (40, 36, 20), row, 6)
-                pygame.draw.rect(surface, (255, 210, 80), row, 2, border_radius=6)
+                menu_ui.highlight(surface, row)
             col = (255, 230, 140) if focus else (200, 200, 215)
-            _text_fit(surface, small, ("> " if focus else "  ") + t(entry["name"]), col, y, row.x + 10,
-                      list_w - 20, scale=0.8)
+            _text_fit(surface, small, t(entry["name"]), col, y, row.x + 16, list_w - 26, scale=0.8)
             y += 56
         pygame.draw.line(surface, (60, 70, 100), (box.x + list_w + 24, box.y + 16),
                          (box.x + list_w + 24, box.bottom - 16), 1)
@@ -1562,8 +1589,8 @@ class StoryHub:
         _text(surface, small, t("story_ship_label").format(name=self._ship_name()), (170, 175, 195), 36,
               right=BASE_WIDTH - 80)
         box = pygame.Rect(70, 78, BASE_WIDTH - 140, BASE_HEIGHT - 168)
-        _fill(surface, (16, 18, 28), box, 10)
-        pygame.draw.rect(surface, (70, 90, 130), box, 2, border_radius=10)
+        _fill(surface, menu_ui.PANEL_FILL, box, 10)
+        pygame.draw.rect(surface, menu_ui.PANEL_EDGE, box, 2, border_radius=10)
         act = int(self.state.get("act") or 1)
         _text(surface, small, t("story_ch2") if act >= 2 and not self.cheat_unlock else t("story_ch1"),
               (255, 170, 80), box.y + 28, left=box.x + 16)
@@ -1590,30 +1617,25 @@ class StoryHub:
             # the focused row is taller: title line + one line for the blurb
             row = pygame.Rect(box.x + 12, y, box.w - 24, 76 if focus else 40)
             if focus:
-                _fill(surface, (36, 32, 22), row, 6)
-                pygame.draw.rect(surface, (255, 210, 80), row, 2, border_radius=6)
+                menu_ui.highlight(surface, row)
             if not open_:
                 col = (110, 110, 120)
-                mark = "  "
                 state = t("story_locked")
             elif done:
                 col = (140, 220, 160) if not focus else (190, 255, 190)
-                mark = "> " if focus else "  "
                 state = t("story_replay") if mission.get("hunt") else t("story_cleared")
             elif playable:
                 col = (255, 230, 140) if focus else (210, 210, 220)
-                mark = "> " if focus else "  "
                 state = t("story_ready")
             else:
                 col = (180, 180, 140) if focus else (150, 150, 160)
-                mark = "> " if focus else "  "
                 state = t("story_soon")
             cy = row.y + 20
             name = t(mission["title"])
             level = ss.mission_level(self.state, mission)
             if open_ and level is not None:
                 name += "   " + t("story_level").format(n=level)
-            _text(surface, small, f"{mark}{name}", col, cy, left=row.x + 10)
+            _text(surface, small, name, col, cy, left=row.x + 16)
             _text(surface, small, state, col, cy, right=row.right - 14)
             if focus:
                 _text_fit(surface, small, t(mission["blurb"]), (170, 175, 195), cy + 34, row.x + 28, row.w - 40)
@@ -1642,10 +1664,10 @@ class StoryHub:
             owned = bool(sl.get("owned"))
             chosen = i == sel
             if owned and chosen:
-                border = (255, 210, 90)                         # the lit frame of the ship select screen
+                border = menu_ui.SEL_EDGE                       # the lit frame of the menus
             else:
-                border = (70, 70, 90)
-            _fill(surface, (16, 18, 28), r, 10)
+                border = menu_ui.PANEL_EDGE
+            _fill(surface, menu_ui.PANEL_FILL, r, 10)
             pygame.draw.rect(surface, border, r, 2, border_radius=10)
             key = self._hull_key(sl)
             img = (self._portraits if chosen else self._greyed).get(key)
@@ -1686,8 +1708,8 @@ class StoryHub:
         x = (BASE_WIDTH - (w * 4 + 16 * 3)) // 2
         for i, (lab, val) in enumerate(cells):
             r = pygame.Rect(x + i * (w + 16), y, w, 64)
-            _fill(surface, (16, 18, 28), r, 8)
-            pygame.draw.rect(surface, (60, 70, 90), r, 1, border_radius=8)
+            _fill(surface, menu_ui.PANEL_FILL, r, 8)
+            pygame.draw.rect(surface, menu_ui.PANEL_EDGE, r, 1, border_radius=8)
             col = (110, 115, 135) if (i == 2 and not dome and not phenix) else (220, 220, 235)
             if not owned:
                 val = "—"
@@ -1705,8 +1727,9 @@ class StoryHub:
         for i, tint in enumerate(ss.PAINT_TINTS):
             r = pygame.Rect(x0 + i * (cell_w + 20), box.y + 52, cell_w, 190)
             focus = i == self.paint_choice
-            _fill(surface, (40, 36, 20) if focus else (22, 24, 36), r, 8)
-            pygame.draw.rect(surface, (255, 210, 80) if focus else (70, 80, 100), r, 3 if focus else 1, border_radius=8)
+            _fill(surface, menu_ui.SEL_FILL if focus else (22, 24, 36), r, 8)
+            pygame.draw.rect(surface, menu_ui.SEL_EDGE if focus else menu_ui.PANEL_EDGE, r, 3 if focus else 1,
+                             border_radius=8)
             img = self._ships.get("shield_" + tint)
             if img is not None:
                 surface.blit(img, (r.centerx - img.get_width() // 2, r.y + 24))
@@ -1715,8 +1738,8 @@ class StoryHub:
 
     def _draw_shop(self, surface, small):
         box = pygame.Rect(70, 308, BASE_WIDTH - 140, 328)
-        _fill(surface, (16, 18, 28), box, 10)
-        pygame.draw.rect(surface, (180, 120, 50), box, 2, border_radius=10)
+        _fill(surface, menu_ui.PANEL_FILL, box, 10)
+        pygame.draw.rect(surface, menu_ui.PANEL_EDGE, box, 2, border_radius=10)
         if self.paint_mode:
             self._draw_paint(surface, small, box)
             return
@@ -1737,13 +1760,10 @@ class StoryHub:
             focus = self.zone == "shop" and i == self.shop_index
             row = pygame.Rect(box.x + 12, y, box.w - 24, 38)
             if focus:
-                _fill(surface, (40, 36, 20), row, 6)
-                pygame.draw.rect(surface, (255, 210, 80), row, 2, border_radius=6)
+                menu_ui.highlight(surface, row)
             col = (100, 100, 110) if locked else ((255, 230, 140) if focus else (200, 200, 210))
-            mark = "> " if focus else "  "
             extra = self._shop_extra(sid, cost, locked)
             if item:
-                _text(surface, small, mark.strip(), col, row.centery, left=row.x + 8)
                 pic = loot.shop_frame(item, self.anim_t, 34)          # it turns, like when it falls in a mission
                 if pic is not None:
                     surface.blit(pic, (row.x + 30 + (40 - pic.get_width()) // 2, row.centery - pic.get_height() // 2))
@@ -1755,7 +1775,7 @@ class StoryHub:
                       col if locked else ((130, 220, 150) if perm else (235, 175, 110)),
                       row.centery, right=row.right - 180)
             else:
-                _text(surface, small, f"{mark}{t(label)}", col, row.centery, left=row.x + 8)
+                _text(surface, small, t(label), col, row.centery, left=row.x + 16)
             _text(surface, small, extra, col, row.centery, right=row.right - 12)
             y += 40
         if 0 <= self.shop_index < len(rows):

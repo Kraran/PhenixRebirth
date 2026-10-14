@@ -261,7 +261,7 @@ def test_the_scene_draws_its_picture_and_its_own_hints(run):
     hub.intro_pos = 99999.0                                           # the text has risen to its resting place
     hub.update(0.01)
     shown, surf = _drawn(hub, run)
-    assert t("story_scene_last") in shown                              # "take off": the mission follows
+    assert hub.help_items()[0][0] == ("ok", "hint_takeoff")           # "take off": the mission follows
     assert not any("/" in s and s.strip()[0].isdigit() for s in shown)      # one slide: no "1 / 1" counter
     px = [surf.get_at((x, 120))[:3] for x in range(20, 140, 10)]
     assert any(max(p) > 30 for p in px)                                # the picture is there, not black
@@ -274,7 +274,7 @@ def test_a_replayed_scene_says_close_not_take_off(run):
     hub.confirm()
     hub.intro_t = 500.0
     shown, _ = _drawn(hub, run)
-    assert t("story_scene_end") in shown and t("story_scene_last") not in shown
+    assert hub.help_items()[0][0] == ("ok", "hint_close")              # "close", not "take off"
 
 
 def test_the_scene_text_is_not_mixed_up_with_the_intro_text(run):
@@ -297,14 +297,14 @@ def test_the_journal_draws_the_scene_line_with_one_cursor(run):
     hub = _hub(seen_scene=True)
     hub.pane = "log"
     gold = []
-    real = story.pygame.draw.rect
+    real = story.menu_ui.highlight
 
-    def spy(surface, color, rect, *a, **k):
-        if tuple(color)[:3] == (255, 210, 80):
+    def spy(surface, rect, *a, **k):
+        if pygame.Rect(rect).y < story.StoryHub.TAB_Y - 20:      # the lit frame of the cursor (not the open tab)
             gold.append(pygame.Rect(rect).y)
-        return real(surface, color, rect, *a, **k)
+        return real(surface, rect, *a, **k)
 
-    story.pygame.draw.rect = spy
+    story.menu_ui.highlight = spy
     try:
         shown0, _ = _drawn(hub, run)
         y0 = list(gold)
@@ -313,6 +313,6 @@ def test_the_journal_draws_the_scene_line_with_one_cursor(run):
         shown1, _ = _drawn(hub, run)
         y1 = list(gold)
     finally:
-        story.pygame.draw.rect = real
+        story.menu_ui.highlight = real
     assert len(y0) == 1 and len(y1) == 1 and y1[0] > y0[0]             # the frame moved down one line
     assert any("Revoir : Dôme I" in s for s in shown0)

@@ -2,6 +2,8 @@
 from types import SimpleNamespace
 
 import pygame
+
+import menu_ui
 import pytest
 
 import story
@@ -89,8 +91,8 @@ def test_the_chosen_frame_is_gold_and_the_other_one_is_plain(run):
     hub.pane = "hangar"
     _markers(hub)
     surf = _draw(hub, run)
-    assert _px(surf, 180, 54 + 80) == (70, 70, 90)                 # the left frame, not chosen
-    assert _px(surf, 1099, 54 + 80) == (255, 210, 90)         # the right frame, chosen
+    assert _px(surf, 180, 54 + 80) == menu_ui.PANEL_EDGE      # the left frame, not chosen (the panels' edge)
+    assert _px(surf, 1099, 54 + 80) == menu_ui.SEL_EDGE       # the right frame, chosen (the lit frame)
 
 
 def test_the_chosen_hull_keeps_the_gold_frame_whatever_the_cursor(run):
@@ -101,7 +103,7 @@ def test_the_chosen_hull_keeps_the_gold_frame_whatever_the_cursor(run):
     for zone in ("slots", "shop"):
         hub.zone = zone
         gold.append(_px(_draw(hub, run), 180, 54 + 80))
-    assert gold == [(255, 210, 90)] * 2
+    assert gold == [menu_ui.SEL_EDGE] * 2
 
 
 def test_a_hull_not_owned_yet_shows_nothing_about_itself(run):
@@ -111,7 +113,7 @@ def test_a_hull_not_owned_yet_shows_nothing_about_itself(run):
     _markers(hub)
     surf = _draw(hub, run)
     assert _px(surf, *RIGHT) != (13, 14, 15) and _px(surf, *RIGHT) != (113, 114, 115)
-    assert _px(surf, 1099, 54 + 80) == (70, 70, 90)           # a plain frame
+    assert _px(surf, 1099, 54 + 80) == menu_ui.PANEL_EDGE     # a plain frame
     # the picture of the Phenix is not even on screen
     seen = []
     real = story._text

@@ -174,5 +174,5 @@ def test_the_scene_draws_its_picture_and_its_hints(run):
         hub.draw(surf, g.font, g.medium_font, g.font)
     finally:
         story._text, story._text_fit = real, real_fit
-    assert t("story_scene_last") in seen
+    assert hub.help_items()[0][0] == ("ok", "hint_takeoff")   # the help bar says "take off"
     assert len({tuple(surf.get_at((x, y))) for x in range(0, 1280, 40) for y in range(0, 720, 40)}) > 20

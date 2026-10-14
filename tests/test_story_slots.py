@@ -808,14 +808,14 @@ def test_only_the_intro_line_is_selectable_in_the_journal(run):
     hub.pane = "log"
     assert len(hub.log_entries()) == 4                       # intro, mission line, level, kill total
     drawn = []
-    real = story.pygame.draw.rect
+    real = story.menu_ui.highlight
 
-    def spy(surface, color, rect, *a, **k):
-        if tuple(color)[:3] == (255, 210, 80):               # the gold frame of the cursor
+    def spy(surface, rect, *a, **k):
+        if pygame.Rect(rect).y < story.StoryHub.TAB_Y - 20:      # the lit frame of the cursor (not the open tab)
             drawn.append(pygame.Rect(rect).y)
-        return real(surface, color, rect, *a, **k)
+        return real(surface, rect, *a, **k)
 
-    story.pygame.draw.rect = spy
+    story.menu_ui.highlight = spy
     try:
         g = run.game
         for steps in (0, 1, 2, 5):
@@ -825,7 +825,7 @@ def test_only_the_intro_line_is_selectable_in_the_journal(run):
             hub.draw(pygame.Surface((1280, 720)), g.font, g.medium_font, g.font)
             assert len(drawn) == 1, (steps, drawn)           # one frame, on the intro line only
     finally:
-        story.pygame.draw.rect = real
+        story.menu_ui.highlight = real
     hub.nav_v(1)
     hub.nav_v(1)
     hub.confirm()
