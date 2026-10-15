@@ -56,7 +56,7 @@ import story_items
 import addon as mame_addon
 from highscores import load_highscores, is_highscore, insert_score, reset_highscores
 from achievements import (
-    CATALOG, load_achievements, unlock_achievement, unlocked_count,
+    CATALOG, CATALOG_ADV, PAGES as ACH_PAGES, load_achievements, unlock_achievement, unlocked_count,
     add_scalable, set_scalable_at_least, scalable_tier, scalable_progress,
     scalable_thresholds,
 )
@@ -342,9 +342,9 @@ class Game:
             self.hs_entries = load_highscores()
             self.menu_screen = "highscores"
 
-    # --- Options, Jukebox and Credits opened from the Adventure ---
-    DOOR_SCREENS = {"options": ("options", "reset_confirm"), "jukebox": ("jukebox",), "credits": ("credits",),
-                    "addon": ("addon",)}
+    # --- Options, Achievements, Jukebox and Credits opened from the Adventure ---
+    DOOR_SCREENS = {"options": ("options", "reset_confirm"), "achievements": ("achievements",), "jukebox": ("jukebox",),
+                    "credits": ("credits",), "addon": ("addon",)}
 
     def _open_story_door(self, door):
         """The screen of the main menu that a paragraph of the Extras tab of the Adventure stands for. It looks and works
@@ -365,6 +365,10 @@ class Game:
             self.credits_from_start = True
         elif door == "addon":
             self.menu_screen = "addon"            # the games of the Add-On: the bar of the Phobos station
+        elif door == "achievements":
+            self._extra_enter("achievements")
+            self.ach_page = next(i for i, (_, cat) in enumerate(ACH_PAGES) if cat is CATALOG_ADV)   # the Adventure page
+            self.ach_index = 0
         else:
             self._open_jukebox()
 

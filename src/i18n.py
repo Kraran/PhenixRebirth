@@ -3600,7 +3600,7 @@ _ADVENTURE_TEXTS.update({
     # a lost mission: the quantum anchor brings the ship back to the base (src/anchor_fx.py)
     "story_anchor_title": ("ANCRAGE QUANTIQUE", "QUANTUM ANCHOR"),
     "story_anchor_sub": ("Retour à la base…", "Back to base…"),
-    # Extras tab of the Adventure: Options / Jukebox / Credits, the screens of the main menu
+    # Extras tab of the Adventure: Options / Achievements / Jukebox / Credits, the screens of the main menu
     "story_extras": ("EXTRAS", "EXTRAS"),
     "story_hint_extras": ("Haut / Bas  choisir   A/Entrée  ouvrir   Gauche / Droite  écran   B/Échap  retour",
                           "Up / Down  choose   A/Enter  open   Left / Right  pane   B/Esc  back"),
@@ -3608,6 +3608,8 @@ _ADVENTURE_TEXTS.update({
                            "Display, sound, music, language and controls. The settings are for the whole game."),
     "story_door_jukebox": ("Réécouter les musiques du jeu et revoir la vidéo d'introduction.",
                            "Listen to the music of the game again and watch the introduction video."),
+    "story_door_achievements": ("Tous les hauts faits du jeu, sur deux pages : l'Arcade et l'Aventure.",
+                                "All the achievements of the game, on two pages: the Arcade and the Adventure."),
     "story_door_addon_t": ("BAR DE LA STATION PHOBOS", "PHOBOS STATION BAR"),
     "story_door_addon": ("Le Dernier Rempart et ses bornes d’arcade : le menu Add-On, pour choisir un jeu et lancer la partie.",
                          "The Last Bulwark and its arcade cabinets: the Add-On menu, to pick a game and start playing."),

@@ -28,11 +28,11 @@ import menu_ui
 from story_state import MISSIONS, SHOP, log_text   # noqa: F401  (re-exported for the tests)
 
 
-# The Extras tab, at the far left, holds the three screens of the main menu (Options, Jukebox, Credits) as three
+# The Extras tab, at the far left, holds four screens of the main menu (Options, Achievements, Jukebox, Credits) as
 # paragraphs: Up / Down choose, A opens the real screen, B / Esc comes back to the same paragraph. (Left / Right change
 # values in those screens, so they could not also change tab.)
-DOORS = ("options", "jukebox", "credits")
-BAR_DOOR = "addon"             # the fourth paragraph, there only when the Add-On is available: the Phobos station bar
+DOORS = ("options", "achievements", "jukebox", "credits")
+BAR_DOOR = "addon"             # the fifth paragraph, there only when the Add-On is available: the Phobos station bar
 DOOR_TITLES = {BAR_DOOR: "story_door_addon_t"}      # the paragraphs whose title is not the name of the screen
 PANES = ("extras", "bestiary", "log", "hangar", "map")
 CHEAT_UNLOCK = "UNLK"          # typed on the mission map: play any mission, save nothing
@@ -324,8 +324,8 @@ class StoryHub:
 
     # --- the Extras tab: the screens of the main menu, and the bar of Phobos once the Add-On is there ---
     def doors(self):
-        """The paragraphs of the Extras tab: Options, Jukebox, Credits, and the Phobos bar (the Add-On menu) when the
-        Add-On is available."""
+        """The paragraphs of the Extras tab: Options, Achievements, Jukebox, Credits, and the Phobos bar (the Add-On menu)
+        when the Add-On is available."""
         return DOORS + ((BAR_DOOR,) if self._addon_available() else ())
 
     def _addon_available(self):
@@ -1641,29 +1641,31 @@ class StoryHub:
             img = pygame.transform.scale(img, (img.get_width() * 2, img.get_height() * 2))
         return img
 
+    # the layout of the Extras tab for 3, 4 and 5 paragraphs: top, step, gap between boxes, title / text offsets,
+    # text line height
+    EXTRAS_LAYOUT = {3: (124, 150, 24, 30, 68, 30), 4: (124, 122, 14, 26, 60, 27), 5: (84, 108, 10, 22, 55, 24)}
+
     def _draw_extras(self, surface, medium, small):
-        """One paragraph for each screen of the main menu (Options, Jukebox, Credits, and the Add-On when it is there, as
-        the bar of Phobos); the chosen one has a frame. With the fourth the paragraphs are a little smaller."""
+        """One paragraph for each screen of the main menu (Options, Achievements, Jukebox, Credits, and the Add-On when
+        it is there, as the bar of Phobos); the chosen one has a frame. The more paragraphs, the smaller they are."""
         cx = BASE_WIDTH // 2
         doors = self.doors()
-        width, top = 860, 124
-        step = 150 if len(doors) <= 3 else 122
-        tight = len(doors) > 3
+        width = 860
+        top, step, gap, head_dy, body_dy, line_h = self.EXTRAS_LAYOUT[max(3, min(5, len(doors)))]
         for i, door in enumerate(doors):
             chosen = i == self.extras_index
             y = top + i * step
-            box = pygame.Rect(cx - width // 2, y, width, step - (24 if not tight else 14))
+            box = pygame.Rect(cx - width // 2, y, width, step - gap)
             if chosen:
                 menu_ui.highlight(surface, box, radius=10)
             else:
                 menu_ui.panel(surface, box, radius=10, edge_w=1)
             head = t(DOOR_TITLES.get(door, door))
-            _text(surface, medium, head, (255, 230, 120) if chosen else (170, 175, 200), y + (26 if tight else 30),
-                  left=box.x + 28)
+            _text(surface, medium, head, (255, 230, 120) if chosen else (170, 175, 200), y + head_dy, left=box.x + 28)
             body = getattr(self, "_body", None) or small
             for j, line in enumerate(_wrap(body, t("story_door_" + door), width - 60)[:2]):
                 _text(surface, body, line, (205, 208, 228) if chosen else (140, 145, 170),
-                      y + (60 if tight else 68) + j * (27 if tight else 30), left=box.x + 28)
+                      y + body_dy + j * line_h, left=box.x + 28)
 
     def _draw_bestiary(self, surface, font, medium, small):
         """Left: the enemies met so far. Right: what the pilot has learned about the selected one."""

@@ -84,17 +84,17 @@ def test_the_scene_is_due_only_with_the_addon_and_once_per_save():
 
 
 # ------------------------------------------------------------------ the Extras tab
-def test_the_extras_tab_has_the_bar_as_a_fourth_paragraph_only_with_the_addon():
-    assert DOORS == ("options", "jukebox", "credits")
+def test_the_extras_tab_has_the_bar_as_a_fifth_paragraph_only_with_the_addon():
+    assert DOORS == ("options", "achievements", "jukebox", "credits")
     assert _hub(addon=False).doors() == DOORS
     hub = _hub(addon=True)
     assert hub.doors() == DOORS + ("addon",)
     hub.pane = "extras"
-    hub.extras_index = 2
+    hub.extras_index = 3
     hub.nav_v(1)
-    assert hub.extras_index == 3
+    assert hub.extras_index == 4
     hub.nav_v(1)
-    assert hub.extras_index == 3                                      # the last one
+    assert hub.extras_index == 4                                      # the last one
     ss.mark_scene_seen(hub.state, ID)                                 # (the first time its scene comes first)
     assert hub.confirm() == {"door": "addon"}
 
@@ -102,23 +102,23 @@ def test_the_extras_tab_has_the_bar_as_a_fourth_paragraph_only_with_the_addon():
 def test_without_the_addon_the_tab_goes_no_further_than_the_credits():
     hub = _hub(addon=False)
     hub.pane = "extras"
-    hub.extras_index = 2
+    hub.extras_index = 3
     hub.nav_v(1)
-    assert hub.extras_index == 2 and hub.confirm() == {"door": "credits"}
+    assert hub.extras_index == 3 and hub.confirm() == {"door": "credits"}
 
 
 def test_the_addon_going_away_does_not_leave_the_cursor_on_nothing():
     hub = _hub(addon=True)
     hub.pane = "extras"
-    hub.extras_index = 3
+    hub.extras_index = 4
     hub.addon_ready = lambda: False
     assert hub.confirm() == {"door": "credits"}
 
 
-def test_the_tab_draws_four_paragraphs_with_the_bar_title(run):
+def test_the_tab_draws_five_paragraphs_with_the_bar_title(run):
     hub = _hub(addon=True)
     hub.pane = "extras"
-    hub.extras_index = 3
+    hub.extras_index = 4
     texts = []
     real = story_mod._text
 
@@ -136,8 +136,8 @@ def test_the_tab_draws_four_paragraphs_with_the_bar_title(run):
     assert any(t("story_door_addon").split()[0] in x for x in texts)
 
 
-def test_the_four_paragraphs_fit_between_the_title_and_the_tabs(run):
-    """The boxes are drawn smaller with four of them: the last one ends above the row of tabs."""
+def test_the_five_paragraphs_fit_between_the_title_and_the_tabs(run):
+    """The boxes are drawn smaller with five of them: the last one ends above the row of tabs."""
     hub = _hub(addon=True)
     hub.pane = "extras"
     boxes = []
@@ -152,9 +152,10 @@ def test_the_four_paragraphs_fit_between_the_title_and_the_tabs(run):
     finally:
         story_mod.menu_ui.panel = real
     paragraphs = [b for b in boxes if b.width == 860]
-    assert len(paragraphs) == 4 and paragraphs[-1].bottom < BASE_HEIGHT - 90
+    assert len(paragraphs) == 5 and paragraphs[-1].bottom < BASE_HEIGHT - 90
+    assert paragraphs[0].top > 70                                                   # below the title
     assert all(a.bottom < b.top for a, b in zip(paragraphs, paragraphs[1:]))        # they do not touch
-    assert all(b.height >= 100 for b in paragraphs)
+    assert all(b.height >= 95 for b in paragraphs)
 
 
 # ------------------------------------------------------------------ when it is told
@@ -178,7 +179,7 @@ def test_the_first_a_on_the_bar_paragraph_tells_the_scene(run):
     hub = _hub(addon=True)
     assert _open_bar(hub) is None
     assert hub.screen == "intro" and hub.scene_id == ID and hub.scene_door == "addon" and not hub.scene_launch
-    assert hub.intro_slides == ss.scene_of(ID)["slides"] and hub.extras_index == 3
+    assert hub.intro_slides == ss.scene_of(ID)["slides"] and hub.extras_index == 4
     assert hub.intro_return == "extras"
     _draw(hub, run)
 
@@ -236,7 +237,7 @@ def test_finishing_the_scene_remembers_it_and_puts_the_tab_on_the_addon():
     _wait(hub)
     hub.confirm()
     hub.finish_scene("addon")
-    assert hub.screen == "hub" and hub.pane == "extras" and hub.extras_index == 3
+    assert hub.screen == "hub" and hub.pane == "extras" and hub.extras_index == 4
     assert ss.scene_seen(hub.state, ID) and not hub.scene_closing and hub.scene_door is None
     assert ss.load_state(ss.story_path(1))["flags"][ss.scene_flag(ID)] is True      # saved
     assert not hub.bar_due() and _open_bar(hub) == {"door": "addon"}
@@ -247,7 +248,7 @@ def test_finishing_a_scene_with_a_door_always_lands_on_that_paragraph_of_the_ext
     hub.start_scene(ID, back_to="log", door="addon")                   # (whatever the scene was started from)
     hub.extras_index = 0
     hub.finish_scene("addon")
-    assert hub.pane == "extras" and hub.extras_index == 3 and hub.screen == "hub"
+    assert hub.pane == "extras" and hub.extras_index == 4 and hub.screen == "hub"
 
 
 def test_skipping_the_scene_asks_for_the_addon_menu_like_its_end():
@@ -261,7 +262,7 @@ def test_skipping_the_scene_asks_for_the_addon_menu_like_its_end():
     hub.back()
     assert hub.take_door_request() is None                              # a second Esc does not ask again
     hub.finish_scene("addon")
-    assert hub.screen == "hub" and hub.pane == "extras" and hub.extras_index == 3
+    assert hub.screen == "hub" and hub.pane == "extras" and hub.extras_index == 4
     assert ss.scene_seen(hub.state, ID) and hub.scene_door is None
 
 
@@ -436,7 +437,7 @@ def game(run):
 def _game_open_bar(g):
     """A on the Phobos bar paragraph (the game's own confirm, as the player does it)."""
     g.story.pane = "extras"
-    g.story.extras_index = 3
+    g.story.extras_index = 4
     g.story.screen = "hub"
     return g.story.confirm() is None and g.story.screen == "intro"
 
@@ -450,7 +451,7 @@ def test_a_on_the_bar_paragraph_opens_the_addon_menu_and_escape_brings_the_tab_b
     g = game
     ss.mark_scene_seen(g.story.state, ID)                              # (the first time the scene comes first, see below)
     g.story.pane = "extras"
-    g.story.extras_index = 3
+    g.story.extras_index = 4
     _key(run, pygame.K_RETURN)
     g.input_grace = 0
     run.frames(2)
@@ -459,7 +460,7 @@ def test_a_on_the_bar_paragraph_opens_the_addon_menu_and_escape_brings_the_tab_b
     assert g.menu_screen == "addon"
     _key(run, pygame.K_ESCAPE, frames=3)
     assert g.menu_screen == "story_hub" and g.story.pane == "extras" and g.story.screen == "hub"
-    assert g.story.extras_index == 3 and g.story_door is None
+    assert g.story.extras_index == 4 and g.story_door is None
 
 
 def test_the_scene_ends_with_a_fade_to_black_then_the_addon_menu(game, run):
@@ -480,7 +481,7 @@ def test_the_scene_ends_with_a_fade_to_black_then_the_addon_menu(game, run):
     assert g.fade_phase is None and g.fade_t <= 0.0                   # and it came back up from black
     assert g.FADE_SEC < 0.5                                           # the quick fade of the menus is back
     _key(run, pygame.K_ESCAPE, frames=3)
-    assert g.menu_screen == "story_hub" and g.story.extras_index == 3 and g.story.pane == "extras"
+    assert g.menu_screen == "story_hub" and g.story.extras_index == 4 and g.story.pane == "extras"
 
 
 def test_the_scene_music_is_low_and_comes_back_to_normal_in_the_addon_menu(game, run):
@@ -535,7 +536,7 @@ def test_the_scene_theme_comes_in_slowly_after_a_quick_fade_of_the_menu_one(game
 def test_the_first_a_on_the_bar_paragraph_of_the_game_shows_the_scene_not_the_menu(game, run):
     g = game
     g.story.pane = "extras"
-    g.story.extras_index = 3
+    g.story.extras_index = 4
     _key(run, pygame.K_RETURN)
     assert g.menu_screen == "story_hub" and g.story.screen == "intro" and g.story.scene_id == ID
     assert getattr(g, "story_door", None) is None
@@ -546,7 +547,7 @@ def test_the_first_a_on_the_bar_paragraph_of_the_game_shows_the_scene_not_the_me
 def test_escape_on_the_scene_also_fades_to_black_then_opens_the_addon_menu(game, run):
     g = game
     g.story.pane = "extras"
-    g.story.extras_index = 3
+    g.story.extras_index = 4
     _key(run, pygame.K_RETURN)
     run.frames(3)
     _key(run, pygame.K_ESCAPE, frames=2)
@@ -556,7 +557,7 @@ def test_escape_on_the_scene_also_fades_to_black_then_opens_the_addon_menu(game,
     assert g.menu_screen == "addon" and g.story_door == "addon" and ss.scene_seen(g.story.state, ID)
     run.frames(int(g.FADE_SEC * 60) + 30)
     _key(run, pygame.K_ESCAPE, frames=3)
-    assert g.menu_screen == "story_hub" and g.story.pane == "extras" and g.story.extras_index == 3
+    assert g.menu_screen == "story_hub" and g.story.pane == "extras" and g.story.extras_index == 4
     g.input_grace = 0
     _key(run, pygame.K_RETURN)
     g.input_grace = 0

@@ -1,6 +1,7 @@
-"""Options, Jukebox and Credits are reached from the Adventure, in the Extras tab at the far left (left of the Bestiary).
+"""Options, Achievements, Jukebox and Credits are reached from the Adventure, in the Extras tab at the far left (left of
+the Bestiary).
 
-The tab has three paragraphs, one for each screen: Up / Down choose, A opens the screen of the main menu, as it works from
+The tab has four paragraphs, one for each screen: Up / Down choose, A opens the screen of the main menu, as it works from
 the main menu, and leaving it (B / Esc, or the screen's own way out) brings the Adventure back on the same paragraph.
 """
 import pygame
@@ -40,8 +41,8 @@ def _open(run, g, door):
 
 # --- where they are -----------------------------------------------------------------------------------------------
 
-def test_one_extras_tab_is_the_first_and_holds_the_three_screens_in_this_order():
-    assert DOORS == ("options", "jukebox", "credits")
+def test_one_extras_tab_is_the_first_and_holds_the_four_screens_in_this_order():
+    assert DOORS == ("options", "achievements", "jukebox", "credits")
     assert PANES == ("extras", "bestiary", "log", "hangar", "map")
 
 
@@ -66,12 +67,12 @@ def test_up_and_down_choose_the_paragraph_and_stop_at_the_ends():
     hub.nav_v(-1)
     assert hub.extras_index == 0
     seen = []
-    for _ in range(4):
+    for _ in range(5):
         hub.nav_v(1)
         seen.append(hub.extras_index)
-    assert seen == [1, 2, 2, 2]
+    assert seen == [1, 2, 3, 3, 3]
     hub.nav_v(-1)
-    assert hub.extras_index == 1
+    assert hub.extras_index == 2
 
 
 def test_a_gives_the_screen_of_the_chosen_paragraph():
@@ -79,10 +80,10 @@ def test_a_gives_the_screen_of_the_chosen_paragraph():
     hub.open_slot(1)
     hub.pane = "extras"
     got = []
-    for i in range(3):
+    for i in range(4):
         hub.extras_index = i
         got.append(hub.confirm())
-    assert got == [{"door": "options"}, {"door": "jukebox"}, {"door": "credits"}]
+    assert got == [{"door": "options"}, {"door": "achievements"}, {"door": "jukebox"}, {"door": "credits"}]
 
 
 def test_the_tab_row_and_the_tab_draw(hub, run):
@@ -90,12 +91,12 @@ def test_the_tab_row_and_the_tab_draw(hub, run):
         hub.story.pane = pane
         run.frames(3)
     hub.story.pane = "extras"
-    for i in range(3):
+    for i in range(4):
         hub.story.extras_index = i
         run.frames(3)
 
 
-def test_the_three_paragraphs_and_the_chosen_one_are_drawn(hub):
+def test_the_paragraphs_and_the_chosen_one_are_drawn(hub):
     import story
     from i18n import t
     texts = []
@@ -121,7 +122,8 @@ def test_the_three_paragraphs_and_the_chosen_one_are_drawn(hub):
         assert any(t("story_door_" + door).split()[0] in x for x in texts), door
     assert not any(str(x).startswith("> ") for x in texts)          # no cursor mark: the lit frame shows it
     paragraphs = [r for r in lit if r.width == 860]
-    assert len(paragraphs) == 1 and 124 + 150 <= paragraphs[0].y < 124 + 300     # the second one (Jukebox) is lit
+    top, step = story.StoryHub.EXTRAS_LAYOUT[len(hub.story.doors())][:2]
+    assert len(paragraphs) == 1 and paragraphs[0].y == top + step                 # the second one (Achievements) is lit
     assert story.PANES.index("extras") < story.PANES.index("bestiary")         # Extras is the first tab
 
 
@@ -154,7 +156,7 @@ def test_the_press_that_opens_a_screen_does_not_act_in_it(hub, run):
     assert g.menu_screen == "credits"                     # still there: the repeat was ignored
     g.input_grace = 0
     _key(run, pygame.K_RETURN, frames=3)                  # a real press leaves it, as from the main menu
-    assert g.menu_screen == "story_hub" and g.story.pane == "extras" and g.story.extras_index == 2
+    assert g.menu_screen == "story_hub" and g.story.pane == "extras" and g.story.extras_index == DOORS.index("credits")
 
 
 def test_options_work_from_the_adventure_and_changes_are_kept(hub, run):
@@ -199,7 +201,7 @@ def test_the_jukebox_plays_and_left_right_do_not_go_to_the_scores(hub, run):
         _key(run, key)
         assert g.menu_screen == "jukebox"
     _key(run, pygame.K_ESCAPE, frames=3)
-    assert g.menu_screen == "story_hub" and g.story.pane == "extras" and g.story.extras_index == 1
+    assert g.menu_screen == "story_hub" and g.story.pane == "extras" and g.story.extras_index == DOORS.index("jukebox")
 
 
 def test_the_jukebox_stops_its_music_when_it_is_left(hub, run, monkeypatch):
@@ -266,3 +268,20 @@ def test_the_paragraph_comes_from_the_screen_that_was_opened_not_from_the_cursor
     g.story.extras_index = 0                              # whatever the cursor says, the way back goes by the screen
     _key(run, pygame.K_ESCAPE, frames=3)
     assert g.menu_screen == "story_hub" and g.story.extras_index == DOORS.index("credits")
+
+
+# --- the achievements --------------------------------------------------------------------------------------------
+
+def test_the_achievements_open_on_the_adventure_page_and_come_back_to_their_paragraph(hub, run):
+    import achievements
+    g = hub
+    g.ach_page, g.ach_index = 0, 5                        # left on the Arcade page from the main menu
+    _open(run, g, "achievements")
+    assert g.menu_screen == "achievements" and g.story_door == "achievements"
+    assert achievements.PAGES[g.ach_page][1] is achievements.CATALOG_ADV and g.ach_index == 0
+    for key in (pygame.K_RIGHT, pygame.K_LEFT, pygame.K_DOWN):     # the arrows move in the grid, never to the scores
+        _key(run, key)
+        assert g.menu_screen == "achievements"
+    _key(run, pygame.K_ESCAPE, frames=3)
+    assert g.menu_screen == "story_hub" and g.story.pane == "extras"
+    assert g.story.extras_index == DOORS.index("achievements") and g.story.slot_no == 1

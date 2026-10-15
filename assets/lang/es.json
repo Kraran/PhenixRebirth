@@ -96,6 +96,7 @@
  "story_hint_extras": "Arriba / Abajo  elegir   A/Enter  abrir   Izquierda / Derecha  pantalla   B/Esc  volver",
  "story_door_options": "Pantalla, sonido, música, idioma y controles. Los ajustes valen para todo el juego.",
  "story_door_jukebox": "Volver a escuchar la música del juego y ver el vídeo de introducción.",
+ "story_door_achievements": "Todos los logros del juego, en dos páginas: el Arcade y la Aventura.",
  "story_door_addon_t": "BAR DE LA ESTACIÓN FOBOS",
  "story_door_addon": "El Último Bastión y sus máquinas recreativas: el menú Add-On, para elegir un juego y empezar a jugar.",
  "story_door_credits": "Los créditos del juego, desfilando por la pantalla.",
