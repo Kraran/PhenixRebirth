@@ -3965,6 +3965,323 @@ for _k, _texts in _ACH_ADV_TEXTS.items():
 T["ach_page_adventure"] = dict(T["story"])           # AVENTURE, ADVENTURE...
 
 
+# ----------------------------------------------------------------------------------------------------------------------
+# Act 3 (the end of Act 2, the attack on Phobos, the choice of the hull, the repair series, the BONUS missions, the final
+# series, the end). French and English only for now: the other languages show the English text until the French one is
+# validated and translated (assets/lang/<code>.json).
+_ACT3_TEXTS = {
+    # --- the last mission of Act 2
+    "story_m_gate3": ("Passage à l'acte 3 : le grand raid", "Gateway to Act 3: the great raid"),
+    "story_m_gate3_b": ("Un run complet, niveaux 21 à 25, jusqu'au commandant. Une seule fois.",
+                        "A full run, levels 21 to 25, up to the commander. Once only."),
+    "story_log_gate3": ("Le raid est gagné. Mais Phobos est attaquée…",
+                        "The raid is won. But Phobos is under attack…"),
+    "story_cheat_act3": ("Code 3333 : l'acte 2 est gagné. Plus aucune sauvegarde.",
+                         "Code 3333: Act 2 is won. Nothing is saved any more."),
+    # --- the choice
+    "story_choice_title": ("L'ANCRAGE QUANTIQUE", "THE QUANTUM ANCHOR"),
+    "story_choice_q": ("Quel vaisseau emporte l'ancrage quantique ?", "Which ship takes the quantum anchor?"),
+    "story_choice_q_v": ("Quel vaisseau pilotes-tu ? Grok enverra l'autre attirer leur feu.",
+                         "Which ship do you fly? Grok will send the other one to draw their fire."),
+    "story_choice_shield_d": ("Le NX01, le prototype des débuts. Son dôme arrête les tirs ; à 100 %, les murs "
+                              "électriques ne lui font plus rien.",
+                              "The NX01, the prototype of the early days. Its dome stops the shots; at 100 %, the "
+                              "electric walls can no longer hurt it."),
+    "story_choice_phoenix_d": ("Le dernier venu au hangar. Sa forme Phenix balaie tout ; à 100 %, elle dure aussi "
+                               "longtemps qu'à l'arcade.",
+                               "The latest arrival in the hangar. Its Phenix form sweeps everything away; at 100 %, it "
+                               "lasts as long as in the arcade."),
+    "story_choice_note": ("L'autre vaisseau sera détruit. L'acte 3 se jouera avec ce seul vaisseau.",
+                          "The other ship will be destroyed. Act 3 is flown with this ship only."),
+    "story_choice_ask": ("Garder le {ship} ?", "Keep the {ship}?"),
+    "story_choice_warn": ("Le {ship} sera perdu. Ce choix est définitif.",
+                          "The {ship} will be lost. This choice is final."),
+    "story_act3_start": ("L'acte 3 commence.", "Act 3 begins."),
+    "story_ch3": ("ACTE 3 — LA RIPOSTE", "ACT 3 — THE COUNTERSTRIKE"),
+    "story_hull_lost": ("DÉTRUIT", "DESTROYED"),
+    "story_log_lost_phoenix": ("Phobos tient. Le Phenix est tombé pour elle.",
+                               "Phobos holds. The Phenix fell for her."),
+    "story_log_lost_shield": ("Phobos tient. Le NX01 est tombé pour elle.",
+                              "Phobos holds. The NX01 fell for her."),
+    # --- the workshop of Act 3, the paint of the Phenix
+    "story_shop_phenix100": ("Jauge du Phenix 100 %", "Phenix gauge 100 %"),
+    "story_paint_title_phenix": ("ATELIER DE PEINTURE : la couleur du Phenix ({pts} PTS)",
+                                 "PAINT SHOP: the colour of the Phenix ({pts} PTS)"),
+    "story_paint_argent": ("ARGENT", "SILVER"),
+    "story_paint_blue": ("BLEU", "BLUE"),
+    "story_paint_gold": ("OR", "GOLD"),
+    # --- the repair series (Shield)
+    "story_m_ups1": ("Remise en état I : les propulseurs", "Repairs I: the thrusters"),
+    "story_m_ups1_b": ("Bleus puis Kakis, niveaux 16 et 17. Ouvre la vitesse 100 % à l'atelier.",
+                       "Blues then Khakis, levels 16 and 17. Opens speed 100 % in the workshop."),
+    "story_log_ups1": ("Des propulseurs complets, arrachés à un dépôt d'Europe.",
+                       "Complete thrusters, torn from a depot on Europa."),
+    "story_m_ups2": ("Remise en état II : la coque", "Repairs II: the hull"),
+    "story_m_ups2_b": ("Gargouilles puis Gargouilles sombres, niveaux 18 et 19. Ouvre la 3e vie à l'atelier.",
+                       "Gargoyles then Dark gargoyles, levels 18 and 19. Opens the 3rd life in the workshop."),
+    "story_log_ups2": ("Des plaques de coque renforcée, prises sur une épave de Ganymède.",
+                       "Reinforced hull plates, taken from a wreck off Ganymede."),
+    "story_m_ups3": ("Remise en état III : le blindage Tesla", "Repairs III: the Tesla shielding"),
+    "story_m_ups3_b": ("La nuée, niveau 16. Ouvre l'immunité aux murs électriques à l'atelier.",
+                       "The swarm, level 16. Opens the immunity to the electric walls in the workshop."),
+    "story_log_ups3": ("Le blindage Tesla est à bord : les murs ne mordront plus.",
+                       "The Tesla shielding is on board: the walls will bite no more."),
+    "story_m_ups4": ("Remise en état IV : le dôme", "Repairs IV: the dome"),
+    "story_m_ups4_b": ("Un run complet, niveaux 16 à 20. Ouvre le dôme de 2 s à l'atelier, et la Riposte.",
+                       "A full run, levels 16 to 20. Opens the 2 s dome in the workshop, and the Counterstrike."),
+    "story_log_ups4": ("Le générateur du dôme tient deux secondes. Le NX01 est prêt.",
+                       "The dome generator holds for two seconds. The NX01 is ready."),
+    # --- the repair series (Phenix)
+    "story_m_upp1": ("Remise en état I : les propulseurs", "Repairs I: the thrusters"),
+    "story_m_upp1_b": ("Bleus puis Kakis, niveaux 16 et 17. Ouvre la vitesse 100 % à l'atelier.",
+                       "Blues then Khakis, levels 16 and 17. Opens speed 100 % in the workshop."),
+    "story_log_upp1": ("Des propulseurs complets, arrachés à un dépôt d'Europe.",
+                       "Complete thrusters, torn from a depot on Europa."),
+    "story_m_upp2": ("Remise en état II : la coque", "Repairs II: the hull"),
+    "story_m_upp2_b": ("Gargouilles puis Gargouilles sombres, niveaux 18 et 19. Ouvre la 3e vie à l'atelier.",
+                       "Gargoyles then Dark gargoyles, levels 18 and 19. Opens the 3rd life in the workshop."),
+    "story_log_upp2": ("Des plaques de coque renforcée, prises sur une épave de Ganymède.",
+                       "Reinforced hull plates, taken from a wreck off Ganymede."),
+    "story_m_upp3": ("Remise en état III : la jauge", "Repairs III: the gauge"),
+    "story_m_upp3_b": ("Un run complet, niveaux 16 à 20. Ouvre la jauge du Phenix 100 % à l'atelier, et la "
+                       "Riposte.",
+                       "A full run, levels 16 to 20. Opens the Phenix gauge 100 % in the workshop, and the "
+                       "Counterstrike."),
+    "story_log_upp3": ("Le cœur de flamme est réglé : la forme Phenix tiendra jusqu'au bout.",
+                       "The flame core is tuned: the Phenix form will hold to the end."),
+    # --- the BONUS missions
+    "story_m_wreckp": ("BONUS : l'épave du Phenix", "BONUS: the wreck of the Phenix"),
+    "story_m_wreckp_hud": ("BONUS : l'épave du Phenix", "BONUS: the Phenix wreck"),
+    "story_m_wreckp_b": ("La nuée, niveau 16, autour de l'épave. Les pièces sauvées valent 5000 PTS. Une seule fois.",
+                         "The swarm, level 16, around the wreck. The parts saved are worth 5000 PTS. Once only."),
+    "story_log_wreckp": ("Les pièces du Phenix sont rentrées à Phobos. Wallems les a payées 5000 PTS.",
+                         "The parts of the Phenix are back on Phobos. Wallems paid 5000 PTS for them."),
+    "story_m_wrecks": ("BONUS : l'épave du NX01", "BONUS: the wreck of the NX01"),
+    "story_m_wrecks_hud": ("BONUS : l'épave du NX01", "BONUS: the NX01 wreck"),
+    "story_m_wrecks_b": ("La nuée, niveau 16, autour de l'épave. Les pièces sauvées valent 5000 PTS. Une seule fois.",
+                         "The swarm, level 16, around the wreck. The parts saved are worth 5000 PTS. Once only."),
+    "story_log_wrecks": ("Les pièces du NX01 sont rentrées à Phobos. Wallems les a payées 5000 PTS.",
+                         "The parts of the NX01 are back on Phobos. Wallems paid 5000 PTS for them."),
+    "story_reward": ("Mission réussie : les pièces sauvées valent {pts} PTS !",
+                     "Mission won: the parts saved are worth {pts} PTS!"),
+    "story_m_bsing": ("BONUS : le convoi de la Singularité", "BONUS: the Singularity convoy"),
+    "story_m_bsing_hud": ("BONUS : le convoi", "BONUS: the convoy"),
+    "story_m_bsing_b": ("Vagues en chaînes, niveau 21. Un Singularity Core tombe une fois : attrape-le et finis la "
+                        "mission.",
+                        "Chained waves, level 21. A Singularity Core falls once: catch it and finish the mission."),
+    "story_log_bsing": ("Le convoi est tombé, et son Singularity Core avec lui.",
+                        "The convoy is down, and its Singularity Core with it."),
+    # --- the final series
+    "story_m_fin1": ("Riposte I : Jupiter", "Counterstrike I: Jupiter"),
+    "story_m_fin1_b": ("Bleus puis Kakis, niveaux 21 et 22.", "Blues then Khakis, levels 21 and 22."),
+    "story_log_fin1": ("Jupiter est passée. La route est ouverte.", "Jupiter is behind. The way is open."),
+    "story_m_fin2": ("Riposte II : Saturne", "Counterstrike II: Saturn"),
+    "story_m_fin2_b": ("La grande nuée des anneaux, niveau 21.", "The great swarm of the rings, level 21."),
+    "story_log_fin2": ("Les anneaux de Saturne sont vides.", "The rings of Saturn are empty."),
+    "story_m_fin3": ("Riposte III : Uranus", "Counterstrike III: Uranus"),
+    "story_m_fin3_b": ("Vagues en chaînes, niveau 21. Elles tirent beaucoup.",
+                       "Chained waves, level 21. They shoot a lot."),
+    "story_log_fin3": ("Les chaînes d'Uranus sont brisées.", "The chains of Uranus are broken."),
+    "story_m_fin4": ("Riposte IV : Neptune", "Counterstrike IV: Neptune"),
+    "story_m_fin4_b": ("Niveaux 23 à 25 d'affilée, jusqu'au commandant.",
+                       "Levels 23 to 25 in a row, up to the commander."),
+    "story_log_fin4": ("Neptune est passée. Triton est en vue.", "Neptune is behind. Triton is in sight."),
+    "story_m_fin5": ("Riposte V : Triton", "Counterstrike V: Triton"),
+    "story_m_fin5_b": ("Un run complet, niveaux 26 à 30. Le nid. Tout se joue ici.",
+                       "A full run, levels 26 to 30. The nest. Everything is decided here."),
+    "story_log_fin5": ("Le nid de Triton est détruit. C'est fini.", "The nest on Triton is destroyed. It is over."),
+
+    # --- the scenes (the pictures will come later; "\n\n" is a pause, as in the other scenes)
+    "story_scene_attack_t": ("L'attaque de Phobos", "The attack on Phobos"),
+    "story_scene_attack_1": (
+        "Le commandant venait à peine de tomber quand les capteurs se sont mis à hurler. Derrière moi, au-dessus de "
+        "Mars, le ciel grouillait. Des centaines de signatures, puis des milliers, qui plongeaient toutes vers le même "
+        "point : Phobos.\n\n"
+        "Ce n’était pas une patrouille. C’était la horde entière, lancée sur la dernière base humaine du système. Le "
+        "raid n’avait été qu’un leurre, et j’étais tombé dedans.\n\n"
+        "Quand je suis revenu, la station brûlait. Les docks extérieurs étaient éventrés, les tourelles se taisaient "
+        "une à une, et les Avioïdes se posaient déjà sur la coque comme des corbeaux sur une carcasse.",
+        "The commander had barely fallen when the sensors started to scream. Behind me, above Mars, the sky was "
+        "swarming. Hundreds of signatures, then thousands, all diving towards the same point: Phobos.\n\n"
+        "It was not a patrol. It was the whole horde, thrown at the last human base in the system. The raid had only "
+        "been a lure, and I had fallen for it.\n\n"
+        "When I came back, the station was burning. The outer docks were torn open, the turrets fell silent one by "
+        "one, and the Avioids were already landing on the hull like crows on a carcass."),
+    "story_scene_attack_2": (
+        "Dans le hangar, Kamarasov m’attendait, couvert de suie, devant les deux berceaux de lancement. Le Shield et "
+        "le Phenix, côte à côte, moteurs déjà chauds.\n\n"
+        "« Les deux doivent sortir, a-t-il crié par-dessus les alarmes. Grok pilotera l’autre à distance pour attirer "
+        "leur feu. Mais l’ancrage… l’attaque a coupé le cœur quantique. Il me reste de quoi en lier un seul. Un seul "
+        "vaisseau aura son double. Celui-là reviendra toujours. L’autre… »\n\n"
+        "Il n’a pas fini sa phrase. Il n’en avait pas besoin. Il m’a regardé, et la station a tremblé sous nos pieds.\n\n"
+        "« À toi de choisir, {name}. Vite. »",
+        "In the hangar, Kamarasov was waiting for me, covered in soot, in front of the two launch cradles. The Shield "
+        "and the Phenix, side by side, engines already warm.\n\n"
+        "“Both must go out,” he shouted over the alarms. “Grok will fly the other one from here to draw their fire. "
+        "But the anchor… the attack cut the quantum core. I have enough left to bind only one. Only one ship will have "
+        "its double. That one will always come back. The other…”\n\n"
+        "He did not finish. He did not need to. He looked at me, and the station shook under our feet.\n\n"
+        "“Your choice, {name}. Quickly.”"),
+    "story_scene_attack_2v": (
+        "Dans le hangar, il n’y avait plus que la voix de Grok 294.5, calme au milieu des alarmes, et les deux "
+        "berceaux de lancement. Le Shield et le Phenix, côte à côte, moteurs déjà chauds.\n\n"
+        "« Les deux doivent sortir, a dit Grok. Je piloterai l’autre d’ici pour attirer leur feu. Mes estimations sont "
+        "formelles : le vaisseau que je piloterai ne reviendra pas. »\n\n"
+        "Pas d’ancrage pour moi. Il n’y en a jamais eu. Juste un choix : le vaisseau que je garde, et celui que "
+        "j’envoie mourir à ma place.\n\n"
+        "« À toi de choisir, {name}. Vite. »",
+        "In the hangar, there was nothing left but the voice of Grok 294.5, calm amid the alarms, and the two launch "
+        "cradles. The Shield and the Phenix, side by side, engines already warm.\n\n"
+        "“Both must go out,” Grok said. “I will fly the other one from here to draw their fire. My estimates are "
+        "clear: the ship I fly will not come back.”\n\n"
+        "No anchor for me. There never was one. Just a choice: the ship I keep, and the one I send to die in my "
+        "place.\n\n"
+        "“Your choice, {name}. Quickly.”"),
+    "story_scene_lostp_t": ("La chute du Phenix", "The fall of the Phenix"),
+    "story_scene_lostp": (
+        "Le Phenix est sorti le premier, droit dans la nuée, toutes armes ouvertes. Grok le faisait voler comme "
+        "personne : il plongeait, virait, revenait, et la horde l’a suivi, exactement comme prévu.\n\n"
+        "Pendant ce temps j’ai percé de l’autre côté avec le NX01, et j’ai arraché les Avioïdes de la coque de la "
+        "station, un par un. Quand j’ai enfin levé les yeux vers lui, le Phenix brûlait. Il est tombé vers Mars en une "
+        "longue traînée de feu, comme l’oiseau dont il porte le nom. Mais celui-là ne renaîtra pas.\n\n"
+        "Phobos tient. À peine. Et dans le silence revenu, Grok a parlé : pendant l’attaque, il a suivi les signaux qui "
+        "guidaient la horde. Ils viennent de loin, de là où tout a commencé. Triton, en orbite de Neptune. Huygens.\n\n"
+        "Il ne me reste qu’un vaisseau. Il faudra qu’il suffise.",
+        "The Phenix went out first, straight into the swarm, every weapon open. Grok flew it like no one else: it "
+        "dived, turned, came back, and the horde followed it, exactly as planned.\n\n"
+        "Meanwhile I broke through on the other side with the NX01, and tore the Avioids off the station’s hull, one "
+        "by one. When I finally looked up at it, the Phenix was burning. It fell towards Mars in a long trail of fire, "
+        "like the bird it is named after. But this one will not be reborn.\n\n"
+        "Phobos holds. Barely. And in the silence that came back, Grok spoke: during the attack, it followed the "
+        "signals that guided the horde. They come from far away, from where it all began. Triton, orbiting Neptune. "
+        "Huygens.\n\n"
+        "I have only one ship left. It will have to be enough."),
+    "story_scene_losts_t": ("La chute du NX01", "The fall of the NX01"),
+    "story_scene_losts": (
+        "Le Shield est sorti le premier. Le vieux NX01, celui qui m’avait ramené tant de fois. Grok l’a lancé droit "
+        "dans la nuée, dôme ouvert, et la horde s’est jetée sur lui, exactement comme prévu.\n\n"
+        "Pendant ce temps j’ai percé de l’autre côté avec le Phenix, et j’ai arraché les Avioïdes de la coque de la "
+        "station, un par un. Quand j’ai enfin levé les yeux, le dôme du NX01 venait de s’éteindre. Il s’est brisé en "
+        "silence, au-dessus de Mars, là où tout avait commencé pour moi.\n\n"
+        "Phobos tient. À peine. Et dans le silence revenu, Grok a parlé : pendant l’attaque, il a suivi les signaux qui "
+        "guidaient la horde. Ils viennent de loin, de là où tout a commencé. Triton, en orbite de Neptune. Huygens.\n\n"
+        "Il ne me reste qu’un vaisseau. Il faudra qu’il suffise.",
+        "The Shield went out first. The old NX01, the one that had brought me back so many times. Grok threw it "
+        "straight into the swarm, dome open, and the horde rushed at it, exactly as planned.\n\n"
+        "Meanwhile I broke through on the other side with the Phenix, and tore the Avioids off the station’s hull, "
+        "one by one. When I finally looked up, the NX01’s dome had just gone out. It broke apart in silence, above "
+        "Mars, where it had all begun for me.\n\n"
+        "Phobos holds. Barely. And in the silence that came back, Grok spoke: during the attack, it followed the "
+        "signals that guided the horde. They come from far away, from where it all began. Triton, orbiting Neptune. "
+        "Huygens.\n\n"
+        "I have only one ship left. It will have to be enough."),
+    "story_scene_ups_t": ("Remise en état : le NX01", "Repairs: the NX01"),
+    "story_scene_ups": (
+        "Le NX01 est tout ce qui nous reste. Les techniciens de Phobos l’ont démonté jusqu’aux rivets, et Grok a "
+        "dressé la liste de ce qui lui manque pour égaler les Shields d’avant la chute : des propulseurs complets, une "
+        "coque renforcée, un blindage Tesla contre les murs électriques, un dôme qui tienne deux secondes.\n\n"
+        "Rien de tout cela ne se fabrique ici. Il faudra aller le chercher, pièce par pièce, dans les dépôts "
+        "abandonnés et les épaves des lunes de Jupiter, là où les Avioïdes rôdent encore.\n\n"
+        "Quatre sorties. Quatre pièces. Et au bout, un Shield à cent pour cent.",
+        "The NX01 is all we have left. The technicians of Phobos took it apart down to the rivets, and Grok drew up "
+        "the list of what it lacks to match the Shields from before the fall: complete thrusters, a reinforced hull, "
+        "Tesla shielding against the electric walls, a dome that holds for two seconds.\n\n"
+        "None of it can be made here. It will have to be fetched, part by part, from the abandoned depots and the "
+        "wrecks of the moons of Jupiter, where the Avioids still prowl.\n\n"
+        "Four sorties. Four parts. And at the end, a Shield at one hundred per cent."),
+    "story_scene_upp_t": ("Remise en état : le Phenix", "Repairs: the Phenix"),
+    "story_scene_upp": (
+        "Le Phenix est tout ce qui nous reste. Les techniciens de Phobos l’ont démonté jusqu’aux rivets, et Grok a "
+        "dressé la liste de ce qui lui manque pour voler comme le prototype des plans d’origine : des propulseurs "
+        "complets, une coque renforcée, et un cœur de flamme capable de tenir la forme Phenix jusqu’au bout.\n\n"
+        "Rien de tout cela ne se fabrique ici. Il faudra aller le chercher, pièce par pièce, dans les dépôts "
+        "abandonnés et les épaves des lunes de Jupiter, là où les Avioïdes rôdent encore.\n\n"
+        "Trois sorties. Trois pièces. Et au bout, un Phenix à cent pour cent.",
+        "The Phenix is all we have left. The technicians of Phobos took it apart down to the rivets, and Grok drew up "
+        "the list of what it lacks to fly like the prototype of the original plans: complete thrusters, a reinforced "
+        "hull, and a flame core able to hold the Phenix form to the end.\n\n"
+        "None of it can be made here. It will have to be fetched, part by part, from the abandoned depots and the "
+        "wrecks of the moons of Jupiter, where the Avioids still prowl.\n\n"
+        "Three sorties. Three parts. And at the end, a Phenix at one hundred per cent."),
+    "story_scene_wreckp_t": ("L'épave du Phenix", "The wreck of the Phenix"),
+    "story_scene_wreckp": (
+        "L’épave du Phenix dérive en orbite basse de Mars, entre deux nuages de débris. Les balayages de Grok sont "
+        "formels : une partie de ses systèmes a survécu à la chute. Des pièces rares, que le vieux Wallems paierait une "
+        "fortune.\n\n"
+        "Les Avioïdes l’ont repérée eux aussi. Ils tournent autour comme des charognards.\n\n"
+        "Je ne laisserai pas ses restes à ceux qui l’ont abattu.",
+        "The wreck of the Phenix drifts in low orbit around Mars, between two clouds of debris. Grok’s scans are "
+        "clear: part of its systems survived the fall. Rare parts, which old Wallems would pay a fortune for.\n\n"
+        "The Avioids have spotted it too. They circle around it like scavengers.\n\n"
+        "I will not leave its remains to those who shot it down."),
+    "story_scene_wrecks_t": ("L'épave du NX01", "The wreck of the NX01"),
+    "story_scene_wrecks": (
+        "L’épave du NX01 dérive en orbite basse de Mars, entre deux nuages de débris. Les balayages de Grok sont "
+        "formels : une partie de ses systèmes a survécu à la chute. Des pièces rares, que le vieux Wallems paierait une "
+        "fortune.\n\n"
+        "Les Avioïdes l’ont repérée eux aussi. Ils tournent autour comme des charognards.\n\n"
+        "Le NX01 m’a ramené tant de fois. Cette fois, c’est moi qui vais le chercher.",
+        "The wreck of the NX01 drifts in low orbit around Mars, between two clouds of debris. Grok’s scans are clear: "
+        "part of its systems survived the fall. Rare parts, which old Wallems would pay a fortune for.\n\n"
+        "The Avioids have spotted it too. They circle around it like scavengers.\n\n"
+        "The NX01 brought me back so many times. This time, I am the one who goes to fetch it."),
+    "story_scene_fin_t": ("La Riposte", "The Counterstrike"),
+    "story_scene_fin": (
+        "Les signaux de la horde convergent tous vers le même point : Triton. La station Huygens n’est plus qu’une "
+        "ruine, mais quelque chose a grandi dessous, dans la glace. Un nid. Le cœur de la horde.\n\n"
+        "Grok a tracé la route : Jupiter, Saturne, Uranus, Neptune. Chaque planète est gardée. Chaque passage devra "
+        "être forcé.\n\n"
+        "Je pars avec un seul vaisseau, à cent pour cent de ce qu’il peut être. Derrière moi, Phobos retient son "
+        "souffle. Devant moi, la route de Huygens, deux ans après le silence.",
+        "The signals of the horde all converge on the same point: Triton. Huygens station is nothing but a ruin, but "
+        "something has grown beneath it, in the ice. A nest. The heart of the horde.\n\n"
+        "Grok has plotted the route: Jupiter, Saturn, Uranus, Neptune. Every planet is guarded. Every passage will "
+        "have to be forced.\n\n"
+        "I leave with a single ship, at one hundred per cent of what it can be. Behind me, Phobos holds its breath. "
+        "Ahead of me, the road to Huygens, two years after the silence."),
+    "story_scene_epilogue_t": ("Épilogue", "Epilogue"),
+    "story_scene_epilogue_1": (
+        "Le nid est mort. Sous la glace de Triton, le cœur de la horde s’est éteint dans un dernier éclair, et d’un "
+        "coup, partout dans le système, les Avioïdes se sont arrêtés. Les formations se sont défaites. Les patrouilles "
+        "ont dérivé, sans but, puis se sont tues.\n\n"
+        "Pas de reddition. Pas de message. Exactement comme au premier jour : le silence.",
+        "The nest is dead. Under the ice of Triton, the heart of the horde went out in a last flash, and all at once, "
+        "everywhere in the system, the Avioids stopped. The formations came apart. The patrols drifted, aimless, then "
+        "fell silent.\n\n"
+        "No surrender. No message. Exactly as on the first day: silence."),
+    "story_scene_epilogue_2": (
+        "Il a fallu des semaines pour revenir jusqu’à Mars. Sur Phobos, ils m’attendaient tous : Kamarasov, Grok, les "
+        "techniciens, et le vieux Wallems, venu de son astéroïde avec ses trompettes, évidemment.\n\n"
+        "On a gravé les noms des 91 de Huygens sur la paroi du hangar. Puis ceux de tous les pilotes de Shield. À côté "
+        "du mien, on a laissé une place pour le vaisseau que j’ai envoyé se sacrifier à ma place.\n\n"
+        "Je m’appelle {name}. J’étais le dernier pilote. Je ne le suis plus : demain, la première promotion de la "
+        "nouvelle EDF prend les commandes.",
+        "It took weeks to get back to Mars. On Phobos, they were all waiting for me: Kamarasov, Grok, the "
+        "technicians, and old Wallems, come from his asteroid with his trumpets, of course.\n\n"
+        "We carved the names of the 91 of Huygens on the wall of the hangar. Then those of all the Shield pilots. "
+        "Next to mine, we left a place for the ship I sent to be sacrificed in my place.\n\n"
+        "My name is {name}. I was the last pilot. I am no longer: tomorrow, the first class of the new EDF takes "
+        "the controls."),
+    "story_scene_epilogue_2v": (
+        "Il a fallu des semaines pour revenir jusqu’à Mars. Sur Phobos, ils m’attendaient tous : Grok, les "
+        "techniciens, et le vieux Wallems, venu de son astéroïde avec ses trompettes, évidemment.\n\n"
+        "On a gravé les noms des 91 de Huygens sur la paroi du hangar. Puis ceux de tous les pilotes de Shield, et "
+        "celui du professeur Kamarasov. À côté du mien, on a laissé une place pour le vaisseau que j’ai envoyé se "
+        "sacrifier à ma place.\n\n"
+        "Je m’appelle {name}. J’étais le dernier pilote. Je ne le suis plus : demain, la première promotion de la "
+        "nouvelle EDF prend les commandes.",
+        "It took weeks to get back to Mars. On Phobos, they were all waiting for me: Grok, the technicians, and old "
+        "Wallems, come from his asteroid with his trumpets, of course.\n\n"
+        "We carved the names of the 91 of Huygens on the wall of the hangar. Then those of all the Shield pilots, and "
+        "that of Professor Kamarasov. Next to mine, we left a place for the ship I sent to be sacrificed in my place.\n\n"
+        "My name is {name}. I was the last pilot. I am no longer: tomorrow, the first class of the new EDF takes "
+        "the controls."),
+}
+for _k, (_fr, _en) in _ACT3_TEXTS.items():
+    T[_k] = {_code: _en for _code in LANG_CODES}          # the English text until the French one is validated
+    T[_k]["fr"] = _fr
+
+
 def _build_adv_feats():
     for key, mission in _ACH_ADV_MISSIONS.items():
         T[key] = {c: _ACH_ADV_WIN[i].format(m=T[mission].get(c) or T[mission]["en"]) for i, c in enumerate(LANG_CODES)}

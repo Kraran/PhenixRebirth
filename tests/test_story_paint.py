@@ -41,11 +41,11 @@ def test_the_series_is_flown_in_order():
     assert [ss.mission_playable(st, _mission(m)) for m in PAINT] == [False, False, True]
 
 
-def test_the_series_is_optional_and_only_on_the_act_2_map():
-    assert all(_mission(m)["acts"] == (2,) and not _mission(m).get("once") for m in PAINT)
+def test_the_series_is_optional_and_on_the_maps_of_acts_2_and_3():
+    assert all(_mission(m)["acts"] == (2, 3) and not _mission(m).get("once") for m in PAINT)
     st = _act2()
     ids = [m["id"] for m in ss.visible_missions(st)]
-    assert ids[-3:] == PAINT and "phenix_5" in ids                 # beside the Phenix series, not inside it
+    assert ids[-4:-1] == PAINT and ids[-1] == "act3_gate" and "phenix_5" in ids                 # beside the Phenix series, not inside it
     assert not ss.mission_open(ss.create_slot(1, "A", "normal"), _mission("paint_1"))
 
 

@@ -77,6 +77,9 @@ def done(state):
             out.add("adv_veteran")
     if (shield.get("tint") or "red") in ss.PAINT_TINTS and shield.get("tint") != "red":
         out.add("adv_colour")
+    phenix = next((sl for sl in state.get("slots") or [] if sl.get("id") == "phoenix"), {})
+    if phenix.get("owned") and phenix.get("tint") in ("blue", "gold"):
+        out.add("adv_colour")                        # the Phenix painted in Act 3
     if ss.scene_seen(state, ss.BAR_SCENE):
         out.add("adv_bar")
     return out
