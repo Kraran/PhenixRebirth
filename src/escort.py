@@ -10,7 +10,8 @@ screen, slowly, from left to right, and the blue and khaki avioids of level 2 th
 - The birds swirl before they strike: a bird that leaves the formation loops down for a moment (`EscortBird`, state
   "swirl"), drifting towards the cruise ship, then dives straight at it. One at a time: the next one leaves when the
   last one is down or has missed.
-- The birds are replaced as they fall, for ever, but slowly (REFILL_DELAY): the mission is won only when the cruise ship
+- The birds are replaced for ever, but slowly: each one REFILL_DELAY seconds after it fell, and two of a kind never
+  closer than ARRIVAL_GAP (EscortFormation._refill_swarm). The mission is won only when the cruise ship
   has passed the right edge completely, its flame too. Then the birds flee off the top and the ship flies up as after
   any wave.
 
@@ -31,7 +32,8 @@ from settings import BASE_HEIGHT, BASE_WIDTH, ENEMY_DIVE_SPEED, asset_path
 
 ON_SCREEN = {1: 7, 2: 11}          # birds in the formation at once: blue, khaki (about half a screen of each)
 ENDLESS = 10 ** 9                  # the reserve: they never run out
-REFILL_DELAY = 7.0                 # seconds between two newcomers of the same kind (the arcade swarm: 0.35)
+REFILL_DELAY = 7.0                 # seconds between a bird's fall and its replacement (the arcade swarm: 0.35)
+ARRIVAL_GAP = 2.0                  # at least this between two newcomers of the same kind
 MAX_DIVERS = 1                     # birds going for the cruise ship at the same time (swirling or diving): one by one
 DIVE_GAP = 1.3                     # seconds between two birds leaving the formation
 AIM_SPREAD = 60                    # a diver goes for a point up to this far from the centre of the cruise ship
@@ -195,7 +197,6 @@ class EscortBird(Enemy):
 class EscortFormation(EnemyFormation):
     """Blue and khaki birds in formation, replaced for ever (slowly), that swirl then dive at the cruise ship."""
 
-    REFILL_DELAY = REFILL_DELAY
 
     def __init__(self, speed_mult=1.0, cruise_speed=CRUISE_SPEED):
         super().__init__(stage=1)
@@ -203,6 +204,8 @@ class EscortFormation(EnemyFormation):
         self.won = False                 # the cruise ship is through: the birds flee
         self.fleeing = False
         self.dive_wait = 0.0             # until the next bird may dive
+        self.clock = 0.0                 # seconds since the mission began (the replacements are due at a time of it)
+        self.due = {1: [], 2: []}        # kind -> when each missing bird of that kind comes back
         self.lost_timer = None           # seconds since the cruise ship blew up
         self.failed = False              # the mission is lost (set LOST_DELAY after the explosion)
         self.spawn_escort(speed_mult)
@@ -233,6 +236,25 @@ class EscortFormation(EnemyFormation):
 
     def _swarm_add_gargoyle(self, kind, arriving):
         return None                      # no gargoyles in this mission
+
+    def _refill_swarm(self, dt):
+        """Each bird that falls comes back REFILL_DELAY seconds later (not as soon as the last newcomer is far enough
+        behind, as in the arcade swarm: a bird shot after a quiet moment would be back at once), at least ARRIVAL_GAP
+        after the one before of its kind. Nobody comes back once the cruise ship is through."""
+        self.clock += dt
+        if self.won or self.fleeing:
+            return
+        for kind, due in self.due.items():
+            present = sum(1 for e in self.enemies if e.alive and not e.dying and e.stage == kind)
+            for _ in range(ON_SCREEN[kind] - present - len(due)):
+                due.append(max(self.clock + REFILL_DELAY, (due[-1] if due else 0.0) + ARRIVAL_GAP))
+            while due and due[0] <= self.clock:
+                taken = {getattr(e, "swarm_slot", -1) for e in self.enemies if e.alive and e.stage == kind}
+                free = [i for i, (_, _, k) in enumerate(self.swarm["slots"]) if k == kind and i not in taken]
+                if not free:
+                    break
+                due.pop(0)
+                self._swarm_add_bird(free[0], kind, arriving=True)
 
     def _aim(self):
         return self.cruise.x + AIM_LEAD
