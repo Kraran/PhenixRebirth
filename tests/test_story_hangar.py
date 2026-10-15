@@ -14,6 +14,7 @@ from test_smoke import run  # noqa: F401  (fixture)
 HUNTS = ["ch1_sortie", "best_s2", "best_s3", "best_s4"]
 PHENIX = ["phenix_1", "phenix_2", "phenix_3", "phenix_4", "phenix_5"]
 PAINT = ["paint_1", "paint_2", "paint_3"]
+GATE3 = ["act3_gate"]           # the last mission of Act 2 (it opens Act 3)
 
 
 def _state(phenix=True, selected=0):
@@ -240,7 +241,7 @@ def test_the_jump_gives_the_save_of_a_pilot_who_finished_act_1():
     ss.jump_to_act2(st)
     assert st["act"] == 2 and ss.flag(st, "act2") and ss.flag(st, "dome_online") and ss.flag(st, "ch1_speed")
     assert "act2_gate" in st["cleared"] and "ch2_tease" not in st["cleared"]
-    assert _ids(ss.visible_missions(st)) == HUNTS + ["bonus_2d", "best_boss"] + PHENIX + PAINT
+    assert _ids(ss.visible_missions(st)) == HUNTS + ["bonus_2d", "best_boss"] + PHENIX + PAINT + GATE3
     assert ss.mission_playable(st, ss.mission_by_id("phenix_1")) and not ss.mission_playable(st, ss.mission_by_id("phenix_2"))
     assert ss.mission_playable(st, ss.mission_by_id("paint_1"))
     assert all(ss.mission_playable(st, ss.mission_by_id(m)) for m in HUNTS)
@@ -262,7 +263,7 @@ def test_act2_typed_on_the_map_goes_to_act_2_and_saves_nothing():
     assert _type(hub, "2222") == [False, False, False, False]          # the keys still work as menu keys
     assert hub.cheat_act2 and hub.cheating and not hub.cheat_unlock
     assert hub.state["act"] == 2 and hub.map_index == 0
-    assert _ids(hub.missions()) == HUNTS + ["bonus_2d", "best_boss"] + PHENIX + PAINT
+    assert _ids(hub.missions()) == HUNTS + ["bonus_2d", "best_boss"] + PHENIX + PAINT + GATE3
     from i18n import t
     assert hub.toast == t("story_cheat_act2")
     hub.apply_result("phenix_1", 300, True)

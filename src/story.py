@@ -8,6 +8,8 @@ drawing code and is tested on its own. Points earned in a mission are
 hangar credits.
 """
 import math
+import os
+import random
 import re
 
 import pygame
@@ -38,6 +40,7 @@ PORTRAIT_H = 124                 # height of a hull portrait in the hangar (the 
 GREY_MULT = (80, 80, 90, 160)    # the dimming of the ship select screen for the hull that is not chosen
 CHEAT_NIX = "NIX2"             # typed in the hangar: all the Phenix missions won, the Phenix is yours, nothing saved
 CHEAT_ACT2 = "2222"            # typed on the mission map: go straight to Act 2, save nothing
+CHEAT_ACT3 = "3333"            # typed on the mission map: Acts 1 and 2 won, the attack on Phobos and the choice, save nothing
 LOG_ROWS = 12                  # journal lines shown at once
 MODE_COLORS = {"novice": (120, 200, 255), "normal": (140, 220, 160), "veteran": (255, 110, 100)}   # title of each mode card
 SHOP_WINDOW = 6                # workshop rows shown at once (the line under them describes a loot item)
@@ -164,6 +167,20 @@ def _render(font, text, color):
     return _TEXTS.get(font, text, tuple(color[:3]))
 
 
+def _night_sky():
+    """The slide of a scene whose picture is still to come: a dark blue sky with stars (its own random generator:
+    the game's one is not touched)."""
+    img = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+    for y in range(BASE_HEIGHT):
+        f = y / (BASE_HEIGHT - 1)
+        img.fill((int(10 * (1 - f) + 3 * f), int(14 * (1 - f) + 4 * f), int(34 * (1 - f) + 10 * f)), (0, y, BASE_WIDTH, 1))
+    rnd = random.Random(1969)
+    for _ in range(260):
+        b = rnd.randrange(80, 220)
+        img.set_at((rnd.randrange(BASE_WIDTH), rnd.randrange(BASE_HEIGHT)), (b, b, min(255, b + 25)))
+    return img
+
+
 def _text(surface, font, text, color, cy, left=None, right=None, centerx=None):
     """Draw one line, vertically centred on `cy`, anchored left, right or centre."""
     img = _render(font, text, color)
@@ -229,6 +246,8 @@ class StoryHub:
         self.zone = "slots"   # slots | shop
         self.shop_index = 0
         self.paint_mode = False        # the paint shop is open (choosing a colour)
+        self.choice_index = 0          # Act 3: the hull that keeps the anchor (0 Shield, 1 Phenix, ss.HULLS)
+        self.choice_ask = False        # its question "keep it? the other one will be lost" is on screen
         self.paint_choice = 0
         self.map_index = 0
         self.toast = ""
@@ -292,7 +311,7 @@ class StoryHub:
         scene = ss.scene_of(mission_id)
         if not scene:
             return False
-        self.intro_slides = list(scene["slides"])
+        self.intro_slides = ss.scene_slides(mission_id, self.state.get("mode"))
         self.intro_index = 0
         self._reset_slide()
         self.intro_return = back_to
@@ -367,9 +386,11 @@ class StoryHub:
         return None
 
     def _end_intro(self):
-        """Last slide done, or skipped: remember it and go back (the hangar, the map or the journal)."""
+        """Last slide done, or skipped: remember it and go back (the hangar, the map or the journal). After the attack
+        on Phobos, the choice of the hull comes next (it cannot be skipped)."""
         self._stop_clip()
         self._stop_voice()
+        choose = self.scene_id == ss.ACT3_ATTACK and ss.act3_pending(self.state)
         if self.scene_id:
             ss.mark_scene_seen(self.state, self.scene_id)
         else:
@@ -383,6 +404,37 @@ class StoryHub:
         self.pane = self.intro_return
         self.zone = "slots"
         self.intro_return = "hangar"
+        if choose:
+            self.open_choice()
+
+    # --- Act 3: the choice of the hull that keeps the quantum anchor ---
+    def _maybe_act3(self):
+        """Act 2 is won and the hull is not chosen yet: the attack on Phobos is told (again), then the choice."""
+        if self.state is not None and ss.act3_pending(self.state) and self.screen != "intro":
+            self.start_scene(ss.ACT3_ATTACK, back_to="map")
+
+    def open_choice(self):
+        slots = self.state.get("slots") or []
+        cur = slots[int(ss._num(self.state.get("selected_slot"), 0))] if slots else {}
+        self.choice_index = ss.HULLS.index(cur.get("id")) if cur.get("id") in ss.HULLS else 0
+        self.choice_ask = False
+        self.del_yes = False
+        self.screen = "choice"
+
+    def _choice_confirm(self):
+        if not self.choice_ask:
+            self.choice_ask = True                       # "Keep the Shield? The Phenix will be lost." NO is lit
+            self.del_yes = False
+            return
+        self.choice_ask = False
+        if not self.del_yes:
+            return
+        hull = ss.HULLS[self.choice_index % len(ss.HULLS)]
+        if ss.choose_act3_ship(self.state, hull):
+            self.save()
+            self.map_index = 0
+            self.toast = t("story_act3_start")
+            self.start_scene(ss.loss_scene(hull), back_to="map")      # the other one is lost: told now
 
     def finish_scene(self, door=None):
         """The fade to black is done: the scene is over and the Adventure is back on its Extras paragraph."""
@@ -545,6 +597,7 @@ class StoryHub:
         self.map_index = 0
         self.toast = ""
         story_feats.check(self.state)             # a save made before the Adventure page gets what it has earned
+        self._maybe_act3()                        # Act 2 won and no hull chosen yet: the attack on Phobos
 
     def save(self):
         if self.slot_no is None or self.cheating:
@@ -565,6 +618,9 @@ class StoryHub:
             "shield_green": "sprites/player_ship_shield_green.png",
             "shield_violet": "sprites/player_ship_shield_violet.png",
             "phoenix": "sprites/player_ship.png",
+            "phoenix_argent": "sprites/player_ship.png",
+            "phoenix_blue": "sprites/player_ship_blue.png",
+            "phoenix_gold": "sprites/player_ship_gold.png",
         }
         for key, rel in mapping.items():
             fp = asset_path(*rel.split("/"))
@@ -652,6 +708,15 @@ class StoryHub:
     def feed_cheat(self, ch):
         """Secret code typed on the mission map. Returns True when UNLK was just completed."""
         self.cheat_buf = (self.cheat_buf + str(ch).upper())[-max(len(CHEAT_UNLOCK), len(CHEAT_ACT2), len(CHEAT_NIX)):]
+        if self.cheat_buf == CHEAT_ACT3 and self.pane == "map":
+            self.cheat_buf = ""
+            if int(ss._num(self.state.get("act"), 1)) < 3:
+                ss.jump_to_act3(self.state)
+            self.cheat_act2 = True                # nothing is saved any more
+            self.map_index = 0
+            self.toast = t("story_cheat_act3")
+            self._maybe_act3()                    # the attack on Phobos is told now
+            return True
         if self.cheat_buf == CHEAT_NIX and self.pane == "hangar":
             self.cheat_buf = ""
             ss.grant_phenix(self.state)
@@ -706,6 +771,11 @@ class StoryHub:
             self.col = max(0, min(1, self.col + direction)) if self._summary().get("status") != "missing" else 0
         elif self.screen in ("delete", "leave"):
             self.del_yes = direction > 0
+        elif self.screen == "choice":
+            if self.choice_ask:
+                self.del_yes = direction > 0
+            else:
+                self.choice_index = max(0, min(len(ss.HULLS) - 1, self.choice_index + (1 if direction > 0 else -1)))
         elif self.screen == "name":
             self.entry.move(1 if direction > 0 else -1, 0)
             self.msg = ""
@@ -752,6 +822,8 @@ class StoryHub:
                 self._maybe_intro()
         elif self.screen == "intro":
             return self._intro_next()
+        elif self.screen == "choice":
+            self._choice_confirm()
         elif self.screen == "delete":
             if self.del_yes:
                 ss.delete_slot(self.sel + 1)
@@ -795,6 +867,8 @@ class StoryHub:
             self.msg = ""
         elif self.screen == "mode":
             self.screen = "name"
+        elif self.screen == "choice":
+            self.choice_ask = False                      # the choice itself cannot be skipped
         elif self.screen == "intro":
             if self.scene_door:
                 if not self.scene_closing:       # skipped: the same way out as at the end (the scene counts as seen)
@@ -810,7 +884,7 @@ class StoryHub:
     def _hub_nav_h(self, direction):
         """Left / right. Slots when hangar+slots, else change pane."""
         if self.paint_mode:
-            n = len(ss.PAINT_TINTS)
+            n = len(ss.paint_tints(self.state))
             self.paint_choice = (self.paint_choice + direction) % n
             return
         if self.pane == "hangar" and self.zone == "slots":
@@ -920,15 +994,15 @@ class StoryHub:
         if not ss.paint_affordable(self.state):
             self.toast = t("story_paint_poor").format(pts=ss.PAINT_COST)
             return
-        shield = next((sl for sl in self.state.get("slots") or [] if sl.get("id") == "shield"), {})
-        tint = shield.get("tint") if shield.get("tint") in ss.PAINT_TINTS else "red"
-        self.paint_choice = ss.PAINT_TINTS.index(tint)
+        tints = ss.paint_tints(self.state)
+        self.paint_choice = tints.index(ss.worn_tint(self.state))
         self.paint_mode = True
         self.toast = ""
 
     def _paint_confirm(self):
         """A on the colour choice: wear it (spends the change) or, if it is the current colour, just close."""
-        tint = ss.PAINT_TINTS[self.paint_choice % len(ss.PAINT_TINTS)]
+        tints = ss.paint_tints(self.state)
+        tint = tints[self.paint_choice % len(tints)]
         if ss.paint_change(self.state, tint):
             self.save()
             self.toast = t("story_paint_done")
@@ -995,6 +1069,8 @@ class StoryHub:
             if res.get("opened"):
                 gift = self.toast if res.get("hull") == "phoenix" else ""     # the Phenix comes with its own BONUS mission
                 self.toast = (gift + "   " if gift else "") + t("story_bonus_open")
+            if res.get("reward"):
+                self.toast = t("story_reward").format(pts=res["reward"])     # the parts salvaged from the wreck
         elif res["fallen"]:
             self.toast = t("story_fell_msg").format(name=self.state.get("name") or "")
         elif res["lost"]:
@@ -1009,6 +1085,10 @@ class StoryHub:
         self.save()
         if res["fallen"]:
             self._show_fall()
+        elif res.get("act3"):
+            self._maybe_act3()                       # Phobos is attacked: the scene, then the choice of the hull
+        elif res.get("epilogue") and res.get("first"):
+            self.start_scene(ss.EPILOGUE, back_to="map")       # the end of the Adventure
 
     def _show_fall(self):
         """A fallen Veteran goes back to the slot list, where the save is now a memorial."""
@@ -1122,6 +1202,8 @@ class StoryHub:
             if last:
                 ok = "hint_takeoff" if self.scene_launch else (
                     "hint_play_addon" if self.scene_door else ("hint_close" if self.scene_id else "hint_start"))
+                if self.scene_id == ss.ACT3_ATTACK and ss.act3_pending(self.state):
+                    ok = "hint_choose"                   # the choice of the hull comes next
             else:
                 ok = "hint_next"
             lit = 0 if getattr(self, "_intro_done", False) and (pygame.time.get_ticks() // 500) % 2 == 0 else None
@@ -1133,8 +1215,10 @@ class StoryHub:
             if self._summary().get("status") != "missing":
                 items.append(("r", "hint_delete"))
             return items + [back], None
-        if self.screen in ("delete", "leave"):
+        if self.screen in ("delete", "leave") or (self.screen == "choice" and self.choice_ask):
             return [("lr", "hint_choose"), ("ok", "hint_ok"), ("back", "hint_cancel")], None
+        if self.screen == "choice":
+            return [("lr", "hint_hull"), ("ok", "hint_ok")], None
         if self.screen == "name":
             items = [("all", "hint_letters"), ("ok", "hint_ok"), ("back", "hint_cancel")]
             return (items if pad else [(None, "hint_type_name")] + items), None
@@ -1160,8 +1244,13 @@ class StoryHub:
         img = self._intro_bg.get(name)
         if img is None:
             img = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+            path = asset_path("story", name + ".jpg")
+            if not os.path.isfile(path):
+                img = _night_sky()                # a picture still to come: a dark sky behind the text
+                self._intro_bg[name] = img
+                return img
             try:
-                raw = pygame.image.load(asset_path("story", name + ".jpg")).convert()
+                raw = pygame.image.load(path).convert()
                 scale = max(BASE_WIDTH / raw.get_width(), BASE_HEIGHT / raw.get_height())
                 size = (int(round(raw.get_width() * scale)), int(round(raw.get_height() * scale)))
                 big = pygame.transform.smoothscale(raw, size)
@@ -1358,7 +1447,7 @@ class StoryHub:
     def _draw_gate(self, surface, font, medium, small):
         cx = BASE_WIDTH // 2
         titles = {"slots": "story_gate_title", "delete": "story_delete_title", "leave": "story_leave_title",
-                  "name": "story_name_title", "mode": "story_mode_title"}
+                  "name": "story_name_title", "mode": "story_mode_title", "choice": "story_choice_title"}
         ts = medium.render(t(titles[self.screen]), True, menu_ui.TITLE)
         surface.blit(ts, (cx - ts.get_width() // 2, 18))
         getattr(self, "_draw_gate_" + self.screen)(surface, font, medium, small)
@@ -1417,6 +1506,44 @@ class StoryHub:
         _text(surface, medium, t("story_leave_ask"), (255, 230, 140), 200, centerx=cx)
         _text(surface, small, t("story_leave_warn"), (170, 175, 195), 270, centerx=cx)
         self._draw_yes_no(surface, small, cx, danger=False)
+
+    def _draw_gate_choice(self, surface, font, medium, small):
+        """Act 3: which hull keeps the quantum anchor (Veteran: which one the pilot flies). The two hulls side by
+        side, as in the hangar; then the question, with NO lit first: the other hull will be lost."""
+        cx = BASE_WIDTH // 2
+        veteran = self.state.get("mode") == "veteran"
+        self._ensure_art()
+        if self.choice_ask:
+            hull = ss.HULLS[self.choice_index % len(ss.HULLS)]
+            other = ss.HULLS[(self.choice_index + 1) % len(ss.HULLS)]
+            _text(surface, medium, t("story_choice_ask").format(ship=t("ship_" + hull)), (255, 230, 140), 200,
+                  centerx=cx)
+            _text(surface, small, t("story_choice_warn").format(ship=t("ship_" + other)), menu_ui.DANGER, 270,
+                  centerx=cx)
+            self._draw_yes_no(surface, small, cx, danger=True)
+            return
+        _text(surface, small, t("story_choice_q_v" if veteran else "story_choice_q"), (220, 220, 235), 84,
+              centerx=cx)
+        w, h, gap = 440, 400, 40
+        x0 = cx - (w * 2 + gap) // 2
+        body = getattr(self, "_body", None) or small
+        for k, hull in enumerate(ss.HULLS):
+            r = pygame.Rect(x0 + k * (w + gap), 116, w, h)
+            focus = k == self.choice_index
+            _fill(surface, menu_ui.SEL_FILL if focus else menu_ui.PANEL_FILL, r, 12)
+            pygame.draw.rect(surface, menu_ui.SEL_EDGE if focus else menu_ui.PANEL_EDGE, r, 3 if focus else 2,
+                             border_radius=12)
+            sl = next((s for s in self.state.get("slots") or [] if s.get("id") == hull), {})
+            img = (self._portraits if focus else self._greyed).get(self._hull_key(sl))
+            if img is not None:
+                bob = int(math.sin(self.anim_t * 3.2) * 4) if focus else 0
+                surface.blit(img, (r.centerx - img.get_width() // 2, r.y + 18 + bob))
+            _text(surface, medium, t("ship_" + hull), (255, 230, 140) if focus else (160, 160, 180),
+                  r.y + 196, centerx=r.centerx)
+            for li, line in enumerate(_wrap(body, t("story_choice_%s_d" % hull), r.w - 56)[:5]):
+                _text(surface, body, line, (200, 200, 215) if focus else (130, 135, 155), r.y + 246 + li * 30,
+                      centerx=r.centerx)
+        _text(surface, small, t("story_choice_note"), (170, 175, 195), 116 + h + 34, centerx=cx)
 
     def _draw_yes_no(self, surface, small, cx, danger):
         """The NO / YES buttons of a question (NO on the left); `del_yes` tells which one is lit. YES is red when
@@ -1604,8 +1731,8 @@ class StoryHub:
         _fill(surface, menu_ui.PANEL_FILL, box, 10)
         pygame.draw.rect(surface, menu_ui.PANEL_EDGE, box, 2, border_radius=10)
         act = int(self.state.get("act") or 1)
-        _text(surface, small, t("story_ch2") if act >= 2 and not self.cheat_unlock else t("story_ch1"),
-              (255, 170, 80), box.y + 28, left=box.x + 16)
+        chapter = "story_ch1" if self.cheat_unlock or act < 2 else ("story_ch2" if act == 2 else "story_ch3")
+        _text(surface, small, t(chapter), (255, 170, 80), box.y + 28, left=box.x + 16)
         y = box.y + 52
         # the list scrolls: rows from `first` on, so that the focused one (taller) always fits
         room = box.bottom - 44 - y
@@ -1660,6 +1787,8 @@ class StoryHub:
         key = sl.get("id")
         if key == "shield" and sl.get("tint") in ss.PAINT_TINTS:
             key = "shield_" + sl["tint"]
+        elif key == "phoenix" and sl.get("tint") in ("blue", "gold"):
+            key = "phoenix_" + sl["tint"]                 # the Phenix painted in Act 3
         return key
 
     def _draw_hangar(self, surface, font, medium, small):
@@ -1689,6 +1818,18 @@ class StoryHub:
                 label = t("ship_shield") if sl.get("id") == "shield" else t("ship_phoenix")
                 col = (255, 230, 120) if chosen else (150, 150, 175)
                 _text(surface, small, label, col, r.bottom - 22, centerx=r.centerx)
+            elif sl.get("destroyed"):
+                # Act 3: the hull lost in the attack on Phobos, dimmed and crossed out
+                dim = self._greyed.get(key)
+                if dim is not None:
+                    dim = dim.copy()
+                    dim.set_alpha(110)
+                    surface.blit(dim, (r.centerx - dim.get_width() // 2, r.y + 12))
+                pygame.draw.line(surface, menu_ui.DANGER, (r.x + 40, r.y + 24), (r.right - 40, r.bottom - 44), 3)
+                pygame.draw.line(surface, menu_ui.DANGER, (r.right - 40, r.y + 24), (r.x + 40, r.bottom - 44), 3)
+                label = t("ship_shield") if sl.get("id") == "shield" else t("ship_phoenix")
+                _text(surface, small, label + " — " + t("story_hull_lost"), menu_ui.DANGER, r.bottom - 22,
+                      centerx=r.centerx)
             else:
                 # a hull that is not owned yet shows nothing about itself (no spoiler)
                 _text(surface, medium, t("story_hull_empty"), (110, 115, 135), r.centery, centerx=r.centerx)
@@ -1729,23 +1870,24 @@ class StoryHub:
             _text(surface, small, str(val), col, r.y + 46, centerx=r.centerx)
 
     def _draw_paint(self, surface, small, box):
-        """The paint shop: the three colours of the Shield side by side."""
-        _text(surface, small, t("story_paint_title").format(pts=ss.PAINT_COST), (255, 160, 70), box.y + 26, left=box.x + 16)
-        names = {"red": t("story_paint_red"), "green": t("story_paint_green"), "violet": t("story_paint_violet")}
-        shield = next((sl for sl in self.state.get("slots") or [] if sl.get("id") == "shield"), {})
-        current = shield.get("tint") if shield.get("tint") in ss.PAINT_TINTS else "red"
+        """The paint shop: the three colours of the hull it works on (the Shield, or the hull kept in Act 3)."""
+        hull = (ss.paint_target(self.state) or {}).get("id") or "shield"
+        title = "story_paint_title" if hull == "shield" else "story_paint_title_phenix"
+        _text(surface, small, t(title).format(pts=ss.PAINT_COST), (255, 160, 70), box.y + 26, left=box.x + 16)
+        tints = ss.paint_tints(self.state)
+        current = ss.worn_tint(self.state)
         cell_w = 300
         x0 = box.centerx - (cell_w * 3 + 20 * 2) // 2
-        for i, tint in enumerate(ss.PAINT_TINTS):
+        for i, tint in enumerate(tints):
             r = pygame.Rect(x0 + i * (cell_w + 20), box.y + 52, cell_w, 190)
             focus = i == self.paint_choice
             _fill(surface, menu_ui.SEL_FILL if focus else (22, 24, 36), r, 8)
             pygame.draw.rect(surface, menu_ui.SEL_EDGE if focus else menu_ui.PANEL_EDGE, r, 3 if focus else 1,
                              border_radius=8)
-            img = self._ships.get("shield_" + tint)
+            img = self._ships.get(hull + "_" + tint)
             if img is not None:
                 surface.blit(img, (r.centerx - img.get_width() // 2, r.y + 24))
-            label = names[tint] + ("  (" + t("story_paint_worn") + ")" if tint == current else "")
+            label = t("story_paint_" + tint) + ("  (" + t("story_paint_worn") + ")" if tint == current else "")
             _text(surface, small, label, (255, 230, 140) if focus else (200, 200, 210), r.bottom - 28, centerx=r.centerx)
 
     def _draw_shop(self, surface, small):

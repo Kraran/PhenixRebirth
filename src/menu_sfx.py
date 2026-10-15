@@ -91,6 +91,7 @@ def _story_part(game):
     return {
         "screen": (story.screen, story.pane, getattr(story, "paint_mode", False)),
         "cursor": (story.sel, story.col, story.del_yes, story.mode_index, story.zone, story.shop_index,
+                   getattr(story, "choice_index", 0), getattr(story, "choice_ask", False),
                    story.paint_choice, story.map_index, story.log_scroll, story.log_cursor,
                    story.best_index, story.extras_index, state.get("selected_slot"),
                    (entry.row, entry.col, entry.text) if entry is not None else None),

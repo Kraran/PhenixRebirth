@@ -827,6 +827,10 @@ class Game:
             return
         queue = self.__dict__.setdefault("_feat_queue", [])
         queue.extend(story_feats.take_news())
+        story = getattr(self, "story", None)
+        if (getattr(self, "menu_screen", "") == "story_hub" and story is not None
+                and getattr(story, "screen", "") in ("intro", "choice")):
+            return                                        # not over a scene of the story, nor over the choice of the hull
         if not queue or self.cheat_msg_timer > 0:
             return
         aid, tier = queue.pop(0)
@@ -1831,6 +1835,9 @@ class Game:
         if can_loot and spec.get("reactor"):
             # a BONUS mission: the reactor of its hull falls once, whenever in the waves (the random loot is off)
             self.adventure["loot_plan"] = story_items.reactor_plan(story.state, spec["reactor"], random)
+        elif can_loot and spec.get("drop"):
+            # an Act 3 BONUS mission: its item falls once, whenever in the waves (the random loot is off)
+            self.adventure["loot_plan"] = story_items.item_plan(story.state, spec["drop"], random)
         else:
             self.adventure["loot_plan"] = story_items.plan_drop(story.state, random) if can_loot else None
         self.adventure["loot_clock"] = 0.0

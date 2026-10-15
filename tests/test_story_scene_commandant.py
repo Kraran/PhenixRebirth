@@ -77,7 +77,7 @@ def test_the_title_and_text_are_in_every_language_table():
 
 
 def test_the_scene_comes_after_the_dome_one_and_before_the_painting_one():
-    assert list(ss.SCENES) == ["ch1_sortie", "best_s2", "best_s3", "best_s4", "dome_1", ID, "paint_1"]
+    assert list(ss.SCENES)[:7] == ["ch1_sortie", "best_s2", "best_s3", "best_s4", "dome_1", ID, "paint_1"]
 
 
 # ------------------------------------------------------------------ the first launch

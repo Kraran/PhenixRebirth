@@ -35,7 +35,7 @@ def _launch(g, st, cheat=False):
 # ------------------------------------------------------------------ the mission
 def test_the_mission_is_a_replayable_act_2_hunt_on_the_boss_level():
     m = ss.mission_by_id(ID)
-    assert ss.is_hunt(m) and m["acts"] == (2,) and m["need"] == "act2" and not m.get("once")
+    assert ss.is_hunt(m) and m["acts"] == (2, 3) and m["need"] == "act2" and not m.get("once")
     assert m["content"] == 5 and ss.mission_waves(m) == [5]
     assert ss.hunt_stage(m, 1) == 5
 

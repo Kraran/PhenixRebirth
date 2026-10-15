@@ -39,6 +39,7 @@ SPEED_START = 40
 ACT_CAPS = {
     1: {"speed": 80, "lives": 2},      # Act 1: about 80 % of the arcade ship, no dome
     2: {"speed": 80, "lives": 2},      # Act 2: the same, and the Phenix joins the hangar
+    3: {"speed": 100, "lives": 3},     # Act 3: the hull kept is brought to 100 %, like the arcade ship
 }
 
 # Dome (Shield bubble): seconds. 2.0 s / 5.0 s is the arcade Shield.
@@ -49,6 +50,10 @@ DOME_CD_START = 5.0
 DOME_CD_STEP = 1.0
 DOME_CD_MIN = 3.0
 _EPS = 1e-6
+
+ACT3_PENDING = "act3_pending"          # Act 2 is won: the scene of the attack and the choice of the hull wait
+GAME_WON = "game_won"                  # the last mission of Act 3 is won: the Adventure is over (it can still be played)
+HULLS = ("shield", "phoenix")
 
 GALAGA_STAGE = 6                       # arcade stage the BONUS mission plays at: level 2 (x1.1 speed, +10 points a bird)
 LEGACY_VERTICAL_FLAG = "vertical_thrust"   # the first BONUS mission (v1.5) gave the flight outright: such a save keeps it
@@ -244,7 +249,7 @@ MISSIONS = [
         # level 2 is the boss of level 10, level 3 that of level 15...
         "id": "best_boss",
         "hunt": True,
-        "acts": (2,),
+        "acts": (2, 3),
         "title": "story_m_bestboss",
         "blurb": "story_m_bestboss_b",
         "need": "act2",
@@ -332,7 +337,7 @@ MISSIONS = [
     # whose level is 1, 2, 3 in the first pass, then 4, 5, 6, and so on.
     {
         "id": "paint_1",
-        "acts": (2,),
+        "acts": (2, 3),
         "paint": 1,
         "title": "story_m_pt1",
         "blurb": "story_m_pt1_b",
@@ -345,7 +350,7 @@ MISSIONS = [
     },
     {
         "id": "paint_2",
-        "acts": (2,),
+        "acts": (2, 3),
         "paint": 2,
         "title": "story_m_pt2",
         "blurb": "story_m_pt2_b",
@@ -358,7 +363,7 @@ MISSIONS = [
     },
     {
         "id": "paint_3",
-        "acts": (2,),
+        "acts": (2, 3),
         "paint": 3,
         "title": "story_m_pt3",
         "blurb": "story_m_pt3_b",
@@ -368,6 +373,113 @@ MISSIONS = [
         "speed": 1.0,
         "unlock": [],
         "log": "story_log_pt3",
+    },
+
+    # The last mission of Act 2: a full run of the arcade levels 21 to 25, open once the Phenix is in the hangar.
+    # Its victory does not start Act 3 at once: Phobos is attacked (scene "act3_attack"), the pilot must choose the
+    # hull that keeps the quantum anchor, the other one is lost (see choose_act3_ship). Until the choice is made the
+    # save waits with the flag ACT3_PENDING (the scene comes back when the save is opened).
+    {
+        "id": "act3_gate",
+        "acts": (2,),
+        "title": "story_m_gate3",
+        "blurb": "story_m_gate3_b",
+        "need": "phenix_owned",
+        "content": 1,
+        "waves": [21, 22, 23, 24, 25],
+        "speed": 1.0,
+        "once": True,
+        "unlock": [],
+        "act3": True,
+        "log": "story_log_gate3",
+    },
+
+    # Act 3: the hull kept is brought to 100 % (the arcade ship) by a series of repair missions, one version for each
+    # hull (`hull`: listed only when it is the one kept). Each mission opens one line of the workshop; the last one
+    # opens the final series. Flown once each, in order.
+    {
+        "id": "up_shield_1", "hull": "shield", "acts": (3,), "title": "story_m_ups1", "blurb": "story_m_ups1_b",
+        "need": "act3", "content": 1, "waves": [16, 17], "speed": 1.0, "once": True,
+        "unlock": ["ch3_speed"], "log": "story_log_ups1",
+    },
+    {
+        "id": "up_shield_2", "hull": "shield", "acts": (3,), "title": "story_m_ups2", "blurb": "story_m_ups2_b",
+        "need": "ch3_speed", "content": 1, "waves": [18, 19], "speed": 1.0, "once": True,
+        "unlock": ["ch3_lives"], "log": "story_log_ups2",
+    },
+    {
+        "id": "up_shield_3", "hull": "shield", "acts": (3,), "title": "story_m_ups3", "blurb": "story_m_ups3_b",
+        "need": "ch3_lives", "content": 1, "swarm": True, "swarm_screens": 1, "stage": 16, "speed": 1.0,
+        "once": True, "unlock": ["ch3_wall"], "log": "story_log_ups3",
+    },
+    {
+        "id": "up_shield_4", "hull": "shield", "acts": (3,), "title": "story_m_ups4", "blurb": "story_m_ups4_b",
+        "need": "ch3_wall", "content": 1, "waves": [16, 17, 18, 19, 20], "speed": 1.0, "once": True,
+        "unlock": ["ch3_dome", "ch3_ready"], "log": "story_log_ups4",
+    },
+    {
+        "id": "up_phenix_1", "hull": "phoenix", "acts": (3,), "title": "story_m_upp1", "blurb": "story_m_upp1_b",
+        "need": "act3", "content": 1, "waves": [16, 17], "speed": 1.0, "once": True,
+        "unlock": ["ch3_speed"], "log": "story_log_upp1",
+    },
+    {
+        "id": "up_phenix_2", "hull": "phoenix", "acts": (3,), "title": "story_m_upp2", "blurb": "story_m_upp2_b",
+        "need": "ch3_speed", "content": 1, "waves": [18, 19], "speed": 1.0, "once": True,
+        "unlock": ["ch3_lives"], "log": "story_log_upp2",
+    },
+    {
+        "id": "up_phenix_3", "hull": "phoenix", "acts": (3,), "title": "story_m_upp3", "blurb": "story_m_upp3_b",
+        "need": "ch3_lives", "content": 1, "waves": [16, 17, 18, 19, 20], "speed": 1.0, "once": True,
+        "unlock": ["ch3_gauge", "ch3_ready"], "log": "story_log_upp3",
+    },
+
+    # Act 3 BONUS missions. The wreck of the hull that was lost (one version for each): a swarm around it, the parts
+    # salvaged are worth `reward` credits, paid once with the first victory. The Singularity: Galaga waves, and the
+    # Singularity Core falls once (`drop`), whenever in the waves; offered until it is caught in this Act.
+    {
+        "id": "bonus_wreck_phenix", "hull": "shield", "acts": (3,), "title": "story_m_wreckp",
+        "hud_title": "story_m_wreckp_hud", "blurb": "story_m_wreckp_b", "need": "act3", "content": 1,
+        "swarm": True, "swarm_screens": 1, "stage": 16, "speed": 1.0, "once": True, "reward": 5000,
+        "unlock": [], "log": "story_log_wreckp",
+    },
+    {
+        "id": "bonus_wreck_shield", "hull": "phoenix", "acts": (3,), "title": "story_m_wrecks",
+        "hud_title": "story_m_wrecks_hud", "blurb": "story_m_wrecks_b", "need": "act3", "content": 1,
+        "swarm": True, "swarm_screens": 1, "stage": 16, "speed": 1.0, "once": True, "reward": 5000,
+        "unlock": [], "log": "story_log_wrecks",
+    },
+    {
+        "id": "bonus_singularity", "acts": (3,), "title": "story_m_bsing", "hud_title": "story_m_bsing_hud",
+        "blurb": "story_m_bsing_b", "need": "ch3_speed", "content": 1, "galaga": True, "stage": 21,
+        "fire_mult": 1.2, "speed": 1.0, "drop": "singularity", "unlock": [], "log": "story_log_bsing",
+    },
+
+    # Act 3: the final series, "la Riposte", once the hull is at 100 % (ch3_ready): from Jupiter to Triton, where the
+    # first station fell. Flown once each, in order; the last victory ends the Adventure (scene "epilogue").
+    {
+        "id": "final_1", "acts": (3,), "title": "story_m_fin1", "blurb": "story_m_fin1_b", "need": "ch3_ready",
+        "content": 1, "waves": [21, 22], "speed": 1.0, "once": True, "unlock": ["final_s1"],
+        "log": "story_log_fin1",
+    },
+    {
+        "id": "final_2", "acts": (3,), "title": "story_m_fin2", "blurb": "story_m_fin2_b", "need": "final_s1",
+        "content": 1, "swarm": True, "swarm_screens": 1.6, "stage": 21, "speed": 1.0, "once": True,
+        "unlock": ["final_s2"], "log": "story_log_fin2",
+    },
+    {
+        "id": "final_3", "acts": (3,), "title": "story_m_fin3", "blurb": "story_m_fin3_b", "need": "final_s2",
+        "content": 1, "galaga": True, "stage": 21, "fire_mult": 1.3, "speed": 1.0, "once": True,
+        "unlock": ["final_s3"], "log": "story_log_fin3",
+    },
+    {
+        "id": "final_4", "acts": (3,), "title": "story_m_fin4", "blurb": "story_m_fin4_b", "need": "final_s3",
+        "content": 1, "waves": [23, 24, 25], "speed": 1.0, "once": True, "unlock": ["final_s4"],
+        "log": "story_log_fin4",
+    },
+    {
+        "id": "final_5", "acts": (3,), "title": "story_m_fin5", "blurb": "story_m_fin5_b", "need": "final_s4",
+        "content": 1, "waves": [26, 27, 28, 29, 30], "speed": 1.0, "once": True,
+        "unlock": ["final_s5", GAME_WON], "epilogue": True, "log": "story_log_fin5",
     },
 ]
 
@@ -556,7 +668,32 @@ def mission_done(state, mission):
         return paint_state(state)["step"] >= int(mission["paint"])
     if (mission or {}).get("reactor"):
         return story_items.reactor_status(state, mission["reactor"]) is not None     # done = the reactor was caught
+    if (mission or {}).get("drop"):
+        return story_items.item_got(state, mission["drop"])          # done = its item was caught in this Act
     return bool(mission) and mission.get("id") in (state.get("cleared") or [])
+
+
+# The colours of each hull: the Shield's three, and those of the Phenix (painted in Act 3 when it is the hull kept)
+HULL_TINTS = {"shield": PAINT_TINTS, "phoenix": ("argent", "blue", "gold")}
+
+
+def paint_target(state):
+    """The hull the paint shop works on: the Shield (Act 2), or the hull kept in Act 3. None when there is none."""
+    hull = kept_hull(state) or "shield"
+    return next((sl for sl in state.get("slots") or [] if sl.get("id") == hull and sl.get("owned")), None)
+
+
+def paint_tints(state):
+    """The colours the paint shop offers (those of the hull it works on)."""
+    sl = paint_target(state) or {}
+    return HULL_TINTS.get(sl.get("id"), PAINT_TINTS)
+
+
+def worn_tint(state):
+    """The colour the hull of the paint shop wears."""
+    sl = paint_target(state) or {}
+    tints = HULL_TINTS.get(sl.get("id"), PAINT_TINTS)
+    return sl.get("tint") if sl.get("tint") in tints else tints[0]
 
 
 def paint_affordable(state):
@@ -564,16 +701,16 @@ def paint_affordable(state):
 
 
 def paint_change(state, tint):
-    """Spend the waiting colour change (and PAINT_COST credits) on the Shield. False when there is no change
-    waiting, not enough credits, the colour is not one of the three, or it is the colour the Shield already
-    wears (nothing is spent then)."""
-    shield = next((sl for sl in state.get("slots") or [] if sl.get("id") == "shield"), None)
-    if shield is None or tint not in PAINT_TINTS or not paint_state(state)["token"]:
+    """Spend the waiting colour change (and PAINT_COST credits) on the hull of the paint shop (the Shield, or the hull
+    kept in Act 3). False when there is no change waiting, not enough credits, the colour is not one of that hull, or
+    it is the colour it already wears (nothing is spent then)."""
+    hull = paint_target(state)
+    if hull is None or tint not in paint_tints(state) or not paint_state(state)["token"]:
         return False
-    if (shield.get("tint") or "red") == tint or not paint_affordable(state):
+    if worn_tint(state) == tint or not paint_affordable(state):
         return False
     state["credits"] = int(_num(state.get("credits"), 0)) - PAINT_COST
-    shield["tint"] = tint
+    hull["tint"] = tint
     state["paint"] = dict(paint_state(state), token=False)
     return True
 
@@ -976,7 +1113,34 @@ SCENES = {
     "dome_1": {"title": "story_scene_dome_1_t", "slides": [("epave_shield", "story_scene_dome_1")]},
     "best_boss": {"title": "story_scene_bestboss_t", "slides": [("soucoupe_commandement", "story_scene_bestboss")]},
     "paint_1": {"title": "story_scene_paint_1_t", "slides": [("atelier_wallems", "story_scene_paint_1")]},
+    # Act 3 (the pictures will come later: until then the slide is a dark sky behind the text)
+    "up_shield_1": {"title": "story_scene_ups_t", "slides": [("remise_en_etat", "story_scene_ups")]},
+    "up_phenix_1": {"title": "story_scene_upp_t", "slides": [("remise_en_etat", "story_scene_upp")]},
+    "bonus_wreck_phenix": {"title": "story_scene_wreckp_t", "slides": [("epave_phenix", "story_scene_wreckp")]},
+    "bonus_wreck_shield": {"title": "story_scene_wrecks_t", "slides": [("epave_nx01", "story_scene_wrecks")]},
+    "final_1": {"title": "story_scene_fin_t", "slides": [("riposte", "story_scene_fin")]},
 }
+
+# The scenes of the story that belong to no mission: told after a mission (the attack on Phobos at the end of Act 2,
+# the loss of the other hull once the choice is made, the end of the Adventure). `veteran`: the slides told instead in
+# Veteran mode (no quantum anchor there, Kamarasov is dead). Keys are scene ids; the journal lists them once seen.
+ACT3_ATTACK = "act3_attack"
+EPILOGUE = "epilogue"
+STORY_SCENES = {
+    ACT3_ATTACK: {"title": "story_scene_attack_t",
+                  "slides": [("phobos_attaque", "story_scene_attack_1"), ("ancrage_unique", "story_scene_attack_2")],
+                  "veteran": [("phobos_attaque", "story_scene_attack_1"), ("ancrage_unique", "story_scene_attack_2v")]},
+    "act3_kept_shield": {"title": "story_scene_lostp_t", "slides": [("perte_phenix", "story_scene_lostp")]},
+    "act3_kept_phoenix": {"title": "story_scene_losts_t", "slides": [("perte_shield", "story_scene_losts")]},
+    EPILOGUE: {"title": "story_scene_epilogue_t",
+               "slides": [("epilogue_1", "story_scene_epilogue_1"), ("epilogue_2", "story_scene_epilogue_2")],
+               "veteran": [("epilogue_1", "story_scene_epilogue_1"), ("epilogue_2", "story_scene_epilogue_2v")]},
+}
+# The order of the journal (the order of the story): the mission scenes of Acts 1 and 2, the attack, the loss, the
+# Act 3 scenes, the end; the Phobos bar (Add-On) last.
+SCENE_ORDER = (["ch1_sortie", "best_s2", "best_s3", "best_s4", "dome_1", "best_boss", "paint_1",
+                ACT3_ATTACK, "act3_kept_shield", "act3_kept_phoenix", "up_shield_1", "up_phenix_1",
+                "bonus_wreck_phenix", "bonus_wreck_shield", "final_1", EPILOGUE])
 
 
 # The scene of the Phobos station bar belongs to no mission: it is told the first time the Add-On is available (the
@@ -1000,7 +1164,20 @@ def clip_path(name):
 
 
 def scene_of(mission_id):
-    return SCENES.get(mission_id) or ADDON_SCENES.get(mission_id)
+    return SCENES.get(mission_id) or STORY_SCENES.get(mission_id) or ADDON_SCENES.get(mission_id)
+
+
+def scene_slides(scene_id, mode="normal"):
+    """The slides of a scene for a save of `mode`: [(picture, text key)] (the Veteran ones when it has them)."""
+    scene = scene_of(scene_id) or {}
+    if mode == "veteran" and scene.get("veteran"):
+        return list(scene["veteran"])
+    return list(scene.get("slides") or [])
+
+
+def loss_scene(hull):
+    """The scene told once `hull` is chosen: the loss of the other one."""
+    return "act3_kept_" + hull
 
 
 def bar_due(state, addon_ready):
@@ -1021,8 +1198,9 @@ def mark_scene_seen(state, mission_id):
 
 
 def scenes_seen(state):
-    """Ids of the scenes already watched: those of the missions in the order of SCENES, then the Add-On ones."""
-    return [mid for mid in list(SCENES) + list(ADDON_SCENES) if scene_seen(state, mid)]
+    """Ids of the scenes already watched, in the order of the story (SCENE_ORDER), then the Add-On ones."""
+    order = SCENE_ORDER + [m for m in SCENES if m not in SCENE_ORDER] + list(ADDON_SCENES)
+    return [mid for mid in order if scene_seen(state, mid)]
 
 
 PHENIX_CAP_START = 60
@@ -1109,6 +1287,45 @@ def grant_phenix(state):
                     sl["owned"] = True
 
 
+def act3_pending(state):
+    """Act 2 is won and the hull that keeps the anchor is still to be chosen."""
+    return flag(state, ACT3_PENDING) and int(_num((state or {}).get("act"), 1)) < 3
+
+
+def choose_act3_ship(state, hull):
+    """The attack on Phobos: `hull` keeps the quantum anchor and flies Act 3; the other one is destroyed (its slot is
+    kept, marked `destroyed`, so the hangar can show the loss). False when there is no choice to make."""
+    if hull not in HULLS or not act3_pending(state):
+        return False
+    for sl in state.get("slots") or []:
+        if sl.get("id") == hull:
+            sl["owned"] = True
+        else:
+            sl["owned"] = False
+            sl["destroyed"] = True
+    slots = state.get("slots") or []
+    state["selected_slot"] = next((i for i, sl in enumerate(slots) if sl.get("id") == hull), 0)
+    state["act3_ship"] = hull
+    state["act"] = 3
+    flags = state.setdefault("flags", {})
+    flags.pop(ACT3_PENDING, None)
+    flags["act3"] = True
+    lost = "phoenix" if hull == "shield" else "shield"
+    state.setdefault("log", []).append({"key": "story_log_lost_" + lost})
+    return True
+
+
+def jump_to_act3(state):
+    """The 3333 cheat: Acts 1 and 2 won, the Phenix in the hangar, the attack on Phobos about to be told."""
+    grant_phenix(state)
+    flags = state.setdefault("flags", {})
+    cleared = state.setdefault("cleared", [])
+    for mission in MISSIONS:
+        if mission_in_act(mission, 2) and mission.get("once") and mission["id"] not in cleared:
+            cleared.append(mission["id"])
+    flags[ACT3_PENDING] = True
+
+
 def mission_waves(mission):
     """Arcade stage numbers a mission flies one after the other (empty: one wave of `content`)."""
     waves = (mission or {}).get("waves")
@@ -1128,7 +1345,11 @@ def visible_missions(state, cheat=False):
     if cheat:
         return list(MISSIONS)
     act = int(_num(state.get("act"), 1))
-    return [m for m in MISSIONS if _listed(state, m, act)]
+    shown = [m for m in MISSIONS if _listed(state, m, act)]
+    if act >= 3:
+        # Act 3: its own missions (the repairs, the BONUS, the final series) first, then the ones kept from before
+        shown.sort(key=lambda m: 0 if tuple(m.get("acts") or ()) == (3,) else 1)
+    return shown
 
 
 def _listed(state, mission, act):
@@ -1137,9 +1358,35 @@ def _listed(state, mission, act):
     it belongs to (`home`): the later acts list it only while it is still to do."""
     if not mission_in_act(mission, act):
         return False
+    if not hull_fits(state, mission):
+        return False
     if mission.get("secret") and not mission_open(state, mission):
         return False
     if mission.get("carry") and act > int(_num(mission.get("home"), 1)) and mission_done(state, mission):
+        return False
+    return True
+
+
+def kept_hull(state):
+    """The hull chosen to keep the quantum anchor at the end of Act 2 ("shield" / "phoenix"), or None before."""
+    hull = (state or {}).get("act3_ship")
+    return hull if hull in HULLS else None
+
+
+def hull_lost(state, hull):
+    """Was this hull destroyed in the attack on Phobos?"""
+    sl = next((s for s in (state or {}).get("slots") or [] if s.get("id") == hull), None)
+    return bool(sl and sl.get("destroyed"))
+
+
+def hull_fits(state, mission):
+    """A mission made for one hull (`hull`: the Act 3 versions) is there only when it is the one kept; a mission that
+    imposes a hull (`ship`: the BONUS reactors) goes away when that hull is lost."""
+    want = (mission or {}).get("hull")
+    if want and kept_hull(state) != want:
+        return False
+    ship = (mission or {}).get("ship")
+    if ship and hull_lost(state, ship):
         return False
     return True
 
@@ -1163,8 +1410,10 @@ def mission_playable(state, mission, cheat=False):
         return False
     if cheat:
         return True
-    if not mission_open(state, mission):
+    if not mission_open(state, mission) or not hull_fits(state, mission):
         return False
+    if mission.get("drop") and mission_done(state, mission):
+        return False                       # the item it drops is caught: a drop mission is offered until then
     if mission.get("once") and mission.get("id") in (state.get("cleared") or []):
         return False                       # a story mission is flown once; hunts stay replayable
     if mission.get("reactor") and mission_done(state, mission):
@@ -1274,6 +1523,20 @@ def _st_cap_80(slot):
     return "owned" if phenix_cap(slot) >= 80 else None
 
 
+def _up_cap_100(slot):
+    """Phenix only, Act 3: the Phenix form lasts as long as in the arcade."""
+    if slot.get("id") != "phoenix" or phenix_cap(slot) < 80 or phenix_cap(slot) >= 100:
+        return False
+    slot["phenix_cap"] = 100
+    return True
+
+
+def _st_cap_100(slot):
+    if phenix_cap(slot) >= 100:
+        return "owned"
+    return "need_prev" if phenix_cap(slot) < 80 else None
+
+
 def _speed(slot):
     return int(_num(slot.get("speed"), SPEED_START))
 
@@ -1355,11 +1618,12 @@ UPGRADES = [
     ("wall_slow", "story_shop_wall_slow", 1000, "ch1_wall", _up_wall_slow, _st_wall_slow, 1),
     ("dome_on", "story_shop_dome_on", 800, "dome_online", _up_dome_on, _st_dome_on, 1),
     ("phenix_cap_80", "story_shop_phenix80", 1000, "phenix_owned", _up_cap_80, _st_cap_80, 2),
-    ("speed_100", "story_shop_speed100", 1000, "ch3_open", _up_speed_100, _st_speed_100, 3),
-    ("lives_3", "story_shop_lives3", 900, "ch3_open", _up_lives_3, _st_lives_3, 3),
-    ("dome_dur", "story_shop_dome", 800, "dome_online", _up_dome_dur, _st_dome_dur, 2),
+    ("speed_100", "story_shop_speed100", 1000, "ch3_speed", _up_speed_100, _st_speed_100, 3),
+    ("lives_3", "story_shop_lives3", 900, "ch3_lives", _up_lives_3, _st_lives_3, 3),
+    ("dome_dur", "story_shop_dome", 800, "ch3_dome", _up_dome_dur, _st_dome_dur, 3),
     ("dome_lat", "story_shop_latency", 800, "dome_online", _up_dome_lat, _st_dome_lat, 2),
-    ("wall_immune", "story_shop_wall_immune", 1400, "ch3_open", _up_wall_immune, _st_wall_immune, 3),
+    ("wall_immune", "story_shop_wall_immune", 1400, "ch3_wall", _up_wall_immune, _st_wall_immune, 3),
+    ("phenix_cap_100", "story_shop_phenix100", 1500, "ch3_gauge", _up_cap_100, _st_cap_100, 3),
 ]
 
 # What the workshop shows in Act 1: id, i18n label, cost, flag required before it is buyable
@@ -1369,6 +1633,11 @@ SHOP = [(u[0], u[1], u[2], u[3]) for u in UPGRADES if u[6] == 1]
 # What the workshop sells for the Phenix (Act 2): the same hull upgrades, no dome, plus its own gauge.
 PAINT_ROW = ("paint", "story_shop_paint", PAINT_COST, None)
 PHENIX_SHOP_IDS = ("speed_80", "lives_2", "wall_slow", "phenix_cap_80")
+# Act 3: what brings the hull kept to the arcade ship (each line opens with its repair mission). The Shield of the
+# arcade is immune to the walls and its dome lasts 2 s; the Phenix of the arcade keeps the slowdown rule of the walls
+# and its whole Phenix form.
+ACT3_SHOP_IDS = {"shield": ("speed_100", "lives_3", "wall_immune", "dome_dur"),
+                 "phoenix": ("speed_100", "lives_3", "phenix_cap_100")}
 
 
 # The workshop sells "Vies 2" (and "Vies 3" in Act 3): the number is the lives you end up with, so a Novice (who starts with 3)
@@ -1379,12 +1648,15 @@ NOVICE_LABELS = {"story_shop_lives2": "story_shop_lives4", "story_shop_lives3": 
 def shop_for(state):
     """Workshop rows of the selected hull: (id, label, cost, flag required)."""
     slot = selected_slot(state) or {}
-    if slot.get("id") == "phoenix":
-        rows = [(u[0], u[1], u[2], u[3]) for sid in PHENIX_SHOP_IDS for u in UPGRADES if u[0] == sid]
-    else:
-        rows = list(SHOP)
-        if int(_num(state.get("act"), 1)) >= 2:
-            rows.append(PAINT_ROW)             # the paint shop: PAINT_COST credits, and one change per finished series
+    hull = "phoenix" if slot.get("id") == "phoenix" else "shield"
+    act = int(_num(state.get("act"), 1))
+    ids = PHENIX_SHOP_IDS if hull == "phoenix" else [u[0] for u in SHOP]
+    if act >= 3:
+        ids = list(ids) + list(ACT3_SHOP_IDS[hull])
+    rows = [(u[0], u[1], u[2], u[3]) for sid in ids for u in UPGRADES if u[0] == sid]
+    target = paint_target(state)
+    if act >= 2 and target is not None and target.get("id") == slot.get("id"):
+        rows.append(PAINT_ROW)                 # the paint shop: PAINT_COST credits, and one change per finished series
     if state.get("mode") == "novice":
         rows = [(sid, NOVICE_LABELS.get(label, label), cost, need) for sid, label, cost, need in rows]
     # the loot items caught (a reactor only for the hull flown)
@@ -1540,8 +1812,16 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
         if act > int(_num(state.get("act"), 1)):
             state["act"] = act                       # the end of an act starts the next one
             res["act"] = act
+        if mission.get("act3") and int(_num(state.get("act"), 1)) < 3:
+            flags[ACT3_PENDING] = True               # the attack on Phobos and the choice of the hull come next
+            res["act3"] = True
+        if mission.get("epilogue"):
+            res["epilogue"] = True                   # the end of the Adventure: its last scene
         cleared_ids = state.setdefault("cleared", [])
         res["first"] = mission_id not in cleared_ids
+        if res["first"] and int(_num(mission.get("reward"), 0)) > 0:
+            res["reward"] = int(mission["reward"])   # the parts salvaged (a BONUS mission): paid once
+            state["credits"] = int(state.get("credits", 0)) + res["reward"]
         if res["first"]:
             cleared_ids.append(mission_id)
             state.setdefault("log", []).append({"key": mission.get("log") or "story_log_clear"})

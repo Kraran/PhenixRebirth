@@ -268,6 +268,8 @@ def test_the_dome_upgrade_comes_before_the_longer_dome_of_act_two():
     st["credits"] = 9999
     st["flags"]["dome_online"] = True
     assert ss.buy(st, "dome_on")
+    assert not ss.buy(st, "dome_dur")                                # the longer dome is an Act 3 repair
+    st["flags"]["ch3_dome"] = True
     assert ss.buy(st, "dome_dur")                                    # the next step is still the old upgrade
     assert ss.loadout(st)["dome_dur"] == pytest.approx(ss.DOME_DUR_START + ss.DOME_DUR_STEP)
 

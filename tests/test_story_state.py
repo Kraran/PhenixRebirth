@@ -11,7 +11,8 @@ from i18n import t
 def _state(**flags):
     st = ss.default_state()
     st["credits"] = 100000
-    for name in ("ch1_speed", "ch1_life_2", "ch1_wall", "ch3_open", "dome_online"):
+    for name in ("ch1_speed", "ch1_life_2", "ch1_wall", "dome_online", "ch3_speed", "ch3_lives", "ch3_wall",
+                 "ch3_dome"):
         st["flags"][name] = flags.get(name, True)
     return st
 

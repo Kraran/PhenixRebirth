@@ -84,7 +84,7 @@ def test_no_language_is_written_without_its_letters(code):
     marks = {"es": "áéíóúñ¿¡", "de": "äöüß", "it": "àèéìòù", "pt": "áâãàçéêíóôõú", "nl": "éëïöü",
              "pl": "ąćęłńóśźż", "tr": "çğıöşüİ", "sv": "åäö", "no": "æøå", "da": "æøå"}[code]
     texts = [e[code] for e in i18n.T.values() if isinstance(e, dict) and isinstance(e.get(code), str)
-             and len(e[code]) > 40]
+             and len(e[code]) > 40 and e[code] != e.get("en")]      # (not the English shown until a translation)
     with_marks = sum(1 for s in texts if any(ch in s.lower() for ch in marks))
     floor = {"it": 0.35, "nl": 0.15}.get(code, 0.5)          # Italian and Dutch need fewer accents
     assert with_marks / len(texts) > floor, (code, with_marks, len(texts))

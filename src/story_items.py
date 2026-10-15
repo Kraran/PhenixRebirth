@@ -139,6 +139,19 @@ def reactor_plan(state, hull, rand):
     return {"id": item, "t": float(rand.uniform(*REACTOR_DELAY)), "last_wave": True}
 
 
+def item_got(state, item):
+    """Was `item` caught in this Act (found, installed or used)?"""
+    return book(state)["got"].get(item) is not None
+
+
+def item_plan(state, item, rand):
+    """A mission that drops one given item (the Singularity BONUS of Act 3): it falls once, some time into the waves,
+    like a reactor. None when the pilot already caught it in this Act."""
+    if item not in ITEM_IDS or item_got(state, item):
+        return None
+    return {"id": item, "t": float(rand.uniform(*REACTOR_DELAY)), "last_wave": True}
+
+
 def find(state, item):
     """The pilot caught `item`: the hangar sells it now. False if it was not lootable (nothing changes)."""
     b = book(state)
