@@ -1,4 +1,4 @@
-"""Options, Achievements, Jukebox and Credits are reached from the Adventure, in the Extras tab at the far left (left of
+"""Achievements, Jukebox, Credits and Options are reached from the Adventure, in the Extras tab at the far left (left of
 the Bestiary).
 
 The tab has four paragraphs, one for each screen: Up / Down choose, A opens the screen of the main menu, as it works from
@@ -42,7 +42,11 @@ def _open(run, g, door):
 # --- where they are -----------------------------------------------------------------------------------------------
 
 def test_one_extras_tab_is_the_first_and_holds_the_four_screens_in_this_order():
-    assert DOORS == ("options", "achievements", "jukebox", "credits")
+    assert DOORS == ("achievements", "jukebox", "credits", "options")
+    import main_menu                     # the order of EXTRAS in the main menu, Options where the help is there
+    common = [d for d in main_menu.EXTRAS if d in DOORS]
+    assert common == [d for d in DOORS if d in main_menu.EXTRAS] == ["achievements", "jukebox", "credits"]
+    assert main_menu.EXTRAS.index("help") == main_menu.EXTRAS.index("credits") + 1 == len(main_menu.EXTRAS) - 2
     assert PANES == ("extras", "bestiary", "log", "hangar", "map")
 
 
@@ -83,7 +87,7 @@ def test_a_gives_the_screen_of_the_chosen_paragraph():
     for i in range(4):
         hub.extras_index = i
         got.append(hub.confirm())
-    assert got == [{"door": "options"}, {"door": "achievements"}, {"door": "jukebox"}, {"door": "credits"}]
+    assert got == [{"door": "achievements"}, {"door": "jukebox"}, {"door": "credits"}, {"door": "options"}]
 
 
 def test_the_tab_row_and_the_tab_draw(hub, run):
@@ -123,7 +127,7 @@ def test_the_paragraphs_and_the_chosen_one_are_drawn(hub):
     assert not any(str(x).startswith("> ") for x in texts)          # no cursor mark: the lit frame shows it
     paragraphs = [r for r in lit if r.width == 860]
     top, step = story.StoryHub.EXTRAS_LAYOUT[len(hub.story.doors())][:2]
-    assert len(paragraphs) == 1 and paragraphs[0].y == top + step                 # the second one (Achievements) is lit
+    assert len(paragraphs) == 1 and paragraphs[0].y == top + step                 # the second one (Jukebox) is lit
     assert story.PANES.index("extras") < story.PANES.index("bestiary")         # Extras is the first tab
 
 
@@ -168,7 +172,7 @@ def test_options_work_from_the_adventure_and_changes_are_kept(hub, run):
     assert g.menu_screen == "options" and g.story.pane == "extras"       # Left / Right change a value, not the tab
     assert g.sfx_volume > 0.5
     _key(run, pygame.K_ESCAPE, frames=3)
-    assert g.menu_screen == "story_hub" and g.story.pane == "extras" and g.story.extras_index == 0
+    assert g.menu_screen == "story_hub" and g.story.pane == "extras" and g.story.extras_index == DOORS.index("options")
 
 
 def test_the_reset_screen_of_the_options_stays_inside_the_door(hub, run):
@@ -190,7 +194,7 @@ def test_esc_in_the_options_returns_to_the_adventure(hub, run):
     _open(run, g, "options")
     g.input_grace = 0
     _key(run, pygame.K_ESCAPE, frames=3)
-    assert g.menu_screen == "story_hub" and g.story.pane == "extras" and g.story.extras_index == 0
+    assert g.menu_screen == "story_hub" and g.story.pane == "extras" and g.story.extras_index == DOORS.index("options")
 
 
 def test_the_jukebox_plays_and_left_right_do_not_go_to_the_scores(hub, run):

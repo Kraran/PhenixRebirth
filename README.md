@@ -27,7 +27,7 @@ Free to play · Open source · MIT License
 ## Features
 
 - **Main menu**: Play, Adventure, Extras, Options, Quit. *Play* opens the arcade game screen (mode: 1 player / hot seat / coop, difficulty) before the ship select; *Extras* gathers High Scores, Achievements, Jukebox, Credits, Help and the Add-On
-- **Adventure** (an Extras tab at its far left opens Options, Achievements, Jukebox and Credits) — chapter 1: Shield with a broken dome, mission map, bestiary unlocks, hangar credits
+- **Adventure** (an Extras tab at its far left opens Achievements, Jukebox, Credits and Options) — chapter 1: Shield with a broken dome, mission map, bestiary unlocks, hangar credits
 - **Adventure intro read aloud** (French) — the text follows the voice (`assets/story/voice/`, made with `tools/make_intro_voice.py`)
 - **Adventure intro in video** — the story slides (Huygens, Phobos, Kamarasov; Kamarasov's death in Veteran mode) are short looping clips in `assets/story/`, like Wallems' workshop
 - **Return to base** — a lost mission (Normal mode) is drawn into a blue whirlwind, a flash, and the mission map comes back; Enter / Esc / a pad button skips it (`python tools/make_anchor_sound.py` makes its sound, numpy only)

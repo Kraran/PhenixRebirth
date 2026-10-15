@@ -85,7 +85,7 @@ def test_the_scene_is_due_only_with_the_addon_and_once_per_save():
 
 # ------------------------------------------------------------------ the Extras tab
 def test_the_extras_tab_has_the_bar_as_a_fifth_paragraph_only_with_the_addon():
-    assert DOORS == ("options", "achievements", "jukebox", "credits")
+    assert DOORS == ("achievements", "jukebox", "credits", "options")
     assert _hub(addon=False).doors() == DOORS
     hub = _hub(addon=True)
     assert hub.doors() == DOORS + ("addon",)
@@ -99,12 +99,12 @@ def test_the_extras_tab_has_the_bar_as_a_fifth_paragraph_only_with_the_addon():
     assert hub.confirm() == {"door": "addon"}
 
 
-def test_without_the_addon_the_tab_goes_no_further_than_the_credits():
+def test_without_the_addon_the_tab_goes_no_further_than_the_options():
     hub = _hub(addon=False)
     hub.pane = "extras"
     hub.extras_index = 3
     hub.nav_v(1)
-    assert hub.extras_index == 3 and hub.confirm() == {"door": "credits"}
+    assert hub.extras_index == 3 and hub.confirm() == {"door": "options"}
 
 
 def test_the_addon_going_away_does_not_leave_the_cursor_on_nothing():
@@ -112,7 +112,7 @@ def test_the_addon_going_away_does_not_leave_the_cursor_on_nothing():
     hub.pane = "extras"
     hub.extras_index = 4
     hub.addon_ready = lambda: False
-    assert hub.confirm() == {"door": "credits"}
+    assert hub.confirm() == {"door": "options"}
 
 
 def test_the_tab_draws_five_paragraphs_with_the_bar_title(run):
@@ -206,7 +206,7 @@ def test_it_is_told_again_in_a_save_that_has_not_seen_it():
 def test_without_the_addon_the_cursor_cannot_reach_a_bar_and_no_scene_is_told():
     hub = _hub(addon=False)
     hub.pane, hub.extras_index = "extras", 5
-    assert hub.confirm() == {"door": "credits"} and hub.screen == "hub" and hub.scene_id is None
+    assert hub.confirm() == {"door": "options"} and hub.screen == "hub" and hub.scene_id is None
 
 
 def test_the_intro_replayed_from_the_journal_does_not_tell_the_bar():

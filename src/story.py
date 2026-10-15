@@ -28,10 +28,11 @@ import menu_ui
 from story_state import MISSIONS, SHOP, log_text   # noqa: F401  (re-exported for the tests)
 
 
-# The Extras tab, at the far left, holds four screens of the main menu (Options, Achievements, Jukebox, Credits) as
+# The Extras tab, at the far left, holds four screens of the main menu (Achievements, Jukebox, Credits, Options) as
 # paragraphs: Up / Down choose, A opens the real screen, B / Esc comes back to the same paragraph. (Left / Right change
-# values in those screens, so they could not also change tab.)
-DOORS = ("options", "achievements", "jukebox", "credits")
+# values in those screens, so they could not also change tab.) The order is the one of EXTRAS in the main menu
+# (main_menu.EXTRAS: scores, achievements, jukebox, credits, help, add-on), Options where the help is there.
+DOORS = ("achievements", "jukebox", "credits", "options")
 BAR_DOOR = "addon"             # the fifth paragraph, there only when the Add-On is available: the Phobos station bar
 DOOR_TITLES = {BAR_DOOR: "story_door_addon_t"}      # the paragraphs whose title is not the name of the screen
 PANES = ("extras", "bestiary", "log", "hangar", "map")
@@ -324,7 +325,7 @@ class StoryHub:
 
     # --- the Extras tab: the screens of the main menu, and the bar of Phobos once the Add-On is there ---
     def doors(self):
-        """The paragraphs of the Extras tab: Options, Achievements, Jukebox, Credits, and the Phobos bar (the Add-On menu)
+        """The paragraphs of the Extras tab: Achievements, Jukebox, Credits, Options, and the Phobos bar (the Add-On menu)
         when the Add-On is available."""
         return DOORS + ((BAR_DOOR,) if self._addon_available() else ())
 
@@ -1646,7 +1647,7 @@ class StoryHub:
     EXTRAS_LAYOUT = {3: (124, 150, 24, 30, 68, 30), 4: (124, 122, 14, 26, 60, 27), 5: (84, 108, 10, 22, 55, 24)}
 
     def _draw_extras(self, surface, medium, small):
-        """One paragraph for each screen of the main menu (Options, Achievements, Jukebox, Credits, and the Add-On when
+        """One paragraph for each screen of the main menu (Achievements, Jukebox, Credits, Options, and the Add-On when
         it is there, as the bar of Phobos); the chosen one has a frame. The more paragraphs, the smaller they are."""
         cx = BASE_WIDTH // 2
         doors = self.doors()

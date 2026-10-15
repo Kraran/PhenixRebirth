@@ -349,3 +349,18 @@ def test_the_bar_says_choose_and_tab(run):
         assert ("sh", "hint_scores_jukebox") not in hint_bar.menu_items(g)
     finally:
         g.story_door = None
+
+
+def test_from_the_main_menu_the_screen_opens_on_the_arcade_page(run):
+    """Left on the Adventure page (opened from the Adventure, or turned there): EXTRAS opens it again on ARCADE."""
+    import main_menu
+    g = run.game
+    g.ach_page, g.ach_index = 1, 7
+    g.menu_screen = "extras"
+    g.menu_index = main_menu.extras_index("achievements")
+    g._open_extra("achievements")
+    assert g.menu_screen == "achievements" and (g.ach_page, g.ach_index) == (0, 0)
+    assert scr.catalog(g) is CATALOG
+    g.ach_index = 9                                         # on ARCADE the cursor stays where it was left
+    g._extra_enter("achievements")
+    assert (g.ach_page, g.ach_index) == (0, 9)
