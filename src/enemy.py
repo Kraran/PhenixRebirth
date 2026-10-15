@@ -123,6 +123,11 @@ class Enemy:
             self.hitbox_h = 20
         self.rect = self.image.get_rect(center=(self.x, self.y))
         self.active_shots = 0  # bullets currently on screen from this enemy
+        # The VIP rescue (src/escort.py): `dive_aim()` gives the x the dive goes for (the cruise ship) instead of a
+        # lane of its own, `dive_gate()` says whether one more bird may dive now. None everywhere else.
+        self.dive_aim = None
+        self.dive_gate = None
+        self.aim_offset = 0.0
 
 
     def _load_bird_frames(self, stage=1):
@@ -233,8 +238,10 @@ class Enemy:
             
             # Soft steer toward this bird's own lane — not a shared player X
             lane = getattr(self, "dive_lane", self.dive_target_x)
+            if self.dive_aim is not None:
+                lane = self.dive_lane = self.dive_aim() + self.aim_offset     # it goes for what it aims at
             dx = lane - self.x
-            self.x += dx * 0.55 * dt
+            self.x += dx * (1.6 if self.dive_aim is not None else 0.55) * dt
             self.x += math.sin(self.time * 5.5 + self.formation_index) * 36 * dt
             self.x = max(20, min(BASE_WIDTH - 20, self.x))
             
@@ -274,6 +281,8 @@ class Enemy:
 
     def start_dive(self, player_x):
         if self.state != "formation" or not self.alive or self.dying:
+            return
+        if self.dive_gate is not None and not self.dive_gate():
             return
         self.state = "diving"
         slot = (self.formation_index % 7) - 3

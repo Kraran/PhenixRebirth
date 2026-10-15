@@ -40,6 +40,7 @@ from player import Player, recolor_phenix_frames
 from enemy import EnemyFormation, BigBird, Enemy
 import invaders
 from invaders import InvaderFormation
+import escort
 import galaga
 from galaga import GalagaFormation
 from boss import BossSaucer
@@ -1992,6 +1993,15 @@ class Game:
             self.formation.sounds = self.sounds
             self.boss_saucer = None
             return
+        elif adv and adv.get("escort"):
+            # the VIP rescue (src/escort.py): blue and khaki birds of one arcade level, for ever, and the cruise ship
+            number = int(adv.get("stage") or 11)
+            self.stage = number
+            mult = float(adv.get("speed") or 1.0) * stage_speed_mult(number) * self.difficulty_speed_mult()
+            self.formation = escort.EscortFormation(speed_mult=mult)
+            self.formation.sounds = self.sounds
+            self.boss_saucer = None
+            return
         elif adv and adv.get("swarm"):
             # the swarm mission: all four enemies at once, at the speed of one arcade level
             number = int(adv.get("stage") or 11)
@@ -2004,7 +2014,7 @@ class Game:
         else:
             content = stage_content(stage)
             mult = stage_speed_mult(stage) * self.difficulty_speed_mult()
-        if isinstance(self.formation, (InvaderFormation, GalagaFormation)):
+        if isinstance(self.formation, (InvaderFormation, GalagaFormation, escort.EscortFormation)):
             self.formation = EnemyFormation()            # back to the ordinary grids
         self.formation.enemies = []
         self.formation.bullets = []
@@ -4057,7 +4067,7 @@ class Game:
                 self._hotseat_arm_hold("switch", self.HOTSEAT_HOLD_LIFE)
                 if self.hotseat_hold > 0:
                     return
-            elif not any(p.alive for p in self._ships()):
+            elif not any(p.alive for p in self._ships()) or escort.failed(self):
                 if getattr(self, "adventure", None):
                     if self._veteran_adventure():
                         # a fallen Veteran gets the real GAME OVER of the game (explosion, card, voice), then the slot list.
@@ -4100,6 +4110,7 @@ class Game:
             return
         
         self.formation.update(self.dt, self.player.x)
+        escort.tick(self)                         # the VIP rescue: the cruise ship (nothing in any other mission)
         update_play.tick_loot(self)
         self._drain_detach_pops()
         self._check_extra_lives()

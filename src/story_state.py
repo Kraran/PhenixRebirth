@@ -148,6 +148,30 @@ MISSIONS = [
         "speed": 1.0,
         "log": "story_log_bonus2dp",
     },
+    # BONUS of Act 2: the VIP rescue (src/escort.py). Open once a hull has its two-dimensional reactor installed, and
+    # flown only by such a hull (`needs_reactor`: the one selected if it has it, else the other). Once only; still on
+    # the map of Act 3 while it is not won. The victory tells who was on board (scene VIP_SCENE) and opens Lyra Voss's
+    # concert in the Phobos bar (flag LYRA_FLAG, the videos come later).
+    {
+        "id": "bonus_vip",
+        "acts": (2, 3),
+        "secret": True,
+        "carry": True,
+        "home": 2,
+        "needs_reactor": True,
+        "escort": True,
+        "title": "story_m_vip",
+        "hud_title": "story_m_vip_hud",
+        "blurb": "story_m_vip_b",
+        "need": None,
+        "content": 1,
+        "stage": 11,                        # the birds of level 3 (arcade stages 11 / 12)
+        "speed": 1.0,
+        "once": True,
+        "unlock": ["lyra_concert"],
+        "win_scene": "vip_lyra",
+        "log": "story_log_vip",
+    },
     # The dome series: Dome I is open from the start, each mission opens the next one and can be flown only once.
     # `waves` are arcade stage numbers (1, 6, 11 = the same wave at 1.0x, 1.1x, 1.2x speed).
     {
@@ -1121,12 +1145,17 @@ SCENES = {
     "final_1": {"title": "story_scene_fin_t", "slides": [("riposte", "story_scene_fin")]},
 }
 
+# The VIP rescue (Act 2 BONUS): its victory tells who was on board, and the concert of Lyra Voss in the Phobos bar opens.
+VIP_SCENE = "vip_lyra"
+LYRA_FLAG = "lyra_concert"
+
 # The scenes of the story that belong to no mission: told after a mission (the attack on Phobos at the end of Act 2,
 # the loss of the other hull once the choice is made, the end of the Adventure). `veteran`: the slides told instead in
 # Veteran mode (no quantum anchor there, Kamarasov is dead). Keys are scene ids; the journal lists them once seen.
 ACT3_ATTACK = "act3_attack"
 EPILOGUE = "epilogue"
 STORY_SCENES = {
+    VIP_SCENE: {"title": "story_scene_vip_t", "slides": [("lyra_voss", "story_scene_vip")]},
     ACT3_ATTACK: {"title": "story_scene_attack_t",
                   "slides": [("phobos_attaque", "story_scene_attack_1"), ("ancrage_unique", "story_scene_attack_2")],
                   "veteran": [("phobos_attaque", "story_scene_attack_1"), ("ancrage_unique", "story_scene_attack_2v")]},
@@ -1138,7 +1167,7 @@ STORY_SCENES = {
 }
 # The order of the journal (the order of the story): the mission scenes of Acts 1 and 2, the attack, the loss, the
 # Act 3 scenes, the end; the Phobos bar (Add-On) last.
-SCENE_ORDER = (["ch1_sortie", "best_s2", "best_s3", "best_s4", "dome_1", "best_boss", "paint_1",
+SCENE_ORDER = (["ch1_sortie", "best_s2", "best_s3", "best_s4", "dome_1", "best_boss", "paint_1", VIP_SCENE,
                 ACT3_ATTACK, "act3_kept_shield", "act3_kept_phoenix", "up_shield_1", "up_phenix_1",
                 "bonus_wreck_phenix", "bonus_wreck_shield", "final_1", EPILOGUE])
 
@@ -1391,12 +1420,34 @@ def hull_fits(state, mission):
     return True
 
 
+def reactor_hulls(state):
+    """The hulls of the hangar that fly with their two-dimensional reactor installed (owned, not destroyed)."""
+    out = []
+    for sl in (state or {}).get("slots") or []:
+        hull = sl.get("id")
+        if hull in HULLS and sl.get("owned") and not sl.get("destroyed") and story_items.reactor_on(state, hull):
+            out.append(hull)
+    return out
+
+
+def reactor_hull(state):
+    """The hull a mission that `needs_reactor` flies: the selected one if it has its reactor, else the other one
+    that has it; None when no hull has one."""
+    hulls = reactor_hulls(state)
+    if not hulls:
+        return None
+    sel = (selected_slot(state) or {}).get("id")
+    return sel if sel in hulls else hulls[0]
+
+
 def mission_open(state, mission):
     if not mission:
         return False
     need = mission.get("need")
     if need and not flag(state, need):
         return False
+    if mission.get("needs_reactor") and not reactor_hulls(state):
+        return False                       # the VIP rescue: a hull with its two-dimensional reactor installed
     if is_paint(mission) and paint_state(state)["step"] < int(mission["paint"]) - 1:
         return False                       # the paint series is flown in order
     return True
@@ -1817,6 +1868,8 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
             res["act3"] = True
         if mission.get("epilogue"):
             res["epilogue"] = True                   # the end of the Adventure: its last scene
+        if mission.get("win_scene"):
+            res["win_scene"] = mission["win_scene"]  # a scene told after the first victory (the VIP rescue)
         cleared_ids = state.setdefault("cleared", [])
         res["first"] = mission_id not in cleared_ids
         if res["first"] and int(_num(mission.get("reward"), 0)) > 0:

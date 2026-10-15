@@ -1014,17 +1014,20 @@ class StoryHub:
         mission = self._mission()
         if not self.mission_playable(mission):
             return None
+        ship = mission.get("ship")
+        if mission.get("needs_reactor"):
+            ship = ss.reactor_hull(self.state)        # the VIP rescue: a hull with its two-dimensional reactor
         spec = {
             "launch": True,
             "id": mission["id"],
             "title": mission["title"],
             "content": int(mission["content"]),
             "speed": float(mission.get("speed") or 1.0),
-            "dome": bool(self.loadout(mission.get("ship")).get("dome")),
+            "dome": bool(self.loadout(ship).get("dome")),
             "items": story_items.installed(self.state),       # bought in the hangar: they work in this mission only
         }
-        if mission.get("ship"):
-            spec["ship"] = mission["ship"]            # a mission that imposes its hull
+        if ship:
+            spec["ship"] = ship                       # a mission that imposes its hull
         waves = ss.mission_waves(mission)
         if waves:
             spec["waves"] = waves                 # several waves in a row, at the speed of their level
@@ -1045,6 +1048,9 @@ class StoryHub:
                 spec["fire_mult"] = float(mission["fire_mult"])    # the birds shoot more (the Phenix version)
         if mission.get("reactor"):
             spec["reactor"] = mission["reactor"]      # the hull whose reactor falls in this mission, once
+        if mission.get("escort"):
+            spec["escort"] = True                 # the VIP rescue: the cruise ship to bring across (src/escort.py)
+            spec["stage"] = int(mission.get("stage") or 11)
         if mission.get("swarm"):
             spec["swarm"] = True                  # the four enemies together, replaced as they fall
             spec["stage"] = int(mission.get("stage") or 11)
@@ -1092,6 +1098,8 @@ class StoryHub:
             self._maybe_act3()                       # Phobos is attacked: the scene, then the choice of the hull
         elif res.get("epilogue") and res.get("first"):
             self.start_scene(ss.EPILOGUE, back_to="map")       # the end of the Adventure
+        elif res.get("win_scene") and res.get("first"):
+            self.start_scene(res["win_scene"], back_to="map")  # who was on board (the VIP rescue)
 
     def _show_fall(self):
         """A fallen Veteran goes back to the slot list, where the save is now a memorial."""
@@ -1110,8 +1118,11 @@ class StoryHub:
             self.toast = toast
 
     def _buy(self, row):
+        hidden = [m for m in ss.MISSIONS if m.get("secret") and not ss.mission_open(self.state, m)]
         if not ss.buy(self.state, row[0]):
             return False
+        if any(ss.mission_open(self.state, m) and ss.mission_in_act(m, self.state.get("act")) for m in hidden):
+            self.toast = t("story_bonus_open")               # a reactor installed opens the VIP rescue
         if ss.item_of(row[0]):
             self.sound_events.append("1up")                  # a loot item is installed for the next mission
         elif not self.cheating:

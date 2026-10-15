@@ -9,6 +9,7 @@ import pygame
 
 import addon as mame_addon
 import credits_screen
+import escort
 import fonts
 import highscores_screen
 import hint_bar
@@ -58,6 +59,7 @@ def draw_play(game):
     """In-run scene: boss, birds, explosions, ships, score, lives and HUD."""
     if game.boss_saucer:
         game.boss_saucer.draw(game.game_surface)
+    escort.draw(game, game.game_surface)            # the VIP's cruise ship, under the birds (that mission only)
     game.formation.draw(game.game_surface)
     if getattr(game, "loot", None) is not None:
         game.loot.draw(game.game_surface)
@@ -126,6 +128,10 @@ def draw_play(game):
     if adv and adv.get("swarm") and game.play_mode != "coop":
         left = tc.get(game.font, t("story_swarm_left").format(n=game.formation.swarm_remaining()), (255, 220, 120))
         game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
+    elif adv and adv.get("escort") and game.play_mode != "coop" and hasattr(game.formation, "cruise"):
+        pct = int(game.formation.cruise.progress() * 100)
+        left = tc.get(game.font, t("story_vip_hud").format(p=pct), (255, 220, 120))
+        game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
     elif adv and adv.get("galaga") and game.play_mode != "coop":
         form = game.formation
         left = tc.get(game.font, t("story_galaga_hud").format(n=max(1, int(getattr(form, "wave", 1))),
@@ -143,6 +149,7 @@ def draw_play(game):
         off = tc.get(game.font, t("story_dome_broken"), (255, 90, 80))
         game.game_surface.blit(off, (16, 40))
     _draw_loot_hud(game)
+    escort.banner(game, game.game_surface)
     if game.difficulty in ("novice", "veteran") and not game.attract_mode:
         dkey = "diff_novice" if game.difficulty == "novice" else "diff_veteran"
         dcol = (120, 210, 255) if game.difficulty == "novice" else (255, 150, 80)
