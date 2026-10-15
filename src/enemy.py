@@ -123,11 +123,6 @@ class Enemy:
             self.hitbox_h = 20
         self.rect = self.image.get_rect(center=(self.x, self.y))
         self.active_shots = 0  # bullets currently on screen from this enemy
-        # The VIP rescue (src/escort.py): `dive_aim()` gives the x the dive goes for (the cruise ship) instead of a
-        # lane of its own, `dive_gate()` says whether one more bird may dive now. None everywhere else.
-        self.dive_aim = None
-        self.dive_gate = None
-        self.aim_offset = 0.0
 
 
     def _load_bird_frames(self, stage=1):
@@ -201,6 +196,21 @@ class Enemy:
         
         return surf
 
+    def _tick_wings(self, dt):
+        """The clocks of a living bird and its wings: flap + eye glow (stages 1-2, desynchronized per bird)."""
+        self.time += dt
+        self.anim_t += dt
+        self.shoot_cooldown = max(0.0, self.shoot_cooldown - dt)
+        if self.frames and len(self.frames) >= 2:
+            t = self.anim_t + self.anim_phase
+            flap = int(t * self.flap_rate) % 2
+            glow_phase = t % self.glow_period
+            self.eye_glow = glow_phase < self.glow_len
+            idx = flap
+            if self.eye_glow and len(self.frames) >= 4:
+                idx = flap + 2
+            self.image = self.frames[idx]
+
     def update(self, dt, formation_offset_x=0.0, player_x=0.0):
         if not self.alive:
             return
@@ -217,20 +227,7 @@ class Enemy:
                 self.dying = False
             return
             
-        self.time += dt
-        self.anim_t += dt
-        self.shoot_cooldown = max(0.0, self.shoot_cooldown - dt)
-
-        # Stage 1–2: wing flap + eye glow (desynchronized per bird)
-        if self.frames and len(self.frames) >= 2:
-            t = self.anim_t + self.anim_phase
-            flap = int(t * self.flap_rate) % 2
-            glow_phase = t % self.glow_period
-            self.eye_glow = glow_phase < self.glow_len
-            idx = flap
-            if self.eye_glow and len(self.frames) >= 4:
-                idx = flap + 2
-            self.image = self.frames[idx]
+        self._tick_wings(dt)
         
         if self.state == "diving":
             sm = getattr(self, 'speed_mult', 1.0)
@@ -238,10 +235,8 @@ class Enemy:
             
             # Soft steer toward this bird's own lane — not a shared player X
             lane = getattr(self, "dive_lane", self.dive_target_x)
-            if self.dive_aim is not None:
-                lane = self.dive_lane = self.dive_aim() + self.aim_offset     # it goes for what it aims at
             dx = lane - self.x
-            self.x += dx * (1.6 if self.dive_aim is not None else 0.55) * dt
+            self.x += dx * 0.55 * dt
             self.x += math.sin(self.time * 5.5 + self.formation_index) * 36 * dt
             self.x = max(20, min(BASE_WIDTH - 20, self.x))
             
@@ -281,8 +276,6 @@ class Enemy:
 
     def start_dive(self, player_x):
         if self.state != "formation" or not self.alive or self.dying:
-            return
-        if self.dive_gate is not None and not self.dive_gate():
             return
         self.state = "diving"
         slot = (self.formation_index % 7) - 3
@@ -359,6 +352,8 @@ class Enemy:
 
 
 class EnemyFormation:
+    REFILL_DELAY = SWARM_REFILL_DELAY   # swarm: seconds between two arrivals of the same kind
+
     def __init__(self, stage=1):
         self.enemies = []
         self.bullets = []
@@ -533,7 +528,7 @@ class EnemyFormation:
             else:
                 self._swarm_add_gargoyle(kind, arriving=True)
             sw["reserve"][kind] -= 1
-            sw["wait"][kind] = SWARM_REFILL_DELAY
+            sw["wait"][kind] = self.REFILL_DELAY
 
     def swarm_remaining(self):
         """Enemies still to be destroyed to win the swarm mission (on screen + waiting)."""
