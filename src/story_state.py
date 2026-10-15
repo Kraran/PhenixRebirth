@@ -1172,6 +1172,43 @@ SCENE_ORDER = (["ch1_sortie", "best_s2", "best_s3", "best_s4", "dome_1", "best_b
                 "bonus_wreck_phenix", "bonus_wreck_shield", "final_1", EPILOGUE])
 
 
+# The films: videos watched full screen with their sound (assets/video/<video>.mp4, silent, and <video>.ogg, its
+# sound; the jukebox intro is made the same way). A film comes right after a scene (`after`) the first time, then the
+# journal keeps a line to watch it again. Keys are film ids, in the order of the journal.
+FILMS = {
+    "lyra_1": {"title": "story_film_lyra1_t", "video": "lyra_1_eternal_dawn", "after": VIP_SCENE},
+}
+
+
+def film_files(film_id):
+    """(picture, sound) paths of a film, or None when one of them is missing."""
+    film = FILMS.get(film_id)
+    if not film:
+        return None
+    video = asset_path("video", film["video"] + ".mp4")
+    sound = asset_path("video", film["video"] + ".ogg")
+    if not (os.path.isfile(video) and os.path.isfile(sound)):
+        return None
+    return video, sound
+
+
+def film_after(scene_id):
+    """The film told right after this scene, or None."""
+    return next((fid for fid, film in FILMS.items() if film.get("after") == scene_id), None)
+
+
+def film_flag(film_id):
+    return "film_" + str(film_id)
+
+
+def film_seen(state, film_id):
+    return flag(state, film_flag(film_id))
+
+
+def mark_film_seen(state, film_id):
+    state.setdefault("flags", {})[film_flag(film_id)] = True
+
+
 # The scene of the Phobos station bar belongs to no mission: it is told the first time the Add-On is available (the
 # MAME games found, see addon.addon_ready), then it stays in the journal like the others. At its end the player goes
 # straight to the Add-On menu (`door`), and the Elise theme (`music`) is played softly under the text. Keys are scene ids.
@@ -1887,7 +1924,12 @@ def journal_entries(state):
     Right under the first-clear line of a hunt mission comes a line with the total of
     enemies destroyed in all the runs of that mission (only once there is something to count).
     """
-    out = [{"intro": True}] + [{"scene": mid} for mid in scenes_seen(state)]      # lines that replay a story scene
+    out = [{"intro": True}]                                  # lines that replay a story scene, then the films
+    for mid in scenes_seen(state):
+        out.append({"scene": mid})
+        out.extend({"film": fid} for fid, film in FILMS.items() if film.get("after") == mid and film_seen(state, fid))
+    shown = {e.get("film") for e in out}
+    out.extend({"film": fid} for fid in FILMS if fid not in shown and film_seen(state, fid))
     hunts = {m["log"]: m["id"] for m in MISSIONS if (is_hunt(m) or is_paint(m)) and m.get("log")}
     for entry in state.get("log") or []:
         out.append(entry)
@@ -1906,6 +1948,9 @@ def log_text(entry, translate):
         if "scene" in entry:
             scene = scene_of(entry.get("scene")) or {}
             return translate("story_log_scene").format(title=translate(scene.get("title") or "story_log_scene"))
+        if "film" in entry:
+            film = FILMS.get(entry.get("film")) or {}
+            return translate("story_log_scene").format(title=translate(film.get("title") or "story_log_scene"))
         if "level" in entry:
             return translate("story_log_level").format(n=max(1, int(_num(entry.get("level"), 1))))
         if "kills" in entry:

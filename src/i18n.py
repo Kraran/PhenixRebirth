@@ -4443,6 +4443,7 @@ _VIP_TEXTS = {
     "story_vip_lost": ("LE VAISSEAU VIP EST DÉTRUIT", "THE VIP SHIP IS DESTROYED"),
     "story_vip_safe": ("LE VAISSEAU VIP EST PASSÉ !", "THE VIP SHIP GOT THROUGH!"),
     "story_scene_vip_t": ("Lyra Voss", "Lyra Voss"),
+    "story_film_lyra1_t": ("Concert privé Lyra Voss - 1. Eternal Dawn", "Lyra Voss private concert - 1. Eternal Dawn"),
     "story_scene_vip": (
         "Vous ne devinerez jamais qui était à bord du vaisseau qu’on a sauvé…\n\n"
         "Lyra Voss ! La plus grande star du système solaire !\n"
