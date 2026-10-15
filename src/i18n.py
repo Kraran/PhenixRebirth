@@ -4431,7 +4431,34 @@ _ACT3_TEXTS = {
         "My name is {name}. I was the last pilot. I am no longer: tomorrow, the first class of the new EDF takes "
         "the controls."),
 }
-for _k, (_fr, _en) in _ACT3_TEXTS.items():
+# The VIP rescue (Act 2 BONUS, src/escort.py) and its scene. French and English for now, like Act 3.
+_VIP_TEXTS = {
+    "story_m_vip": ("BONUS : sauvetage VIP", "BONUS: VIP rescue"),
+    "story_m_vip_hud": ("BONUS : sauvetage VIP", "BONUS: VIP rescue"),
+    "story_m_vip_b": ("Escorte le vaisseau VIP jusqu'au bord droit : s'il est touché, c'est perdu. Ne le bloque pas, "
+                      "passe au-dessus.",
+                      "Escort the VIP ship to the right edge: if it is hit, it is lost. Do not block it, fly over it."),
+    "story_log_vip": ("BONUS — le vaisseau VIP est passé, sain et sauf.", "BONUS — the VIP ship got through, safe and sound."),
+    "story_vip_hud": ("VIP : {p} %", "VIP: {p} %"),
+    "story_vip_lost": ("LE VAISSEAU VIP EST DÉTRUIT", "THE VIP SHIP IS DESTROYED"),
+    "story_vip_safe": ("LE VAISSEAU VIP EST PASSÉ !", "THE VIP SHIP GOT THROUGH!"),
+    "story_scene_vip_t": ("Lyra Voss", "Lyra Voss"),
+    "story_scene_vip": (
+        "Vous ne devinerez jamais qui était à bord du vaisseau qu’on a sauvé…\n\n"
+        "Lyra Voss ! La plus grande star du système solaire !\n"
+        "Pour nous remercier, elle donne un concert privé ce soir, sur la scène du Dernier Rempart, pour toute la "
+        "station Phobos.\n"
+        "Lyra Voss… Elle va chanter à quelques mètres de nous.\n"
+        "Bon sang, aujourd’hui j’ai une raison de plus d’adorer mon boulot de pilote.",
+        "You will never guess who was on board the ship we saved…\n\n"
+        "Lyra Voss! The biggest star in the solar system!\n"
+        "To thank us, she is giving a private concert tonight, on the stage of the Last Bulwark, for the whole of "
+        "Phobos station.\n"
+        "Lyra Voss… She is going to sing a few metres away from us.\n"
+        "Damn, today I have one more reason to love my job as a pilot."),
+}
+
+for _k, (_fr, _en) in list(_ACT3_TEXTS.items()) + list(_VIP_TEXTS.items()):
     T[_k] = {_code: _en for _code in LANG_CODES}          # the English text until the French one is validated
     T[_k]["fr"] = _fr
 
