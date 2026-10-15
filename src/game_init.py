@@ -16,6 +16,7 @@ from i18n import LANG_CODES, set_lang
 from ingame_music import normalize as ingame_normalize
 from highscores import load_highscores
 from achievements import load_achievements
+import story_feats
 from player import Player
 from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
 from sounds import SoundManager
@@ -183,8 +184,10 @@ def init_run_state(game):
     game.hs_phase = None
     game.hs_entries = load_highscores()
     game.ach_data = load_achievements()
+    story_feats.use_game(game)                # the Adventure page writes into the game's own copy of the data
     game._ach_icon_cache = {}
     game.ach_index = 0                  # the cursor of the achievements grid
+    game.ach_page = 0                   # its page: 0 ARCADE, 1 AVENTURE (achievements.PAGES)
     game._listen = {"menu": 0.0, "gameover": 0.0, "credits": 0.0}
     game._listen_key = None
     game._listen_pos = 0

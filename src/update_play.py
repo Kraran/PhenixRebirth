@@ -61,7 +61,7 @@ def tick_ships(game):
                 game.tesla_fx = TeslaCoilFx(side, ship.y)
                 game.sounds.play_electric(True, x=ship.x)
                 if getattr(ship, "just_lost_life", False):
-                    game.stage_life_lost = True
+                    _life_lost(game)
                 if getattr(ship, "edge_contact", False) and getattr(ship, "edge_flash", 0) > 0:
                     game.stage_touched_edge = True
                 if getattr(ship, "flag_gauge_max", False):
@@ -527,10 +527,18 @@ def enemy_attacks_vs_players(game):
                 break
 
 
+def _life_lost(game):
+    """A life was lost: in this wave (achievement "Insensible") and, in the Adventure, in this mission."""
+    game.stage_life_lost = True
+    spec = getattr(game, "adventure", None)
+    if isinstance(spec, dict):
+        spec["life_lost"] = True              # the mission is no longer flawless (Adventure page)
+
+
 def tick_effects_and_hotseat(game):
     """End of frame: life-lost flags, explosions, Tesla, shake, hot-seat hand-off."""
     if any(getattr(s, "just_lost_life", False) for s in game._ships()):
-        game.stage_life_lost = True
+        _life_lost(game)
     for s in game._ships():
         if getattr(s, "flag_gauge_max", False):
             s.flag_gauge_max = False

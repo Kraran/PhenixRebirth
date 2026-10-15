@@ -58,8 +58,37 @@ CATALOG = [
 
 CATALOG_IDS = [aid for aid, _ in CATALOG]
 
+# The second page: the Adventure (unlocked by src/story_feats.py from the saves). Twenty for now: the rest of the
+# page is kept for Act 3. The icon key is only a fallback (each one has its card, assets/achievements/<id>.png).
+CATALOG_ADV = [
+    ("adv_pilot", "ship"),
+    ("adv_sortie", "bird1"),
+    ("adv_kaki", "bird2"),
+    ("adv_garg", "boss"),
+    ("adv_shadow", "boss"),
+    ("adv_domes", "shield"),
+    ("adv_reactor", "shield"),
+    ("adv_act2", "flag"),
+    ("adv_commander", "boss"),
+    ("adv_phenix", "phenix"),
+    ("adv_paint", "ship"),
+    ("adv_colour", "ship"),
+    ("adv_mechanic", "ship"),
+    ("adv_saver", "flag"),
+    ("adv_flawless", "ship"),
+    ("adv_veteran", "boss"),
+    ("adv_bestiary", "scroll"),
+    ("adv_hunter", "boss"),
+    ("adv_cinema", "scroll"),
+    ("adv_bar", "music"),
+]
+ADV_IDS = [aid for aid, _ in CATALOG_ADV]
+ALL_IDS = CATALOG_IDS + ADV_IDS
+# The pages of the screen: (key of the tab's name, its catalog)
+PAGES = (("ach_page_arcade", CATALOG), ("ach_page_adventure", CATALOG_ADV))
+
 # Secret ones: until they are unlocked, the screen shows a "?" instead of their name and of how to get them
-SECRETS = frozenset(("pleiades", "boldly_go", "razor", "one_up_1337", "elite_8086"))
+SECRETS = frozenset(("pleiades", "boldly_go", "razor", "one_up_1337", "elite_8086", "adv_reactor", "adv_bar"))
 
 # aid -> (normal, bronze, silver, gold) thresholds
 SCALABLE = {
@@ -86,6 +115,21 @@ SCALABLE = {
     "pleiades": (1, 5, 15, 30),
     "port_pair": (1, 3, 5, 10),
     "boldly_go": (21, 21, 21, 21),
+    # the Adventure: every mission that can be flown again has its three tiers (counted in victories)
+    "adv_sortie": (1, 3, 5, 8),
+    "adv_kaki": (1, 3, 5, 8),
+    "adv_garg": (1, 3, 5, 8),
+    "adv_shadow": (1, 3, 5, 8),
+    "adv_commander": (1, 3, 5, 8),
+    "adv_paint": (1, 2, 3, 5),             # whole passes of the paint series
+    "adv_domes": (1, 2, 3, 5),             # Dome missions won
+    "adv_phenix": (1, 2, 3, 5),            # Phenix missions won
+    "adv_mechanic": (1, 4, 8, 12),         # workshop upgrades bought
+    "adv_saver": (1000, 2500, 5000, 10000),    # credits held
+    "adv_flawless": (1, 5, 10, 20),        # missions won without losing a life
+    "adv_bestiary": (2, 3, 4, 5),          # Bestiary entries found
+    "adv_hunter": (1, 2, 3, 5),            # Bestiary entries at their last tier
+    "adv_cinema": (1, 3, 5, 7),            # scenes of the missions watched
 }
 TIER_ORDER = ("normal", "bronze", "silver", "gold")
 
@@ -104,7 +148,7 @@ def load_achievements():
         cleaned = {}
         if isinstance(raw, dict):
             for k, v in raw.items():
-                if k in CATALOG_IDS:
+                if k in ALL_IDS:
                     cleaned[str(k)] = v
         prog = data.get("progress") or {}
         tiers = data.get("tiers") or {}
@@ -153,7 +197,7 @@ def is_unlocked(aid, data=None):
 
 def unlock_achievement(aid, data=None):
     """Unlock once. Returns True if this call newly unlocked it."""
-    if aid not in CATALOG_IDS:
+    if aid not in ALL_IDS:
         return False
     if data is None:
         data = load_achievements()
@@ -174,10 +218,14 @@ def is_hidden(aid, data=None):
     return aid not in (data.get("unlocked") or {})
 
 
-def unlocked_count(data=None):
+def unlocked_count(data=None, ids=None):
+    """How many are unlocked (among `ids`: one page)."""
     if data is None:
         data = load_achievements()
-    return len(data.get("unlocked") or {})
+    unlocked = data.get("unlocked") or {}
+    if ids is None:
+        return len(unlocked)
+    return sum(1 for aid in ids if aid in unlocked)
 
 
 def scalable_thresholds(aid):

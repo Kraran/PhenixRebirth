@@ -110,7 +110,7 @@ def snapshot(game):
                    getattr(g, "play_mode", ""), getattr(g, "difficulty", ""),
                    getattr(g, "ship_select_index", 0), getattr(g, "juke_index", 0),
                    getattr(g, "hs_char_index", 0), tuple(getattr(g, "hs_name", ()) or ()),
-                   getattr(g, "opt_tab", 0), getattr(g, "help_page", 0), getattr(g, "ach_index", 0)),
+                   getattr(g, "opt_tab", 0), getattr(g, "help_page", 0), getattr(g, "ach_index", 0), getattr(g, "ach_page", 0)),
         "story": _story_part(g),
         "options": None,
     }

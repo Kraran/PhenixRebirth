@@ -19,6 +19,7 @@ def tick_housekeeping(game):
     game._tick_anchor_fx()
     game._update_music()
     game._tick_listen_achs()
+    game._tick_story_feats()
     if getattr(game, "sounds", None):
         game.sounds.pause_duck = bool(
             getattr(game, "paused", False)
