@@ -42,9 +42,92 @@ def test_every_mission_flown_again_has_bronze_silver_gold():
         assert len(steps) == 4 and list(steps) == sorted(set(steps)), aid       # normal < bronze < silver < gold
 
 
-def test_the_page_has_room_left_for_act_3():
-    assert 16 <= len(ach.CATALOG_ADV) <= 24
+def test_the_page_is_full_with_act_3():
+    assert len(ach.CATALOG_ADV) == 32 and len(set(ach.ADV_IDS)) == 32
     assert set(ach.ADV_IDS).isdisjoint(ach.CATALOG_IDS)
+
+
+# --- Act 3 --------------------------------------------------------------------------------------------------------------
+def _act3(hull, mode="normal"):
+    st = ss.create_slot(1, "NOVA", mode)
+    ss.grant_phenix(st)
+    ss.record_result(st, "act3_gate", 100, True)
+    ss.choose_act3_ship(st, hull)
+    return st
+
+
+def test_the_raid_and_the_choice(fresh):
+    st = _act3("phoenix")
+    sf.check(st)
+    assert {"adv_raid", "adv_anchor"} <= set(fresh["unlocked"])
+    assert "adv_full" not in fresh["unlocked"]
+
+
+@pytest.mark.parametrize("hull,buys", [("shield", ("speed_60", "speed_80", "speed_100", "lives_2", "lives_3",
+                                                   "wall_slow", "wall_immune", "dome_dur", "dome_dur", "dome_dur")),
+                                       ("phoenix", ("speed_80", "speed_100", "lives_2", "lives_3",
+                                                    "phenix_cap_80", "phenix_cap_100"))])
+def test_one_hundred_per_cent(fresh, hull, buys):
+    st = _act3(hull)
+    st["credits"] = 99999
+    for name in ("ch1_speed", "ch1_life_2", "ch1_wall", "ch3_speed", "ch3_lives", "ch3_wall", "ch3_dome", "ch3_gauge"):
+        st["flags"][name] = True
+    for sid in buys:
+        assert not sf.at_full(st)
+        assert ss.buy(st, sid), sid
+    assert sf.at_full(st)
+    sf.check(st)
+    assert "adv_full" in fresh["unlocked"]
+
+
+def test_the_bonus_missions(fresh):
+    st = _act3("shield")
+    ss.record_result(st, "bonus_wreck_phenix", 100, True)
+    ss.record_result(st, "bonus_singularity", 100, True)               # won, but the core was not caught
+    sf.check(st)
+    assert "adv_wreck" in fresh["unlocked"] and "adv_convoy" not in fresh["unlocked"]
+    ss.record_result(st, "bonus_singularity", 100, True, loot="singularity")
+    sf.check(st)
+    assert "adv_convoy" in fresh["unlocked"]
+
+
+@pytest.mark.parametrize("hull,mode,expected,absent", [
+    ("shield", "normal", {"adv_triton", "adv_win_shield"}, {"adv_win_phenix", "adv_legend"}),
+    ("phoenix", "veteran", {"adv_triton", "adv_win_phenix", "adv_legend"}, {"adv_win_shield"})])
+def test_the_end_of_the_adventure(fresh, hull, mode, expected, absent):
+    st = _act3(hull, mode)
+    st["flags"]["ch3_ready"] = True
+    for i, mid in enumerate(("final_1", "final_2", "final_3", "final_4")):
+        ss.record_result(st, mid, 100, True)
+    sf.check(st)
+    assert ach.scalable_progress("adv_riposte", fresh) == 4 and ach.scalable_tier("adv_riposte", fresh) == "silver"
+    assert "adv_triton" not in fresh["unlocked"]
+    ss.record_result(st, "final_5", 100, True)
+    sf.check(st)
+    assert ach.scalable_tier("adv_riposte", fresh) == "gold"
+    assert expected <= set(fresh["unlocked"]) and not absent & set(fresh["unlocked"])
+
+
+def test_untouchable_only_for_triton_without_a_life_lost(fresh):
+    st = _act3("shield")
+    st["flags"]["final_s4"] = True
+    st["flags"]["ch3_ready"] = True
+    hub = _hub(st)
+    hub.apply_result("final_4", 100, True, flawless=True)
+    assert "adv_untouchable" not in fresh["unlocked"]
+    hub.apply_result("final_5", 100, True, flawless=False)
+    assert "adv_untouchable" not in fresh["unlocked"]
+    hub.apply_result("final_5", 100, True, flawless=True)
+    assert "adv_untouchable" in fresh["unlocked"] and "adv_untouchable" in ach.SECRETS
+
+
+def test_a_golden_phenix(fresh):
+    st = _act3("phoenix")
+    st["paint"] = {"step": 0, "runs": 1, "token": True}
+    st["credits"] = 5000
+    assert ss.paint_change(st, "gold")
+    sf.check(st)
+    assert {"adv_gilded", "adv_colour"} <= set(fresh["unlocked"])
 
 
 def test_a_new_pilot(fresh):

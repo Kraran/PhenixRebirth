@@ -1057,6 +1057,8 @@ class StoryHub:
         res = ss.record_result(self.state, mission_id, score, cleared, kills, loot=loot, used=used)
         if res["cleared"] and flawless and not self.cheating:
             story_feats.note_flawless()
+            if mission_id == "final_5":
+                story_feats.note_untouchable()          # Triton, not a scratch
         if res["cleared"]:
             self.toast = t("story_clear").format(pts=res["score"])
             if res.get("act"):

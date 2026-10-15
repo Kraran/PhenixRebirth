@@ -33,7 +33,7 @@ Free to play · Open source · MIT License
 - **Return to base** — a lost mission (Normal mode) is drawn into a blue whirlwind, a flash, and the mission map comes back; Enter / Esc / a pad button skips it (`python tools/make_anchor_sound.py` makes its sound, numpy only)
 - **Shield ship** — second craft: freeze + explosive barrier (2 s, 5 s cooldown)
 - Ship select at start (and P2 in hot-seat); blue tint only when both pick the same hull
-- Achievements in two pages, ARCADE (32) and ADVENTURE (20, room kept for Act 3): a grid of illustrated cards (the frame's metal is the tier: steel, bronze, silver, gold; grey when locked) and a panel that tells how to get the one under the cursor, its tiers and the date; some are secret until found. The cursor turns the page at the edges of the grid (Tab / LB / RB: High Scores, Jukebox). The pictures are made by `tools/make_achievement_art.py`
+- Achievements in two pages, ARCADE (32) and ADVENTURE (32, Acts 1 to 3): a grid of illustrated cards (the frame's metal is the tier: steel, bronze, silver, gold; grey when locked) and a panel that tells how to get the one under the cursor, its tiers and the date; some are secret until found. The cursor turns the page at the edges of the grid (Tab / LB / RB: High Scores, Jukebox). The pictures are made by `tools/make_achievement_art.py`
 - Jukebox (ID3 titles, PHEQ1 equalizer, intro video)
 - In-game music picker (Off + the 5 soundtrack themes)
 - Stereo SFX panned to the event
