@@ -278,6 +278,11 @@ class StoryHub:
         self.anim_t = 0.0              # seconds, drives the Bestiary animation
         self._intro_bg = {}
         self._clip = None              # videoclip.ClipPlayer of the slide on screen, if it is a video
+        self.film_id = None            # the film on screen (screen "film", story_state.FILMS)
+        self.film_return = "map"       # pane to go back to when it is over
+        self._film = None              # its videoclip.ClipPlayer
+        self._film_sound = None        # path of its sound, until the sound has started
+        self.film_t = 0.0              # seconds since it started
         self._clip_name = None
         self._clip_shade = None
         self._clip_paths = {}          # picture name -> its clip file (None: a still)
@@ -392,6 +397,9 @@ class StoryHub:
         self._stop_clip()
         self._stop_voice()
         choose = self.scene_id == ss.ACT3_ATTACK and ss.act3_pending(self.state)
+        film = ss.film_after(self.scene_id) if self.scene_id else None
+        if film and ss.film_seen(self.state, film):
+            film = None                            # (watched again from the journal: the scene alone)
         if self.scene_id:
             ss.mark_scene_seen(self.state, self.scene_id)
         else:
@@ -407,6 +415,93 @@ class StoryHub:
         self.intro_return = "hangar"
         if choose:
             self.open_choice()
+        elif film:
+            self.start_film(film, back_to=self.pane)    # the concert right after the scene of the VIP rescue
+
+    # --- films: a video with its sound, full screen (story_state.FILMS) ---
+    def start_film(self, film_id, back_to="map"):
+        """Show a film. False (and nothing on screen) when its files are missing or there is no ffmpeg; it then
+        counts as seen, so the journal still lists it once the files are there."""
+        files = ss.film_files(film_id)
+        clip = None
+        if files is not None:
+            try:
+                clip = videoclip.ClipPlayer(files[0], (BASE_WIDTH, BASE_HEIGHT), fit="contain", loop=False,
+                                            hard_clock=True)
+            except Exception:
+                log_exc("story.start_film")
+                clip = None
+        if clip is None or clip.failed:
+            if clip is not None:
+                clip.close()
+            ss.mark_film_seen(self.state, film_id)
+            self.save()
+            return False
+        self._stop_film()
+        self.film_id = film_id
+        self.film_return = back_to
+        self._film = clip
+        self._film_sound = files[1]                # it starts with the first picture (see _tick_film)
+        self.film_t = 0.0
+        self.screen = "film"
+        return True
+
+    def film_playing(self):
+        """A film is on screen: the game leaves the music to it."""
+        return self.screen == "film"
+
+    def _tick_film(self, dt):
+        clip = self._film
+        if clip is None or clip.failed:
+            self._end_film()
+            return
+        if self._film_sound is not None:
+            if not clip.ready:
+                return                             # picture and sound start together
+            self._start_film_sound(self._film_sound)
+            self._film_sound = None
+        self.film_t += dt
+        clip.pump()
+        if clip.ended:
+            self._end_film()
+
+    def _start_film_sound(self, path):
+        snd = self.sounds
+        volume = float(getattr(snd, "music_volume", 0.4) or 0.0) if snd is not None else 0.4
+        try:
+            pygame.mixer.music.stop()
+            pygame.mixer.music.load(path)
+            pygame.mixer.music.set_volume(max(0.0, min(1.0, volume)))
+            pygame.mixer.music.play(0)
+            if snd is not None:
+                snd._current_music = "film"        # the menu theme must not come back over it
+        except Exception:
+            log_exc("story._start_film_sound")
+
+    def _stop_film(self):
+        if self._film is not None:
+            self._film.close()
+        self._film = None
+        self._film_sound = None
+
+    def _end_film(self):
+        """The film is over, or skipped: it counts as seen, the journal keeps it, the music of the menus comes back."""
+        film = self.film_id
+        self._stop_film()
+        try:
+            if pygame.mixer.get_init():
+                pygame.mixer.music.stop()
+        except Exception:
+            log_exc("story._end_film")
+        if self.sounds is not None and getattr(self.sounds, "_current_music", None) == "film":
+            self.sounds._current_music = None      # the game starts the menu theme again
+        if film:
+            ss.mark_film_seen(self.state, film)
+            self.save()
+        self.film_id = None
+        self.screen = "hub"
+        self.pane = self.film_return
+        self.zone = "slots"
 
     # --- Act 3: the choice of the hull that keeps the quantum anchor ---
     def _maybe_act3(self):
@@ -447,6 +542,11 @@ class StoryHub:
     def update(self, dt, scroll=0):
         """Time passes. `scroll` is the speed control of the intro: +1 faster (Down), -1 back (Up)."""
         self.anim_t += max(0.0, min(0.25, float(dt)))
+        if self.screen == "film":
+            self._tick_film(max(0.0, min(0.25, float(dt))))
+            return
+        if self._film is not None:
+            self._stop_film()
         if self.screen != "intro":
             if self._clip is not None:
                 self._stop_clip()
@@ -870,6 +970,8 @@ class StoryHub:
             self.screen = "name"
         elif self.screen == "choice":
             self.choice_ask = False                      # the choice itself cannot be skipped
+        elif self.screen == "film":
+            self._end_film()                             # B / Esc: the film is skipped (A does nothing: no accident)
         elif self.screen == "intro":
             if self.scene_door:
                 if not self.scene_closing:       # skipped: the same way out as at the end (the scene counts as seen)
@@ -903,7 +1005,8 @@ class StoryHub:
 
     def replay_entries(self):
         """The journal lines that replay a story scene: the intro first, then each scene seen."""
-        return [e for e in self.log_entries() if isinstance(e, dict) and (e.get("intro") or e.get("scene"))]
+        return [e for e in self.log_entries()
+                if isinstance(e, dict) and (e.get("intro") or e.get("scene") or e.get("film"))]
 
     def log_entries(self):
         """The journal as a list: first the story intro (always there), then what happened."""
@@ -969,6 +1072,8 @@ class StoryHub:
             entry = replay[max(0, min(len(replay) - 1, self.log_cursor))]
             if entry.get("scene"):
                 self.start_scene(entry["scene"], back_to="log")       # watch a scene again
+            elif entry.get("film"):
+                self.start_film(entry["film"], back_to="log")         # a film again (the concert)
             else:
                 self.start_intro(back_to="log")          # watch the introduction again
             return None
@@ -1143,7 +1248,7 @@ class StoryHub:
     def covers_screen(self):
         """True when the current screen paints every pixel itself (the slide pictures), so the
         starfield underneath need not be drawn."""
-        return self.screen == "intro"
+        return self.screen in ("intro", "film")
 
     # --- draw ---
     def draw(self, surface, font, medium, small, body=None):
@@ -1152,6 +1257,9 @@ class StoryHub:
         self._body = body or small
         if self.screen == "intro":
             self._draw_intro(surface, body or font, small)
+            return
+        if self.screen == "film":
+            self._draw_film(surface, medium)
             return
         if self.screen != "hub":
             self._draw_gate(surface, font, medium, small)
@@ -1184,6 +1292,24 @@ class StoryHub:
             self._draw_log(surface, font, small)
 
         self._draw_tabs(surface)
+
+    FILM_TITLE_SEC = 5.0           # the title of a film shows over its first seconds
+
+    def _draw_film(self, surface, medium):
+        surface.fill((0, 0, 0))
+        clip = self._film
+        img = clip.surface if clip is not None else None
+        if img is not None:
+            surface.blit(img, ((BASE_WIDTH - img.get_width()) // 2, (BASE_HEIGHT - img.get_height()) // 2))
+        film = ss.FILMS.get(self.film_id) or {}
+        if film.get("title") and self.film_t < self.FILM_TITLE_SEC:
+            fade = min(1.0, self.film_t / 0.6, (self.FILM_TITLE_SEC - self.film_t) / 0.8)
+            title = _render(medium, t(film["title"]), (255, 225, 140)).copy()      # (the cached one stays opaque)
+            band = pygame.Surface((BASE_WIDTH, title.get_height() + 24), pygame.SRCALPHA)
+            band.fill((0, 0, 0, int(150 * fade)))
+            title.set_alpha(int(255 * fade))
+            surface.blit(band, (0, 24))
+            surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 36))
 
     TAB_KEYS = {"bestiary": "story_tab_best", "log": "story_tab_log", "hangar": "story_tab_hangar",
                 "map": "story_tab_map", "extras": "story_extras"}
@@ -1222,6 +1348,9 @@ class StoryHub:
                 ok = "hint_next"
             lit = 0 if getattr(self, "_intro_done", False) and (pygame.time.get_ticks() // 500) % 2 == 0 else None
             return [("ok", ok), ("ud", "hint_speed"), ("back", "hint_skip")], lit
+        if self.screen == "film":
+            # with the title only: after that the bar would hide the words of the song (the bottom of the picture)
+            return ([("back", "hint_skip")] if self.film_t < self.FILM_TITLE_SEC else []), None
         if self.screen == "slots":
             if self.col == 1:
                 return [choose, ("ok", "hint_delete"), ("l", "hint_back"), back], None
@@ -1626,7 +1755,7 @@ class StoryHub:
         y = box.y + 28
         for i in range(start, min(len(entries), start + rows)):
             entry = entries[i]
-            replay = isinstance(entry, dict) and bool(entry.get("intro") or entry.get("scene"))
+            replay = isinstance(entry, dict) and bool(entry.get("intro") or entry.get("scene") or entry.get("film"))
             focus = replay and i == self.log_cursor                       # replay lines come first
             indent = 0
             row = pygame.Rect(box.x + 12, y - step // 2 + 2, box.w - 24, step - 4)

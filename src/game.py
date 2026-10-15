@@ -251,6 +251,10 @@ class Game:
             return
         if getattr(self, "menu_screen", "") == "jukebox":
             return
+        story = getattr(self, "story", None)
+        if (getattr(self, "menu_screen", "") == "story_hub" and not self.started and story is not None
+                and story.film_playing()):
+            return                                       # a film of the Adventure plays its own sound
         if scene is not None and not self.started:
             # a story scene with its own theme (the Phobos bar): the menu theme fades out quickly, the new one comes in
             # slowly and stays low under the text; it goes on in the Add-On menu, where it comes back to normal
@@ -836,7 +840,7 @@ class Game:
         queue.extend(story_feats.take_news())
         story = getattr(self, "story", None)
         if (getattr(self, "menu_screen", "") == "story_hub" and story is not None
-                and getattr(story, "screen", "") in ("intro", "choice")):
+                and getattr(story, "screen", "") in ("intro", "choice", "film")):
             return                                        # not over a scene of the story, nor over the choice of the hull
         if not queue or self.cheat_msg_timer > 0:
             return
