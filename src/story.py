@@ -1050,7 +1050,7 @@ class StoryHub:
             spec["reactor"] = mission["reactor"]      # the hull whose reactor falls in this mission, once
         if mission.get("escort"):
             spec["escort"] = True                 # the VIP rescue: the cruise ship to bring across (src/escort.py)
-            spec["stage"] = int(mission.get("stage") or 11)
+            spec["stage"] = int(mission.get("stage") or 6)
         if mission.get("swarm"):
             spec["swarm"] = True                  # the four enemies together, replaced as they fall
             spec["stage"] = int(mission.get("stage") or 11)

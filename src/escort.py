@@ -1,6 +1,6 @@
 """
 The VIP rescue (Act 2 BONUS mission "bonus_vip", story_state.py): a small luxury cruise ship crosses the bottom of the
-screen, slowly, from left to right, and the blue and khaki avioids of level 3 throw themselves at it.
+screen, slowly, from left to right, and the blue and khaki avioids of level 2 throw themselves at it.
 
 - The cruise ship rides the ship's line. Shots go through it (the birds' and the player's), but the player's ship is
   solid against it: it cannot go through, it bumps into it without damage, and while it is in front of the cruise ship
@@ -30,7 +30,7 @@ from settings import BASE_HEIGHT, BASE_WIDTH, ENEMY_DIVE_SPEED, asset_path
 
 ON_SCREEN = {1: 7, 2: 11}          # birds in the formation at once: blue, khaki (about half a screen of each)
 ENDLESS = 10 ** 9                  # the reserve: they never run out
-REFILL_DELAY = 3.0                 # seconds between two newcomers of the same kind (the arcade swarm: 0.35)
+REFILL_DELAY = 7.0                 # seconds between two newcomers of the same kind (the arcade swarm: 0.35)
 MAX_DIVERS = 2                     # birds going for the cruise ship at the same time (swirling or diving)
 DIVE_GAP = 1.3                     # seconds between two birds leaving the formation
 AIM_SPREAD = 60                    # a diver goes for a point up to this far from the centre of the cruise ship

@@ -165,7 +165,7 @@ MISSIONS = [
         "blurb": "story_m_vip_b",
         "need": None,
         "content": 1,
-        "stage": 11,                        # the birds of level 3 (arcade stages 11 / 12)
+        "stage": 6,                         # the birds of level 2 (arcade stages 6 / 7)
         "speed": 1.0,
         "once": True,
         "unlock": ["lyra_concert"],
