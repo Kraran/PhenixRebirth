@@ -145,6 +145,15 @@ def test_installing_a_reactor_announces_the_new_bonus(run, french):
 
 
 # ------------------------------------------------------------------ the birds
+def _run(form, seconds):
+    for _ in range(int(round(seconds / DT))):
+        form.update(DT, 0)
+
+
+def _alive(form, kind=None):
+    return [e for e in form.enemies if e.alive and not e.dying and (kind is None or e.stage == kind)]
+
+
 def test_blue_and_khaki_birds_only_and_they_never_run_out_but_come_back_slowly():
     form = EscortFormation()
     kinds = sorted(e.stage for e in form.enemies)
@@ -152,16 +161,35 @@ def test_blue_and_khaki_birds_only_and_they_never_run_out_but_come_back_slowly()
     assert all(isinstance(e, escort.EscortBird) for e in form.enemies)
     for e in form.enemies:
         e.alive = False
-    for _ in range(int(escort.REFILL_DELAY * 2.5 / DT)):
-        form.update(DT, 0)
-    back = [e for e in form.enemies if e.alive]
-    assert 2 * 2 <= len(back) <= 2 * 3                              # one of each kind every REFILL_DELAY seconds
-    assert escort.REFILL_DELAY >= 2.5 > EscortFormation.__mro__[1].REFILL_DELAY
-    for _ in range(int(escort.REFILL_DELAY * (max(escort.ON_SCREEN.values()) + 1) / DT)):
-        form.update(DT, 0)
-    alive = [e for e in form.enemies if e.alive]
-    assert len(alive) == escort.ON_SCREEN[1] + escort.ON_SCREEN[2]          # all replaced, for ever
+    _run(form, escort.REFILL_DELAY - 0.5)
+    assert _alive(form) == []                                      # nobody before REFILL_DELAY
+    _run(form, 1.0)
+    assert len(_alive(form, 1)) == 1 and len(_alive(form, 2)) == 1
+    _run(form, escort.ARRIVAL_GAP)
+    assert len(_alive(form, 1)) == 2 and len(_alive(form, 2)) == 2       # then one every ARRIVAL_GAP
+    _run(form, escort.ARRIVAL_GAP * max(escort.ON_SCREEN.values()) + 1)
+    assert len(_alive(form)) == escort.ON_SCREEN[1] + escort.ON_SCREEN[2]          # all replaced, for ever
     assert not form.all_dead() and form.remaining() == 0
+
+
+def test_a_bird_shot_after_a_quiet_moment_is_not_back_at_once():
+    form = EscortFormation()
+    _run(form, 30.0)                                               # a long time with nobody missing
+    bird = _alive(form, 2)[0]
+    bird.kill(flash=False)
+    _run(form, escort.REFILL_DELAY - 0.5)
+    assert len(_alive(form, 2)) == escort.ON_SCREEN[2] - 1         # (the bug: it came back the next frame)
+    _run(form, 1.0)
+    assert len(_alive(form, 2)) == escort.ON_SCREEN[2]
+
+
+def test_nobody_comes_back_once_the_cruise_ship_is_through():
+    form = EscortFormation()
+    for e in form.enemies:
+        e.alive = False
+    form.won = True
+    _run(form, escort.REFILL_DELAY * 3)
+    assert _alive(form) == []
 
 
 def test_no_bird_dives_before_the_cruise_ship_is_in_sight_then_one_by_one():
