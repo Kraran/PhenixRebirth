@@ -92,12 +92,11 @@ def test_the_edges_of_the_grid_turn_the_page(run):
     assert (g.ach_page, g.ach_index) == (1, 0)              # AVENTURE, first card of the first row
     run.key(pygame.K_LEFT)
     assert (g.ach_page, g.ach_index) == (0, scr.COLS - 1)   # back on ARCADE, where it was
-    g.ach_index = 3 * scr.COLS                              # ARCADE, fourth row: AVENTURE has three rows only
+    g.ach_index = 3 * scr.COLS                              # ARCADE, fourth row
     run.key(pygame.K_LEFT)
-    n = len(achievements.CATALOG_ADV)
-    assert g.ach_page == 1 and g.ach_index == n - 1         # the last card of its last row
+    assert (g.ach_page, g.ach_index) == (1, 4 * scr.COLS - 1)      # the pages go round: AVENTURE, end of its 4th row
     run.key(pygame.K_RIGHT)
-    assert (g.ach_page, g.ach_index) == (0, 2 * scr.COLS)   # the pages go round: ARCADE, third row
+    assert (g.ach_page, g.ach_index) == (0, 3 * scr.COLS)   # and back on ARCADE, fourth row
 
 
 def test_a_page_change_slides_and_ticks(run):
@@ -130,10 +129,11 @@ def test_the_d_pad_moves_in_the_grid(run):
     assert g.ach_index == 0 and g.menu_screen == "achievements"
 
 
-def test_move_skips_the_holes_of_a_last_row():
+def test_move_skips_the_holes_of_a_last_row(monkeypatch):
     class G:
         ach_index = 6
-        ach_page = 1                                                # AVENTURE: 8 + 8 + 4
+        ach_page = 1
+    monkeypatch.setattr(scr, "PAGES", (scr.PAGES[0], ("p", achievements.CATALOG_ADV[:20])))      # 8 + 8 + 4
     g = G()
     scr.move(g, 0, -1)
     assert g.ach_index == 14                                        # the third row has no 7th card
@@ -316,9 +316,9 @@ def test_the_second_page_draws(run):
     import menu_ui
     assert surf.get_at((r.centerx, r.top + 1))[:3] == menu_ui.SEL_EDGE
     assert scr.catalog(g) is achievements.CATALOG_ADV
-    # the room kept for Act 3: nothing drawn after the twentieth card
-    empty = scr.cell_rect(len(achievements.CATALOG_ADV)).inflate(-4, -4)
-    assert surf.get_at(empty.center)[:3] == (1, 2, 3)
+    # the page is full: its 32nd card is drawn
+    last = scr.cell_rect(len(achievements.CATALOG_ADV) - 1).inflate(-4, -4)
+    assert len(achievements.CATALOG_ADV) == 32 and surf.get_at(last.center)[:3] != (1, 2, 3)
 
 
 def test_each_page_counts_its_own(run):

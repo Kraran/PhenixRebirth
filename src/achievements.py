@@ -58,8 +58,8 @@ CATALOG = [
 
 CATALOG_IDS = [aid for aid, _ in CATALOG]
 
-# The second page: the Adventure (unlocked by src/story_feats.py from the saves). Twenty for now: the rest of the
-# page is kept for Act 3. The icon key is only a fallback (each one has its card, assets/achievements/<id>.png).
+# The second page: the Adventure (unlocked by src/story_feats.py from the saves): twenty for Acts 1 and 2, twelve for
+# Act 3. The icon key is only a fallback (each one has its card, assets/achievements/<id>.png).
 CATALOG_ADV = [
     ("adv_pilot", "ship"),
     ("adv_sortie", "bird1"),
@@ -81,6 +81,19 @@ CATALOG_ADV = [
     ("adv_hunter", "boss"),
     ("adv_cinema", "scroll"),
     ("adv_bar", "music"),
+    # Act 3
+    ("adv_raid", "boss"),
+    ("adv_anchor", "ship"),
+    ("adv_full", "ship"),
+    ("adv_wreck", "flag"),
+    ("adv_convoy", "phenix"),
+    ("adv_riposte", "flag"),
+    ("adv_triton", "boss"),
+    ("adv_win_shield", "shield"),
+    ("adv_win_phenix", "phenix"),
+    ("adv_legend", "boss"),
+    ("adv_untouchable", "ship"),
+    ("adv_gilded", "phenix"),
 ]
 ADV_IDS = [aid for aid, _ in CATALOG_ADV]
 ALL_IDS = CATALOG_IDS + ADV_IDS
@@ -88,7 +101,8 @@ ALL_IDS = CATALOG_IDS + ADV_IDS
 PAGES = (("ach_page_arcade", CATALOG), ("ach_page_adventure", CATALOG_ADV))
 
 # Secret ones: until they are unlocked, the screen shows a "?" instead of their name and of how to get them
-SECRETS = frozenset(("pleiades", "boldly_go", "razor", "one_up_1337", "elite_8086", "adv_reactor", "adv_bar"))
+SECRETS = frozenset(("pleiades", "boldly_go", "razor", "one_up_1337", "elite_8086", "adv_reactor", "adv_bar",
+                     "adv_untouchable", "adv_gilded"))
 
 # aid -> (normal, bronze, silver, gold) thresholds
 SCALABLE = {
@@ -130,6 +144,7 @@ SCALABLE = {
     "adv_bestiary": (2, 3, 4, 5),          # Bestiary entries found
     "adv_hunter": (1, 2, 3, 5),            # Bestiary entries at their last tier
     "adv_cinema": (1, 3, 5, 7),            # scenes of the missions watched
+    "adv_riposte": (1, 2, 3, 5),           # missions of the final series won (Act 3)
 }
 TIER_ORDER = ("normal", "bronze", "silver", "gold")
 

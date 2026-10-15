@@ -4,8 +4,9 @@ The achievements of the Adventure (second page of the achievements screen, achie
 Most of them are read from the save: `check(state)` looks at what a pilot has done (missions won and how many
 times, the act, the credits, the Bestiary, the scenes watched, the paint, the reactors) and unlocks or raises
 what it can. It is called each time the Adventure writes its save, and when a save is opened (a pilot who played
-before this page existed gets what he has earned). Two of them count events that a save does not keep: the
-workshop upgrades bought (`note_upgrade`) and the missions won without losing a life (`note_flawless`).
+before this page existed gets what he has earned). Three of them count events that a save does not keep: the
+workshop upgrades bought (`note_upgrade`), the missions won without losing a life (`note_flawless`) and the last
+mission won without losing a life (`note_untouchable`).
 
 The achievements are the player's, not a save's: the counters keep the best of all the saves (set_scalable_at_least),
 the events add up. A cheated Adventure (story.StoryHub.cheating) counts nothing.
@@ -24,6 +25,8 @@ HUNTS = {"adv_sortie": "ch1_sortie", "adv_kaki": "best_s2", "adv_garg": "best_s3
          "adv_commander": "best_boss"}
 DOMES = ("dome_1", "dome_2", "dome_3", "dome_4", "dome_5")
 PHENIX = ("phenix_1", "phenix_2", "phenix_3", "phenix_4", "phenix_5")
+FINAL = ("final_1", "final_2", "final_3", "final_4", "final_5")
+WRECKS = ("bonus_wreck_phenix", "bonus_wreck_shield")
 
 _game = None                 # weak reference to the Game: its achievements data is the one to write into
 _news = []                   # (achievement id, tier or None) not shown yet
@@ -57,7 +60,22 @@ def counts(state):
     out["adv_bestiary"] = len(entries)
     out["adv_hunter"] = sum(1 for entry, n in entries if ss.best_tiers(n, bool(entry.get("boss")))["bonus"])
     out["adv_cinema"] = sum(1 for mid in ss.SCENES if ss.scene_seen(state, mid))
+    out["adv_riposte"] = sum(1 for m in FINAL if m in cleared)
     return out
+
+
+def at_full(state):
+    """Is the hull kept in Act 3 at 100 %, like the arcade ship (everything the Act 3 workshop sells is bought)?"""
+    hull = ss.kept_hull(state)
+    sl = next((s for s in (state or {}).get("slots") or [] if s.get("id") == hull and s.get("owned")), None)
+    if sl is None:
+        return False
+    if int(ss._num(sl.get("speed"), 0)) < 100 or int(ss._num(sl.get("lives"), 1)) < ss.lives_base(sl) + 2:
+        return False
+    if hull == "shield":
+        return sl.get("wall") == "immune" and bool(sl.get("dome")) and \
+            (ss._num(sl.get("dome_dur"), 0.0) or 0.0) >= ss.DOME_DUR_MAX - 1e-6
+    return ss.phenix_cap(sl) >= 100
 
 
 def done(state):
@@ -82,6 +100,30 @@ def done(state):
         out.add("adv_colour")                        # the Phenix painted in Act 3
     if ss.scene_seen(state, ss.BAR_SCENE):
         out.add("adv_bar")
+    # Act 3
+    cleared = set(state.get("cleared") or [])
+    if "act3_gate" in cleared:
+        out.add("adv_raid")
+    hull = ss.kept_hull(state)
+    if hull:
+        out.add("adv_anchor")
+    if at_full(state):
+        out.add("adv_full")
+    if cleared & set(WRECKS):
+        out.add("adv_wreck")
+    items = story_items.clean(state.get("items"))
+    if "bonus_singularity" in cleared and items["act"] >= 3 and items["got"].get("singularity"):
+        out.add("adv_convoy")
+    if ss.flag(state, ss.GAME_WON):
+        out.add("adv_triton")
+        if hull == "shield":
+            out.add("adv_win_shield")
+        elif hull == "phoenix":
+            out.add("adv_win_phenix")
+        if state.get("mode") == "veteran":
+            out.add("adv_legend")
+    if hull == "phoenix" and phenix.get("owned") and phenix.get("tint") == "gold":
+        out.add("adv_gilded")
     return out
 
 
@@ -132,6 +174,18 @@ def note_flawless():
         _add("adv_flawless", _data(), news)
     except Exception:
         log_exc("story_feats.note_flawless")
+    _news.extend(news)
+    return news
+
+
+def note_untouchable():
+    """The last mission of the Adventure was won without losing a life."""
+    news = []
+    try:
+        if ach.unlock_achievement("adv_untouchable", _data()):
+            news.append(("adv_untouchable", None))
+    except Exception:
+        log_exc("story_feats.note_untouchable")
     _news.extend(news)
     return news
 

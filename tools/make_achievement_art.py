@@ -782,6 +782,141 @@ def adv_bar(s):
     pygame.draw.line(s, (255, 240, 160), (C - 18, C - 26), (C - 6, C - 4), 2)
 
 
+# --- the scenes: page AVENTURE, Act 3 ---------------------------------------------------------------------------------
+def adv_raid(s):
+    blit_c(s, planet("mars.png", 150), C, N + 46)
+    blit_c(s, fit(trimmed(load("sprites", "planets", "asteroid_pallas.png")), 40), C + 34, C + 30)
+    glow(s, C, C - 20, 54, (255, 110, 40), 140)
+    blit_c(s, spr("boss_saucer.png", 104, rot=8), C - 4, C - 18)
+    burst(s, C + 10, C - 22, 18, spikes=9, seed=201)
+    rnd = random.Random(202)
+    for i in range(7):
+        x, y = rnd.uniform(14, 114), rnd.uniform(70, 104)
+        blit_c(s, spr(rnd.choice(("bird1_flap0.png", "bird2_flap0.png")), 14, rot=rnd.uniform(-160, -110)), x, y)
+
+
+def adv_anchor(s):
+    # the two ships: the one that keeps the anchor lit, the other one already in the dark
+    blit_c(s, alpha(spr("player_ship_shield.png", 34), 90), C + 30, C + 18)
+    glow(s, C - 22, C + 10, 40, (90, 200, 255), 170)
+    for r, a in ((30, 0.0), (22, 1.0), (14, 2.1)):
+        rect = pygame.Rect(C - 22 - r, C + 10 - r * 0.45, 2 * r, r * 0.9)
+        pygame.draw.ellipse(s, (150, 230, 255), rect, 1)
+    blit_c(s, spr("player_ship.png", 34), C - 22, C + 12)
+    pygame.draw.line(s, (220, 70, 70), (C + 12, C - 4), (C + 48, C + 40), 2)
+    pygame.draw.line(s, (220, 70, 70), (C + 48, C - 4), (C + 12, C + 40), 2)
+    pygame.draw.circle(s, (180, 240, 255), (C - 22, 22), 9, 2)            # the anchor
+    pygame.draw.line(s, (180, 240, 255), (C - 22, 31), (C - 22, 46), 2)
+    pygame.draw.arc(s, (180, 240, 255), (C - 34, 34, 24, 16), math.pi, 2 * math.pi, 2)
+
+
+def adv_full(s):
+    glow(s, C, C + 18, 50, (120, 255, 170), 110)
+    blit_c(s, spr("player_ship.png", 40), C, C + 22)
+    pygame.draw.rect(s, (40, 44, 60), (16, 16, N - 32, 14), border_radius=6)
+    pygame.draw.rect(s, (120, 255, 170), (18, 18, N - 36, 10), border_radius=5)
+    digits(s, "100", C - 6, 48, 20, (255, 255, 255), off=None)
+    pygame.draw.circle(s, (255, 255, 255), (C + 34, 44), 3, 1)
+    pygame.draw.line(s, (255, 255, 255), (C + 31, 56), (C + 41, 40), 2)
+    pygame.draw.circle(s, (255, 255, 255), (C + 38, 54), 3, 1)
+
+
+def adv_wreck(s):
+    blit_c(s, planet("mars.png", 140), C - 20, N + 40)
+    ship = spr("player_ship.png", 58)
+    w, h = ship.get_size()
+    top = pygame.transform.rotozoom(ship.subsurface((0, 0, w, h // 2)).copy(), 38, 1.0)
+    bot = pygame.transform.rotozoom(ship.subsurface((0, h // 2, w, h - h // 2)).copy(), -28, 1.0)
+    glow(s, C + 2, C - 2, 30, (255, 150, 60), 150)
+    blit_c(s, top, C - 22, C - 24)
+    blit_c(s, bot, C + 24, C + 14)
+    for i in range(6):                                         # the torn edge, glowing
+        x = C - 6 + i * 3
+        pygame.draw.line(s, (255, 200, 120), (x, C - 6 + (i % 2) * 4), (x + 3, C - 2 - (i % 2) * 4), 2)
+    sparks(s, C + 2, C - 2, 6, 34, 26, 205, (255, 210, 120))
+
+
+def adv_convoy(s):
+    rnd = random.Random(206)
+    pts = [(10 + i * 14, 40 + math.sin(i * 0.8) * 22) for i in range(9)]
+    for x, y in pts:
+        blit_c(s, spr("bird2_flap0.png" if int(x) % 2 else "bird1_flap0.png", 15), x, y)
+    glow(s, C + 6, C + 26, 40, (180, 110, 255), 170)
+    blit_c(s, fit(load("items", "singularity_icon.png"), 60), C + 6, C + 26)
+
+
+def adv_riposte(s):
+    route = [("jupiter.png", 30, 18, 96), ("saturn.png", 42, 48, 70), ("uranus.png", 20, 78, 52), ("neptune.png", 24, 106, 28)]
+    layer = pygame.Surface((N, N), pygame.SRCALPHA)
+    pygame.draw.lines(layer, (255, 210, 120, 160), False, [(x, y) for _n, _w, x, y in route], 2)
+    s.blit(layer, (0, 0))
+    for name, w, x, y in route:
+        blit_c(s, planet(name, w), x, y)
+    blit_c(s, spr("player_ship.png", 18, rot=-55), 34, 88)
+
+
+def adv_triton(s):
+    blit_c(s, alpha(planet("neptune.png", 70), 220), C + 32, 30)
+    pygame.draw.circle(s, (200, 214, 226), (C - 6, N + 20), 70)
+    for i in range(14):
+        a = math.radians(200 + i * 10)
+        pygame.draw.circle(s, (170, 186, 204), (int(C - 6 + math.cos(a) * 50), int(N + 20 + math.sin(a) * 50)), 4)
+    glow(s, C - 6, N - 44, 56, (255, 120, 60), 220)
+    burst(s, C - 6, N - 46, 26, spikes=11, seed=207)
+    sparks(s, C - 6, N - 46, 26, 54, 24, 208, (255, 200, 120))
+
+
+def _winner(s, sprite, colour):
+    glow(s, C, C + 6, 56, colour, 150)
+    laurel(s, C, C + 8, 46)
+    blit_c(s, spr(sprite, 48), C, C + 8)
+    star = [(C + 13 * math.cos(math.radians(-90 + i * 36)) * (1 if i % 2 == 0 else 0.45),
+             18 + 13 * math.sin(math.radians(-90 + i * 36)) * (1 if i % 2 == 0 else 0.45)) for i in range(10)]
+    pygame.draw.polygon(s, (255, 220, 90), star)
+
+
+def adv_win_shield(s):
+    _winner(s, "player_ship_shield.png", (255, 80, 60))
+
+
+def adv_win_phenix(s):
+    blit_c(s, alpha(spr("phenix/phenix_00.png", 110), 110), C, C + 4)
+    _winner(s, "player_ship.png", (255, 150, 40))
+
+
+def adv_legend(s):
+    glow(s, C, C + 4, 60, (255, 200, 80), 160)
+    laurel(s, C, C + 14, 48)
+    # a crown above the Veteran medal
+    crown = [(C - 26, 44), (C - 26, 22), (C - 13, 34), (C, 14), (C + 13, 34), (C + 26, 22), (C + 26, 44)]
+    pygame.draw.polygon(s, (240, 190, 50), crown)
+    pygame.draw.polygon(s, (255, 240, 170), crown, 2)
+    for x, y in ((C - 26, 20), (C, 12), (C + 26, 20)):
+        pygame.draw.circle(s, (220, 40, 60), (x, y), 4)
+    blit_c(s, spr("icon_veteran.png", h=52), C, C + 26)
+
+
+def adv_untouchable(s):
+    rnd = random.Random(209)
+    for _ in range(18):
+        a = rnd.uniform(0, 2 * math.pi)
+        d = rnd.uniform(34, 58)
+        x, y = C + math.cos(a) * d, C + 8 + math.sin(a) * d
+        pygame.draw.line(s, (255, 90, 80), (x, y), (x + math.cos(a) * 8, y + math.sin(a) * 8), 3)
+    glow(s, C, C + 8, 32, (255, 255, 220), 200)
+    pygame.draw.circle(s, (255, 240, 180), (C, C + 8), 28, 2)
+    blit_c(s, spr("player_ship.png", 34), C, C + 8)
+
+
+def adv_gilded(s):
+    glow(s, C, C + 12, 54, (255, 200, 60), 170)
+    blit_c(s, spr("player_ship_gold.png", 46), C + 4, C + 16)
+    pygame.draw.rect(s, (110, 120, 140), (14, 14, 30, 22), border_radius=4)
+    pygame.draw.ellipse(s, (255, 200, 60), (16, 10, 26, 8))
+    pygame.draw.polygon(s, (255, 200, 60), [(40, 24), (52, 30), (58, 44), (54, 54), (50, 46), (44, 34)])
+    sparks(s, C + 4, C + 16, 30, 50, 18, 210, (255, 240, 160))
+
+
 SCENES = {fn.__name__: fn for fn in (
     first_blood, stage2, boss_down, loop, one_up_1337, elite_8086, phenix_wake, iron_curtain, mixed_squad, survivor,
     ten_flags, veteran_clear, no_edge, hotseat, gauge_max, credits_watch, listen_menu, listen_hs, listen_credits,
@@ -790,6 +925,8 @@ SCENES = {fn.__name__: fn for fn in (
     adv_pilot, adv_sortie, adv_kaki, adv_garg, adv_shadow, adv_domes, adv_reactor, adv_act2, adv_commander,
     adv_phenix, adv_paint, adv_colour, adv_mechanic, adv_saver, adv_flawless, adv_veteran, adv_bestiary, adv_hunter,
     adv_cinema, adv_bar,
+    adv_raid, adv_anchor, adv_full, adv_wreck, adv_convoy, adv_riposte, adv_triton, adv_win_shield, adv_win_phenix,
+    adv_legend, adv_untouchable, adv_gilded,
 )}
 
 
