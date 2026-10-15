@@ -8,7 +8,8 @@ screen, slowly, from left to right, and the blue and khaki avioids of level 2 th
 - A bird that touches the cruise ship destroys it: the mission is lost (`EscortFormation.failed`, a little after the
   explosion, so it is seen).
 - The birds swirl before they strike: a bird that leaves the formation loops down for a moment (`EscortBird`, state
-  "swirl"), drifting towards the cruise ship, then dives straight at it. A few at a time.
+  "swirl"), drifting towards the cruise ship, then dives straight at it. One at a time: the next one leaves when the
+  last one is down or has missed.
 - The birds are replaced as they fall, for ever, but slowly (REFILL_DELAY): the mission is won only when the cruise ship
   has passed the right edge completely, its flame too. Then the birds flee off the top and the ship flies up as after
   any wave.
@@ -31,7 +32,7 @@ from settings import BASE_HEIGHT, BASE_WIDTH, ENEMY_DIVE_SPEED, asset_path
 ON_SCREEN = {1: 7, 2: 11}          # birds in the formation at once: blue, khaki (about half a screen of each)
 ENDLESS = 10 ** 9                  # the reserve: they never run out
 REFILL_DELAY = 7.0                 # seconds between two newcomers of the same kind (the arcade swarm: 0.35)
-MAX_DIVERS = 2                     # birds going for the cruise ship at the same time (swirling or diving)
+MAX_DIVERS = 1                     # birds going for the cruise ship at the same time (swirling or diving): one by one
 DIVE_GAP = 1.3                     # seconds between two birds leaving the formation
 AIM_SPREAD = 60                    # a diver goes for a point up to this far from the centre of the cruise ship
 AIM_LEAD = 30                      # ... a little ahead of it, it is moving

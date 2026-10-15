@@ -164,17 +164,40 @@ def test_blue_and_khaki_birds_only_and_they_never_run_out_but_come_back_slowly()
     assert not form.all_dead() and form.remaining() == 0
 
 
-def test_no_bird_dives_before_the_cruise_ship_is_in_sight_then_a_few_at_a_time():
+def test_no_bird_dives_before_the_cruise_ship_is_in_sight_then_one_by_one():
     form = EscortFormation()
     for _ in range(int(3 / DT)):
         form.update(DT, 0)
     assert form.divers() == 0 and form.cruise.x < escort.DIVE_FROM_X
     form.cruise.x = 400
-    most = 0
-    for _ in range(int(20 / DT)):
+    seen, most = set(), 0
+    for _ in range(int(30 / DT)):
         form.update(DT, 0)
         most = max(most, form.divers())
-    assert 1 <= most <= escort.MAX_DIVERS
+        seen.update(id(e) for e in form.enemies if e.state in ("swirl", "diving"))
+    assert escort.MAX_DIVERS == 1 and most == 1                   # never two at once...
+    assert len(seen) >= 2                                          # ...but one after the other
+
+
+def test_the_next_one_waits_until_the_last_one_is_down():
+    form = EscortFormation()
+    form.cruise.x = 400
+    for _ in range(int(20 / DT)):
+        form.update(DT, 0)
+        if form.divers():
+            break
+    attacker = next(e for e in form.enemies if e.state in ("swirl", "diving"))
+    for _ in range(int(3 / DT)):
+        form.update(DT, 0)
+        if attacker.state not in ("swirl", "diving"):
+            break
+        assert form.divers() == 1
+    attacker.kill(flash=False)                                     # shot down: the next one may go
+    for _ in range(int(10 / DT)):
+        form.update(DT, 0)
+        if form.divers():
+            break
+    assert form.divers() == 1 and not any(e is attacker and e.alive for e in form.enemies)
 
 
 def _swirling_bird(form, x=200.0):
