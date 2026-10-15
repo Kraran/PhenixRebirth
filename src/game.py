@@ -332,6 +332,8 @@ class Game:
         if screen == "achievements":
             self.ach_data = load_achievements()
             self.menu_screen = "achievements"
+            if int(getattr(self, "ach_page", 0) or 0) != 0:
+                self.ach_page, self.ach_index = 0, 0       # from the main menu it opens on ARCADE (the Adventure: below)
             try:
                 achievements_screen.warm(self)             # the cards of both pages, before the first frame
             except Exception:
