@@ -1995,7 +1995,7 @@ class Game:
             return
         elif adv and adv.get("escort"):
             # the VIP rescue (src/escort.py): blue and khaki birds of one arcade level, for ever, and the cruise ship
-            number = int(adv.get("stage") or 11)
+            number = int(adv.get("stage") or 6)
             self.stage = number
             mult = float(adv.get("speed") or 1.0) * stage_speed_mult(number) * self.difficulty_speed_mult()
             self.formation = escort.EscortFormation(speed_mult=mult)

@@ -1,4 +1,4 @@
-"""The VIP rescue (Act 2 BONUS, src/escort.py): a cruise ship to bring across the bottom of the screen while the level 3
+"""The VIP rescue (Act 2 BONUS, src/escort.py): a cruise ship to bring across the bottom of the screen while the level 2
 birds throw themselves at it. Open with a two-dimensional reactor installed, flown by such a hull only, once. Won, it
 tells who was on board (Lyra Voss) and opens her concert in the Phobos bar."""
 import os
@@ -85,7 +85,7 @@ def _arrived(run, limit=600):
 def test_the_mission_is_an_act_2_bonus_flown_once():
     m = ss.mission_by_id(ID)
     assert m["acts"] == (2, 3) and m["once"] and m["secret"] and m["needs_reactor"] and m["escort"]
-    assert m["stage"] == 11                                        # the birds of level 3
+    assert m["stage"] == 6                                         # the birds of level 2
     assert ss.LYRA_FLAG in m["unlock"] and m["win_scene"] == ss.VIP_SCENE
 
 
@@ -128,7 +128,7 @@ def test_the_hull_flown_is_one_with_its_reactor():
 
 def test_the_launch(run):
     spec = _launch(run, got=PHENIX_ON, phenix=True, select="shield")
-    assert spec["escort"] and spec["ship"] == "phoenix" and spec["stage"] == 11
+    assert spec["escort"] and spec["ship"] == "phoenix" and spec["stage"] == 6
     g = run.game
     assert g.ship_id == "phoenix" and g.player.vertical_range is not None
     assert isinstance(g.formation, EscortFormation)
