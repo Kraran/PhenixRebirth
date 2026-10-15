@@ -145,16 +145,22 @@ def test_installing_a_reactor_announces_the_new_bonus(run, french):
 
 
 # ------------------------------------------------------------------ the birds
-def test_blue_and_khaki_birds_only_and_they_never_run_out():
+def test_blue_and_khaki_birds_only_and_they_never_run_out_but_come_back_slowly():
     form = EscortFormation()
     kinds = sorted(e.stage for e in form.enemies)
     assert kinds == [1] * escort.ON_SCREEN[1] + [2] * escort.ON_SCREEN[2]
+    assert all(isinstance(e, escort.EscortBird) for e in form.enemies)
     for e in form.enemies:
         e.alive = False
-    for _ in range(int(20 / DT)):
+    for _ in range(int(escort.REFILL_DELAY * 2.5 / DT)):
+        form.update(DT, 0)
+    back = [e for e in form.enemies if e.alive]
+    assert 2 * 2 <= len(back) <= 2 * 3                              # one of each kind every REFILL_DELAY seconds
+    assert escort.REFILL_DELAY >= 2.5 > EscortFormation.__mro__[1].REFILL_DELAY
+    for _ in range(int(escort.REFILL_DELAY * (max(escort.ON_SCREEN.values()) + 1) / DT)):
         form.update(DT, 0)
     alive = [e for e in form.enemies if e.alive]
-    assert len(alive) == escort.ON_SCREEN[1] + escort.ON_SCREEN[2]          # all replaced
+    assert len(alive) == escort.ON_SCREEN[1] + escort.ON_SCREEN[2]          # all replaced, for ever
     assert not form.all_dead() and form.remaining() == 0
 
 
@@ -171,17 +177,56 @@ def test_no_bird_dives_before_the_cruise_ship_is_in_sight_then_a_few_at_a_time()
     assert 1 <= most <= escort.MAX_DIVERS
 
 
-def test_a_diver_goes_for_the_cruise_ship():
+def _swirling_bird(form, x=200.0):
+    bird = next(e for e in form.enemies if e.state == "formation")
+    bird.x, bird.y = x, 200.0
+    form.dive_wait = 0.0
+    bird.start_dive(0)
+    return bird
+
+
+def test_a_bird_swirls_before_it_strikes():
+    form = EscortFormation()
+    form.cruise.x = 640
+    bird = _swirling_bird(form, x=640.0)
+    assert bird.state == "swirl" and bird.diving                  # (a swirling bird hits the ship it meets)
+    ys, xs, t = [], [], 0.0
+    while bird.state == "swirl":
+        bird.update(DT, form.offset_x, 0)
+        ys.append(bird.y)
+        xs.append(bird.x)
+        t += DT
+        assert t < escort.SWIRL_TIME[1] + 0.1
+    assert t >= escort.SWIRL_TIME[0] - 0.1
+    ups = sum(1 for a, b in zip(ys, ys[1:]) if b < a)
+    assert ups > 10                                                # it goes up again in its loops, not only down
+    assert max(xs) - min(xs) > 2 * escort.SWIRL_RADIUS[0] - 10     # round loops
+    assert max(ys) <= escort.SWIRL_FLOOR + escort.SWIRL_RADIUS[1] < form.cruise.hull().top - 40    # well above it
+    assert bird.state == "diving"
+
+
+def test_then_it_dives_at_the_cruise_ship_steeply():
     form = EscortFormation()
     form.cruise.x = 900
-    bird = next(e for e in form.enemies if e.state == "formation")
-    bird.x = 200.0
+    bird = _swirling_bird(form)
     bird.aim_offset = 0.0
-    bird.start_dive(0)
-    assert bird.state == "diving"
-    for _ in range(int(1.2 / DT)):
+    while bird.state == "swirl":
         bird.update(DT, form.offset_x, 0)
-    assert bird.x > 600                                            # it turned towards the cruise ship, far to the right
+    start = bird.x
+    for _ in range(int(1.0 / DT)):
+        x, y = bird.x, bird.y
+        bird.update(DT, form.offset_x, 0)
+        assert abs(bird.x - x) <= (bird.y - y) * escort.STRIKE_SLANT + 1     # more down than sideways: no swoop
+    assert start > 300 and bird.x > start + 100                    # the loops drifted towards it, the dive goes on
+
+
+def test_a_bird_that_misses_goes_back_to_its_seat():
+    form = EscortFormation()
+    bird = _swirling_bird(form)
+    bird.state = "diving"
+    bird.y = BASE_HEIGHT + 60
+    bird.update(DT, form.offset_x, 0)
+    assert bird.state == "returning" and bird.y < 0
 
 
 # ------------------------------------------------------------------ the cruise ship and the player's ship
@@ -275,7 +320,7 @@ def test_through_the_right_edge_the_mission_is_won_and_lyra_voss_was_on_board(ru
     g = run.game
     form = g.formation
     g.player.x = 200
-    form.cruise.x = BASE_WIDTH + escort.CRUISE_W / 2 - 1
+    form.cruise.x = BASE_WIDTH + escort.HULL_W / 2 - escort.FLAME_AT[0] - 1
     for _ in range(600):
         run.frames(1)
         if not g.started:
@@ -312,7 +357,8 @@ def test_the_hud_shows_how_far_the_cruise_ship_is(run, french, monkeypatch):
     _launch(run)
     _arrived(run)
     g = run.game
-    g.formation.cruise.x = escort.CRUISE_W / 2 * -1 + (BASE_WIDTH + escort.CRUISE_W) / 2
+    c = g.formation.cruise
+    c.x = -escort.HULL_W / 2 + (BASE_WIDTH + escort.HULL_W - escort.FLAME_AT[0]) / 2
     texts = []
     real = type(g.text_cache).get
 
@@ -324,8 +370,37 @@ def test_the_hud_shows_how_far_the_cruise_ship_is(run, french, monkeypatch):
     assert any(x.startswith("VIP : 5") for x in texts)
 
 
-def test_the_picture_of_the_cruise_ship():
+def test_the_pictures_of_the_yacht():
     img = escort.picture()
-    assert img.get_size() == (escort.CRUISE_W, escort.CRUISE_H)
-    assert img.get_at((escort.CRUISE_W // 2, int(escort.CRUISE_H * 0.7)))[3] > 200      # the hull is solid
-    assert img.get_at((2, 2))[3] == 0                                                 # the corners are clear
+    assert img.get_size() == (escort.HULL_W, escort.HULL_H)
+    assert img.get_at((escort.HULL_W // 2, escort.HULL_H // 2))[3] >= 250      # the hull is solid (windows too)
+    assert img.get_at((1, 1))[3] == 0 and img.get_at((escort.HULL_W - 2, escort.HULL_H - 2))[3] == 0
+    sheet = pygame.image.load(asset_path("sprites", "vip_yacht_flame.png"))
+    rows = -(-escort.FLAME_FRAMES // escort.FLAME_COLS)
+    assert sheet.get_size() == (escort.FLAME_W * escort.FLAME_COLS, escort.FLAME_H * rows)
+    a, b = escort.flame_frame(0.0), escort.flame_frame(0.5)
+    assert a.get_size() == (escort.FLAME_W, escort.FLAME_H)
+    assert pygame.image.tobytes(a, "RGB") != pygame.image.tobytes(b, "RGB")    # it moves
+
+
+def test_the_flame_is_not_part_of_the_hit_box():
+    c = CruiseShip()
+    c.x = 500
+    pic, hull = c.picture_rect(), c.hull()
+    assert pic.contains(hull) and hull.left >= pic.left
+    flame = pygame.Rect(pic.x + escort.FLAME_AT[0], pic.y + escort.FLAME_AT[1], escort.FLAME_W - 4, escort.FLAME_H)
+    assert not flame.colliderect(hull)
+    form = EscortFormation()
+    form.cruise.x = 500
+    bird = next(e for e in form.enemies)
+    bird.x, bird.y = float(flame.centerx), float(flame.centery)
+    bird.rect.center = flame.center
+    assert not bird.get_hitbox().colliderect(form.cruise.hull())
+
+
+def test_it_is_through_only_when_its_flame_is_gone_too():
+    c = CruiseShip()
+    c.x = BASE_WIDTH + escort.HULL_W / 2 + 10                      # the hull is out, the flame still shows
+    assert not c.through and c.progress() < 1.0
+    c.x = BASE_WIDTH + escort.HULL_W / 2 - escort.FLAME_AT[0]
+    assert c.through and c.progress() == 1.0

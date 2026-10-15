@@ -7,8 +7,14 @@ screen, slowly, from left to right, and the blue and khaki avioids of level 3 th
   the cruise ship waits. The two-dimensional reactor (needed to fly this mission) lets the ship pass above it.
 - A bird that touches the cruise ship destroys it: the mission is lost (`EscortFormation.failed`, a little after the
   explosion, so it is seen).
-- The birds are replaced as they fall, for ever: the mission is won only when the cruise ship has passed the right edge
-  completely. Then the birds flee off the top and the ship flies up as after any wave.
+- The birds swirl before they strike: a bird that leaves the formation loops down for a moment (`EscortBird`, state
+  "swirl"), drifting towards the cruise ship, then dives straight at it. A few at a time.
+- The birds are replaced as they fall, for ever, but slowly (REFILL_DELAY): the mission is won only when the cruise ship
+  has passed the right edge completely, its flame too. Then the birds flee off the top and the ship flies up as after
+  any wave.
+
+The yacht is Kraran's video cut in two by tools/make_vip_yacht.py: the hull (assets/sprites/vip_yacht.png, the only part
+that counts for the collisions) and its reactor flame (vip_yacht_flame.png, every frame of the video, added on top).
 
 `EscortFormation` is the EnemyFormation of the mission (birds from the swarm machinery, kinds 1 and 2, an endless
 reserve); `tick(game)` moves the cruise ship and settles the bumps every frame, `draw(game)` draws it and its messages.
@@ -18,19 +24,33 @@ import random
 
 import pygame
 
-from enemy import EnemyFormation
-from settings import BASE_HEIGHT, BASE_WIDTH
+from enemy import Enemy, EnemyFormation
+from errlog import log_exc
+from settings import BASE_HEIGHT, BASE_WIDTH, ENEMY_DIVE_SPEED, asset_path
 
 ON_SCREEN = {1: 7, 2: 11}          # birds in the formation at once: blue, khaki (about half a screen of each)
 ENDLESS = 10 ** 9                  # the reserve: they never run out
-MAX_DIVERS = 2                     # birds diving at the cruise ship at the same time
-DIVE_GAP = 1.3                     # seconds between two birds starting their dive
+REFILL_DELAY = 3.0                 # seconds between two newcomers of the same kind (the arcade swarm: 0.35)
+MAX_DIVERS = 2                     # birds going for the cruise ship at the same time (swirling or diving)
+DIVE_GAP = 1.3                     # seconds between two birds leaving the formation
 AIM_SPREAD = 60                    # a diver goes for a point up to this far from the centre of the cruise ship
 AIM_LEAD = 30                      # ... a little ahead of it, it is moving
+SWIRL_TIME = (2.0, 3.2)            # how long a bird loops before it strikes (seconds, at random in between)
+SWIRL_RADIUS = (60.0, 95.0)        # the size of its loops (px)
+SWIRL_TURN = 2.0                   # seconds for one loop
+SWIRL_SINK = 50.0                  # px / s: the loops go down...
+SWIRL_DRIFT = 80.0                 # ... and towards the cruise ship
+SWIRL_FLOOR = 230                  # ... but their centre stays this high: the strike starts well above the cruise ship
+STRIKE_SPEED = 0.85                # the dive after the loops, a share of the arcade dive (one sees it coming)
+STRIKE_SLANT = 0.55                # its sideways speed is at most this share of its speed down: a steep dive, no swoop
 CRUISE_SPEED = 22.0                # px / s: about a minute across the screen when nothing stops it
-CRUISE_W, CRUISE_H = 156, 64       # the picture
+HULL_W, HULL_H = 172, 49           # the picture of the hull (tools/make_vip_yacht.py)
+HULL_BOX = (3, 6, 166, 40)         # in that picture: what is solid, what a bird must touch (not the thin roof, the flame)
+FLAME_W, FLAME_H = 94, 49          # one frame of the flame, and where it sits from the left edge of the hull picture
+FLAME_AT = (-92, 4)
+FLAME_COLS, FLAME_FRAMES, FLAME_FPS = 16, 145, 24.0
+HULL = HULL_BOX[2:]                # (width, height) of the solid part
 CRUISE_Y = BASE_HEIGHT - 95        # its centre: on the line of the ship (story missions start the ship there)
-HULL = (146, 44)                   # what is solid / what a bird must touch (inside the picture)
 LOST_DELAY = 2.2                   # seconds between the explosion and the end of the mission
 DIVE_FROM_X = 40                   # the birds wait until the centre of the cruise ship is that far in
 
@@ -47,24 +67,30 @@ class CruiseShip:
 
     def __init__(self, speed=CRUISE_SPEED):
         self.speed = float(speed)
-        self.x = -CRUISE_W / 2 - 4.0
+        self.x = -HULL_W / 2 - 4.0
         self.y = float(CRUISE_Y)
         self.blocked = False             # held up by the player's ship this frame
         self.destroyed = False
         self.time = 0.0
 
-    def hull(self, x=None):
+    def picture_rect(self, x=None):
+        """Where the picture of the hull is drawn (`x` is the centre of that picture)."""
         cx = self.x if x is None else x
-        return pygame.Rect(int(cx - HULL[0] / 2), int(self.y - HULL[1] / 2), HULL[0], HULL[1])
+        return pygame.Rect(int(cx - HULL_W / 2), int(self.y - HULL_H / 2), HULL_W, HULL_H)
+
+    def hull(self, x=None):
+        """The solid part: the hull without its thin roof, and never the flame."""
+        pic = self.picture_rect(x)
+        return pygame.Rect(pic.x + HULL_BOX[0], pic.y + HULL_BOX[1], HULL_BOX[2], HULL_BOX[3])
 
     @property
     def through(self):
-        """Gone past the right edge, all of it."""
-        return self.x - CRUISE_W / 2 >= BASE_WIDTH
+        """Gone past the right edge, all of it, its flame too."""
+        return self.x - HULL_W / 2 + FLAME_AT[0] >= BASE_WIDTH
 
     def progress(self):
         """0.0 (not in yet) to 1.0 (through)."""
-        start, end = -CRUISE_W / 2, BASE_WIDTH + CRUISE_W / 2
+        start, end = -HULL_W / 2, BASE_WIDTH + HULL_W / 2 - FLAME_AT[0]
         return max(0.0, min(1.0, (self.x - start) / (end - start)))
 
     def advance(self, dt, bodies):
@@ -98,8 +124,77 @@ def bump(ship, cruise):
     return True
 
 
+class EscortBird(Enemy):
+    """A blue or khaki bird of the escort: from its seat it swirls down in loops, drifting towards the cruise ship,
+    then dives straight at it. `formation` gives what it aims at (`_aim`) and whether it may go now (`_may_dive`)."""
+
+    def __init__(self, x, y, formation, formation_index=0, stage=1):
+        super().__init__(x, y, formation_index=formation_index, stage=stage)
+        self.formation = formation
+        self.aim_offset = random.uniform(-AIM_SPREAD, AIM_SPREAD)
+        self.swirl_t = 0.0
+        self.swirl_time = 0.0
+        self.swirl_r = 0.0
+        self.spin = 0.0
+        self.angle = 0.0
+        self.centre = (0.0, 0.0)
+
+    @property
+    def diving(self):
+        """Swirling counts: it hits the ship it meets, like a diver."""
+        return self.state in ("swirl", "diving") and not self.dying
+
+    def start_dive(self, player_x):
+        if self.state != "formation" or not self.alive or self.dying or not self.formation._may_dive():
+            return
+        self.state = "swirl"
+        self.swirl_t = 0.0
+        self.swirl_time = random.uniform(*SWIRL_TIME)
+        self.swirl_r = random.uniform(*SWIRL_RADIUS)
+        side = 1 if self.formation._aim() >= self.x else -1        # it loops towards the cruise ship
+        self.spin = side * 2 * math.pi / SWIRL_TURN
+        self.angle = -math.pi / 2                                 # it starts at the top of its first loop
+        self.centre = (self.x, self.y + self.swirl_r)
+        self.aim_offset = random.uniform(-AIM_SPREAD, AIM_SPREAD)
+
+    def update(self, dt, formation_offset_x=0.0, player_x=0.0):
+        if not self.alive:
+            return
+        if self.dying or self.state not in ("swirl", "diving"):
+            super().update(dt, formation_offset_x, player_x)
+            return
+        self._tick_wings(dt)
+        sm = float(getattr(self, "speed_mult", 1.0) or 1.0)
+        aim = self.formation._aim() + self.aim_offset
+        if self.state == "swirl":
+            self.swirl_t += dt
+            cx, cy = self.centre
+            step = SWIRL_DRIFT * sm * dt
+            cx += max(-step, min(step, aim - cx))
+            cx = max(self.swirl_r + 24, min(BASE_WIDTH - self.swirl_r - 24, cx))
+            cy = min(SWIRL_FLOOR, cy + SWIRL_SINK * sm * dt)
+            self.centre = (cx, cy)
+            self.angle += self.spin * sm * dt
+            self.x = cx + math.cos(self.angle) * self.swirl_r
+            self.y = cy + math.sin(self.angle) * self.swirl_r
+            if self.swirl_t >= self.swirl_time:
+                self.state = "diving"                             # enough loops: it strikes
+        else:
+            down = ENEMY_DIVE_SPEED * STRIKE_SPEED * sm * dt
+            self.y += down
+            side = max(-down * STRIKE_SLANT, min(down * STRIKE_SLANT, (aim - self.x) * 1.8 * dt))
+            self.x += side + math.sin(self.time * 5.5 + self.formation_index) * 20 * dt
+            if self.y > BASE_HEIGHT + 50:
+                self.state = "returning"                          # missed: back to its seat, from the top
+                self.y = -40.0
+        self.x = max(20.0, min(BASE_WIDTH - 20.0, self.x))
+        self.rect.center = (int(self.x), int(self.y))
+
+
 class EscortFormation(EnemyFormation):
-    """Blue and khaki birds in formation, replaced for ever, that dive at the cruise ship."""
+    """Blue and khaki birds in formation, replaced for ever (slowly), that swirl then dive at the cruise ship."""
+
+    REFILL_DELAY = REFILL_DELAY
 
     def __init__(self, speed_mult=1.0, cruise_speed=CRUISE_SPEED):
         super().__init__(stage=1)
@@ -120,26 +215,30 @@ class EscortFormation(EnemyFormation):
         self.spawn_swarm(speed_mult=speed_mult, screens=0)
         self.enemies = [e for e in self.enemies if e.stage in (1, 2)]       # (the swarm adds gargoyles: none here)
         self.swarm["reserve"] = {1: ENDLESS, 2: ENDLESS, 3: 0, 4: 0}
-        for e in self.enemies:
-            self._hook(e)
 
     def _swarm_add_bird(self, slot_i, kind, arriving):
-        return self._hook(super()._swarm_add_bird(slot_i, kind, arriving))
+        """(EnemyFormation._swarm_add_bird, with an EscortBird.)"""
+        x, y, _ = self.swarm["slots"][slot_i]
+        e = EscortBird(x, y, self, formation_index=self._swarm_index(), stage=kind)
+        e.speed_mult = self.swarm["mult"]
+        e.swarm_slot = slot_i
+        if arriving:                              # comes in from the top and flies to its seat
+            e.state = "returning"
+            e.x = x + self.offset_x
+            e.y = -40.0
+            e.rect.center = (int(e.x), int(e.y))
+        self.enemies.append(e)
+        return e
 
     def _swarm_add_gargoyle(self, kind, arriving):
         return None                      # no gargoyles in this mission
-
-    def _hook(self, bird):
-        bird.dive_aim = self._aim
-        bird.dive_gate = self._may_dive
-        bird.aim_offset = random.uniform(-AIM_SPREAD, AIM_SPREAD)
-        return bird
 
     def _aim(self):
         return self.cruise.x + AIM_LEAD
 
     def divers(self):
-        return sum(1 for e in self.enemies if e.alive and not e.dying and e.state == "diving")
+        """Birds going for the cruise ship: swirling or diving."""
+        return sum(1 for e in self.enemies if e.alive and not e.dying and e.state in ("swirl", "diving"))
 
     def _may_dive(self):
         """Up to MAX_DIVERS at a time, once the cruise ship is well in sight, never after it is through or lost."""
@@ -226,95 +325,39 @@ def failed(game):
 
 
 # ------------------------------------------------------------------------------------------------------------------
-# The picture: a small personal space yacht seen from the side, its nose to the right: a pearl white hull with a gold
-# line, a long deck of lit windows, a glass bridge at the front, the engine pod at the back. Drawn once, three times
-# bigger then scaled down, so the edges are smooth.
-_PICTURE = []
-
-
-def _drop(w, h, x0, x1, top, bottom, cy, sharp=0.35):
-    """Points of a long drop shape from x0 (round back) to x1 (pointed nose) around the line cy."""
-    pts_top, pts_bot = [], []
-    n = 48
-    for i in range(n + 1):
-        u = i / n
-        x = x0 + (x1 - x0) * u
-        back = math.sqrt(max(0.0, 1 - (1 - min(1.0, u / 0.18)) ** 2))       # round at the back
-        nose = (1 - max(0.0, (u - 0.62) / 0.38)) ** (1 + sharp)             # tapering to the nose
-        f = back * nose
-        pts_top.append((x, cy - top * f))
-        pts_bot.append((x, cy + bottom * f))
-    return pts_top + pts_bot[::-1]
+# The pictures (tools/make_vip_yacht.py): the hull with its transparency, the flame frames in a grid on black, added
+# to what is behind them. Loaded once. Without the files, a plain pale hull and no flame.
+_ART = {}
 
 
 def picture():
-    if _PICTURE:
-        return _PICTURE[0]
-    k = 3
-    w, h = CRUISE_W * k, CRUISE_H * k
-    big = pygame.Surface((w, h), pygame.SRCALPHA)
-    gold, gold_hi = (214, 176, 70), (255, 228, 150)
-    pearl, pearl_dark, edge = (232, 234, 242), (150, 156, 182), (96, 100, 128)
-    cy = h * 0.66
-    # the superstructure (a long cabin on the deck), behind the hull
-    deck = _drop(w, h, w * 0.18, w * 0.80, h * 0.50, h * 0.05, cy - h * 0.02, sharp=1.2)
-    pygame.draw.polygon(big, (210, 214, 228), deck)
-    pygame.draw.polygon(big, edge, deck, 3)
-    # two rows of warm windows along the cabin
-    for row, (yy, n, x0, step) in enumerate(((cy - h * 0.30, 9, w * 0.25, w * 0.052),
-                                             (cy - h * 0.16, 11, w * 0.22, w * 0.050))):
-        for i in range(n):
-            r = pygame.Rect(int(x0 + i * step), int(yy), int(w * 0.034), int(h * 0.075))
-            pygame.draw.rect(big, (255, 210, 130), r, border_radius=int(h * 0.03))
-            pygame.draw.rect(big, (255, 240, 200), r.inflate(-r.w * 0.5, -r.h * 0.5).move(-r.w * 0.1, -r.h * 0.12),
-                             border_radius=int(h * 0.02))
-    # the glass bridge at the front of the cabin
-    bridge = [(w * 0.66, cy - h * 0.38), (w * 0.74, cy - h * 0.38), (w * 0.84, cy - h * 0.10), (w * 0.66, cy - h * 0.10)]
-    pygame.draw.polygon(big, (30, 52, 98), bridge)
-    pygame.draw.polygon(big, (120, 170, 235), [(w * 0.70, cy - h * 0.35), (w * 0.735, cy - h * 0.35),
-                                               (w * 0.77, cy - h * 0.24), (w * 0.70, cy - h * 0.24)])
-    pygame.draw.polygon(big, gold, bridge, 4)
-    # the hull, in front of everything
-    hull = _drop(w, h, w * 0.06, w * 0.99, h * 0.13, h * 0.26, cy, sharp=0.6)
-    pygame.draw.polygon(big, pearl, hull)
-    shade = pygame.Surface((w, h), pygame.SRCALPHA)
-    for y in range(int(cy), h):
-        a = max(0, int(min(150, (y - cy) * 2.6)))
-        pygame.draw.line(shade, pearl_dark + (a,), (0, y), (w, y))
-    mask = pygame.Surface((w, h), pygame.SRCALPHA)
-    pygame.draw.polygon(mask, (255, 255, 255, 255), hull)
-    shade.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
-    big.blit(shade, (0, 0))
-    pygame.draw.polygon(big, edge, hull, 3)
-    # the gold line along the hull, and a thin light one above it
-    pygame.draw.line(big, gold, (w * 0.08, cy + h * 0.02), (w * 0.95, cy + h * 0.005), 8)
-    pygame.draw.line(big, gold_hi, (w * 0.08, cy - h * 0.005), (w * 0.95, cy - h * 0.02), 3)
-    # portholes along the hull
-    for i in range(6):
-        c = (int(w * (0.30 + i * 0.08)), int(cy + h * 0.12))
-        pygame.draw.circle(big, (40, 60, 100), c, int(h * 0.035))
-        pygame.draw.circle(big, (170, 210, 250), (c[0] - 2, c[1] - 2), int(h * 0.015))
-    # a gold fin at the back, the engine pod at the very back
-    pygame.draw.polygon(big, gold, [(w * 0.14, cy - h * 0.10), (w * 0.26, cy - h * 0.12), (w * 0.12, cy - h * 0.50)])
-    pygame.draw.polygon(big, gold_hi, [(w * 0.14, cy - h * 0.14), (w * 0.17, cy - h * 0.15), (w * 0.13, cy - h * 0.40)])
-    eng = pygame.Rect(int(w * 0.02), int(cy - h * 0.14), int(w * 0.12), int(h * 0.30))
-    pygame.draw.ellipse(big, (84, 90, 116), eng)
-    pygame.draw.ellipse(big, (140, 146, 170), eng.inflate(-eng.w * 0.25, -eng.h * 0.35).move(eng.w * 0.08, -eng.h * 0.06))
-    pygame.draw.ellipse(big, (170, 225, 255), pygame.Rect(eng.x, eng.y + eng.h * 0.22, eng.w * 0.30, eng.h * 0.56))
-    small = pygame.transform.smoothscale(big, (CRUISE_W, CRUISE_H))
-    _PICTURE.append(small)
-    return small
+    """The hull."""
+    img = _ART.get("hull")
+    if img is None:
+        try:
+            img = pygame.image.load(asset_path("sprites", "vip_yacht.png")).convert_alpha()
+        except Exception:
+            log_exc("escort.picture")
+            img = pygame.Surface((HULL_W, HULL_H), pygame.SRCALPHA)
+            pygame.draw.ellipse(img, (220, 222, 232), pygame.Rect(0, HULL_H // 4, HULL_W, HULL_H // 2))
+        _ART["hull"] = img
+    return img
 
 
-def _flame(surface, x, y, t, blocked):
-    """The jet behind the engine, flickering; short while the cruise ship waits."""
-    n = 0.7 + 0.3 * math.sin(t * 31.0) * math.sin(t * 17.0 + 1.3)
-    length = (8 if blocked else 22) * n + 6
-    glow = pygame.Surface((int(length) + 16, 22), pygame.SRCALPHA)
-    gw = glow.get_width()
-    pygame.draw.ellipse(glow, (90, 170, 255, 90), pygame.Rect(0, 3, gw, 16))
-    pygame.draw.ellipse(glow, (190, 230, 255, 200), pygame.Rect(gw * 0.35, 7, gw * 0.65, 8))
-    surface.blit(glow, (int(x - gw + 4), int(y - 11)))
+def flame_frame(t):
+    """The frame of the flame at time `t` (seconds), or None without the file."""
+    sheet = _ART.get("flame", False)
+    if sheet is False:
+        try:
+            sheet = pygame.image.load(asset_path("sprites", "vip_yacht_flame.png")).convert()
+        except Exception:
+            log_exc("escort.flame_frame")
+            sheet = None
+        _ART["flame"] = sheet
+    if sheet is None:
+        return None
+    i = int(t * FLAME_FPS) % FLAME_FRAMES
+    return sheet.subsurface(pygame.Rect((i % FLAME_COLS) * FLAME_W, (i // FLAME_COLS) * FLAME_H, FLAME_W, FLAME_H))
 
 
 def draw(game, surface):
@@ -322,12 +365,19 @@ def draw(game, surface):
     if not isinstance(form, EscortFormation):
         return
     cruise = form.cruise
-    if not cruise.destroyed and not cruise.through:
-        img = picture()
-        left = int(cruise.x - CRUISE_W / 2)
-        top = int(cruise.y - CRUISE_H * 0.59)          # the cabin and the hull around the centre line
-        _flame(surface, left + 6, top + CRUISE_H * 0.66, cruise.time, cruise.blocked)
-        surface.blit(img, (left, top))
+    if cruise.destroyed or cruise.through:
+        return
+    pic = cruise.picture_rect()
+    frame = flame_frame(cruise.time)
+    if frame is not None:
+        x, y = pic.x + FLAME_AT[0], pic.y + FLAME_AT[1]
+        if cruise.blocked:                       # held up: the reactor idles, a short and dim flame
+            w = int(FLAME_W * 0.5)
+            frame = pygame.transform.smoothscale(frame, (w, int(FLAME_H * 0.8)))
+            frame.fill((150, 150, 150), special_flags=pygame.BLEND_RGB_MULT)
+            x, y = x + FLAME_W - w, y + int(FLAME_H * 0.1)
+        surface.blit(frame, (x, y), special_flags=pygame.BLEND_RGB_ADD)
+    surface.blit(picture(), pic.topleft)
 
 
 def banner(game, surface):
