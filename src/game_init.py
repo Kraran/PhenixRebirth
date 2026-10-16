@@ -10,6 +10,7 @@ import os
 
 import pygame
 
+import bindings
 import controls
 from enemy import EnemyFormation
 from gpu_present import GpuPresenter
@@ -346,6 +347,8 @@ def init_settings(game, soft):
     """Load settings.json (kept in memory on a soft restart), bezels, GPU binding."""
     # Load persistent settings (or keep in-memory on soft restart)
     user = load_user_settings()
+    if not soft:
+        bindings.load(user.get("bindings"))        # the keys and buttons of the ship (a soft restart keeps them in memory)
     if not hasattr(game, "control_pref"):
         pref = user.get("control_pref", "auto")
         game.control_pref = pref if pref in ("auto", "keyboard", "gamepad") else "auto"

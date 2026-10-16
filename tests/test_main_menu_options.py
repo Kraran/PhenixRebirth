@@ -181,7 +181,7 @@ def test_scores_left_right_still_go_round_and_esc_returns_to_extras(run):
 # --- the options in four tabs ----------------------------------------------------------------------------------------
 def test_every_option_is_in_exactly_one_tab():
     keys = [k for _n, rows in main_menu.OPTION_TABS for k in rows]
-    assert len(keys) == len(set(keys)) == 18
+    assert len(keys) == len(set(keys)) == 19
     assert [n for n, _r in main_menu.OPTION_TABS] == ["game", "audio", "display", "advanced"]
     assert main_menu.tab_rows(3)[-1] == "reset_hs"
     for name in main_menu.TAB_TITLES.values():

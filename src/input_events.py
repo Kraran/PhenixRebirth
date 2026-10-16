@@ -7,6 +7,9 @@ loop `continue` meant "done with this event": here it is `return`.
 """
 import pygame
 
+import bindings
+import controls
+import keybind_screen
 from highscores import reset_highscores
 
 
@@ -22,6 +25,9 @@ def on_keydown(game, event):
     """Keyboard press: attract exit, Phenix/Shield, pause, menus, quit confirm, high-score entry."""
     if event.key == pygame.K_F12:
         game.take_screenshot()
+        return
+    if getattr(game, "keybind", None) is not None:       # the screen "Keys and buttons" takes every key while it is open
+        keybind_screen.on_key(game, event)
         return
     if game.attract_mode:
         game._end_attract()
@@ -44,29 +50,28 @@ def on_keydown(game, event):
         if getattr(game, "input_grace", 0) <= 0:
             game._hotseat_resume()
         return
-    # Phenix / Shield — edge only (set_repeat must not retrigger)
+    # Phenix / Shield — edge only (set_repeat must not retrigger). The keys are the player's (Options > Game > Keys and
+    # buttons): the left-hand keyboard's key goes to the coop ship on it, the arrows keyboard's to the one on the arrows
+    # (or to the only ship of a solo / hot-seat game).
     if game.started and not game.paused and not game.game_over:
-        held = getattr(game, "_special_keys", None)
-        if held is None:
-            held = game._special_keys = set()
-        shift_repeat = event.key in (pygame.K_LSHIFT, pygame.K_RSHIFT) and event.key in held
-        if event.key in (pygame.K_LSHIFT, pygame.K_RSHIFT) and not shift_repeat:
-            held.add(event.key)
-        if shift_repeat:
-            pass
-        elif event.key == pygame.K_LSHIFT:
-            # Coop: the player on the left-hand keyboard (whichever of the two it is)
-            target = _ship_on_keyboard(game, ("kb1",))
-            if game.play_mode == "coop" and target is not None:
-                game._activate_phenix_from_input(target)
-        elif event.key == pygame.K_RSHIFT:
-            if game.play_mode == "coop":
-                # Coop: the player on the arrows keyboard (whichever of the two it is)
-                target = _ship_on_keyboard(game, ("kb2", "solo"))
-                if target is not None:
-                    game._activate_phenix_from_input(target)
-            else:
-                game._activate_phenix_from_input(game.player)
+        profiles = [p for p in bindings.KEY_PROFILES if event.key in bindings.current.keys(p, "phenix")]
+        if profiles:
+            held = getattr(game, "_special_keys", None)
+            if held is None:
+                held = game._special_keys = set()
+            if event.key not in held:
+                held.add(event.key)
+                for profile in profiles:
+                    if profile == bindings.KB1:
+                        target = _ship_on_keyboard(game, ("kb1",))
+                        if game.play_mode == "coop" and target is not None:
+                            game._activate_phenix_from_input(target)
+                    elif game.play_mode == "coop":
+                        target = _ship_on_keyboard(game, ("kb2", "solo"))
+                        if target is not None:
+                            game._activate_phenix_from_input(target)
+                    else:
+                        game._activate_phenix_from_input(game.player)
     if event.key == pygame.K_ESCAPE:
         if game.started and not game.game_over:
             if game.pause_options:
@@ -123,6 +128,8 @@ def on_keydown(game, event):
                     elif key == "reset_hs":
                         game.menu_screen = "reset_confirm"
                         game.menu_index = 1
+                    elif key == "keybinds":
+                        keybind_screen.open_screen(game)
             elif event.key == pygame.K_ESCAPE:
                 if game.menu_screen == "reset_confirm":
                     game.menu_screen = "options"
@@ -307,6 +314,8 @@ def _help_turn_key(key):
 
 def on_keyup(game, event):
     """Keyboard release: forget the held Shift keys."""
+    if getattr(game, "keybind", None) is not None:
+        keybind_screen.on_keyup(game, event)
     held = getattr(game, "_special_keys", None)
     if held and event.key in held:
         held.discard(event.key)
@@ -314,6 +323,9 @@ def on_keyup(game, event):
 
 def on_joy_button(game, event):
     """Gamepad button: attract exit, Phenix, pause, menus, high-score entry."""
+    if getattr(game, "keybind", None) is not None:
+        keybind_screen.on_joy_button(game, event)
+        return
     if game.attract_mode:
         game._end_attract()
         return
@@ -325,8 +337,10 @@ def on_joy_button(game, event):
         if getattr(game, "input_grace", 0) <= 0:
             game._hotseat_resume()
         return
+    slot = controls.slot_of(game, event)               # the place of the pad that was pressed: its own table of buttons
+    in_game = bool(game.started and not game.game_over)
     # B = Phenix while playing (menus still use B as back elsewhere)
-    if (event.button == 1 and game.started and not game.paused
+    if (event.button in bindings.current.pad_buttons(slot, "phenix") and game.started and not game.paused
             and not game.game_over and not game.quit_confirm):
         target = game.player
         if game.play_mode == "coop":
@@ -340,8 +354,9 @@ def on_joy_button(game, event):
                     target = s
                     break
         game._activate_phenix_from_input(target)
-    # Start button (7 Xbox / 9 some pads) — pause or quit confirm
-    if event.button in (7, 9, 6):
+    # Start button (7 Xbox / 9 some pads) — pause or quit confirm. In a game the pause button is the player's own; in the
+    # menus it stays Start.
+    if event.button in (bindings.current.pad_buttons(slot, "pause") if in_game else (7, 9, 6)):
         if game.started and not game.game_over:
             game._toggle_pause()
         elif not game.started:
@@ -374,6 +389,8 @@ def on_joy_button(game, event):
                     elif key == "reset_hs":
                         game.menu_screen = "reset_confirm"
                         game.menu_index = 1
+                    elif key == "keybinds":
+                        keybind_screen.open_screen(game)
             elif event.button == 1:
                 if game.menu_screen == "reset_confirm":
                     game.menu_screen = "options"
@@ -440,6 +457,9 @@ def on_joy_button(game, event):
 
 def on_joy_hat(game, event):
     """Gamepad D-pad (hat) in menus, pause, hot-seat pick and high-score entry."""
+    if getattr(game, "keybind", None) is not None:
+        keybind_screen.on_joy_hat(game, event)
+        return
     hx, hy = event.value
     if hx == 0 and hy == 0:
         game._hat_latch = (0, 0)
@@ -508,6 +528,9 @@ def on_joy_hat(game, event):
 
 def on_joy_axis(game, event):
     """Gamepad stick in menus, pause, quit confirm, hot-seat pick."""
+    if getattr(game, "keybind", None) is not None:
+        keybind_screen.on_joy_axis(game, event)
+        return
     DEAD = 0.72
     if getattr(game, "hotseat_pick_p2", False) and game.menu_screen == "ship_select":
         if event.axis == 0:

@@ -167,3 +167,17 @@ def scheme_of(device):
     if device == KB_ARROWS:
         return "kb2"
     return "pad"
+
+
+def slot_of(game, event):
+    """The place (0 = the first pad plugged in) of the pad a joystick event comes from; 0 when it cannot be told."""
+    pads = getattr(getattr(game, "pads", None), "pads", None) or []
+    inst = getattr(event, "instance_id", None)
+    if inst is not None:
+        for i, p in enumerate(pads):
+            if pad_id(p) == inst:
+                return i
+    idx = getattr(event, "joy", None)
+    if isinstance(idx, int) and 0 <= idx < len(pads):
+        return idx
+    return 0

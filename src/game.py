@@ -42,6 +42,7 @@ import invaders
 from invaders import InvaderFormation
 import crt
 import announce
+import bindings
 import controls
 import escort
 import galaga
@@ -2969,6 +2970,7 @@ class Game:
             "control_pref": getattr(self, "control_pref", "auto"),
             "coop_p1": (getattr(self, "coop_pref", None) or ["auto", "auto"])[0],
             "coop_p2": (getattr(self, "coop_pref", None) or ["auto", "auto"])[1],
+            "bindings": bindings.current.to_dict(),
             "display_mode": self.display_mode,
             "bezel_style": getattr(self, "bezel_style", "phoenix"),
             "monitor_index": int(getattr(self, "monitor_index", 0) or 0),
@@ -3202,7 +3204,7 @@ class Game:
     def _draw_option_help(self, key, box=(700, 148, 520, 420)):
         """Right-hand hint panel for the focused option."""
         if not key or key not in (
-            "control", "coop_p1", "coop_p2", "autofire", "sfx", "music", "audio_mix", "ingame_music", "rumble", "display",
+            "control", "coop_p1", "coop_p2", "keybinds", "autofire", "sfx", "music", "audio_mix", "ingame_music", "rumble", "display",
             "bezel", "fps", "scanlines", "gpu", "vsync", "hz",
             "language", "reset_hs", "back",
         ):
@@ -3217,7 +3219,7 @@ class Game:
             panel = pygame.Surface((w, h), pygame.SRCALPHA)
             menu_ui.panel(panel, panel.get_rect())                   # the same panel as the option list
             title = t({
-                "control": "opt_control", "coop_p1": "opt_coop_p1", "coop_p2": "opt_coop_p2",
+                "control": "opt_control", "coop_p1": "opt_coop_p1", "coop_p2": "opt_coop_p2", "keybinds": "opt_keybinds",
                 "autofire": "opt_autofire", "sfx": "opt_sfx",
                 "music": "opt_music", "audio_mix": "opt_audio", "rumble": "opt_rumble", "display": "opt_display",
                 "bezel": "opt_bezel", "fps": "opt_fps", "scanlines": "opt_scanlines",
@@ -3237,7 +3239,7 @@ class Game:
         self.game_surface.blit(panel, (x, y))
 
     OPTION_LABELS = {
-        "control": "opt_control", "coop_p1": "opt_coop_p1", "coop_p2": "opt_coop_p2",
+        "control": "opt_control", "coop_p1": "opt_coop_p1", "coop_p2": "opt_coop_p2", "keybinds": "opt_keybinds",
         "autofire": "opt_autofire", "sfx": "opt_sfx", "music": "opt_music",
         "audio_mix": "opt_audio", "ingame_music": "opt_ingame", "rumble": "opt_rumble", "display": "opt_display",
         "bezel": "opt_bezel", "fps": "opt_fps", "scanlines": "opt_scanlines", "gpu": "opt_gpu", "vsync": "opt_vsync",

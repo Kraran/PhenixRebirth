@@ -15,6 +15,7 @@ import escort
 import fonts
 import highscores_screen
 import hint_bar
+import keybind_screen
 import menu_ui
 import main_menu
 import loot
@@ -294,9 +295,12 @@ def draw_menu_screens(game):
         hint_bar.draw_for(game, game.game_surface)
 
     elif game.menu_screen == "options":
-        hdr = game._txt(game.medium_font, t("options"), menu_ui.TITLE)
-        game.game_surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 40))
-        draw_options(game, top=108)
+        if getattr(game, "keybind", None) is not None:
+            keybind_screen.draw(game)                      # the screen "Keys and buttons", over the options
+        else:
+            hdr = game._txt(game.medium_font, t("options"), menu_ui.TITLE)
+            game.game_surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 40))
+            draw_options(game, top=108)
 
 
 TITLE_COLOR = menu_ui.TITLE          # the titles of the menu screens (one colour for all of them)
@@ -597,7 +601,9 @@ def draw_pause(game):
     """Pause menu and pause options."""
     overlay = game._dim_overlay(160)
     game.game_surface.blit(overlay, (0, 0))
-    if game.pause_options:
+    if game.pause_options and getattr(game, "keybind", None) is not None:
+        keybind_screen.draw(game)
+    elif game.pause_options:
         hdr = game._txt(game.medium_font, t("options"), menu_ui.TITLE)
         game.game_surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 36))
         if game.menu_screen == "reset_confirm":

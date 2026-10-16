@@ -16,6 +16,7 @@ from settings import *
 
 from settings import asset_path
 from errlog import log_exc
+import bindings
 import engine_flame
 from phenix_art import (PHENIX_MORPH_IN_SEC, PHENIX_MORPH_OUT_SEC, SHIELD_IN_SEC, SHIELD_IN_STEPS, SHIELD_OUT_SEC,
                         SHIELD_OUT_STEPS, dissolve, lead_in, morph_sequence)
@@ -399,42 +400,25 @@ class Player:
                         dy = -1.0 if joystick.get_hat(0)[1] > 0 else 1.0
                 # Face buttons: 0=A, 1=B, 2=X, 3=Y — also shoulder
                 # B (1) reserved for Phenix activation (edge-triggered in Game)
-                for b in (0, 2, 3, 5):
+                for b in bindings.current.pad_buttons(int(getattr(self, "pad_slot", 0) or 0), "fire"):
                     if joystick.get_numbuttons() > b and joystick.get_button(b):
                         shoot_pressed = True
                         break
             except Exception:
                 log_exc("player.update")
         elif not _ai:
-            scheme = getattr(self, "input_scheme", "solo")
-            if scheme == "kb1":
-                # Coop P1 keyboard: Q+A / D, Left Ctrl shoot
-                if keys[pygame.K_q] or keys[pygame.K_a]:
-                    dx -= 1.0
-                if keys[pygame.K_d]:
-                    dx += 1.0
-                if self.vertical_range is not None:
-                    dy = (1.0 if keys[pygame.K_s] else 0.0) - (1.0 if (keys[pygame.K_z] or keys[pygame.K_w]) else 0.0)
-                shoot_pressed = keys[pygame.K_LCTRL]
-            elif scheme == "kb2":
-                # Coop P2 keyboard (same as 1P kb): arrows, Space / Right Ctrl
-                if keys[pygame.K_LEFT]:
-                    dx -= 1.0
-                if keys[pygame.K_RIGHT]:
-                    dx += 1.0
-                if self.vertical_range is not None:
-                    dy = (1.0 if keys[pygame.K_DOWN] else 0.0) - (1.0 if keys[pygame.K_UP] else 0.0)
-                shoot_pressed = keys[pygame.K_SPACE] or keys[pygame.K_RCTRL]
-            else:
-                # 1P / hot-seat keyboard: arrows, Space or Right Ctrl
-                if keys[pygame.K_LEFT]:
-                    dx -= 1.0
-                if keys[pygame.K_RIGHT]:
-                    dx += 1.0
-                if self.vertical_range is not None:
-                    dy = (1.0 if keys[pygame.K_DOWN] else 0.0) - (1.0 if keys[pygame.K_UP] else 0.0)
-                shoot_pressed = keys[pygame.K_SPACE] or keys[pygame.K_RCTRL]
-        
+            # the keys of this ship's keyboard (Options > Game > Keys and buttons; default: the left-hand keys for a
+            # coop ship on "kb1", the arrows for every other one — solo, hot-seat, coop player on "kb2")
+            profile = bindings.KB1 if getattr(self, "input_scheme", "solo") == "kb1" else bindings.KB2
+
+            def held(action):
+                return any(keys[k] for k in bindings.current.keys(profile, action))
+
+            dx = float(held("right")) - float(held("left"))
+            if self.vertical_range is not None:
+                dy = float(held("down")) - float(held("up"))
+            shoot_pressed = held("fire")
+
         if self.uses_shield and self.is_phenix:
             dx = 0.0
             dy = 0.0
