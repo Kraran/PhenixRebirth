@@ -346,13 +346,12 @@ def init_settings(game, soft):
     """Load settings.json (kept in memory on a soft restart), bezels, GPU binding."""
     # Load persistent settings (or keep in-memory on soft restart)
     user = load_user_settings()
+    if not hasattr(game, "control_pref"):
+        pref = user.get("control_pref", "auto")
+        game.control_pref = pref if pref in ("auto", "keyboard", "gamepad") else "auto"
     if not hasattr(game, "input_mode"):
-        if user["input_mode"] in ("keyboard", "gamepad"):
-            game.input_mode = user["input_mode"]
-            if game.input_mode == "gamepad" and not game.gamepad_detected:
-                game.input_mode = "keyboard"
-        else:
-            game.input_mode = "gamepad" if game.gamepad_detected else "keyboard"
+        game.input_mode = "keyboard"
+        game._apply_control_pref()          # auto: a pad that is plugged in takes the control at once
     if not hasattr(game, "display_mode"):
         game.display_mode = user.get("display_mode", "fullscreen")
     if not hasattr(game, "sfx_volume"):

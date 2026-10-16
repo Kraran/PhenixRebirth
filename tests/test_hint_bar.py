@@ -222,7 +222,7 @@ def test_french_menu_texts_have_their_accents():
         assert i18n.t("credits") == "CRÉDITS"
         assert i18n.t("opt_control") == "Contrôle"
         assert i18n.t("subtitle") != i18n.T["subtitle"]["en"]          # the subtitle is French in French
-        assert "défaut" in i18n.t("opt_help_control")
+        assert "périphérique" in i18n.t("opt_help_control")
         assert i18n.t_help("controls_h") == "CONTRÔLES"
         for key in ("ach_locked", "disp_window", "diff_veteran", "juke_intro"):
             assert any(c in i18n.t(key) for c in "éèêà"), key

@@ -14,7 +14,7 @@ SETTINGS_FILE = os.path.join(user_data_dir(), "settings.json")
 
 def load_user_settings():
     defaults = {
-        "input_mode": None,  # None = auto
+        "control_pref": "auto",  # auto (the last device used) | keyboard | gamepad
         "display_mode": "fullscreen",
         "sfx_volume": 0.8,
         "music_volume": 0.4,
