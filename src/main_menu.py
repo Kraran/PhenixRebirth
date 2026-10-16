@@ -16,7 +16,7 @@ ARCADE = ("mode", "difficulty", "ship")
 EXTRAS = ("highscores", "achievements", "jukebox", "credits", "help", "addon")
 
 OPTION_TABS = (
-    ("game", ("control", "autofire", "rumble", "language")),
+    ("game", ("control", "coop_p1", "coop_p2", "autofire", "rumble", "language")),
     ("audio", ("sfx", "music", "audio_mix", "ingame_music")),
     ("display", ("display", "bezel", "scanlines", "fps")),
     ("advanced", ("gpu", "vsync", "hz", "reset_hs")),

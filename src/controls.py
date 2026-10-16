@@ -106,3 +106,64 @@ def sync_game(game, rebuild=False):
         game.joystick = reg.pads[0] if reg.pads else None   # the one in use is gone: the first one left takes over
     game.gamepad_detected = bool(reg.pads)
     return added, removed
+
+
+# ------------------------------------------------------------------ who plays with what (coop)
+KB_LEFT = "kb_left"        # A/Q, D, W/Z, S + Left Ctrl + Left Shift (AZERTY and QWERTY alike)
+KB_ARROWS = "kb_arrows"    # the arrows + Space / Right Ctrl + Right Shift
+AUTO = "auto"
+
+
+def pad_choice(n):
+    """The choice "pad number n" (1 = the first pad plugged in)."""
+    return "pad%d" % int(n)
+
+
+def valid_choice(value):
+    """True for auto, a keyboard, or a pad number."""
+    s = str(value or "")
+    return s in (AUTO, KB_LEFT, KB_ARROWS) or (s.startswith("pad") and s[3:].isdigit() and int(s[3:]) >= 1)
+
+
+def clean_choice(value):
+    return str(value) if valid_choice(value) else AUTO
+
+
+def available(choice, n_pads):
+    """True when the device of this choice can be used now (a keyboard always can, a pad if it is plugged in)."""
+    if choice in (KB_LEFT, KB_ARROWS):
+        return True
+    return choice.startswith("pad") and choice[3:].isdigit() and 1 <= int(choice[3:]) <= n_pads
+
+
+def resolve_coop(pref1, pref2, n_pads):
+    """The devices of the two players of a coop game: (device 1, device 2), each one a pad choice or a keyboard.
+    A choice that is not usable (a pad that is not plugged in) or already taken by the other player is "auto".
+    Auto: the pads in the order they were plugged in, then the keyboard (player 1 the left-hand one, player 2 the
+    arrows). Without any choice: two pads -> pad 1 and pad 2; one pad -> pad 1 and the arrows; none -> both keyboards."""
+    p1 = pref1 if available(pref1, n_pads) else AUTO
+    p2 = pref2 if available(pref2, n_pads) and pref2 != p1 else AUTO
+    taken = {p for p in (p1, p2) if p != AUTO}
+    pads = [pad_choice(i) for i in range(1, n_pads + 1)]
+    if p1 == AUTO:
+        p1 = next(d for d in pads + [KB_LEFT, KB_ARROWS] if d not in taken)
+        taken.add(p1)
+    if p2 == AUTO:
+        p2 = next(d for d in pads + [KB_ARROWS, KB_LEFT] if d not in taken)
+    return p1, p2
+
+
+def coop_choices(n_pads, other):
+    """What the option of a player cycles through: auto, the keyboards and the pads plugged in, without the device
+    the other player chose for himself."""
+    out = [AUTO, KB_LEFT, KB_ARROWS] + [pad_choice(i) for i in range(1, n_pads + 1)]
+    return [c for c in out if c == AUTO or c != other]
+
+
+def scheme_of(device):
+    """The input scheme of a ship (Player.input_scheme) for a device."""
+    if device == KB_LEFT:
+        return "kb1"
+    if device == KB_ARROWS:
+        return "kb2"
+    return "pad"

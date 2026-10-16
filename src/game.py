@@ -1650,18 +1650,20 @@ class Game:
         return [p for p in self._ships() if p.alive and not p.dying]
 
     def _coop_bindings(self):
-        """Assign kb/pad for coop: 2 pads, or kb+pad, or split keyboard."""
+        """The device of each coop player, from the two choices of the options (auto by default: two pads, or a pad and
+        the arrows, or the keyboard split in two; see controls.resolve_coop)."""
         try:
             controls.sync_game(self)
         except Exception:
             log_exc("game._coop_bindings")
         joys = list(getattr(self, "joysticks", None) or [])      # in the order they were plugged in
-        if len(joys) >= 2:
-            return ("pad", joys[0]), ("pad", joys[1])
-        if len(joys) == 1:
-            # P1 pad, P2 same keyboard layout as 1-player
-            return ("pad", joys[0]), ("solo", None)
-        return ("kb1", None), ("kb2", None)
+        pref = list(getattr(self, "coop_pref", None) or [controls.AUTO, controls.AUTO])
+        devices = controls.resolve_coop(pref[0], pref[1], len(joys))
+        out = []
+        for dev in devices:
+            scheme = controls.scheme_of(dev)
+            out.append((scheme, joys[int(dev[3:]) - 1] if scheme == "pad" else None))
+        return out[0], out[1]
 
     def _start_coop(self):
         self.play_mode = "coop"
@@ -2965,6 +2967,8 @@ class Game:
 
         save_user_settings({
             "control_pref": getattr(self, "control_pref", "auto"),
+            "coop_p1": (getattr(self, "coop_pref", None) or ["auto", "auto"])[0],
+            "coop_p2": (getattr(self, "coop_pref", None) or ["auto", "auto"])[1],
             "display_mode": self.display_mode,
             "bezel_style": getattr(self, "bezel_style", "phoenix"),
             "monitor_index": int(getattr(self, "monitor_index", 0) or 0),
@@ -3198,7 +3202,7 @@ class Game:
     def _draw_option_help(self, key, box=(700, 148, 520, 420)):
         """Right-hand hint panel for the focused option."""
         if not key or key not in (
-            "control", "autofire", "sfx", "music", "audio_mix", "ingame_music", "rumble", "display",
+            "control", "coop_p1", "coop_p2", "autofire", "sfx", "music", "audio_mix", "ingame_music", "rumble", "display",
             "bezel", "fps", "scanlines", "gpu", "vsync", "hz",
             "language", "reset_hs", "back",
         ):
@@ -3213,7 +3217,8 @@ class Game:
             panel = pygame.Surface((w, h), pygame.SRCALPHA)
             menu_ui.panel(panel, panel.get_rect())                   # the same panel as the option list
             title = t({
-                "control": "opt_control", "autofire": "opt_autofire", "sfx": "opt_sfx",
+                "control": "opt_control", "coop_p1": "opt_coop_p1", "coop_p2": "opt_coop_p2",
+                "autofire": "opt_autofire", "sfx": "opt_sfx",
                 "music": "opt_music", "audio_mix": "opt_audio", "rumble": "opt_rumble", "display": "opt_display",
                 "bezel": "opt_bezel", "fps": "opt_fps", "scanlines": "opt_scanlines",
                 "gpu": "opt_gpu", "vsync": "opt_vsync", "hz": "opt_hz",
@@ -3232,7 +3237,8 @@ class Game:
         self.game_surface.blit(panel, (x, y))
 
     OPTION_LABELS = {
-        "control": "opt_control", "autofire": "opt_autofire", "sfx": "opt_sfx", "music": "opt_music",
+        "control": "opt_control", "coop_p1": "opt_coop_p1", "coop_p2": "opt_coop_p2",
+        "autofire": "opt_autofire", "sfx": "opt_sfx", "music": "opt_music",
         "audio_mix": "opt_audio", "ingame_music": "opt_ingame", "rumble": "opt_rumble", "display": "opt_display",
         "bezel": "opt_bezel", "fps": "opt_fps", "scanlines": "opt_scanlines", "gpu": "opt_gpu", "vsync": "opt_vsync",
         "hz": "opt_hz", "language": "opt_language", "reset_hs": "opt_reset_hs",
@@ -3252,6 +3258,8 @@ class Game:
             if getattr(self, "control_pref", "auto") == "auto":
                 return f"{t('ctrl_auto')} ({now})"
             return now
+        if key in ("coop_p1", "coop_p2"):
+            return self._coop_label(0 if key == "coop_p1" else 1)
         if key == "autofire":
             return t("yes") if getattr(self, "autofire", True) else t("no")
         if key == "sfx":
@@ -3286,6 +3294,22 @@ class Game:
         if key == "language":
             return next((n for c, n in LANGS if c == self.language), self.language)
         return ""
+
+    def _device_label(self, device):
+        if device == controls.KB_LEFT:
+            return t("ctrl_kb_left")
+        if device == controls.KB_ARROWS:
+            return t("ctrl_kb_arrows")
+        return t("ctrl_pad_n").format(n=int(device[3:]))
+
+    def _coop_label(self, i):
+        """What the coop option of player i+1 shows: the device it will use, "Auto (...)" when it is not fixed."""
+        pref = list(getattr(self, "coop_pref", None) or [controls.AUTO, controls.AUTO])
+        devices = controls.resolve_coop(pref[0], pref[1], len(self.pads.pads))
+        label = self._device_label(devices[i])
+        if pref[i] == devices[i]:
+            return label
+        return f"{t('ctrl_auto')} ({label})"
 
     def _option_fill(self, key):
         """0..1 for the rows drawn as a gauge (volumes, vibrations), else None."""
