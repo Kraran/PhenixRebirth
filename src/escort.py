@@ -26,6 +26,7 @@ import random
 
 import pygame
 
+import announce
 from enemy import Enemy, EnemyFormation
 from errlog import log_exc
 from settings import BASE_HEIGHT, BASE_WIDTH, ENEMY_DIVE_SPEED, asset_path
@@ -411,12 +412,9 @@ def banner(game, surface):
         return
     cruise = form.cruise
     if cruise.destroyed:
-        key, col = "story_vip_lost", (255, 90, 80)
+        key, ctype = "story_vip_lost", "danger"
     elif form.won:
-        key, col = "story_vip_safe", (255, 220, 120)
+        key, ctype = "story_vip_safe", "success"
     else:
         return
-    font = getattr(game, "medium_font", None) or game.font
-    tc = getattr(game, "text_cache", None)
-    img = tc.get(font, t(key), col) if tc is not None else font.render(t(key), True, col)
-    surface.blit(img, (BASE_WIDTH // 2 - img.get_width() // 2, BASE_HEIGHT // 2 - 60))
+    announce.draw(game, surface, t(key), ctype, "major", (BASE_WIDTH // 2, BASE_HEIGHT // 2 - 40))

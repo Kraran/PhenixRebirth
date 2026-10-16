@@ -16,6 +16,7 @@ import pygame
 from settings import BASE_WIDTH, BASE_HEIGHT, asset_path
 from i18n import t, get_lang
 from errlog import log_exc
+import announce
 import story_feats
 import story_items
 import story_state as ss
@@ -252,6 +253,7 @@ class StoryHub:
         self.paint_choice = 0
         self.map_index = 0
         self.toast = ""
+        self.toast_kind = "info"       # its colour type (announce.TOAST_COLOR)
         self._ships = {}               # small pictures (the paint shop)
         self._portraits = {}           # the hangar portraits, as on the ship select screen
         self._greyed = {}              # the same, dimmed (the hull that is not selected)
@@ -537,6 +539,7 @@ class StoryHub:
             self.save()
             self.map_index = 0
             self.toast = t("story_act3_start")
+            self.toast_kind = "info"
             self.start_scene(ss.loss_scene(hull), back_to="map")      # the other one is lost: told now
 
     def finish_scene(self, door=None):
@@ -823,6 +826,7 @@ class StoryHub:
             self.cheat_act2 = True                # nothing is saved any more
             self.map_index = 0
             self.toast = t("story_cheat_act3")
+            self.toast_kind = "special"
             self._maybe_act3()                    # the attack on Phobos is told now
             return True
         if self.cheat_buf == CHEAT_NIX and self.pane == "hangar":
@@ -831,6 +835,7 @@ class StoryHub:
             self.cheat_act2 = True                # nothing is saved any more
             self.map_index = 0
             self.toast = t("story_cheat_nix")
+            self.toast_kind = "special"
             return True
         if self.cheat_buf == CHEAT_ACT2 and self.pane == "map":
             self.cheat_buf = ""
@@ -839,6 +844,7 @@ class StoryHub:
             self.cheat_act2 = True
             self.map_index = 0                    # the Act 2 map is a different list
             self.toast = t("story_cheat_act2")
+            self.toast_kind = "special"
             return True
         if self.cheat_buf == CHEAT_UNLOCK and not self.cheat_unlock and self.pane == "map":
             here = self._mission()
@@ -848,6 +854,7 @@ class StoryHub:
                 ids = [m["id"] for m in self.missions()]
                 self.map_index = ids.index(here["id"]) if here["id"] in ids else 0
             self.toast = t("story_cheat_on")
+            self.toast_kind = "special"
             return True
         return False
 
@@ -1103,9 +1110,11 @@ class StoryHub:
         """The paint shop row: opens the colour choice when a change is waiting."""
         if not ss.paint_state(self.state)["token"]:
             self.toast = t("story_paint_locked")
+            self.toast_kind = "danger"
             return
         if not ss.paint_affordable(self.state):
             self.toast = t("story_paint_poor").format(pts=ss.PAINT_COST)
+            self.toast_kind = "danger"
             return
         tints = ss.paint_tints(self.state)
         self.paint_choice = tints.index(ss.worn_tint(self.state))
@@ -1119,6 +1128,7 @@ class StoryHub:
         if ss.paint_change(self.state, tint):
             self.save()
             self.toast = t("story_paint_done")
+            self.toast_kind = "reward"
             self.sound_events.append("paint_fanfare")            # trumpets for the new colour
         self.paint_mode = False
 
@@ -1180,28 +1190,39 @@ class StoryHub:
                 story_feats.note_untouchable()          # Triton, not a scratch
         if res["cleared"]:
             self.toast = t("story_clear").format(pts=res["score"])
+            self.toast_kind = "success"
             if res.get("act"):
                 self.map_index = 0                   # a new act has a new map
                 self.toast = t("story_act_start").format(n=res["act"])
+                self.toast_kind = "info"
             if res.get("paint"):
                 self.toast = t("story_paint_done_series")
+                self.toast_kind = "reward"
             if res.get("hull") == "phoenix":
                 self.toast = t("story_phenix_gift")
+                self.toast_kind = "reward"
             if res.get("opened"):
                 gift = self.toast if res.get("hull") == "phoenix" else ""     # the Phenix comes with its own BONUS mission
                 self.toast = (gift + "   " if gift else "") + t("story_bonus_open")
+                self.toast_kind = "reward"
             if res.get("reward"):
                 self.toast = t("story_reward").format(pts=res["reward"])     # the parts salvaged from the wreck
+                self.toast_kind = "gain"
         elif res["fallen"]:
             self.toast = t("story_fell_msg").format(name=self.state.get("name") or "")
+            self.toast_kind = "danger"
         elif res["lost"]:
             self.toast = t("story_fail_pen").format(pts=res["lost"])
+            self.toast_kind = "danger"
         else:
             self.toast = t("story_fail_none")
+            self.toast_kind = "danger"
         if res.get("reactor_lost") and not res["fallen"]:
             self.toast += "   " + t("story_reactor_lost")
         if res.get("loot") and not res["fallen"]:
             self.toast += "   " + t("story_item_found").format(name=t("item_%s_name" % res["loot"]))
+            if self.toast_kind != "danger":
+                self.toast_kind = "gain"
         self.pane = "map"
         self.save()
         if res["fallen"]:
@@ -1219,15 +1240,17 @@ class StoryHub:
         self.open_slots()
         self.msg = msg
 
-    def resume(self, slot_no, toast="", pane="map"):
+    def resume(self, slot_no, toast="", pane="map", toast_kind="info"):
         """Back from a mission in a new Game object: reload the slot from disk."""
         self.open_slot(slot_no)
         if self.state.get("fallen"):
             self.toast = toast
+            self.toast_kind = toast_kind
             self._show_fall()
         else:
             self.pane = pane
             self.toast = toast
+            self.toast_kind = toast_kind
 
     def _buy(self, row):
         hidden = [m for m in ss.MISSIONS if m.get("secret") and not ss.mission_open(self.state, m)]
@@ -1235,6 +1258,7 @@ class StoryHub:
             return False
         if any(ss.mission_open(self.state, m) and ss.mission_in_act(m, self.state.get("act")) for m in hidden):
             self.toast = t("story_bonus_open")               # a reactor installed opens the VIP rescue
+            self.toast_kind = "reward"
         if ss.item_of(row[0]):
             self.sound_events.append("1up")                  # a loot item is installed for the next mission
         elif not self.cheating:
@@ -1283,7 +1307,7 @@ class StoryHub:
 
         if self.cheating:
             # small, top left above the pilot name: the title, the credits and the FPS counter own the rest
-            _text_fit(surface, small, t("story_cheat_banner"), (255, 70, 70), 11, 80, 330, scale=0.7)
+            _text_fit(surface, small, t("story_cheat_banner"), announce.SPECIAL, 11, 80, 330, scale=0.7)
         if self.state.get("name"):
             mode = t("story_mode_" + str(self.state.get("mode", "normal")))
             _text(surface, small, f"{self.state['name']}  -  {mode}", (170, 175, 195), 36, left=80)
@@ -1887,7 +1911,8 @@ class StoryHub:
         _text(surface, small, t(chapter), (255, 170, 80), box.y + 28, left=box.x + 16)
         y = box.y + 52
         # the list scrolls: rows from `first` on, so that the focused one (taller) always fits
-        room = box.bottom - 44 - y
+        low = box.bottom - (62 if self._toast_level() == "standard" else 44)      # the rows stop above the toast
+        room = low - y
         missions = self.missions()
         focus_i = max(0, min(len(missions) - 1, self.map_index))
         first = 0
@@ -1898,8 +1923,8 @@ class StoryHub:
         for i, mission in enumerate(missions):
             if i < first:
                 continue
-            if y + (76 if i == focus_i else 40) > box.bottom - 44:
-                _text(surface, small, "v", (180, 180, 200), box.bottom - 56, right=box.right - 20)
+            if y + (76 if i == focus_i else 40) > low:
+                _text(surface, small, "v", (180, 180, 200), low - 12, right=box.right - 20)
                 break
             open_ = self.mission_open(mission)
             playable = self.mission_playable(mission)
@@ -1932,7 +1957,34 @@ class StoryHub:
                 _text_fit(surface, small, t(mission["blurb"]), (170, 175, 195), cy + 34, row.x + 28, row.w - 40)
             y += row.h + 4
         if self.toast:
-            _text(surface, small, self.toast, (255, 220, 120), box.bottom - 30, centerx=box.centerx)
+            self._draw_toast(surface, medium, small, box)
+
+    def _toast_level(self):
+        """'standard' for the result of a mission (won / failed), 'discreet' for the rest; '' without a toast."""
+        if not self.toast:
+            return ""
+        return announce.TOAST_LEVEL.get(self.toast_kind, "discreet")
+
+    def _draw_toast(self, surface, medium, small, box):
+        """The message under the list of missions, in the colour of its type (see announce)."""
+        ctype = announce.TOAST_COLOR.get(self.toast_kind, "info")
+        level = self._toast_level()
+        font = medium if level == "standard" else small
+        col = announce.color_of(ctype)
+        room = box.w - 40
+        img = _render(font, self.toast, col)
+        if font is medium and img.get_width() > room:      # too long for the big size: the small one first
+            font, level = small, "discreet"
+            img = _render(font, self.toast, col)
+        if img.get_width() > room:                       # a long line (result + item found) shrinks to fit
+            k = room / img.get_width()
+            img = pygame.transform.smoothscale(img, (room, max(1, int(img.get_height() * k))))
+        spec = announce.LEVELS[level]
+        pad_x, pad_y = spec["pad"][0], 3 if level == "standard" else spec["pad"][1]
+        cx, cy = box.centerx, box.bottom - 28
+        plate = announce.plate(img.get_width() + 2 * pad_x, img.get_height() + 2 * pad_y, level, col)
+        surface.blit(plate, (cx - plate.get_width() // 2, cy - plate.get_height() // 2))
+        surface.blit(img, (cx - img.get_width() // 2, cy - img.get_height() // 2))
 
     def _hull_key(self, sl):
         """Picture key of a hull: the Shield wears the colour chosen in the paint shop."""

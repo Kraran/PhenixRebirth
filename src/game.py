@@ -41,6 +41,7 @@ from enemy import EnemyFormation, BigBird, Enemy
 import invaders
 from invaders import InvaderFormation
 import crt
+import announce
 import escort
 import galaga
 from galaga import GalagaFormation
@@ -686,51 +687,24 @@ class Game:
 
 
     def _draw_cheat_message(self):
-        """Centered, large, readable cheat / stage / 1UP banner."""
+        """Centered banner (1UP, achievement, cheat code, pad, screenshot): the colour and the size come from the
+        table of announce.py, by kind (the kind is language-agnostic)."""
         if self.cheat_msg_timer <= 0 or not self.cheat_msg:
             return
         pulse = 0.55 + 0.45 * abs(math.sin(self.cheat_msg_timer * 5.0))
-        msg = self.cheat_msg
-        # Color by type (kind is language-agnostic)
         kind = getattr(self, "cheat_kind", "")
-        if kind == "1up" or "1UP" in msg.upper():
+        ctype, level = announce.style_of(kind)
+        base = announce.color_of(ctype)
+        if kind == "1up":                                           # the extra life blinks
             blink = int(self.cheat_msg_timer * 5) % 2 == 0
-            col = (255, 255, 180) if blink else (255, 200, 60)
-        elif kind == "phen" or "PHENIX" in msg.upper():
-            col = (255, int(140 + 80 * pulse), 40)
-        elif kind == "live":
-            col = (120, 255, 160)
-        elif kind == "stage":
-            col = (180, 200, 255)
-        elif kind == "ach":
-            col = (255, int(180 + 50 * pulse), 80)
+            col = announce.mix(base, (255, 255, 255), 0.6) if blink else base
+        elif ctype in ("reward", "special", "danger"):               # these breathe softly
+            col = announce.shade(base, 0.8 + 0.2 * pulse)
         else:
-            col = (255, 220, 100)
-
-        banner_font = self.font if kind == "ach" else self.big_font
-        cm = self._txt(banner_font, msg, col)
-        cx = BASE_WIDTH // 2
-        cy = BASE_HEIGHT // 2
-        # Dark plate behind for readability
-        pad_x, pad_y = (18, 10) if kind == "ach" else (28, 16)
-        plate_a = 70 if kind in ("stage", "ach") else 160
-        # La plaque ne dépend que de sa taille et de son opacité : gardée d'une image à l'autre.
-        pkey = (cm.get_width() + pad_x * 2, cm.get_height() + pad_y * 2, plate_a)
-        plates = self.__dict__.setdefault("_cheat_plates", {})
-        plate = plates.get(pkey)
-        if plate is None:
-            plate = pygame.Surface(pkey[:2], pygame.SRCALPHA)
-            pygame.draw.rect(plate, (0, 0, 0, plate_a), plate.get_rect(), border_radius=8)
-            if len(plates) >= 32:
-                plates.clear()
-            plates[pkey] = plate
-        self.game_surface.blit(plate, (cx - plate.get_width() // 2, cy - plate.get_height() // 2))
-        # Glow
-        for ox, oy in ((-2, 0), (2, 0), (0, -2), (0, 2), (-1, -1), (1, 1)):
-            g = self._txt(banner_font, msg, col)
-            g.set_alpha(int(50 + 60 * pulse))
-            self.game_surface.blit(g, (cx - cm.get_width() // 2 + ox, cy - cm.get_height() // 2 + oy))
-        self.game_surface.blit(cm, (cx - cm.get_width() // 2, cy - cm.get_height() // 2))
+            col = base
+        glow = pulse if ctype in ("gain", "reward", "special", "danger") else 0.0
+        announce.draw(self, self.game_surface, self.cheat_msg, ctype, level,
+                      (BASE_WIDTH // 2, BASE_HEIGHT // 2), color=col, glow=glow)
 
     def _add_score(self, ship, pts):
         pts = int(pts)
@@ -2250,27 +2224,18 @@ class Game:
             pygame.draw.rect(surface, (255, 80, 60), pygame.Rect(0, y, BASE_WIDTH, 3))
             pygame.draw.rect(surface, (180, 20, 20), pygame.Rect(0, y + 4, BASE_WIDTH, 1))
         msg = t("game_over")
-        col = (255, int(80 + 80 * pulse), int(60 + 40 * pulse))
-        title = self._txt(self.big_font, msg, col)
-        if fade < 0.99:
-            title = title.copy()
-            title.set_alpha(int(255 * fade))
-        cx = BASE_WIDTH // 2 - title.get_width() // 2
-        cy = BASE_HEIGHT // 2 - title.get_height() // 2
+        col = announce.mix(announce.DANGER, (255, 110, 90), 0.5 * pulse)
+        centre = (BASE_WIDTH // 2, BASE_HEIGHT // 2)
         who = getattr(self, "go_card_player", None)
         if who:
             sub = self._txt(self.medium_font, t("player_n").format(n=int(who)), (255, 200, 120))
             if fade < 0.99:
                 sub = sub.copy()
                 sub.set_alpha(int(255 * fade))
-            surface.blit(sub, (BASE_WIDTH // 2 - sub.get_width() // 2, cy - 52))
-        glow = self._txt(self.big_font, msg, (80, 0, 0))
-        if fade < 0.99:
-            glow = glow.copy()
-            glow.set_alpha(int(255 * fade))
-        for ox, oy in ((-2, 0), (2, 0), (0, -2), (0, 2)):
-            surface.blit(glow, (cx + ox, cy + oy))
-        surface.blit(title, (cx, cy))
+            pad_y = announce.LEVELS["major"]["pad"][1]
+            top = centre[1] - self.big_font.get_height() // 2 - pad_y        # above the plate of the title
+            surface.blit(sub, (BASE_WIDTH // 2 - sub.get_width() // 2, top - sub.get_height() - 8))
+        announce.draw(self, surface, msg, "danger", "major", centre, color=col, glow=pulse, alpha=int(255 * fade))
 
     def _begin_highscore_flow(self):
 
@@ -2936,6 +2901,7 @@ class Game:
                     self.cheat_msg = t("pad_unplugged")
                 except Exception:
                     self.cheat_msg = "PAD"
+                self.cheat_kind = "pad"
                 self.cheat_msg_timer = 3.5
             elif lost and not getattr(self, "started", False):
                 if self.input_mode == "gamepad":
@@ -3759,6 +3725,7 @@ class Game:
         self.sounds.stop_sfx("saucer_pass", 150)
         back_story = False
         toast = ""
+        toast_kind = "info"
         story_slot = None
         story_pane = "map"
         if getattr(self, "adventure", None) and getattr(self, "story", None):
@@ -3771,6 +3738,7 @@ class Game:
                                             used=self.adventure.get("items"),
                                             flawless=not self.adventure.get("life_lost"))
                     toast = self.story.toast
+                    toast_kind = self.story.toast_kind
                 else:
                     # leaving a mission by choice: nothing gained, nothing lost, back to the hangar
                     story_pane = "hangar"
@@ -3798,10 +3766,11 @@ class Game:
             if getattr(self, "story", None):
                 if story_slot:
                     # the new Game forgot the open slot; the result is already saved
-                    self.story.resume(story_slot, toast, story_pane)
+                    self.story.resume(story_slot, toast, story_pane, toast_kind)
                 else:
                     self.story.pane = story_pane
                     self.story.toast = toast
+                    self.story.toast_kind = toast_kind
         else:
             self.menu_screen = "main"
             self.menu_index = 0
@@ -3961,7 +3930,8 @@ class Game:
             path = os.path.join(folder, f"phenix_{stamp}.png")
             # Capture the real window surface (bezels + game)
             pygame.image.save(self.screen, path)
-            self.cheat_msg = f"SCREENSHOT"
+            self.cheat_msg = "SCREENSHOT"
+            self.cheat_kind = "system"
             self.cheat_msg_timer = 2.0
             print("Screenshot saved:", path)
             return path

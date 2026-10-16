@@ -8,6 +8,7 @@ and behave exactly as before; Game.draw() calls them in the same order.
 import pygame
 
 import addon as mame_addon
+import announce
 import credits_screen
 import crt
 import escort
@@ -105,12 +106,12 @@ def draw_play(game):
         else:
             game._draw_phenix_gauge(game.player, 18, 100)
     if game.attract_mode:
-        demo = tc.get(game.medium_font, t("demo"), (255, 180, 80))
+        demo = tc.get(game.medium_font, t("demo"), announce.INFO)
         game.game_surface.blit(demo, (BASE_WIDTH // 2 - demo.get_width() // 2, 72))
-        hint = tc.get(game.font, t("press_any"), (180, 180, 200))
+        hint = tc.get(game.font, t("press_any"), announce.NEUTRAL)
         game.game_surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 36))
     if getattr(game, "used_cheat", False) and not game.attract_mode:
-        ch = tc.get(game.font, t("cheat_active"), (255, 60, 60))
+        ch = tc.get(game.font, t("cheat_active"), announce.SPECIAL)
         game.game_surface.blit(ch, (BASE_WIDTH // 2 - ch.get_width() // 2, 74))
 
     mission_name = ""
@@ -121,33 +122,33 @@ def draw_play(game):
     stage_surf = tc.get(
         game.font,
         mission_name if getattr(game, "adventure", None) else f"{t('stage')} {game.stage}",
-        (255, 170, 80) if getattr(game, "adventure", None) else (180, 180, 220),
+        announce.INFO,
     )
     stage_x = BASE_WIDTH // 2 - stage_surf.get_width() // 2 if game.play_mode == "coop" else 16
     game.game_surface.blit(stage_surf, (stage_x, 16))
     adv = getattr(game, "adventure", None)
     if adv and adv.get("swarm") and game.play_mode != "coop":
-        left = tc.get(game.font, t("story_swarm_left").format(n=game.formation.swarm_remaining()), (255, 220, 120))
+        left = tc.get(game.font, t("story_swarm_left").format(n=game.formation.swarm_remaining()), announce.INFO)
         game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
     elif adv and adv.get("escort") and game.play_mode != "coop" and hasattr(game.formation, "cruise"):
         pct = int(game.formation.cruise.progress() * 100)
-        left = tc.get(game.font, t("story_vip_hud").format(p=pct), (255, 220, 120))
+        left = tc.get(game.font, t("story_vip_hud").format(p=pct), announce.INFO)
         game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
     elif adv and adv.get("galaga") and game.play_mode != "coop":
         form = game.formation
         left = tc.get(game.font, t("story_galaga_hud").format(n=max(1, int(getattr(form, "wave", 1))),
                                                               m=int(getattr(form, "waves", 4)),
-                                                              left=form.remaining()), (255, 220, 120))
+                                                              left=form.remaining()), announce.INFO)
         game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
     elif adv and adv.get("invaders") and game.play_mode != "coop":
-        left = tc.get(game.font, t("story_swarm_left").format(n=game.formation.remaining()), (255, 220, 120))
+        left = tc.get(game.font, t("story_swarm_left").format(n=game.formation.remaining()), announce.INFO)
         game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
     elif adv and len(adv.get("waves") or []) > 1 and game.play_mode != "coop":
         wave = tc.get(game.font, t("story_wave_n").format(n=int(adv.get("wave_i", 0)) + 1, m=len(adv["waves"])),
-                      (255, 220, 120))
+                      announce.INFO)
         game.game_surface.blit(wave, (BASE_WIDTH - 16 - wave.get_width(), 44))
     if getattr(game, "adventure", None) and not game.adventure.get("dome"):
-        off = tc.get(game.font, t("story_dome_broken"), (255, 90, 80))
+        off = tc.get(game.font, t("story_dome_broken"), announce.DANGER)
         game.game_surface.blit(off, (16, 40))
     _draw_loot_hud(game)
     escort.banner(game, game.game_surface)
@@ -500,11 +501,11 @@ def draw_menu_footer(game):
 
 def draw_hs_enter(game):
     """High-score entry: three initials."""
-    title = game._txt(game.big_font, t("new_record"), (255, 220, 100))
-    game.game_surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 100))
+    announce.draw(game, game.game_surface, t("new_record"), "reward", "major",
+                  (BASE_WIDTH // 2, 100 + game.big_font.get_height() // 2))
     if game.hotseat or getattr(game, "play_mode", "solo") == "coop":
         who = game._txt(game.font, t("player_n").format(n=game.hs_slot_label), (255, 200, 120))
-        game.game_surface.blit(who, (BASE_WIDTH // 2 - who.get_width() // 2, 72))
+        game.game_surface.blit(who, (BASE_WIDTH // 2 - who.get_width() // 2, 44))
 
     sc = game._txt(game.font, f"{t('score_label')} : {game.format_score(game.score)}", (200, 255, 180))
     game.game_surface.blit(sc, (BASE_WIDTH // 2 - sc.get_width() // 2, 180))
