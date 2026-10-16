@@ -10,6 +10,7 @@ import os
 
 import pygame
 
+import controls
 from enemy import EnemyFormation
 from gpu_present import GpuPresenter
 from i18n import LANG_CODES, set_lang
@@ -325,10 +326,8 @@ def init_input_menu(game):
     pygame.joystick.init()
     game.joystick = None
     game.gamepad_detected = False
-    if pygame.joystick.get_count() > 0:
-        game.joystick = pygame.joystick.Joystick(0)
-        game.joystick.init()
-        game.gamepad_detected = True
+    game.pads = controls.PadRegistry()        # the pads plugged in, followed by their identifier (src/controls.py)
+    controls.sync_game(game)
 
     # Menu state: "main" | "options" | "story_hub"
     game.menu_screen = "main"

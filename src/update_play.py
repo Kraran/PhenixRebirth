@@ -32,6 +32,8 @@ def tick_ships(game):
             if getattr(game, "play_mode", "solo") != "coop":
                 mode = game.input_mode
                 joy = game.joystick
+                if mode == "gamepad" and joy is None:
+                    mode = "keyboard"                # the only pad is gone: the keys take over
                 ship.input_scheme = "solo"
             else:
                 scheme = getattr(ship, "input_scheme", "solo")
