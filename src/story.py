@@ -485,7 +485,8 @@ class StoryHub:
         self._film_sound = None
 
     def _end_film(self):
-        """The film is over, or skipped: it counts as seen, the journal keeps it, the music of the menus comes back."""
+        """The film is over, or skipped: it counts as seen, the journal keeps it, the music of the menus comes back. The
+        first time, the film that follows it comes next (the songs of the concert); B / Esc skips one song."""
         film = self.film_id
         self._stop_film()
         try:
@@ -495,13 +496,19 @@ class StoryHub:
             log_exc("story._end_film")
         if self.sounds is not None and getattr(self.sounds, "_current_music", None) == "film":
             self.sounds._current_music = None      # the game starts the menu theme again
+        nxt = ss.film_after(film) if film else None
         if film:
+            first = not ss.film_seen(self.state, film)
             ss.mark_film_seen(self.state, film)
             self.save()
+            if not first or (nxt and ss.film_seen(self.state, nxt)):
+                nxt = None                         # (watched again from the journal: that film alone)
         self.film_id = None
         self.screen = "hub"
         self.pane = self.film_return
         self.zone = "slots"
+        if nxt:
+            self.start_film(nxt, back_to=self.film_return)     # the next song of the concert
 
     # --- Act 3: the choice of the hull that keeps the quantum anchor ---
     def _maybe_act3(self):

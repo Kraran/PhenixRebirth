@@ -1173,10 +1173,13 @@ SCENE_ORDER = (["ch1_sortie", "best_s2", "best_s3", "best_s4", "dome_1", "best_b
 
 
 # The films: videos watched full screen with their sound (assets/video/<video>.mp4, silent, and <video>.ogg, its
-# sound; the jukebox intro is made the same way). A film comes right after a scene (`after`) the first time, then the
-# journal keeps a line to watch it again. Keys are film ids, in the order of the journal.
+# sound; the jukebox intro is made the same way). A film comes right after a scene or another film (`after`) the first
+# time, then the journal keeps a line to watch it again. Keys are film ids, in the order of the journal.
+# Lyra Voss's private concert, after the VIP rescue: three songs in a row.
 FILMS = {
     "lyra_1": {"title": "story_film_lyra1_t", "video": "lyra_1_eternal_dawn", "after": VIP_SCENE},
+    "lyra_2": {"title": "story_film_lyra2_t", "video": "lyra_2_what_we_lost", "after": "lyra_1"},
+    "lyra_3": {"title": "story_film_lyra3_t", "video": "lyra_3_no_mercy_left", "after": "lyra_2"},
 }
 
 
@@ -1193,8 +1196,18 @@ def film_files(film_id):
 
 
 def film_after(scene_id):
-    """The film told right after this scene, or None."""
+    """The film told right after this scene (or this film), or None."""
     return next((fid for fid, film in FILMS.items() if film.get("after") == scene_id), None)
+
+
+def film_chain(start):
+    """The films that follow a scene (or a film) one after the other: [film id, ...]."""
+    out = []
+    fid = film_after(start)
+    while fid and fid not in out:
+        out.append(fid)
+        fid = film_after(fid)
+    return out
 
 
 def film_flag(film_id):
@@ -1927,7 +1940,7 @@ def journal_entries(state):
     out = [{"intro": True}]                                  # lines that replay a story scene, then the films
     for mid in scenes_seen(state):
         out.append({"scene": mid})
-        out.extend({"film": fid} for fid, film in FILMS.items() if film.get("after") == mid and film_seen(state, fid))
+        out.extend({"film": fid} for fid in film_chain(mid) if film_seen(state, fid))
     shown = {e.get("film") for e in out}
     out.extend({"film": fid} for fid in FILMS if fid not in shown and film_seen(state, fid))
     hunts = {m["log"]: m["id"] for m in MISSIONS if (is_hunt(m) or is_paint(m)) and m.get("log")}
