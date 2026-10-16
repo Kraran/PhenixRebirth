@@ -58,10 +58,33 @@ def _draw_loot_hud(game):
         game.game_surface.blit(img, (BASE_WIDTH // 2 - img.get_width() // 2, 110))
 
 
+def scene_overlaid(game):
+    """True while something is laid over the scene of the run (pause, game over, hot-seat hand-off): the banner then
+    keeps being drawn last, over it, so that an unlock is still seen."""
+    return bool(game.game_over or game.paused or game.hotseat_wait)
+
+
+def announce_layer(game):
+    """The announcement banner (1UP, achievement...), drawn as a layer of the scene: over the boss saucer and the
+    background, UNDER every alien and its shots, so the action stays readable in the middle of a fight.
+
+    Game._draw_canvas draws the banner last everywhere else (menus, high scores, and a run under an overlay), over
+    everything. In a plain run that last call is skipped (`game._announce_done`), or it would paint over the aliens
+    again. The banner has always been drawn twice in a run (once here, once last) and its plate is a little denser
+    for it: both copies stay."""
+    if scene_overlaid(game):
+        game._draw_cheat_message()
+        return
+    game._draw_cheat_message()
+    game._draw_cheat_message()
+    game._announce_done = True
+
+
 def draw_play(game):
-    """In-run scene: boss, birds, explosions, ships, score, lives and HUD."""
+    """In-run scene: boss saucer, banner, birds, explosions, ships, score, lives and HUD."""
     if game.boss_saucer:
         game.boss_saucer.draw(game.game_surface)
+    announce_layer(game)                            # over the saucer, under the aliens (and the rest of the action)
     escort.draw(game, game.game_surface)            # the VIP's cruise ship, under the birds (that mission only)
     game.formation.draw(game.game_surface)
     if getattr(game, "loot", None) is not None:
@@ -173,8 +196,6 @@ def draw_play(game):
         fy = 18
         for i in range(game.bosses_defeated):
             game._draw_boss_flag(game.game_surface, fx + i * 18, fy, big=False)
-
-    game._draw_cheat_message()
 
     # Lives as mini ships
     if game.player.infinite_lives:
