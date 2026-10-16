@@ -42,6 +42,7 @@ import invaders
 from invaders import InvaderFormation
 import crt
 import announce
+import controls
 import escort
 import galaga
 from galaga import GalagaFormation
@@ -1650,16 +1651,11 @@ class Game:
 
     def _coop_bindings(self):
         """Assign kb/pad for coop: 2 pads, or kb+pad, or split keyboard."""
-        joys = []
         try:
-            pygame.joystick.init()
-            for i in range(pygame.joystick.get_count()):
-                j = pygame.joystick.Joystick(i)
-                j.init()
-                joys.append(j)
+            controls.sync_game(self)
         except Exception:
-            joys = []
-        self.joysticks = joys
+            log_exc("game._coop_bindings")
+        joys = list(getattr(self, "joysticks", None) or [])      # in the order they were plugged in
         if len(joys) >= 2:
             return ("pad", joys[0]), ("pad", joys[1])
         if len(joys) == 1:
@@ -2762,10 +2758,8 @@ class Game:
         self.joystick = None
         self.joysticks = []
         try:
-            if pygame.joystick.get_count() > 0:
-                self.joystick = pygame.joystick.Joystick(0)
-                self.joystick.init()
-                self.gamepad_detected = True
+            controls.sync_game(self, rebuild=True)             # the old objects died with the window: open fresh ones
+            if self.pads.pads:
                 if keep_pad:
                     self.input_mode = "gamepad"
             elif keep_pad:
@@ -2864,48 +2858,76 @@ class Game:
         self._bezel_stars = []
 
     def _poll_gamepad(self):
-        """Hot-plug detection while on menus (and soft recovery in-game)."""
-        count = pygame.joystick.get_count()
-        if count > 0:
-            if self.joystick is None:
-                try:
-                    self.joystick = pygame.joystick.Joystick(0)
-                    self.joystick.init()
-                    self.gamepad_detected = True
-                    # First detection on menus → default to gamepad if still on auto feel
-                    if not self.started and not self.game_over:
-                        # Newly plugged on menu → switch to gamepad
-                        self.input_mode = "gamepad"
-                        self.save_settings()
-                except Exception:
-                    self.joystick = None
-                    self.gamepad_detected = False
-            else:
-                self.gamepad_detected = True
-        else:
-            lost = bool(self.gamepad_detected or self.joystick)
-            self.joystick = None
-            self.gamepad_detected = False
-            in_run = (
-                bool(getattr(self, "started", False))
-                and not getattr(self, "game_over", False)
-                and not getattr(self, "attract_mode", False)
-            )
-            if lost and in_run:
-                if not getattr(self, "paused", False):
-                    self.paused = True
-                    self.pause_index = 0
-                    self.pause_options = False
-                    self.quit_confirm = False
-                try:
-                    self.cheat_msg = t("pad_unplugged")
-                except Exception:
-                    self.cheat_msg = "PAD"
-                self.cheat_kind = "pad"
-                self.cheat_msg_timer = 3.5
-            elif lost and not getattr(self, "started", False):
-                if self.input_mode == "gamepad":
-                    self.input_mode = "keyboard"
+        """Hot-plug detection while on menus (and soft recovery in-game): a pad that appears or goes away."""
+        was = bool(self.gamepad_detected or self.joystick)
+        try:
+            added, removed = controls.sync_game(self)
+        except Exception:
+            log_exc("game._poll_gamepad")
+            added, removed = [], []
+        in_run = (
+            bool(getattr(self, "started", False))
+            and not getattr(self, "game_over", False)
+            and not getattr(self, "attract_mode", False)
+        )
+        if self.pads.pads:
+            # First detection on menus -> default to gamepad (newly plugged on the menu)
+            if added and not was and not self.started and not self.game_over:
+                self.input_mode = "gamepad"
+                self.save_settings()
+            if in_run and getattr(self, "play_mode", "solo") == "coop":
+                self._coop_pads_changed()
+            return
+        lost = was or bool(removed)
+        if getattr(self, "play_mode", "") == "coop":
+            self._coop_drop_pads()
+        if lost and in_run:
+            if not getattr(self, "paused", False):
+                self.paused = True
+                self.pause_index = 0
+                self.pause_options = False
+                self.quit_confirm = False
+            try:
+                self.cheat_msg = t("pad_unplugged")
+            except Exception:
+                self.cheat_msg = "PAD"
+            self.cheat_kind = "pad"
+            self.cheat_msg_timer = 3.5
+        elif lost and not getattr(self, "started", False):
+            if self.input_mode == "gamepad":
+                self.input_mode = "keyboard"
+
+    def _coop_drop_pads(self):
+        """Coop: every pad is gone, the ships that were on a pad hold no pad any more."""
+        for ship in self._ships():
+            if getattr(ship, "input_scheme", "") == "pad":
+                ship._joy = None
+
+    def _coop_pads_changed(self):
+        """Coop, a pad came or went while playing: a ship whose pad is unplugged stops (the keys of the other player
+        never move it) and the game pauses, saying which player; a pad plugged in again goes to the ship without one."""
+        ships = [s for s in self._ships() if getattr(s, "input_scheme", "") == "pad"]
+        lost = []
+        for ship in ships:
+            if getattr(ship, "_joy", None) is not None and not self.pads.has(ship._joy):
+                ship._joy = None
+                lost.append(ship)
+        free = [p for p in self.pads.pads if not any(getattr(s, "_joy", None) is not None
+                                                     and controls.pad_id(s._joy) == controls.pad_id(p) for s in ships)]
+        for ship in ships:
+            if getattr(ship, "_joy", None) is None and free:
+                ship._joy = free.pop(0)
+                if ship in lost:
+                    lost.remove(ship)
+        if lost and not self.paused:
+            self.paused = True
+            self.pause_index = 0
+            self.pause_options = False
+            self.quit_confirm = False
+            n = int(getattr(lost[0], "pid", 1) or 1)
+            self.cheat_msg = t("pad_unplugged_n").format(n=n)
+            self.cheat_kind = "pad"
+            self.cheat_msg_timer = 3.5
 
     def save_settings(self):
 
@@ -3863,6 +3885,8 @@ class Game:
             except Exception:
                 log_exc("game._release_joystick_for_mame")
         self.joysticks = []
+        if getattr(self, "pads", None) is not None:
+            self.pads.clear()
 
     def _launch_addon(self):
         """Run local MAME on the focused ROM, hide the console, wait, come back."""

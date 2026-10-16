@@ -11,6 +11,7 @@ import time
 
 import pygame
 
+import controls
 import videoclip
 from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
 from errlog import log_exc
@@ -111,8 +112,7 @@ def _play(game, clip):
                 return True
             if event.type == pygame.JOYDEVICEADDED:
                 try:
-                    game.joystick = pygame.joystick.Joystick(event.device_index)
-                    game.joystick.init()
+                    controls.sync_game(game)
                 except Exception:
                     log_exc("intro.play_intro")
             if _wants_skip(event):

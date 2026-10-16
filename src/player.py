@@ -378,7 +378,9 @@ class Player:
         else:
             _ai = False
         
-        if not _ai and input_mode == "gamepad" and joystick is not None:
+        if not _ai and input_mode == "gamepad" and joystick is None:
+            pass        # a ship on a pad that is unplugged: no input at all (the keys of another player never move it)
+        elif not _ai and input_mode == "gamepad":
             try:
                 axis = joystick.get_axis(0)
                 if abs(axis) > 0.25:

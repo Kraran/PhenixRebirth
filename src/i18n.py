@@ -2170,6 +2170,21 @@ T = {
         "da": "Controller fjernet — pause",
         "ru": "Геймпад отключён — пауза",
     },
+    "pad_unplugged_n": {
+        "fr": "Manette du joueur {n} débranchée — pause",
+        "en": "Player {n} controller unplugged — paused",
+        "es": "Mando del jugador {n} desconectado — pausa",
+        "de": "Controller von Spieler {n} getrennt — Pause",
+        "it": "Controller del giocatore {n} scollegato — pausa",
+        "pt": "Comando do jogador {n} desligado — pausa",
+        "nl": "Controller van speler {n} los — pauze",
+        "pl": "Pad gracza {n} odłączony — pauza",
+        "tr": "{n}. oyuncunun kolu çıkarıldı — duraklatıldı",
+        "sv": "Spelare {n}s handkontroll urkopplad — paus",
+        "no": "Spiller {n} sin kontroller koblet fra — pause",
+        "da": "Spiller {n}s controller fjernet — pause",
+        "ru": "Геймпад игрока {n} отключён — пауза",
+    },
 
     "pause": {
         "fr": "PAUSE", "en": "PAUSE", "es": "PAUSA", "de": "PAUSE", "it": "PAUSA",
