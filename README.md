@@ -28,7 +28,7 @@ Free to play · Open source · MIT License
 
 - **Main menu**: Play, Adventure, Extras, Options, Quit. *Play* opens the arcade game screen (mode: 1 player / hot seat / coop, difficulty) before the ship select; *Extras* gathers High Scores, Achievements, Jukebox, Credits, Help and the Add-On
 - **Adventure** (an Extras tab at its far left opens Achievements, Jukebox, Credits and Options) — chapter 1: Shield with a broken dome, mission map, bestiary unlocks, hangar credits
-- **VIP rescue** (Act 2 BONUS, needs the two-dimensional reactor) — escort a luxury cruise ship across the bottom of the screen while the level 3 birds dive at it (`src/escort.py`); who was on board is told after the victory, then her private concert plays (a film with its sound, `assets/video/`, watched again from the journal)
+- **VIP rescue** (Act 2 BONUS, needs the two-dimensional reactor) — escort a luxury cruise ship across the bottom of the screen while the level 3 birds dive at it (`src/escort.py`); who was on board is told after the victory, then her private concert plays, three songs in a row (films with their sound, `assets/video/`, each one watched again from the journal)
 - **Adventure intro read aloud** (French) — the text follows the voice (`assets/story/voice/`, made with `tools/make_intro_voice.py`)
 - **Adventure intro in video** — the story slides (Huygens, Phobos, Kamarasov; Kamarasov's death in Veteran mode) are short looping clips in `assets/story/`, like Wallems' workshop
 - **Return to base** — a lost mission (Normal mode) is drawn into a blue whirlwind, a flash, and the mission map comes back; Enter / Esc / a pad button skips it (`python tools/make_anchor_sound.py` makes its sound, numpy only)
