@@ -49,9 +49,11 @@ def menu_adjust(game, direction):
         return
     key = spec[game.menu_index]
     if key == "control":
-        game.input_mode = "keyboard" if game.input_mode == "gamepad" else "gamepad"
-        if game.input_mode == "gamepad" and not game.gamepad_detected:
-            game.input_mode = "keyboard"
+        order = ["auto", "keyboard"] + (["gamepad"] if game.gamepad_detected else [])
+        cur = getattr(game, "control_pref", "auto")
+        idx = order.index(cur) if cur in order else 0
+        game.control_pref = order[(idx + (1 if direction >= 0 else -1)) % len(order)]
+        game._apply_control_pref()
         game.save_settings()
     elif key == "autofire":
         game.autofire = not bool(getattr(game, "autofire", True))

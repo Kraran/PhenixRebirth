@@ -2857,6 +2857,39 @@ class Game:
             print("bezel rebuild failed:", e)
         self._bezel_stars = []
 
+    def _apply_control_pref(self):
+        """The control setting (auto / keyboard / gamepad) turned into the control in use now (`input_mode`):
+        keyboard = the keys; gamepad = the pad if one is plugged in; auto = whichever device was used last, and the
+        pad at once when it is plugged in and nothing was used yet."""
+        pref = getattr(self, "control_pref", "auto")
+        have = bool(getattr(self, "pads", None) is not None and self.pads.pads)
+        if pref == "keyboard" or not have:
+            self.input_mode = "keyboard"
+        elif pref == "gamepad":
+            self.input_mode = "gamepad"
+        else:
+            last = getattr(self, "last_input_pad", None)
+            self.input_mode = "gamepad" if (last is None or last) else "keyboard"
+
+    def _auto_input(self):
+        """A key pressed gives the control back to the keys, a button or a stick pushed gives it to the pad (control
+        "auto"; a forced choice stays as it is). Only when a pad is plugged in: without one, the keys are the only choice."""
+        if getattr(self, "pads", None) is None or not self.pads.pads:
+            return
+        self._apply_control_pref()
+
+    def _use_pad_of(self, event):
+        """Solo / hot-seat with several pads: the pad that was just used is the one that flies the ship."""
+        if getattr(self, "play_mode", "solo") == "coop" and self.started:
+            return
+        inst = getattr(event, "instance_id", None)
+        if inst is None or getattr(self, "pads", None) is None:
+            return
+        for pad in self.pads.pads:
+            if controls.pad_id(pad) == inst:
+                self.joystick = pad
+                return
+
     def _poll_gamepad(self):
         """Hot-plug detection while on menus (and soft recovery in-game): a pad that appears or goes away."""
         was = bool(self.gamepad_detected or self.joystick)
@@ -2871,10 +2904,10 @@ class Game:
             and not getattr(self, "attract_mode", False)
         )
         if self.pads.pads:
-            # First detection on menus -> default to gamepad (newly plugged on the menu)
-            if added and not was and not self.started and not self.game_over:
-                self.input_mode = "gamepad"
-                self.save_settings()
+            # A pad plugged in (on a menu, or while playing alone): it takes the control, unless the keys were forced
+            if added and not was and not self.game_over and getattr(self, "play_mode", "solo") != "coop":
+                self.last_input_pad = True
+            self._apply_control_pref()
             if in_run and getattr(self, "play_mode", "solo") == "coop":
                 self._coop_pads_changed()
             return
@@ -2893,9 +2926,8 @@ class Game:
                 self.cheat_msg = "PAD"
             self.cheat_kind = "pad"
             self.cheat_msg_timer = 3.5
-        elif lost and not getattr(self, "started", False):
-            if self.input_mode == "gamepad":
-                self.input_mode = "keyboard"
+        self.last_input_pad = False
+        self._apply_control_pref()
 
     def _coop_drop_pads(self):
         """Coop: every pad is gone, the ships that were on a pad hold no pad any more."""
@@ -2932,7 +2964,7 @@ class Game:
     def save_settings(self):
 
         save_user_settings({
-            "input_mode": self.input_mode,
+            "control_pref": getattr(self, "control_pref", "auto"),
             "display_mode": self.display_mode,
             "bezel_style": getattr(self, "bezel_style", "phoenix"),
             "monitor_index": int(getattr(self, "monitor_index", 0) or 0),
@@ -3216,7 +3248,10 @@ class Game:
     def _option_value(self, key):
         """The value shown for the option `key` ("" for the rows that are actions)."""
         if key == "control":
-            return t("ctrl_pad") if self.input_mode == "gamepad" else t("ctrl_kb")
+            now = t("ctrl_pad") if self.input_mode == "gamepad" else t("ctrl_kb")
+            if getattr(self, "control_pref", "auto") == "auto":
+                return f"{t('ctrl_auto')} ({now})"
+            return now
         if key == "autofire":
             return t("yes") if getattr(self, "autofire", True) else t("no")
         if key == "sfx":
@@ -3993,8 +4028,11 @@ class Game:
                 # the help bar shows the buttons of the device used last (a stick that drifts back to rest is not a choice)
                 if event.type == pygame.KEYDOWN:
                     self.last_input_pad = False
+                    self._auto_input()
                 elif not (event.type == pygame.JOYAXISMOTION and abs(getattr(event, "value", 0.0)) < 0.5):
                     self.last_input_pad = True
+                    self._use_pad_of(event)
+                    self._auto_input()
                 before = menu_sfx.safe_snapshot(self) if menu_sfx.watching(self, event) else None
                 screen_before = menu_fx.screen_key(self) if before is not None else None
                 started_before = bool(self.started)
