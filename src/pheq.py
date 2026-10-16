@@ -8,7 +8,8 @@ File format (little-endian), baked at 24 fps / 40 log bands / 22050 Hz:
   nframes   u32
   data      nframes * nbar bytes  (0..255)
 
-Do not regenerate these files. Play the ones next to the MP3s.
+Do not regenerate the files of the soundtrack: play the ones next to the MP3s. A new track gets its own file from
+tools/make_pheq.py (the same recipe, found by fitting it on the originals).
 """
 from __future__ import annotations
 
@@ -25,6 +26,10 @@ PHEQ_FILES = {
     "credits": "Phenix-LastCoin-Credits.pheq",
     "nostalgie_start": "Phenix-Nostalgie-Interdite.pheq",
     "nostalgie_elise": "Phenix-Nostalgie-Elise.pheq",
+    "lyra_eternal_dawn": "Lyra-Voss-Eternal-Dawn.pheq",
+    "lyra_what_we_lost": "Lyra-Voss-What-We-Lost.pheq",
+    "lyra_no_mercy_left": "Lyra-Voss-No-Mercy-Left.pheq",
+    "lyra_oldest_fear": "Lyra-Voss-Oldest-Fear.pheq",
 }
 
 
