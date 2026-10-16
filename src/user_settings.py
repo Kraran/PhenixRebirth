@@ -14,6 +14,8 @@ SETTINGS_FILE = os.path.join(user_data_dir(), "settings.json")
 
 def load_user_settings():
     defaults = {
+        "coop_p1": "auto",  # coop: the device of player 1 and 2: auto | kb_left | kb_arrows | pad1, pad2...
+        "coop_p2": "auto",
         "control_pref": "auto",  # auto (the last device used) | keyboard | gamepad
         "display_mode": "fullscreen",
         "sfx_volume": 0.8,

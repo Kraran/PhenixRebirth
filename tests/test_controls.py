@@ -182,7 +182,7 @@ def test_coop_with_one_pad_or_none(run, bench):
     assert (s1, s2) == ("kb1", "kb2") and j2 is None
     bench.plug()
     (s1, j1), (s2, j2) = g._coop_bindings()
-    assert s1 == "pad" and j1 is not None and s2 == "solo" and j2 is None
+    assert s1 == "pad" and j1 is not None and s2 == "kb2" and j2 is None
 
 
 def test_the_second_player_keeps_the_second_pad_when_the_first_one_is_replugged(run, bench):

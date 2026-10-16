@@ -10,6 +10,14 @@ import pygame
 from highscores import reset_highscores
 
 
+def _ship_on_keyboard(game, schemes):
+    """The coop ship whose control is one of these keyboard schemes (None if no ship uses it)."""
+    for ship in game._ships():
+        if getattr(ship, "input_scheme", "") in schemes:
+            return ship
+    return None
+
+
 def on_keydown(game, event):
     """Keyboard press: attract exit, Phenix/Shield, pause, menus, quit confirm, high-score entry."""
     if event.key == pygame.K_F12:
@@ -47,16 +55,16 @@ def on_keydown(game, event):
         if shift_repeat:
             pass
         elif event.key == pygame.K_LSHIFT:
-            # Coop split-keyboard P1 only
-            if game.play_mode == "coop" and getattr(game.player, "input_scheme", "") == "kb1":
-                game._activate_phenix_from_input(game.player)
+            # Coop: the player on the left-hand keyboard (whichever of the two it is)
+            target = _ship_on_keyboard(game, ("kb1",))
+            if game.play_mode == "coop" and target is not None:
+                game._activate_phenix_from_input(target)
         elif event.key == pygame.K_RSHIFT:
             if game.play_mode == "coop":
-                # P2 keyboard (or 1P-style layout)
-                target = game.player2
-                if getattr(game.player, "input_scheme", "") == "solo":
-                    target = game.player2
-                game._activate_phenix_from_input(target)
+                # Coop: the player on the arrows keyboard (whichever of the two it is)
+                target = _ship_on_keyboard(game, ("kb2", "solo"))
+                if target is not None:
+                    game._activate_phenix_from_input(target)
             else:
                 game._activate_phenix_from_input(game.player)
     if event.key == pygame.K_ESCAPE:

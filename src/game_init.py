@@ -349,6 +349,8 @@ def init_settings(game, soft):
     if not hasattr(game, "control_pref"):
         pref = user.get("control_pref", "auto")
         game.control_pref = pref if pref in ("auto", "keyboard", "gamepad") else "auto"
+    if not hasattr(game, "coop_pref"):
+        game.coop_pref = [controls.clean_choice(user.get("coop_p1")), controls.clean_choice(user.get("coop_p2"))]
     if not hasattr(game, "input_mode"):
         game.input_mode = "keyboard"
         game._apply_control_pref()          # auto: a pad that is plugged in takes the control at once

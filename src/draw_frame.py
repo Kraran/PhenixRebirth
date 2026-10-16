@@ -401,7 +401,9 @@ def draw_options(game, top):
             x = _value_with_arrows(game, surf, small, value, right, cy, chosen, vcol)
             _gauge(surf, x - 16, cy, fill, steps, chosen)
         else:
-            _value_with_arrows(game, surf, font, value, right, cy, chosen, vcol)
+            # the two coop rows have a long value ("Auto (Touches ZQSD/WASD)"): the smaller font keeps it in the box
+            _value_with_arrows(game, surf, small if key in ("coop_p1", "coop_p2") else font, value, right, cy,
+                               chosen, vcol)
     if 0 <= game.menu_index < len(keys):
         game._draw_option_help(keys[game.menu_index], box=(700, box.y, 520, box.h))
 

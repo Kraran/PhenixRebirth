@@ -5,6 +5,7 @@ Extracted from game.py (Game._menu_adjust, Game._menu_confirm). Functions take
 the Game object as `game` and behave exactly as before.
 """
 import addon as mame_addon
+import controls
 from highscores import load_highscores, reset_highscores
 from i18n import LANG_CODES, set_lang
 from ingame_music import cycle as ingame_cycle
@@ -54,6 +55,15 @@ def menu_adjust(game, direction):
         idx = order.index(cur) if cur in order else 0
         game.control_pref = order[(idx + (1 if direction >= 0 else -1)) % len(order)]
         game._apply_control_pref()
+        game.save_settings()
+    elif key in ("coop_p1", "coop_p2"):
+        i = 0 if key == "coop_p1" else 1
+        pref = list(getattr(game, "coop_pref", None) or [controls.AUTO, controls.AUTO])
+        n = len(game.pads.pads)
+        order = controls.coop_choices(n, pref[1 - i])
+        cur = pref[i] if pref[i] in order else controls.AUTO
+        pref[i] = order[(order.index(cur) + (1 if direction >= 0 else -1)) % len(order)]
+        game.coop_pref = pref
         game.save_settings()
     elif key == "autofire":
         game.autofire = not bool(getattr(game, "autofire", True))
