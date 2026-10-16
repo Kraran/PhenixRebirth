@@ -48,7 +48,7 @@ from boss import BossSaucer
 from explosion import Explosion, TeslaCoilFx
 from starfield import Starfield
 from sounds import SoundManager
-from pheq import load_pheq, resolve_path as pheq_resolve, sample as pheq_sample, tick as pheq_tick, draw as pheq_draw, clock_y as pheq_clock_y
+from pheq import load_pheq, resolve_path as pheq_resolve, sample as pheq_sample, tick as pheq_tick, draw as pheq_draw, clock_y as pheq_clock_y, draw_seek as pheq_draw_seek
 from ingame_music import cycle as ingame_cycle, label as ingame_label, normalize as ingame_normalize
 from mp3_title import title_from_path, title_for_key
 from i18n import set_lang, get_lang, t, t_help, t_list, get_credits_lines, LANGS, LANG_CODES
@@ -515,7 +515,7 @@ class Game:
         pheq_tick(self._eq_bands, self._eq_peaks, target, playing and bool(seq), dt)
 
     def _draw_eq(self, surface):
-        """Original neon bars from .pheq — no frame, no panel."""
+        """The LED rack of the jukebox (pheq.draw), from the bands of the .pheq file."""
         pheq_draw(
             surface, pygame,
             getattr(self, "_eq_bands", []),
@@ -618,14 +618,11 @@ class Game:
             if not self.juke_paused:
                 self._juke_hold_pos = pos
             if dur > 1.0:
-                bx, by, bw, bh = 220, BASE_HEIGHT - 88, BASE_WIDTH - 440, 10
-                pygame.draw.rect(surface, (40, 40, 55), (bx, by, bw, bh), border_radius=3)
-                fill = max(0.0, min(1.0, pos / dur))
-                pygame.draw.rect(surface, (255, 180, 80), (bx, by, int(bw * fill), bh), border_radius=3)
+                pheq_draw_seek(surface, pygame, pos, dur, BASE_WIDTH, BASE_HEIGHT)
                 clock = self._txt(
                     self.font,
                     f"{int(pos)//60}:{int(pos)%60:02d} / {int(dur)//60}:{int(dur)%60:02d}",
-                    (180, 180, 210),
+                    (255, 200, 120),
                 )
                 surface.blit(clock, (BASE_WIDTH // 2 - clock.get_width() // 2, pheq_clock_y(BASE_HEIGHT)))
         hint_bar.draw_for(self, surface)
