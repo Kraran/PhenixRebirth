@@ -4312,6 +4312,7 @@ class Game:
         draw_frame.draw_menu_footer(self)
 
     def _draw_canvas(self):
+        self._announce_done = False
         story = getattr(self, "story", None)
         if not (not self.started and self.menu_screen == "story_hub" and story is not None
                 and story.covers_screen()):
@@ -4368,8 +4369,9 @@ class Game:
 
         draw_frame.draw_post_effects(self)
 
-        # Toast last so menus / credits / hauts faits can show unlocks
-        self._draw_cheat_message()
+        # Toast last so menus / credits / hauts faits can show unlocks (in a run, it is a layer of the scene already)
+        if not self._announce_done:
+            self._draw_cheat_message()
         
         self._draw_screen_fade()
         return shake_x, shake_y
