@@ -633,12 +633,16 @@ def test_the_tabs_change_with_tab_and_the_page_keys(run):
     st = open_from_options(run)
     run.key(pygame.K_TAB, frames=1)
     assert st.tab == 1 and st.profile == KB2
-    run.key(pygame.K_TAB, frames=1, mod=pygame.KMOD_SHIFT)
+    run.key(pygame.K_TAB, frames=1)
+    assert st.tab == 2 and st.profile == bindings.PAD and st.is_pad            # the gamepad is the third tab
+    run.key(pygame.K_TAB, frames=1)
     assert st.tab == 0
+    run.key(pygame.K_TAB, frames=1, mod=pygame.KMOD_SHIFT)
+    assert st.tab == 2
     run.key(pygame.K_PAGEUP, frames=1)
     assert st.tab == 1
     run.key(pygame.K_PAGEDOWN, frames=1)
-    assert st.tab == 0
+    assert st.tab == 2
 
 
 def test_a_key_is_chosen_with_enter_and_the_next_key_pressed(run):
@@ -893,7 +897,7 @@ def test_every_mode_of_the_screen_draws_in_every_language(run, lang):
     st = g.keybind
     bindings.current.set_key(KB1, "left", 1, None)
     bindings.current.set_key(KB2, "fire", 0, pygame.K_x)
-    for tab in range(len(ks.TABS)):
+    for tab in range(2):                                                      # (the keyboards: the gamepad has its own test)
         st.tab = tab
         for row in range(len(ks.ROWS)):
             for col in (0, 1):
@@ -924,8 +928,8 @@ def test_the_screen_is_drawn_by_the_game_loop_over_the_options_and_over_the_paus
 def test_every_text_of_the_screen_exists_in_all_languages():
     import i18n
     keys = [k for k in i18n.T if k.startswith(("kb_", "act_", "opt_keybinds", "opt_help_keybinds", "key_", "hint_key_",
-                                              "hint_clear"))]
-    assert len(keys) >= 40
+                                              "hint_clear", "hint_done", "hint_pad_place"))]
+    assert len(keys) >= 70
     for k in keys:
         for code in LANG_CODES:
             assert i18n.T[k].get(code), (k, code)

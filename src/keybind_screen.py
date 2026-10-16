@@ -10,15 +10,19 @@ Dialogs (over the screen): waiting for a key (Escape cancels, Delete clears, it 
 seconds), a key already used elsewhere (swap, or take it), restoring the defaults (the answer "cancel" is chosen).
 A pad drives it too: the D-pad / stick move, A confirms, B goes back, Y clears, LB / RB change the tab.
 """
+import sys
+
 import pygame
 
 import bindings
+import controls
 import fonts
+import keybind_pad
 import menu_ui
 from i18n import t
 from settings import BASE_HEIGHT, BASE_WIDTH
 
-TABS = (bindings.KB1, bindings.KB2)
+TABS = (bindings.KB1, bindings.KB2, bindings.PAD)      # two keyboards, then the gamepads
 ACTION_ROWS = bindings.KEY_ACTIONS
 ROWS = ACTION_ROWS + ("defaults", "back")
 WAIT_SEC = 8.0                   # a key that is waited for: it gives up after this
@@ -48,8 +52,11 @@ class State:
         self.row = 0
         self.col = 0
         self.mode = "list"            # list | wait | conflict | reset
-        self.wait = None              # (profile, action, slot) of the key that is waited for
+        self.wait = None              # (profile, action, slot) of the key that is waited for ("pad": the place of the pad)
         self.wait_left = 0.0
+        self.wait_total = WAIT_SEC
+        self.place = 0                # gamepad tab: the pad shown (0 = the first one plugged in)
+        self.reset_kind = "keys"      # the dialog of "reset": keys | pad | copy
         self.conflict = None          # {"key", "here", "other", "had"}
         self.index = 0                # the answer chosen in a dialog
         self.flash = None             # [text, seconds left]
@@ -62,6 +69,10 @@ class State:
     @property
     def profile(self):
         return TABS[self.tab % len(TABS)]
+
+    @property
+    def is_pad(self):
+        return self.profile == bindings.PAD
 
 
 # ------------------------------------------------------------------------------------------------ open / close
@@ -111,6 +122,8 @@ def tick(game, dt):
 # ------------------------------------------------------------------------------------------------ the actions
 def _what(st):
     """What the defaults dialog restores, as a name: "Keyboard 1"."""
+    if st.is_pad:
+        return keybind_pad.what(st)
     return t("kb_tab").format(n=TABS.index(st.profile) + 1).title()
 
 
@@ -165,7 +178,9 @@ def _resolve_conflict(game, st, accept):
 def _do_reset(game, st, accept):
     st.mode = "list"
     st.grace = GRACE_SEC
-    if accept:
+    if st.is_pad:
+        keybind_pad.do_reset(game, st, st.reset_kind, accept)
+    elif accept:
         bindings.current.reset_keys(st.profile)
         _save(game)
 
@@ -188,6 +203,10 @@ def _command(game, st, cmd):
                 _do_reset(game, st, False)
         return
     if st.mode == "wait":
+        if st.wait[0] == bindings.PAD:                        # the buttons of a pad action: the D-pad or Enter / Esc end it
+            if cmd in ("back", "ok", "up", "down", "left", "right"):
+                keybind_pad.end_wait(st, GRACE_SEC)
+            return
         if cmd == "back":
             st.mode, st.wait = "list", None
         elif cmd == "clear":
@@ -196,18 +215,27 @@ def _command(game, st, cmd):
             st.col, st.row = slot, ACTION_ROWS.index(action)
             _clear_slot(game, st)
         return
+    if cmd in ("tab-prev", "tab-next"):
+        was_pad = st.is_pad
+        st.tab = (st.tab + (1 if cmd == "tab-next" else -1)) % len(TABS)
+        if st.is_pad != was_pad:
+            st.row, st.col = 0, 0
+            st.place = 0 if bindings.current.pad_shared else st.place
+        return
+    if st.is_pad:
+        if keybind_pad.list_command(game, st, cmd):
+            close(game)
+        return
     if cmd == "up":
         st.row = (st.row - 1) % len(ROWS)
     elif cmd == "down":
         st.row = (st.row + 1) % len(ROWS)
     elif cmd in ("left", "right") and st.row < len(ACTION_ROWS):
         st.col = (st.col + (1 if cmd == "right" else -1)) % bindings.SLOTS
-    elif cmd in ("tab-prev", "tab-next"):
-        st.tab = (st.tab + (1 if cmd == "tab-next" else -1)) % len(TABS)
     elif cmd == "ok":
         name = ROWS[st.row]
         if name == "defaults":
-            st.mode, st.index = "reset", 1                   # the safe answer (cancel) is the one chosen
+            st.mode, st.index, st.reset_kind = "reset", 1, "keys"   # the safe answer (cancel) is the one chosen
         elif name == "back":
             close(game)
         else:
@@ -226,6 +254,13 @@ def on_key(game, event):
         st.ignore = None
     if key == pygame.K_F12:
         game.take_screenshot()
+        return
+    if st.mode == "wait" and st.wait[0] == bindings.PAD:
+        if key == st.ignore or (st.grace > 0 and key in OK_KEYS):
+            return
+        if key in (pygame.K_ESCAPE, pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_UP, pygame.K_DOWN, pygame.K_LEFT,
+                   pygame.K_RIGHT):
+            _command(game, st, "back")
         return
     if st.mode == "wait":
         if key in (pygame.K_ESCAPE,):
@@ -277,7 +312,14 @@ def on_keyup(game, event):
 def on_joy_button(game, event):
     st = game.keybind
     b = event.button
+    if st.is_pad and st.mode == "list" and not bindings.current.pad_shared:
+        slot = controls.slot_of(game, event)           # a button of a pad lights up its own place
+        if slot in (0, 1):
+            st.place = slot
     if st.mode == "wait":
+        if st.wait[0] == bindings.PAD:
+            keybind_pad.press(game, st, b)                 # every button is for the action (the D-pad ends it)
+            return
         if b == 1:
             _command(game, st, "back")
         return
@@ -328,6 +370,8 @@ def on_joy_axis(game, event):
 # ------------------------------------------------------------------------------------------------ the help bar
 def help_items(game):
     st = game.keybind
+    if st.is_pad:
+        return keybind_pad.help_items(st) if st.mode in ("list", "wait") else [("ud", "hint_choose"), ("ok", "hint_ok"), ("back", "hint_cancel")]
     if st.mode == "wait":
         return [("back", "hint_cancel"), ("del", "hint_clear")]
     if st.mode in ("conflict", "reset"):
@@ -394,21 +438,27 @@ def draw(game):
     surf = game.game_surface
     hdr = game._txt(game.medium_font, t("opt_keybinds").upper(), menu_ui.TITLE)
     surf.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 40))
-    labels = [t("kb_tab").format(n=i + 1) for i in range(len(TABS))]
+    labels = [t("kb_tab").format(n=i + 1) for i in range(len(TABS) - 1)] + [t("kb_tab_pad")]
     draw_frame.draw_tab_strip(game, labels, st.tab, 108, focused=False)
     note = None
     for size in (17, 15, 13):             # who uses this keyboard: one line under the tabs, in the largest size that fits
-        note = game._txt(_small(size), t("kb_note_%d" % (TABS.index(st.profile) + 1)), (138, 138, 168))
+        note = game._txt(_small(size), t("kb_note_pad" if st.is_pad else "kb_note_%d" % (TABS.index(st.profile) + 1)), (138, 138, 168))
         if note.get_width() <= 1160:
             break
     surf.blit(note, (BASE_WIDTH // 2 - note.get_width() // 2, 148))
-    _draw_list(game, st)
-    _draw_help(game, st)
-    if st.flash:
+    if st.is_pad:
+        keybind_pad.draw(game, st)
+    else:
+        _draw_list(game, st)
+        _draw_help(game, st)
+    if st.flash and not (st.mode == "wait" and st.is_pad):
         img = game._txt(game.menu_font, st.flash[0], ORANGE)
         surf.blit(img, (BASE_WIDTH // 2 - img.get_width() // 2, LEFT.bottom + 6))
     if st.mode == "wait":
-        _draw_wait(game, st)
+        if st.wait[0] == bindings.PAD:
+            keybind_pad.draw_wait(game, st, sys.modules[__name__])
+        else:
+            _draw_wait(game, st)
     elif st.mode == "conflict":
         _draw_conflict(game, st)
     elif st.mode == "reset":
@@ -602,11 +652,20 @@ def _draw_conflict(game, st):
 def _draw_reset(game, st):
     r = _dialog(game, 600, 350)
     surf = game.game_surface
+    copy = st.is_pad and st.reset_kind == "copy"
+    title = t("kb_copy_title" if copy else "kb_reset_title")
+    if copy:
+        text = t("kb_copy_text").format(to=t("ctrl_pad_n").format(n=st.place + 1), src=t("ctrl_pad_n").format(n=2 - st.place))
+    elif st.is_pad:
+        text = t("kb_reset_text_pad").format(what=_what(st))
+    else:
+        text = t("kb_reset_text").format(what=_what(st))
     y = r.y + 22
-    for line in game._wrap_ui(t("kb_reset_title"), game.font, r.w - 60):
+    for line in game._wrap_ui(title, game.font, r.w - 60):
         y = _centered(game, surf, game.font, line, HEAD, r.centerx, y)
     y += 14
     body_font = getattr(game, "body_font", None) or game.font
-    for line in game._wrap_ui(t("kb_reset_text").format(what=_what(st)), body_font, r.w - 60):
+    for line in game._wrap_ui(text, body_font, r.w - 60):
         y = _centered(game, surf, body_font, line, BODY, r.centerx, y)
-    _answers(game, r, r.bottom - 124, [t("kb_reset_ok"), t("hint_cancel")], colours=[menu_ui.DANGER, None])
+    _answers(game, r, r.bottom - 124, [t("kb_copy_ok" if copy else "kb_reset_ok"), t("hint_cancel")],
+             colours=[None if copy else menu_ui.DANGER, None])
