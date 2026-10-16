@@ -9,6 +9,7 @@ import pygame
 
 import addon as mame_addon
 import credits_screen
+import crt
 import escort
 import fonts
 import highscores_screen
@@ -665,8 +666,7 @@ def draw_post_effects(game):
         game.game_surface.blit(flash, (0, 0), special_flags=pygame.BLEND_RGB_ADD)
         game.phenix_flash = 0
 
-    # CRT scanlines — multiply, same format as game_surface (no alpha blit)
+    # CRT scanlines (src/crt.py): 240 soft lines and a vignette; the glow of the bright parts at levels 2 and 3
     if int(getattr(game, "scanlines", 0) or 0) > 0:
-        sc = game._ensure_scanline_surf()
-        if sc is not None:
-            game.game_surface.blit(sc, (0, 0), special_flags=pygame.BLEND_RGB_MULT)
+        if game._ensure_scanline_surf() is not None:
+            crt.apply(game.game_surface, getattr(game, "_scanline_layers", None))

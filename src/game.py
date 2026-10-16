@@ -40,6 +40,7 @@ from player import Player, recolor_phenix_frames
 from enemy import EnemyFormation, BigBird, Enemy
 import invaders
 from invaders import InvaderFormation
+import crt
 import escort
 import galaga
 from galaga import GalagaFormation
@@ -4169,15 +4170,8 @@ class Game:
 
     # --- Render (logical canvas, then present) ---
     def _ensure_scanline_surf(self):
-        """Cached CRT multiply overlay. Period-4 rows (2 dark / 2 clear).
-
-        1px-on/1px-off at 720p moirés when SDL scales to 1080p (1.5×).
-        A 4-pixel period becomes 3+3 at 1080p and 4+4 at 1440p — even bars,
-        no crawling. Soft cool tint, not prison-bar grey.
-
-        Built once as an opaque RGB map; hot path is a single BLEND_RGB_MULT
-        (no per-pixel alpha). Same format as game_surface.
-        """
+        """The CRT scanline layers of the current level (src/crt.py), built once for the canvas they go on; returns
+        the multiply overlay (None at level 0). `_scanline_layers` keeps the rest (the glow of levels 2 and 3)."""
         level = int(getattr(self, "scanlines", 0) or 0)
         if level <= 0:
             return None
@@ -4187,38 +4181,12 @@ class Game:
         key = (level, BASE_WIDTH, BASE_HEIGHT, id(gs) if gs is not None else 0)
         if self._scanline_surf is not None and getattr(self, "_scanline_key", None) == key:
             return self._scanline_surf
-
-        w, h = BASE_WIDTH, BASE_HEIGHT
-        try:
-            if gs is not None:
-                surf = pygame.Surface((w, h), 0, gs)
-            else:
-                surf = pygame.Surface((w, h)).convert()
-        except Exception:
-            surf = pygame.Surface((w, h))
-
-        # (dark_pair, clear_pair) — RGB multiply factors as 0–255
-        # Cool CRT phosphor, never pure black.
-        palettes = {
-            1: ((236, 238, 242), (255, 255, 255)),
-            2: ((214, 218, 228), (250, 252, 255)),
-            3: ((188, 194, 208), (244, 246, 250)),
-        }
-        dark, clear = palettes.get(level, palettes[1])
-        try:
-            tile = pygame.Surface((w, 4), 0, surf)
-        except Exception:
-            tile = pygame.Surface((w, 4))
-        tile.fill(dark, (0, 0, w, 2))
-        tile.fill(clear, (0, 2, w, 2))
-        for y in range(0, h, 4):
-            surf.blit(tile, (0, y))
-
-        self._scanline_surf = surf
+        layers = crt.build(level, (BASE_WIDTH, BASE_HEIGHT), gs)
+        self._scanline_layers = layers
+        self._scanline_surf = layers["mask"] if layers else None
         self._scanline_key = key
         self._scanline_level_cached = level
-        return surf
-
+        return self._scanline_surf
 
     def draw(self):
         # Dessin direct : quand la copie du canevas vers l'écran recouvrirait tout
