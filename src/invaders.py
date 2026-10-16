@@ -15,6 +15,7 @@ import random
 
 import pygame
 
+import announce
 from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
 from enemy import Enemy, EnemyBullet
 
@@ -492,7 +493,7 @@ class InvaderFormation:
                 bullet.draw(surface)
         if self.font is not None:
             for x, y, text, age in self.popups:
-                label = self.font.render(text, True, (255, 230, 120))
+                label = self.font.render(text, True, announce.GAIN)
                 surface.blit(label, (int(x - label.get_width() / 2), int(y - label.get_height() / 2 - age * 24)))
 
     # --- what the rest of the game asks of a formation ---
