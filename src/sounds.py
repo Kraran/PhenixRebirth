@@ -20,6 +20,15 @@ from errlog import log_exc
 SOUND_DIR = asset_path("sounds")
 MUSIC_DIR = asset_path("music")
 
+# Lyra Voss in the jukebox: the three songs of her private concert in the Adventure (the sound of its films, kept in
+# assets/video, so they are not twice in the game) and Oldest Fear. key: (folder, file, length in seconds)
+LYRA_MUSIC = {
+    "lyra_eternal_dawn": ("video", "lyra_1_eternal_dawn.ogg", 307.52),
+    "lyra_what_we_lost": ("video", "lyra_2_what_we_lost.ogg", 287.98),
+    "lyra_no_mercy_left": ("video", "lyra_3_no_mercy_left.ogg", 226.41),
+    "lyra_oldest_fear": ("music", "Lyra-Voss-Oldest-Fear.mp3", 251.18),
+}
+
 
 class SoundManager:
     FADE_MS = 350          # crossfade when switching themes
@@ -137,6 +146,7 @@ class SoundManager:
                 "nostalgie_start": 216.456,  # 3:36
                 "nostalgie_elise": 199.656,  # 3:19
             }
+            self._music_durations.update({k: spec[2] for k, spec in LYRA_MUSIC.items()})
             for k, path in self._music_paths.items():
                 probed = self._probe_duration(path)
                 if probed and abs(probed - self._music_durations.get(k, probed)) < 8.0:
@@ -207,6 +217,10 @@ class SoundManager:
             self._music_paths["nostalgie_start"] = start
         if elise:
             self._music_paths["nostalgie_elise"] = elise
+        for key, (folder, name, _length) in LYRA_MUSIC.items():
+            path = asset_path(folder, name)
+            if os.path.isfile(path):
+                self._music_paths[key] = path
         intro = None
         try:
             from intro import AUDIO_PATH

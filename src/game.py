@@ -299,8 +299,14 @@ class Game:
             ("credits", "juke_lastcoin", "music"),
             ("nostalgie_start", "juke_nostalgie_start", "music"),
             ("nostalgie_elise", "juke_nostalgie_elise", "music"),
+            ("lyra_eternal_dawn", "juke_lyra_eternal_dawn", "music"),       # Lyra Voss: her concert in the Adventure
+            ("lyra_what_we_lost", "juke_lyra_what_we_lost", "music"),
+            ("lyra_no_mercy_left", "juke_lyra_no_mercy_left", "music"),
+            ("lyra_oldest_fear", "juke_lyra_oldest_fear", "music"),
             ("intro", "juke_intro", "video"),
         )
+
+    JUKE_ROWS = 6                   # the tracks shown at once (the list scrolls), above the clock and the LED rack
 
     def _open_jukebox(self):
         self.menu_screen = "jukebox"
@@ -560,9 +566,28 @@ class Game:
             # Track finished — stay selected, ready to replay
             pass
 
+    def _juke_scroll(self, index, n):
+        """The first track shown: the list moves only when the cursor leaves the JUKE_ROWS tracks on screen."""
+        top = int(getattr(self, "_juke_top", 0) or 0)
+        if index < top:
+            top = index
+        elif index >= top + self.JUKE_ROWS:
+            top = index - self.JUKE_ROWS + 1
+        top = max(0, min(top, n - self.JUKE_ROWS))
+        self._juke_top = top
+        return top
+
+    def _juke_arrows(self, surface, box, up, down):
+        """Small amber arrows on the edges of the list when there are more tracks above or below."""
+        cx = box.centerx
+        for show, y, way in ((up, box.top, -1), (down, box.bottom - 1, 1)):
+            if show:
+                tip = y + way * 7
+                pygame.draw.polygon(surface, (255, 200, 120), [(cx - 9, y - way * 3), (cx + 9, y - way * 3), (cx, tip)])
+
     def _juke_title(self, key, path=None):
-        if key == "intro":
-            return t("juke_intro")
+        if key == "intro" or key.startswith("lyra_"):
+            return t("juke_" + key)         # translated: "(Aventure)", "(Adventure)"... (the .ogg files have no tag)
         if path:
             tit = title_from_path(path)
             if tit:
@@ -596,13 +621,18 @@ class Game:
             labels.append(self._juke_title(key) + extra)
         rows_font = fonts.text(32)                  # the tracks: a list to read, in Play (the titles are Audiowide)
         row_h = rows_font.get_linesize()
-        menu_ui.draw_rows(self, surface, rows_font, labels, y0, 46,
-                          int(getattr(self, "juke_index", 0) or 0) % max(1, len(cat)),
-                          pad_y=max(1, (46 - row_h) // 2), panel_pad=(24, 12))
-        # Spectrum + progress of current audio
-        i = int(getattr(self, "juke_index", 0) or 0) % len(cat)
-        key, _tk, kind = cat[i]
-        if kind == "music" and cur == key:
+        index = int(getattr(self, "juke_index", 0) or 0) % max(1, len(cat))
+        top = self._juke_scroll(index, len(cat))
+        shown = labels[top:top + self.JUKE_ROWS]
+        width = max(self._txt(rows_font, label, menu_ui.row_colour(False)).get_width() for label in labels)
+        box = menu_ui.draw_rows(self, surface, rows_font, shown, y0, 46, index - top,
+                                pad_y=max(1, (46 - row_h) // 2), panel_pad=(24, 12), min_width=width)
+        self._juke_arrows(surface, box, top > 0, top + self.JUKE_ROWS < len(cat))
+        # The LED rack, the seek bar and the clock of the track playing (or paused), wherever the cursor is in the
+        # list: they follow the next track only once it is played.
+        music = {k for k, _tk, kind in cat if kind == "music"}
+        if cur in music:
+            key = cur
             if key not in getattr(self, "_eq_seq", {}):
                 self._eq_ensure(key)
             pos = self.sounds.music_pos_sec() if not self.juke_paused else getattr(self, "_juke_hold_pos", 0.0)

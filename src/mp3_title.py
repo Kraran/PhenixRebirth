@@ -11,6 +11,11 @@ KNOWN_TIT2 = {
     "credits": "Phenix - Last Coin (Credits)",
     "nostalgie_start": "Phoenix - Nostalgie interdite (Start)",
     "nostalgie_elise": "Phoenix - Nostalgie pour Elise (Final)",
+    # Lyra Voss: the songs of her concert in the Adventure are .ogg files (no ID3 tag), hence the titles here
+    "lyra_eternal_dawn": "Lyra Voss - Eternal Dawn (Aventure)",
+    "lyra_what_we_lost": "Lyra Voss - What We Lost (Aventure)",
+    "lyra_no_mercy_left": "Lyra Voss - No Mercy Left (Aventure)",
+    "lyra_oldest_fear": "Lyra Voss - Oldest Fear",
 }
 
 KEY_FILES = {
@@ -25,6 +30,10 @@ KEY_FILES = {
         "Phenix-Nostalgie-Elise.mp3",
         "Phoenix - Nostalgie pour Elise (Final).mp3",
     ),
+    "lyra_eternal_dawn": ("lyra_1_eternal_dawn.ogg",),
+    "lyra_what_we_lost": ("lyra_2_what_we_lost.ogg",),
+    "lyra_no_mercy_left": ("lyra_3_no_mercy_left.ogg",),
+    "lyra_oldest_fear": ("Lyra-Voss-Oldest-Fear.mp3",),
 }
 
 _cache = {}
