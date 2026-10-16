@@ -6,6 +6,7 @@ the Game object as `game` and behave exactly as before.
 """
 import addon as mame_addon
 import controls
+import keybind_screen
 from highscores import load_highscores, reset_highscores
 from i18n import LANG_CODES, set_lang
 from ingame_music import cycle as ingame_cycle
@@ -246,3 +247,5 @@ def menu_confirm(game):
         if key == "reset_hs":
             game.menu_screen = "reset_confirm"
             game.menu_index = 1
+        elif key == "keybinds":
+            keybind_screen.open_screen(game)

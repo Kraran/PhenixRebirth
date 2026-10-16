@@ -17,6 +17,7 @@ def load_user_settings():
         "coop_p1": "auto",  # coop: the device of player 1 and 2: auto | kb_left | kb_arrows | pad1, pad2...
         "coop_p2": "auto",
         "control_pref": "auto",  # auto (the last device used) | keyboard | gamepad
+        "bindings": {},  # the keys and buttons the player changed (src/bindings.py); {} = all the defaults
         "display_mode": "fullscreen",
         "sfx_volume": 0.8,
         "music_volume": 0.4,

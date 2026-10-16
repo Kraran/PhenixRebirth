@@ -124,6 +124,8 @@ def glyph(kind, pad):
         return None
     if kind == "sh":
         return _shoulders() if pad else _keycap("TAB")
+    if kind == "del":                                   # clear (the screen "Keys and buttons")
+        return _round_button("Y", (200, 165, 60)) if pad else _keycap(t("hint_key_del"))
     if pad:
         if kind == "ok":
             return _round_button("A", PAD_A)
@@ -277,6 +279,9 @@ def _addon_ready():
 def menu_items(game):
     """The pairs of the help bar for the screen on display (None: no bar on this screen)."""
     g = game
+    if getattr(g, "keybind", None) is not None:              # the screen "Keys and buttons" has its own pairs
+        import keybind_screen
+        return keybind_screen.help_items(g)
     if g.started:
         if getattr(g, "game_over", False):
             phase = getattr(g, "hs_phase", None)

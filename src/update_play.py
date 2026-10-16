@@ -29,6 +29,7 @@ def tick_ships(game):
         for ship in game._ships():
             ship.rumble_level = int(getattr(game, "rumble_level", 3))
             ship.autofire = True if game.attract_mode else bool(getattr(game, "autofire", True))
+            ship.pad_slot = 0
             if getattr(game, "play_mode", "solo") != "coop":
                 mode = game.input_mode
                 joy = game.joystick
@@ -39,6 +40,8 @@ def tick_ships(game):
                 scheme = getattr(ship, "input_scheme", "solo")
                 joy = getattr(ship, "_joy", None)
                 mode = "gamepad" if scheme == "pad" else "keyboard"
+            if joy is not None:
+                ship.pad_slot = max(0, game.pads.index_of(joy))        # the table of buttons of this pad's place
             if game.attract_mode and ship is game.player:
                 edge_killed = ship.update(
                     game.dt, keys, mode, joy,
