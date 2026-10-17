@@ -505,6 +505,14 @@ MISSIONS = [
         "content": 1, "waves": [26, 27, 28, 29, 30], "speed": 1.0, "once": True,
         "unlock": ["final_s5", GAME_WON], "epilogue": True, "log": "story_log_fin5",
     },
+    # TEST: the Asteroids level (src/asteroids.py). On the map of every act, always playable, as often as one likes. A
+    # test mission is neither won nor lost: nothing is paid, nothing is taken, no unlock, no journal line, no
+    # achievement, and a death does not make a Veteran fall (see record_result).
+    {
+        "id": "bonus_asteroids", "acts": (1, 2, 3), "test": True, "asteroids": True, "title": "story_m_ast",
+        "hud_title": "story_m_ast_hud", "blurb": "story_m_ast_b", "need": None, "content": 1, "speed": 1.0,
+        "target": 40, "log": "story_log_ast",
+    },
 ]
 
 
@@ -1338,7 +1346,7 @@ def jump_to_act2(state):
     flags = state.setdefault("flags", {})
     cleared = state.setdefault("cleared", [])
     for mission in MISSIONS:
-        if mission_in_act(mission, 1) and mission.get("playable") is not False:
+        if mission_in_act(mission, 1) and mission.get("playable") is not False and not mission.get("test"):
             for name in mission.get("unlock") or []:
                 flags[name] = True
             if mission["id"] not in cleared:
@@ -1865,7 +1873,7 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
     """
     score = max(0, int(score or 0))
     res = {"score": score, "cleared": bool(cleared), "first": False, "lost": 0, "fallen": False, "act": 0,
-           "loot": None, "used": [], "opened": [], "reactor_lost": None, "no_item": None}
+           "loot": None, "used": [], "opened": [], "reactor_lost": None, "no_item": None, "test": None}
     record_kills(state, kills)            # the enemies met count whatever the outcome
     record_mission_kills(state, mission_id, kills)
     res["used"] = story_items.consume(state, used)           # before the Act can change: they belong to this one
@@ -1876,6 +1884,14 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
         res["loot"] = loot
         if loot in story_items.REACTOR_IDS:
             state.setdefault("log", []).append({"key": "story_log_" + loot})      # story_log_reactor_shield / _phenix
+    test = next((m for m in MISSIONS if m["id"] == mission_id and m.get("test")), None)
+    if test:
+        # a TEST mission: neither won nor lost. Nothing is paid, nothing is taken, nobody falls, no flag, no journal line;
+        # the enemies met are in the Bestiary and the items used are used up, as in every mission
+        res["cleared"] = False
+        res["score"] = 0
+        res["test"] = "won" if cleared else "over"
+        return res
     if not cleared:
         if state.get("mode") == "veteran":
             state["fallen"] = True

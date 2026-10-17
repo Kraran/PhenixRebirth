@@ -1170,6 +1170,11 @@ class StoryHub:
                 spec["fire_mult"] = float(mission["fire_mult"])    # the birds shoot more (the Phenix version)
         if mission.get("reactor"):
             spec["reactor"] = mission["reactor"]      # the hull whose reactor falls in this mission, once
+        if mission.get("asteroids"):
+            spec["asteroids"] = True                  # the Asteroids level (src/asteroids.py)
+            spec["target"] = int(mission.get("target") or 40)
+        if mission.get("test"):
+            spec["test"] = True                       # a test mission: nothing won, nothing lost, nobody falls
         if mission.get("escort"):
             spec["escort"] = True                 # the VIP rescue: the cruise ship to bring across (src/escort.py)
             spec["stage"] = int(mission.get("stage") or 6)
@@ -1208,6 +1213,9 @@ class StoryHub:
             if res.get("reward"):
                 self.toast = t("story_reward").format(pts=res["reward"])     # the parts salvaged from the wreck
                 self.toast_kind = "gain"
+        elif res.get("test"):
+            self.toast = t("story_test_won" if res["test"] == "won" else "story_test_over")
+            self.toast_kind = "info"                 # a test mission: nothing won, nothing lost
         elif res.get("no_item"):
             self.toast = t("story_item_missed").format(name=t("item_%s_name" % res["no_item"]))
             self.toast_kind = "info"                 # the BONUS item was not caught: no gain, no loss

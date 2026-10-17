@@ -158,6 +158,14 @@ def draw_play(game):
         pct = int(game.formation.cruise.progress() * 100)
         left = tc.get(game.font, t("story_vip_hud").format(p=pct), announce.INFO)
         game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
+    elif adv and adv.get("asteroids") and game.play_mode != "coop":
+        form = game.formation
+        if getattr(form, "reached", False):
+            text = t("story_swarm_left").format(n=form.remaining())                  # the target is reached: empty the screen
+        else:
+            text = t("story_asteroids_hud").format(n=int(getattr(form, "destroyed", 0)), m=int(getattr(form, "target", 0)))
+        left = tc.get(game.font, text, announce.INFO)
+        game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
     elif adv and adv.get("galaga") and game.play_mode != "coop":
         form = game.formation
         left = tc.get(game.font, t("story_galaga_hud").format(n=max(1, int(getattr(form, "wave", 1))),
