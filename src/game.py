@@ -197,6 +197,9 @@ def _ffmpeg_exe():
     return videoclip.find_ffmpeg() or ("ffmpeg.exe" if sys.platform.startswith("win") else "ffmpeg")
 
 
+LAST_ANNOUNCED_LEVEL = 31          # the announcer has recorded the stages 1 to 31 (assets/sounds/level<n>.wav); past it, silence
+
+
 class Game:
     """
     Top-level application object.
@@ -1370,9 +1373,10 @@ class Game:
 
 
     def _play_level_vo(self, stage):
-        """English stage callout (level1.wav … level21.wav). Stages >21 stay silent."""
+        """English stage callout (level1.wav … level31.wav; level31 is "To boldly go where no one has gone before").
+        Stages >31 stay silent."""
         n = int(stage or 0)
-        if n < 1 or n > 21 or not hasattr(self, "sounds"):
+        if n < 1 or n > LAST_ANNOUNCED_LEVEL or not hasattr(self, "sounds"):
             return
         try:
             self.sounds.play_vo(f"level{n}", volume=0.88)
