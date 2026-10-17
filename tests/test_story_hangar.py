@@ -293,7 +293,7 @@ def test_loading_the_save_again_clears_the_cheat():
     _type(hub, "2222")
     hub.open_slot(1)
     assert not hub.cheat_act2 and not hub.cheating and hub.state["act"] == 1
-    assert _ids(hub.missions())[-1] == "ch2_tease"
+    assert _ids(hub.missions())[-2:] == ["ch2_tease", "bonus_asteroids"]
 
 
 def test_act2_typed_elsewhere_does_nothing():
