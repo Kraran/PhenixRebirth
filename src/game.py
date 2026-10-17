@@ -1872,8 +1872,8 @@ class Game:
             # the Asteroids mission (src/asteroids.py): the ship turns and pushes, free on the whole screen
             self.player.asteroid_mode = True
             self.player.vertical_range = None
-            self._ast_px = self.player.x
-            self._ast_last_x = None
+            self._ast_px, self._ast_py = self.player.x, self.player.y
+            self._ast_last_x = self._ast_last_y = None
         self.adventure["dome"] = dome
         # the loot items bought in the hangar for this mission (they are used up when it ends, see _end_adventure)
         items = list(spec.get("items") or [])
@@ -3427,21 +3427,27 @@ class Game:
 
     def _tick_stars(self, follow=False):
         """Starfield step with comet rules (cycle / menu)."""
-        px = None
+        px = py = None
+        free = bool((getattr(self, "adventure", None) or {}).get("asteroids")) and bool(getattr(self, "started", False))
         if follow and getattr(self, "player", None) is not None:
             px = self.player.x
-            if getattr(self.player, "asteroid_mode", False):
-                # the ship wraps around the screen: the stars follow its real movement, not the jump of the wrap
-                last = getattr(self, "_ast_last_x", None)
-                if last is not None:
-                    self._ast_px = getattr(self, "_ast_px", px) + ((px - last + BASE_WIDTH / 2) % BASE_WIDTH - BASE_WIDTH / 2)
+            py = self.player.y if free else None
+            if free and getattr(self.player, "asteroid_mode", False):
+                # the ship wraps around the screen: the background follows its real movement (x and y), not the jump
+                # of the wrap
+                lx = getattr(self, "_ast_last_x", None)
+                ly = getattr(self, "_ast_last_y", None)
+                if lx is not None and ly is not None:
+                    self._ast_px = getattr(self, "_ast_px", px) + ((px - lx + BASE_WIDTH / 2) % BASE_WIDTH - BASE_WIDTH / 2)
+                    self._ast_py = getattr(self, "_ast_py", py) + ((py - ly + BASE_HEIGHT / 2) % BASE_HEIGHT - BASE_HEIGHT / 2)
                 else:
-                    self._ast_px = px
-                self._ast_last_x = px
-                px = self._ast_px
+                    self._ast_px, self._ast_py = px, py
+                self._ast_last_x, self._ast_last_y = px, py
+                px, py = self._ast_px, self._ast_py
+        self.starfield.set_free(free)             # the Asteroids mission: the background only follows the ship
         menu = not bool(getattr(self, "started", False))
         stage = int(getattr(self, "stage", 1) or 1) if not menu else 0
-        self.starfield.update(self.dt, px, stage=stage, menu=menu)
+        self.starfield.update(self.dt, px, stage=stage, menu=menu, player_y=py)
 
     def _addon_snap(self, set_name):
         cache = getattr(self, "_addon_snaps", None)
