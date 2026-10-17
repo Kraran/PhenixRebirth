@@ -1,28 +1,27 @@
 #!/usr/bin/env python3
 """
-Benchmark de fluidité : mesure ce que coûte une image du jeu sur CE PC.
+Smoothness benchmark: measures what one frame of the game costs on THIS PC.
 
-    python tools\\bench.py                  (plein écran, vsync coupé)
-    python tools\\bench.py --mode window    (fenêtre)
-    python tools\\bench.py --vsync on       (comme en jeu normal)
+    python tools\\bench.py                  (fullscreen, vsync off)
+    python tools\\bench.py --mode window    (window)
+    python tools\\bench.py --vsync on       (as in a normal game)
 
-Le script joue tout seul (pilote automatique, vaisseau invincible) : un moment
-sur le menu, puis les niveaux 1 à 6 dont le boss du niveau 5. Pour chaque
-partie il mesure, image par image :
-  - logique   : événements + mise à jour du jeu
-  - dessin    : tout le dessin, sans l'affichage final
-  - copie     : préparation de l'image avant l'envoi (bordures, copie du canevas)
-  - flip      : l'envoi de l'image à l'écran (pygame.display.flip)
-  - total     : la somme, soit ce que coûte vraiment une image
+The script plays by itself (autopilot, invincible ship): a while on the menu,
+then levels 1 to 6 including the boss of level 5. For every part it measures,
+frame by frame:
+  - logic     : events + game update
+  - draw      : all the drawing, without the final display
+  - copy      : preparing the picture before sending it (borders, canvas copy)
+  - flip      : sending the picture to the screen (pygame.display.flip)
+  - total     : the sum, i.e. what a frame really costs
 
-Le jeu avance à pas fixe de 1/144 s par image et SANS limiteur : le total
-moyen donne donc directement le nombre d'images par seconde que le PC peut
-tenir. Pour du 144 Hz, il faut que presque toutes les images coûtent moins de
-6,94 ms.
+The game advances in fixed steps of 1/144 s per frame and WITHOUT a limiter: the
+mean total therefore gives directly the number of frames per second the PC can
+hold. For 144 Hz almost every frame must cost less than 6.94 ms.
 
-Rien n'est lu ni écrit dans tes fichiers de jeu (réglages, scores, succès) :
-tout se passe dans un dossier temporaire. Le résultat est écrit dans
-bench_result.txt (à côté du jeu). Ne touche pas au clavier pendant le test.
+Nothing is read or written in your game files (settings, scores, achievements):
+everything happens in a temporary folder. The result is written to
+bench_result.txt (next to the game). Do not touch the keyboard during the test.
 """
 import argparse
 import gc
@@ -44,14 +43,14 @@ BUDGETS = ((144, 1000 / 144), (120, 1000 / 120), (60, 1000 / 60))
 
 
 def parse_args():
-    ap = argparse.ArgumentParser(description="Benchmark de fluidité Phenix Rebirth")
+    ap = argparse.ArgumentParser(description="Phenix Rebirth smoothness benchmark")
     ap.add_argument("--mode", choices=("fullscreen", "borderless", "window"), default="fullscreen")
     ap.add_argument("--vsync", choices=("off", "adaptive", "on"), default="off")
-    ap.add_argument("--monitor", type=int, default=0, help="numéro de l'écran (0 = principal)")
-    ap.add_argument("--mute", action="store_true", help="sans son (carte son factice)")
-    ap.add_argument("--quick", action="store_true", help="test très court (vérification du script)")
+    ap.add_argument("--monitor", type=int, default=0, help="number of the screen (0 = main)")
+    ap.add_argument("--mute", action="store_true", help="without sound (dummy sound card)")
+    ap.add_argument("--quick", action="store_true", help="a very short test (to check the script)")
     ap.add_argument("--profile", action="store_true",
-                    help="au lieu des mesures : liste les fonctions de dessin les plus coûteuses (menu, niveau 3, boss)")
+                    help="instead of the measures: lists the most expensive drawing functions (menu, level 3, boss)")
     return ap.parse_args()
 
 
@@ -67,9 +66,9 @@ def run_profile(args, g, run_frame, new_rec, settings, replay, root):
     import pstats
 
     n = 120 if args.quick else 400
-    out = ["Phenix Rebirth - profil du dessin (fonctions les plus coûteuses)",
-           "Date : %s   écran/canevas : %s" % (time.strftime("%Y-%m-%d %H:%M:%S"), g.screen.get_size()),
-           "Le profileur ralentit le jeu : seuls les rangs et les proportions comptent.", ""]
+    out = ["Phenix Rebirth - drawing profile (most expensive functions)",
+           "Date: %s   screen/canvas: %s" % (time.strftime("%Y-%m-%d %H:%M:%S"), g.screen.get_size()),
+           "The profiler slows the game down: only the ranks and the proportions matter.", ""]
 
     def section(title, playing):
         prof = cProfile.Profile()
@@ -83,7 +82,7 @@ def run_profile(args, g, run_frame, new_rec, settings, replay, root):
         out.append("=== %s (%d images) ===" % (title, n))
         keep = [l[:150] for l in txt.split("\n") if l.strip()][1:]
         out.extend(keep)
-        # qui appelle les 2 opérations les plus fréquentes (blit / fill) ?
+        # who calls the 2 most frequent operations (blit / fill)?
         for op in ("'blit'", "'fill'"):
             for key, val in stats.stats.items():
                 if key[2].startswith("<method " + op):
@@ -112,9 +111,9 @@ def run_profile(args, g, run_frame, new_rec, settings, replay, root):
     try:
         with open(path, "w", encoding="utf-8") as f:
             f.write(text + "\n")
-        print("\nRésultat enregistré dans : %s" % path)
+        print("\nResult saved in: %s" % path)
     except OSError as e:
-        print("\n(Impossible d'écrire bench_profile.txt : %s)" % e)
+        print("\n(Could not write bench_profile.txt: %s)" % e)
 
 
 def main():
@@ -217,7 +216,7 @@ def main():
     def new_rec():
         return {"logic": [], "draw": [], "copy": [], "flip": [], "total": []}
 
-    print("Test en cours (une minute environ), ne touche à rien...")
+    print("Test running (about a minute), do not touch anything...")
     gc.collect()
 
     if args.profile:
@@ -253,25 +252,25 @@ def main():
             extra += 1
         results.append((label, rec))
         if not g.running:
-            print("Le jeu s'est fermé pendant le test.")
+            print("The game closed during the test.")
             break
 
     mach_after = machine_check.measure()
     info = [
-        "Phenix Rebirth - benchmark de fluidité",
+        "Phenix Rebirth - smoothness benchmark",
         "Date        : %s" % time.strftime("%Y-%m-%d %H:%M:%S"),
-        "Système     : %s" % platform.platform(),
-        "Processeur  : %s" % (platform.processor() or "?"),
+        "System      : %s" % platform.platform(),
+        "Processor   : %s" % (platform.processor() or "?"),
         "Python      : %s   pygame %s   SDL %s" % (
             platform.python_version(), pygame.version.ver, ".".join(map(str, pygame.get_sdl_version()))),
-        "Pilote vidéo: %s" % pygame.display.get_driver(),
-        "Affichage   : %s  fenêtre/écran %s  vsync=%s  moniteur=%d  panneau détecté %s Hz  mode %s" % (
+        "Video driver: %s" % pygame.display.get_driver(),
+        "Display     : %s  window/screen %s  vsync=%s  monitor=%d  panel detected %s Hz  mode %s" % (
             args.mode, g.screen.get_size(), args.vsync, args.monitor,
             getattr(g, "panel_hz", "?"), getattr(g, "_gpu_backend", "?")),
-        "Son         : %s" % ("coupé" if args.mute else "actif"),
-        "Alimentation: %s" % (machine_check.power_plan() or "?"),
-        machine_check.describe("PC avant   ", mach_before),
-        machine_check.describe("PC après   ", mach_after),
+        "Sound       : %s" % ("muted" if args.mute else "on"),
+        "Power plan  : %s" % (machine_check.power_plan() or "?"),
+        machine_check.describe("PC before ", mach_before),
+        machine_check.describe("PC after  ", mach_after),
         "",
     ]
     warn = machine_check.drift_warning(mach_before, mach_after)
@@ -279,8 +278,8 @@ def main():
         info.insert(-1, warn)
     lines = list(info)
     head = "%-17s %6s | %5s %5s | %5s %5s %5s | %5s | %5s %5s | %6s %6s %6s %6s %5s | %6s" % (
-        "Partie", "images", "logiq", "p99", "dessin", "p99", "max", "copie", "flip", "p99",
-        "total", "p95", "p99", "max", "i/s", ">6,9ms")
+        "Part", "frames", "logic", "p99", "draw", "p99", "max", "copy", "flip", "p99",
+        "total", "p95", "p99", "max", "f/s", ">6.9ms")
     lines += [head, "-" * len(head)]
     all_total = []
     for label, rec in results:
@@ -298,26 +297,26 @@ def main():
             statistics.mean(t), pct(t, .95), pct(t, .99), max(t),
             1000.0 / statistics.mean(t), over))
     lines.append("")
-    lines.append("Durées en millisecondes. copie = bordures + copie du canevas avant le flip ; flip = pygame.display.flip().")
-    lines.append("i/s = images par seconde que le PC peut tenir (1000 / total moyen).")
-    lines.append("Budget par image : 144 Hz = 6,94 ms   120 Hz = 8,33 ms   60 Hz = 16,67 ms.")
+    lines.append("Times in milliseconds. copy = borders + canvas copy before the flip; flip = pygame.display.flip().")
+    lines.append("f/s = frames per second the PC can hold (1000 / mean total).")
+    lines.append("Budget per frame: 144 Hz = 6.94 ms   120 Hz = 8.33 ms   60 Hz = 16.67 ms.")
     if all_total:
         lines.append("")
-        lines.append("Bilan sur toutes les parties (%d images) :" % len(all_total))
+        lines.append("Summary over all the parts (%d frames):" % len(all_total))
         for hz, budget in BUDGETS:
             ok = 100.0 * sum(1 for x in all_total if x <= budget) / len(all_total)
-            lines.append("  %3d Hz : %5.1f %% des images tiennent dans le budget (%.2f ms)" % (hz, ok, budget))
+            lines.append("  %3d Hz: %5.1f %% of the frames fit in the budget (%.2f ms)" % (hz, ok, budget))
         p99 = pct(all_total, .99)
         mean = statistics.mean(all_total)
-        lines.append("  moyenne %.2f ms  /  99%% des images sous %.2f ms  /  pire image %.2f ms" % (mean, p99, max(all_total)))
+        lines.append("  mean %.2f ms  /  99%% of the frames under %.2f ms  /  worst frame %.2f ms" % (mean, p99, max(all_total)))
         if p99 <= BUDGETS[0][1]:
-            verdict = "144 Hz : OK, ce PC a de la marge."
+            verdict = "144 Hz: OK, this PC has room to spare."
         elif mean <= BUDGETS[0][1]:
-            verdict = "144 Hz : limite. La moyenne tient, mais certaines images (explosions, boss) dépassent le budget."
+            verdict = "144 Hz: borderline. The mean holds, but some frames (explosions, boss) go over the budget."
         elif mean <= BUDGETS[1][1]:
-            verdict = "144 Hz : non, 120 Hz : oui. Il faut gagner du temps par image pour viser le 144."
+            verdict = "144 Hz: no, 120 Hz: yes. Time per frame must come down to aim at 144."
         else:
-            verdict = "144 Hz : non pour l'instant."
+            verdict = "144 Hz: not for now."
         lines.append("  >>> " + verdict)
 
     text = "\n".join(lines)
@@ -327,9 +326,9 @@ def main():
     try:
         with open(out, "w", encoding="utf-8") as f:
             f.write(text + "\n")
-        print("\nRésultat enregistré dans : %s" % out)
+        print("\nResult saved in: %s" % out)
     except OSError as e:
-        print("\n(Impossible d'écrire bench_result.txt : %s)" % e)
+        print("\n(Could not write bench_result.txt: %s)" % e)
 
     g.running = False
     pygame.quit()

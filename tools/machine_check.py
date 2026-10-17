@@ -1,7 +1,7 @@
 """
-Mesure rapide de l'état du PC (copie mémoire, calcul, plan d'alimentation),
-pour repérer un test faussé par un PC occupé ou bridé.
-Utilisé par bench.py et probe_present.py ; peut aussi se lancer seul.
+Quick measure of the state of the PC (memory copy, calculation, power plan),
+to spot a test spoiled by a busy or throttled PC.
+Used by bench.py and probe_present.py; can also be run alone.
 """
 import subprocess
 import sys
@@ -9,7 +9,7 @@ import time
 
 
 def measure():
-    """(copie mémoire de 5 Mo en ms, boucle de calcul en ms) : meilleur de plusieurs essais."""
+    """(5 MB memory copy in ms, calculation loop in ms): the best of several tries."""
     size = 5_000_000
     src = memoryview(bytearray(size))
     dst = memoryview(bytearray(size))
@@ -37,19 +37,19 @@ def power_plan():
 
 
 def describe(label, m):
-    return "%s : copie mémoire 5 Mo %.2f ms   boucle de calcul %.1f ms" % (label, m[0], m[1])
+    return "%s: 5 MB memory copy %.2f ms   calculation loop %.1f ms" % (label, m[0], m[1])
 
 
 def drift_warning(before, after):
-    """Texte d'avertissement si le PC a changé d'état pendant le test, sinon ''."""
+    """A warning text if the PC changed state during the test, else ''."""
     worst = max(after[0] / max(before[0], 1e-6), after[1] / max(before[1], 1e-6),
                 before[0] / max(after[0], 1e-6), before[1] / max(after[1], 1e-6))
     if worst > 1.4:
-        return ("ATTENTION : le PC n'a pas eu la même vitesse avant et après le test "
-                "(écart x%.1f) : résultats peu fiables. Ferme les autres programmes et recommence." % worst)
+        return ("WARNING: the PC did not run at the same speed before and after the test "
+                "(gap x%.1f): unreliable results. Close the other programs and try again." % worst)
     return ""
 
 
 if __name__ == "__main__":
     print(describe("Machine", measure()))
-    print("Plan d'alimentation :", power_plan() or "(inconnu)")
+    print("Power plan:", power_plan() or "(unknown)")

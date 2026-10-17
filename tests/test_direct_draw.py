@@ -1,4 +1,4 @@
-"""Dessin direct sur l'écran (chemin SCALED) : mêmes pixels, canevas toujours restauré."""
+"""Direct drawing on the screen (SCALED path): same pixels, canvas always restored."""
 import random
 
 import pygame
@@ -15,7 +15,7 @@ def _scaled_game(seed=3):
     g._intro_done = True
     g.fade_phase = None
     size = g.game_surface.get_size()
-    pygame.display.set_mode(size, FLAGS)  # le pilote factice ramène la 1re fenêtre à 1024x768
+    pygame.display.set_mode(size, FLAGS)  # the dummy driver brings the 1st window back to 1024x768
     g.screen = pygame.display.set_mode(size, FLAGS)
     g.display_mode = "fullscreen"
     g._gpu.bind(True)
@@ -50,14 +50,14 @@ def _frames(direct, n=25):
 
 
 def test_memes_pixels_que_la_copie():
-    # un seul affichage par processus : les deux parties se jouent l'une après l'autre
+    # one display per process: the two parts are played one after the other
     direct, used_d = _frames(True)
     copie, used_c = _frames(False)
     # 1re image : la mise en page n'est pas encore faite, on passe par la copie (prudence)
-    assert used_d[0] is False and all(used_d[1:]), "le dessin direct n'a pas été utilisé"
+    assert used_d[0] is False and all(used_d[1:]), "direct drawing was not used"
     assert not any(used_c)
     for i, (x, y) in enumerate(zip(direct, copie)):
-        assert x == y, "image %d différente" % i
+        assert x == y, "frame %d is different" % i
 
 
 def test_canevas_restaure_et_secousse_sans_direct():
@@ -77,7 +77,7 @@ def test_canevas_restaure_et_secousse_sans_direct():
     g.started = True
     g.shake_amount = 5
     g.draw()
-    assert seen == [False, True, False]  # secousse : on passe par le canevas et la copie décalée
+    assert seen == [False, True, False]  # shake: it goes through the canvas and the shifted copy
     assert g.game_surface is canvas
 
 
@@ -92,7 +92,7 @@ def test_canevas_restaure_meme_si_le_dessin_plante():
     g._draw_canvas = boom
     with pytest.raises(RuntimeError):
         g.draw()
-    assert g._direct_draw_ok()  # c'était bien un dessin direct qui a planté
+    assert g._direct_draw_ok()  # it really was a direct drawing that crashed
     assert g.game_surface is canvas and g._direct_restore is None
 
 
@@ -115,7 +115,7 @@ def test_echec_du_flip_direct_recopie_ecran(monkeypatch):
     g = _scaled_game()
     g.draw()
     monkeypatch.setattr(g._gpu, "present_direct", lambda: False)
-    g.game_surface.fill((1, 2, 3))   # canevas périmé
+    g.game_surface.fill((1, 2, 3))   # stale canvas
     g.screen.fill((200, 100, 50))
     g._flip_frame(0, 0, True)
     assert g.game_surface.get_at((5, 5))[:3] == (200, 100, 50)

@@ -8,6 +8,7 @@ Play modes: solo, hot-seat (alternating), coop (simultaneous). Options cover
 controls, autofire, volumes, session audio mix, rumble, display, GPU present,
 VSync, refresh cap, bezels, FPS counter, CRT scanlines and language.
 Cheats on the high-score menu: LV02–LV99, LIVE, PHEN.
+v1.5.0 — Adventure (beta): Acts 1-3, rebindable controls, music, announcer to level 31.
 v1.4.5 — 144 Hz option, smoother fullscreen, safer saves, errors.log.
 v1.4.4 — Adventure chapter 1 (Shield, broken dome, bestiary, hangar credits).
 Arcade loop is unchanged. Seasonal title, April gag, comet stay.
@@ -2538,8 +2539,8 @@ class Game:
         if getattr(self, "_present_size", None) != scr_size:
             self._layout_viewport()
             self._invalidate_present_cache()
-            # Mémorisé APRÈS l'invalidation (qui remet _present_size à None) :
-            # sinon la mise en page et les bordures étaient refaites à chaque image.
+            # Stored AFTER the invalidation (which resets _present_size to None):
+            # otherwise the layout and the borders were redone every frame.
             self._present_size = scr_size
         vr = getattr(self, "view_rect", pygame.Rect(0, 0, BASE_WIDTH, BASE_HEIGHT))
         gpu = getattr(self, "_gpu", None)
@@ -2551,7 +2552,7 @@ class Game:
             if direct:
                 if gpu.present_direct():
                     return
-                # échec rare : le canevas est périmé, on y recopie l'image de l'écran
+                # rare failure: the canvas is stale, the picture of the screen is copied back onto it
                 self.game_surface.blit(self.screen, (0, 0))
             elif gpu.present(self.game_surface, vr, None, None, None, (shake_x, shake_y)):
                 return

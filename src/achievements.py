@@ -200,7 +200,7 @@ def save_achievements(data):
             "progress": dict((data or {}).get("progress") or {}),
             "tiers": dict((data or {}).get("tiers") or {}),
         }
-        write_behind_json(ACH_FILE, payload)  # en arrière-plan : voir safe_io
+        write_behind_json(ACH_FILE, payload)  # in the background: see safe_io
     except Exception as e:
         print("Could not save achievements:", e)
     return data

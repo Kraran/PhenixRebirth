@@ -855,7 +855,7 @@ class BigBird:
             self.x += dx * 0.5 * sm * dt
             self.x += math.sin(self.time * 4.0 + self.formation_index) * 30 * dt
             self.x = max(50, min(BASE_WIDTH - 50, self.x))
-            # Sortie bas → réapparition fluide en haut (comme stage 1/2)
+            # Leaves at the bottom -> smoothly reappears at the top (as in stages 1/2)
             if self.y > BASE_HEIGHT + 50:
                 self.y = -60
                 self.state = "roam"

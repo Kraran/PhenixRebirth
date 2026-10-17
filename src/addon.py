@@ -578,13 +578,13 @@ def _sort_key(set_name):
     return (_FAMILY_RANK.get(fam, 9), plat, year, set_name)
 
 
-# Le menu demande la liste des ROM à CHAQUE image ; la lire sur le disque
-# (parcours de dossiers) coûtait plusieurs ms par image quand MAME est installé.
-# Résultat gardé _SETS_TTL secondes (le scan lui-même coûte ~10 ms : pas question
-# de le refaire souvent) ; les actions du joueur (entrer dans l'Add-on, lancer)
-# relisent toujours à neuf.
+# The menu asks for the list of ROMs on EVERY frame; reading it from the disk
+# (walking the folders) cost several ms a frame when MAME is installed.
+# The result is kept for _SETS_TTL seconds (the scan itself costs ~10 ms: it must not
+# be redone often); the player's own actions (entering the Add-on, launching a game)
+# always read it afresh.
 _SETS_TTL = 30.0
-_sets_cache = None  # (heure de lecture, liste)
+_sets_cache = None  # (time of the reading, list)
 
 
 def _scan_sets():

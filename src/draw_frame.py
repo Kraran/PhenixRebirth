@@ -552,7 +552,7 @@ def draw_menu_footer(game):
         ver = getattr(game, "_ver_surf", None)
         if ver is None:
             vf = fonts.text(13)
-            ver = vf.render("v1.4.5", True, (110, 110, 130))
+            ver = vf.render("v1.5.0", True, (110, 110, 130))
             game._ver_surf = ver
         if bar:
             hint_bar.draw_for(game, game.game_surface, right=ver)

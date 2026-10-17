@@ -65,7 +65,7 @@ class GpuPresenter:
             return False
 
     def present_direct(self):
-        """L'image est déjà sur l'écran (dessin direct) : il ne reste que le flip."""
+        """The picture is already on the screen (direct drawing): only the flip is left."""
         if not self.active:
             return False
         try:

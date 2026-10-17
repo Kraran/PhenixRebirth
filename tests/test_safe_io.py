@@ -106,13 +106,13 @@ def test_achievements_save_roundtrip(tmp_path, monkeypatch):
     assert achievements.load_achievements()["progress"] == {"marathon": 7}
 
 
-# --- écriture différée (hauts faits sauvegardés pendant la partie) -----------
+# --- deferred writing (achievements saved during the game) -----------
 
 def test_write_behind_visible_tout_de_suite_et_sur_disque_apres_flush(tmp_path, monkeypatch):
     p = str(tmp_path / "wb.json")
     monkeypatch.setattr(safe_io, "COALESCE_SEC", 0.05)
     safe_io.write_behind(p, '{"a": 1}')
-    assert safe_io.read_text_latest(p) == '{"a": 1}'     # même si pas encore écrit
+    assert safe_io.read_text_latest(p) == '{"a": 1}'     # even if not written yet
     assert safe_io.flush() is True
     assert (tmp_path / "wb.json").read_text(encoding="utf-8") == '{"a": 1}'
     assert not (tmp_path / "wb.json.tmp").exists()
@@ -138,7 +138,7 @@ def test_write_behind_ne_fait_pas_attendre_et_fusionne(tmp_path, monkeypatch):
     assert safe_io.read_text_latest(p) == '{"n": 49}'
     assert safe_io.flush() is True
     assert (tmp_path / "wb2.json").read_text(encoding="utf-8") == '{"n": 49}'
-    assert len(calls) <= 3                              # 50 sauvegardes -> quelques écritures
+    assert len(calls) <= 3                              # 50 saves -> a few writes
     assert calls[-1] == '{"n": 49}'
 
 
@@ -157,7 +157,7 @@ def test_hauts_faits_relus_apres_chaque_sauvegarde(tmp_path, monkeypatch):
     p = tmp_path / "achievements.json"
     monkeypatch.setattr(achievements, "ACH_FILE", str(p))
     monkeypatch.setattr(safe_io, "COALESCE_SEC", 0.05)
-    # comme Game._note_scalable : ajout + relecture à chaque oiseau abattu
+    # comme Game._note_scalable : add + read again at every bird shot down
     data = achievements.load_achievements()
     for _ in range(120):
         achievements.add_scalable("first_blood", 1, data)

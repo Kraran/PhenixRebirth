@@ -10,7 +10,7 @@ writes, at the size of the game:
                                       on black: the game adds it to the picture (no part of the hit box)
 
 The hull is the median of every frame (the flame leaves it alone), cut where the background is: every dark pixel that
-the edge of the picture can reach is background, the rest (windows, the dark tuyère) is the yacht.
+the edge of the picture can reach is background, the rest (windows, the dark nozzle) is the yacht.
 Needs numpy and ffmpeg (the one the game finds, see src/videoclip.py).
 """
 import os
@@ -26,8 +26,8 @@ sys.path.insert(0, os.path.join(ROOT, "src"))
 
 import videoclip  # noqa: E402
 
-HULL_BOX = (468, 276, 998, 428)        # x0, y0, x1, y1 in the video (1280 x 720): the hull, the tuyère included
-FLAME_BOX = (186, 288, 476, 440)       # the flame, behind the tuyère
+HULL_BOX = (468, 276, 998, 428)        # x0, y0, x1, y1 in the video (1280 x 720): the hull, the nozzle included
+FLAME_BOX = (186, 288, 476, 440)       # the flame, behind the nozzle
 HULL_W = 172                           # the hull in the game, px (the scale of everything)
 FLAME_COLS = 16
 DARK = 14                              # brighter than this (0-255) is not the black background

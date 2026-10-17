@@ -47,6 +47,13 @@ T = {
         "tr": "MACERA", "sv": "ÄVENTYR", "no": "EVENTYR", "da": "EVENTYR",
         "ru": "ПРИКЛЮЧЕНИЕ",
     },
+    # the main-menu entry of the Adventure (it is still in beta): the name followed by (BETA)
+    "story_menu": {
+        "fr": "AVENTURE (BETA)", "en": "ADVENTURE (BETA)", "es": "AVENTURA (BETA)", "de": "ABENTEUER (BETA)",
+        "it": "AVVENTURA (BETA)", "pt": "AVENTURA (BETA)", "nl": "AVONTUUR (BETA)", "pl": "PRZYGODA (BETA)",
+        "tr": "MACERA (BETA)", "sv": "ÄVENTYR (BETA)", "no": "EVENTYR (BETA)", "da": "EVENTYR (BETA)",
+        "ru": "ПРИКЛЮЧЕНИЕ (БЕТА)",
+    },
     "addon": {
         "fr": "ADD-ON", "en": "ADD-ON", "es": "ADD-ON", "de": "ADD-ON",
         "it": "ADD-ON", "pt": "ADD-ON", "nl": "ADD-ON", "pl": "ADD-ON",

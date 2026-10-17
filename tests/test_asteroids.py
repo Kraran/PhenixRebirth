@@ -1084,7 +1084,13 @@ def test_each_new_rock_waits_for_its_pause(run):
     form.spawn_in = None
     _after(run, ast.REPOP_GAP[0] * 0.9)
     assert form.rocks == []                                      # the first one is not instant
-    _after(run, ast.REPOP_GAP[1] - ast.REPOP_GAP[0] * 0.9 + 0.2)
+    # step by step until the first one comes: it must be there before the longest pause is over, and alone
+    # (a second pause starts only then, so waiting a fixed time would let a second rock in at random)
+    g.player.invulnerable = 1000.0
+    for _ in range(int((ast.REPOP_GAP[1] - ast.REPOP_GAP[0] * 0.9 + 0.2) * 60)):
+        run.frames(1)
+        if form.rocks:
+            break
     assert len(form.rocks) == 1
 
 

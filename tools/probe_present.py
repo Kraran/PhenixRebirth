@@ -1,15 +1,15 @@
 """
-Sonde d'affichage Phenix Rebirth : compare le coût de la copie du canevas vers
-l'écran (blit) et du flip pour plusieurs façons d'ouvrir l'affichage.
+Phenix Rebirth display probe: compares the cost of copying the canvas to the
+screen (blit) and of the flip for several ways of opening the display.
 
-N'utilise PAS le jeu : seulement pygame. Chaque variante tourne dans un
-processus séparé (le pilote de rendu SDL ne peut pas changer en cours de route).
-L'écran clignote quelques secondes, c'est normal.
+Does NOT use the game: only pygame. Every variant runs in a separate
+process (the SDL render driver cannot change on the way).
+The screen flickers for a few seconds, this is normal.
 
-    python tools\\probe_present.py            (environ 2 minutes)
-    python tools\\probe_present.py --quick    (vérification du script)
+    python tools\\probe_present.py            (about 2 minutes)
+    python tools\\probe_present.py --quick    (to check the script)
 
-Résultat affiché et écrit dans probe_result.txt (à la racine du projet).
+Result shown and written to probe_result.txt (at the root of the project).
 """
 import argparse
 import json
@@ -35,7 +35,7 @@ def _stats(values):
 
 
 def worker(spec):
-    """Tourne dans un sous-processus : ouvre l'affichage demandé et mesure."""
+    """Runs in a subprocess: opens the display asked for and measures."""
     for k, val in spec.get("env", {}).items():
         os.environ[k] = val
     os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
@@ -64,7 +64,7 @@ def worker(spec):
         t1 = pc()
         screen.fill((0, 0, 0))
         t2 = pc()
-        # même dessin que le jeu : le canevas est copié en (0, 0)
+        # same drawing as the game: the canvas is copied at (0, 0)
         screen.blit(canvas, (0, 0))
         t3 = pc()
         pygame.display.flip()
@@ -91,18 +91,18 @@ def worker(spec):
 def variants(quick):
     sc = ["SCALED", "DOUBLEBUF", "FULLSCREEN"]
     out = [
-        {"name": "actuel : SCALED plein écran 1707x720", "size": CANVAS, "flags": sc},
-        {"name": "SCALED plein écran, rendu direct3d11", "size": CANVAS, "flags": sc,
+        {"name": "current: SCALED fullscreen 1707x720", "size": CANVAS, "flags": sc},
+        {"name": "SCALED fullscreen, direct3d11 renderer", "size": CANVAS, "flags": sc,
          "env": {"SDL_RENDER_DRIVER": "direct3d11"}},
-        {"name": "SCALED plein écran, rendu direct3d (9)", "size": CANVAS, "flags": sc,
+        {"name": "SCALED fullscreen, direct3d (9) renderer", "size": CANVAS, "flags": sc,
          "env": {"SDL_RENDER_DRIVER": "direct3d"}},
-        {"name": "SCALED plein écran, rendu logiciel", "size": CANVAS, "flags": sc,
+        {"name": "SCALED fullscreen, software renderer", "size": CANVAS, "flags": sc,
          "env": {"SDL_RENDER_DRIVER": "software"}},
-        {"name": "SCALED fenêtre 1707x720", "size": CANVAS, "flags": ["SCALED", "DOUBLEBUF"]},
-        {"name": "SCALED plein écran 1280x720 (canevas 16:9)", "size": (1280, 720), "flags": sc},
-        {"name": "plein écran natif sans SCALED (bureau)", "size": (0, 0),
+        {"name": "SCALED window 1707x720", "size": CANVAS, "flags": ["SCALED", "DOUBLEBUF"]},
+        {"name": "SCALED fullscreen 1280x720 (16:9 canvas)", "size": (1280, 720), "flags": sc},
+        {"name": "native fullscreen without SCALED (desktop)", "size": (0, 0),
          "flags": ["FULLSCREEN", "DOUBLEBUF", "HWSURFACE"]},
-        {"name": "SCALED plein écran, vsync demandé", "size": CANVAS, "flags": sc, "vsync": True},
+        {"name": "SCALED fullscreen, vsync asked for", "size": CANVAS, "flags": sc, "vsync": True},
     ]
     if quick:
         out = out[:2]
@@ -124,13 +124,13 @@ def run_all(quick):
     runs = {sp["name"]: [] for sp in specs}
     errors = {}
     mach_before = machine_check.measure()
-    for _round in range(rounds):          # passes entrelacées : le bruit ponctuel touche toutes les variantes
+    for _round in range(rounds):          # interleaved passes: a one-off noise hits every variant
         for spec in specs:
             cmd = [sys.executable, os.path.abspath(__file__), "--worker", json.dumps(spec)]
             try:
                 p = subprocess.run(cmd, capture_output=True, text=True, timeout=40, cwd=ROOT)
             except subprocess.TimeoutExpired:
-                errors[spec["name"]] = "trop long (variante abandonnée)"
+                errors[spec["name"]] = "too long (variant given up)"
                 continue
             res = None
             for ln in p.stdout.splitlines():
@@ -144,20 +144,20 @@ def run_all(quick):
     mach_after = machine_check.measure()
 
     lines = []
-    lines.append("Phenix Rebirth - sonde d'affichage")
+    lines.append("Phenix Rebirth - display probe")
     lines.append("Date    : " + time.strftime("%Y-%m-%d %H:%M:%S"))
-    lines.append("Système : " + platform.platform())
+    lines.append("System  : " + platform.platform())
     lines.append("CPU     : " + platform.processor())
     lines.append("Python  : " + sys.version.split()[0])
-    lines.append("Alimentation : " + (machine_check.power_plan() or "?"))
-    lines.append(machine_check.describe("PC avant", mach_before))
-    lines.append(machine_check.describe("PC après", mach_after))
+    lines.append("Power plan : " + (machine_check.power_plan() or "?"))
+    lines.append(machine_check.describe("PC before", mach_before))
+    lines.append(machine_check.describe("PC after", mach_after))
     warn = machine_check.drift_warning(mach_before, mach_after)
     if warn:
         lines.append(warn)
     lines.append("")
-    lines.append("Valeurs = médiane de %d passes (moyenne par passe), p99 = pire des passes." % rounds)
-    lines.append("%-46s | %-10s | blit moy  p99 | flip moy  p99 | fill écran | fill canevas" % ("Variante", "écran"))
+    lines.append("Values = median of %d passes (mean per pass), p99 = worst of the passes." % rounds)
+    lines.append("%-46s | %-10s | blit mean p99 | flip mean p99 | fill screen | fill canvas" % ("Variant", "screen"))
     lines.append("-" * 118)
     first = None
     for spec in specs:
@@ -180,28 +180,28 @@ def run_all(quick):
             med("fill_screen"), med("fill_canvas")))
     lines.append("")
     if first:
-        lines.append("pilote vidéo : %s   format canevas = écran : %s (%d bits)" % (
+        lines.append("video driver: %s   canvas format = screen: %s (%d bits)" % (
             first["driver"], first["same_format"], first["bitsize"]))
-    lines.append("Durées en millisecondes. Budget : 144 Hz = 6,94 ms   120 Hz = 8,33 ms.")
+    lines.append("Times in milliseconds. Budget: 144 Hz = 6.94 ms   120 Hz = 8.33 ms.")
     text = "\n".join(lines)
     print(text)
     try:
         with open(os.path.join(ROOT, "probe_result.txt"), "w", encoding="utf-8") as f:
             f.write(text + "\n")
-        print("\nRésultat enregistré dans : " + os.path.join(ROOT, "probe_result.txt"))
+        print("\nResult saved in: " + os.path.join(ROOT, "probe_result.txt"))
     except OSError as e:
-        print("(écriture de probe_result.txt impossible : %s)" % e)
+        print("(could not write probe_result.txt: %s)" % e)
 
 
 def main():
     ap = argparse.ArgumentParser(description="Sonde d'affichage Phenix Rebirth")
     ap.add_argument("--worker", help=argparse.SUPPRESS)
-    ap.add_argument("--quick", action="store_true", help="test très court (vérification du script)")
+    ap.add_argument("--quick", action="store_true", help="a very short test (to check the script)")
     a = ap.parse_args()
     if a.worker:
         worker(json.loads(a.worker))
         return
-    print("Sonde d'affichage : l'écran va clignoter plusieurs fois, ne touche à rien (~2 minutes)...")
+    print("Display probe: the screen will flicker several times, do not touch anything (~2 minutes)...")
     run_all(a.quick)
 
 
