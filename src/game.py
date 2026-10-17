@@ -4255,6 +4255,7 @@ class Game:
         if (self.stage_transition is None and content != 5
                 and self.formation.all_dead()
                 and not any(s.dying for s in self._ships())
+                and not update_play.loot_holds_the_clear(self)     # the reactor of a BONUS mission falls before the end
                 and self.boss_saucer is None):
             update_play.begin_stage_clear(self)
             return

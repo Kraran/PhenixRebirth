@@ -102,10 +102,13 @@ def tick_loot(game):
     if plan and not due and plan.get("last_wave"):
         form = getattr(game, "formation", None)            # a BONUS mission: it falls at the latest when the last wave is in
         due = getattr(form, "waves", None) is not None and getattr(form, "wave", 0) >= form.waves
+        if not due and form is not None and form.all_dead():
+            due = True                                     # the last bird is down before its time: it falls now
     if plan and getattr(game, "loot", None) is None and due and ship and ship.alive:
         adv["loot_plan"] = None
         x = FallingItem.pick_x(ship.x, ship.speed, ship.y)
         game.loot = FallingItem(plan["id"], x)
+        game.loot.holds_clear = bool(plan.get("last_wave"))      # a BONUS item: the mission cannot end while it falls
     item = getattr(game, "loot", None)
     if item is None:
         return
@@ -117,6 +120,20 @@ def tick_loot(game):
         game.sounds.play("1up", x=ship.x)
     elif not item.alive:
         game.loot = None
+
+
+def loot_holds_the_clear(game):
+    """True while the item of a BONUS mission (the reactor...) has still to fall or is falling. The mission cannot end
+    before: the last bird may be down before the item had time to come down to the ship, and the pilot must always get
+    the chance to catch it (it leaves the screen by the bottom after a few seconds, so the wait is short)."""
+    adv = getattr(game, "adventure", None)
+    if not adv:
+        return False
+    item = getattr(game, "loot", None)
+    if item is not None:
+        return bool(getattr(item, "holds_clear", False))     # (an item of the random loot does not hold anything)
+    plan = adv.get("loot_plan")
+    return bool(plan) and bool(plan.get("last_wave"))
 
 
 def tick_fly_up(game):

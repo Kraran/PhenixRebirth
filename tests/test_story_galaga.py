@@ -175,15 +175,79 @@ def test_winning_the_last_hunt_opens_the_bonus_mission_once():
     assert again["opened"] == []
 
 
-def test_the_waves_alone_give_nothing_and_the_mission_is_offered_again():
+def test_the_waves_alone_give_neither_points_nor_penalty_and_the_mission_is_offered_again():
     st = _state(bestiary_s4=True)
+    st["credits"] = 1000
     m = ss.mission_by_id("bonus_2d")
-    res = ss.record_result(st, "bonus_2d", 500, True)                           # the waves are beaten, the reactor missed
+    res = ss.record_result(st, "bonus_2d", 500, True, {"bird1": 7})            # the waves are beaten, the reactor missed
     assert res["loot"] is None and si.reactor_status(st, "shield") is None
-    assert st["credits"] == 500 and "bonus_2d" in st["cleared"]
+    assert res["no_item"] == "reactor_shield" and res["cleared"] is False
+    assert res["score"] == 0 and res["lost"] == 0 and res["fallen"] is False and res["first"] is False
+    assert st["credits"] == 1000                                                # nothing won, nothing lost
+    assert "bonus_2d" not in st["cleared"] and st["log"] == []                  # not a victory: no journal line
     assert not ss.flag(st, "vertical_thrust") and ss.loadout(st)["vertical"] is False
     assert ss.mission_playable(st, m) and not ss.mission_done(st, m)            # offered again
     assert ss.record_result(st, "bonus_2d", 400, True)["first"] is False
+    assert st["credits"] == 1000
+
+
+def test_the_phenix_version_without_the_reactor_is_neutral_too():
+    st = _state(bestiary_s4=True, phenix_owned=True)
+    st["slots"][1]["owned"] = True
+    st["credits"] = 3000
+    res = ss.record_result(st, "bonus_2d_phenix", 800, True)
+    assert res["no_item"] == "reactor_phenix" and res["cleared"] is False and res["lost"] == 0
+    assert st["credits"] == 3000 and "bonus_2d_phenix" not in st["cleared"]
+    assert ss.mission_playable(st, ss.mission_by_id("bonus_2d_phenix"))
+
+
+def test_the_veteran_who_misses_the_reactor_without_dying_does_not_fall():
+    st = _state(bestiary_s4=True)
+    st["mode"] = "veteran"
+    res = ss.record_result(st, "bonus_2d", 500, True)
+    assert res["fallen"] is False and not st.get("fallen") and res["no_item"] == "reactor_shield"
+
+
+def test_the_enemies_met_while_missing_the_reactor_still_go_into_the_bestiary():
+    st = _state(bestiary_s4=True)
+    ss.record_result(st, "bonus_2d", 500, True, {"bird1": 7, "bird2": 5})
+    assert ss.encounters(st, "bird1") == 7 and ss.encounters(st, "bird2") == 5
+
+
+def test_a_death_still_costs_the_usual_penalty_even_with_the_reactor_missed():
+    st = _state(bestiary_s4=True)
+    st["credits"] = 1000
+    res = ss.record_result(st, "bonus_2d", 0, False)
+    assert res["no_item"] is None and res["lost"] > 0 and st["credits"] < 1000
+
+
+def test_the_reactor_won_back_with_the_mission_still_pays_the_points():
+    st = _state(bestiary_s4=True)
+    st["credits"] = 1000
+    res = ss.record_result(st, "bonus_2d", 500, True, loot="reactor_shield")
+    assert res["no_item"] is None and res["cleared"] is True and st["credits"] == 1500
+
+
+def test_a_flight_with_the_cheat_code_keeps_the_usual_result():
+    st = _state(got={"reactor_shield": si.FOUND}, bestiary_s4=True)            # (the reactor is already owned: UNLK)
+    st["credits"] = 1000
+    res = ss.record_result(st, "bonus_2d", 500, True)
+    assert res["no_item"] is None and res["cleared"] is True and st["credits"] == 1500
+
+
+def test_the_map_says_the_reactor_was_missed_with_no_gain_and_no_loss(run, french):
+    g = run.game
+    st = _state(bestiary_s4=True)
+    st["credits"] = 4000
+    ss.save_state(ss.story_path(1), st)
+    g.story.open_slot(1)
+    from i18n import t
+    g.story.apply_result("bonus_2d", 500, True)
+    name = t("item_reactor_shield_name")
+    assert g.story.toast == t("story_item_missed").format(name=name)
+    assert t("story_clear").split("{")[0] not in g.story.toast and g.story.toast_kind == "info"
+    assert g.story.state["credits"] == 4000
+    assert g.font.size(g.story.toast)[0] < BASE_WIDTH - 140                        # it fits in the box of the map
 
 
 def test_catching_the_reactor_puts_it_on_sale_and_ends_the_offer():
@@ -949,6 +1013,7 @@ def test_a_fast_win_still_sees_the_reactor_fall_and_a_missed_one_brings_the_miss
     g = run.game
     _launch(run, bestiary_s4=True)
     _arrived(run)
+    credits = g.story.state["credits"]
     seen = []
     for _ in range(60 * 120):
         run.frames(1)
@@ -963,8 +1028,114 @@ def test_a_fast_win_still_sees_the_reactor_fall_and_a_missed_one_brings_the_miss
     assert g.adventure is None
     st = g.story.state
     assert set(seen) == {"reactor_shield"}                                       # it did fall, once
-    assert "bonus_2d" in st["cleared"] and si.reactor_status(st, "shield") is None
-    assert ss.mission_playable(st, ss.mission_by_id("bonus_2d"))                 # offered again
+    assert "bonus_2d" not in st["cleared"] and si.reactor_status(st, "shield") is None    # no win without it
+    assert st["credits"] == credits and ss.mission_playable(st, ss.mission_by_id("bonus_2d"))   # no gain; offered again
+
+
+def _fast_win_watch(run, catch=False):
+    """Kill every bird at once; return (frames the reactor was in sight before the fly-up began, caught?)."""
+    g = run.game
+    in_sight = 0
+    for _ in range(60 * 120):
+        if g.adventure is None or g.stage_transition is not None:
+            break
+        run.frames(1)
+        if g.loot is not None:
+            in_sight += 1
+            if catch:
+                g.player.x, g.player.y = g.loot.x, g.loot.y
+            else:
+                g.player.x = 60.0 if g.loot.x > BASE_WIDTH / 2 else BASE_WIDTH - 60.0
+        for b in g.formation.get_hittable_enemies():
+            b.kill(flash=False)
+        g.formation.carry = []
+    return in_sight, g.adventure.get("loot") if g.adventure else None
+
+
+def test_the_mission_does_not_end_before_the_reactor_has_fallen_through_the_screen(run):
+    g = run.game
+    _launch(run, bestiary_s4=True)
+    _arrived(run)
+    g.adventure["loot_plan"] = {"id": "reactor_shield", "t": 10 ** 6, "last_wave": True}    # (a late reactor)
+    in_sight, caught = _fast_win_watch(run, catch=False)
+    assert g.stage_transition is not None and g.adventure is not None          # the fly-up began, after the reactor
+    assert g.loot is None and caught is None
+    fall = (BASE_HEIGHT + 60) / 130.0                                           # seconds from the top to the bottom
+    assert in_sight >= 0.9 * fall * 60                                          # it was in sight the whole way down
+
+
+def test_the_reactor_that_is_caught_while_the_last_birds_are_down_is_kept(run):
+    g = run.game
+    _launch(run, bestiary_s4=True)
+    _arrived(run)
+    g.adventure["loot_plan"] = {"id": "reactor_shield", "t": 10 ** 6, "last_wave": True}
+    in_sight, caught = _fast_win_watch(run, catch=True)
+    assert caught == "reactor_shield" and in_sight > 0
+    for _ in range(60 * 30):
+        if g.adventure is None:
+            break
+        run.frames(1)
+    assert g.adventure is None and si.reactor_status(g.story.state, "shield") == si.FOUND
+    assert "bonus_2d" in g.story.state["cleared"]
+
+
+def test_a_reactor_that_was_missed_ends_the_mission_with_no_gain_and_no_loss(run):
+    g = run.game
+    _launch(run, bestiary_s4=True)
+    _arrived(run)
+    g.story.state["credits"] = 700
+    g.adventure["loot_plan"] = {"id": "reactor_shield", "t": 10 ** 6, "last_wave": True}
+    _fast_win_watch(run, catch=False)
+    for _ in range(60 * 30):
+        if g.adventure is None:
+            break
+        run.frames(1)
+    assert g.adventure is None
+    st = g.story.state
+    assert st["credits"] == 700 and "bonus_2d" not in st["cleared"] and si.reactor_status(st, "shield") is None
+
+
+def test_the_last_bird_down_before_the_reactor_time_makes_it_fall_at_once():
+    import types
+    import update_play
+    from settings import BASE_WIDTH as W
+    g = types.SimpleNamespace(
+        dt=DT, adventure={"loot_plan": {"id": "reactor_shield", "t": 10 ** 6, "last_wave": True}, "loot_clock": 0.0},
+        formation=types.SimpleNamespace(all_dead=lambda: True),            # (no waves counter: only the dead birds say it)
+        player=types.SimpleNamespace(x=W / 2, y=625.0, speed=300.0, alive=True, dying=False, get_hitbox=lambda: pygame.Rect(0, 0, 1, 1)),
+        loot=None, loot_note=None, sounds=None)
+    update_play.tick_loot(g)
+    assert g.loot is not None and g.loot.item == "reactor_shield" and g.loot.holds_clear
+    assert update_play.loot_holds_the_clear(g)
+
+
+def test_only_the_item_of_a_bonus_mission_holds_the_end_of_the_mission():
+    import types
+    import loot
+    import update_play
+    g = types.SimpleNamespace(adventure=None, loot=None)
+    assert not update_play.loot_holds_the_clear(g)                              # not an Adventure
+    g.adventure = {"loot_plan": None}
+    assert not update_play.loot_holds_the_clear(g)                              # nothing planned, nothing falling
+    g.adventure = {"loot_plan": {"id": "tesla", "t": 5.0}}
+    assert not update_play.loot_holds_the_clear(g)                              # the random loot holds nothing
+    g.loot = loot.FallingItem("tesla", 300)
+    assert not update_play.loot_holds_the_clear(g)
+    g.adventure = {"loot_plan": {"id": "reactor_shield", "t": 5.0, "last_wave": True}}
+    g.loot = None
+    assert update_play.loot_holds_the_clear(g)                                  # a BONUS item still to come
+    g.adventure = {"loot_plan": None}
+    g.loot = loot.FallingItem("reactor_shield", 300)
+    g.loot.holds_clear = True
+    assert update_play.loot_holds_the_clear(g)                                  # and falling
+
+
+def test_a_reactor_already_owned_holds_nothing(run):
+    g = run.game
+    _launch(run, bestiary_s4=True, got={"reactor_shield": si.FOUND}, cheat=True)
+    _arrived(run)
+    import update_play
+    assert g.adventure["loot_plan"] is None and not update_play.loot_holds_the_clear(g)
 
 
 def test_the_mission_plays_with_a_ship_that_flies_up_and_down(run):

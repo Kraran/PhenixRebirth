@@ -3469,6 +3469,22 @@ T = {
         "ru": "Выбранный трек:",
     },
 
+    "story_item_missed": {
+        "fr": "{name} non récupéré : ni gain ni perte. La mission est reproposée.",
+        "en": "{name} not caught: nothing gained, nothing lost. The mission is offered again.",
+        "es": "{name} no recogido: ni ganas ni pierdes nada. La misión se ofrece de nuevo.",
+        "de": "{name} nicht eingesammelt: nichts gewonnen, nichts verloren. Die Mission wird erneut angeboten.",
+        "it": "{name} non raccolto: niente guadagnato, niente perso. La missione viene riproposta.",
+        "pt": "{name} não apanhado: nada ganho, nada perdido. A missão é proposta de novo.",
+        "nl": "{name} niet opgepakt: niets gewonnen, niets verloren. De missie wordt opnieuw aangeboden.",
+        "pl": "{name} nie złapany: nic nie zyskujesz ani nie tracisz. Misja jest ponownie dostępna.",
+        "tr": "{name} alınmadı: ne kazanç ne kayıp. Görev yeniden önerilir.",
+        "sv": "{name} inte fångad: inget vunnet, inget förlorat. Uppdraget erbjuds igen.",
+        "no": "{name} ikke fanget: ingenting vunnet, ingenting tapt. Oppdraget tilbys på nytt.",
+        "da": "{name} ikke fanget: intet vundet, intet tabt. Missionen tilbydes igen.",
+        "ru": "{name}: не подобрано, ничего не получено и не потеряно. Миссия предлагается снова.",
+    },
+
     "pause": {
         "fr": "PAUSE", "en": "PAUSE", "es": "PAUSA", "de": "PAUSE", "it": "PAUSA",
         "pt": "PAUSA", "nl": "PAUZE", "pl": "PAUZA", "tr": "DURAKLAT", "sv": "PAUS",
