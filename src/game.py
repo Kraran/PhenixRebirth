@@ -7,7 +7,7 @@ pause/options, high scores, attract-mode help, and credits.
 Play modes: solo, hot-seat (alternating), coop (simultaneous). Options cover
 controls, autofire, volumes, session audio mix, rumble, display, GPU present,
 VSync, refresh cap, bezels, FPS counter, CRT scanlines and language.
-Cheats on the high-score menu: LVL2–LVL5, LIVE, PHEN.
+Cheats on the high-score menu: LV02–LV99, LIVE, PHEN.
 v1.4.5 — 144 Hz option, smoother fullscreen, safer saves, errors.log.
 v1.4.4 — Adventure chapter 1 (Shield, broken dome, bestiary, hangar credits).
 Arcade loop is unchanged. Seasonal title, April gag, comet stay.
@@ -19,13 +19,14 @@ Architecture notes:
 - Display rebuild (GPU/bezel/mode) covers the desktop then refocuses the pad.
 - State flags: started, game_over, paused, stage_transition, menu_screen, hs_phase.
 - Stages cycle content 1–5 forever with rising speed (stage_speed_mult).
-- Cheats on the menu high-score screen: LVL1–LVL5, LIVE, PHEN (stackable).
+- Cheats on the menu high-score screen: LV02–LV99 (a stage), LIVE, PHEN (stackable).
 - hs_phase "card" = GAME OVER hold (voice + fading rumble) before scores / hot-seat.
 
 This file is intentionally large; split only if a future refactor needs it.
 """
 import pygame
 import math
+import re
 import sys
 import time
 import random
@@ -197,6 +198,7 @@ def _ffmpeg_exe():
     return videoclip.find_ffmpeg() or ("ffmpeg.exe" if sys.platform.startswith("win") else "ffmpeg")
 
 
+CHEAT_MIN_STAGE, CHEAT_MAX_STAGE = 2, 99      # the stages the cheat code LVxx (typed on the high-score screen) can start at
 LAST_ANNOUNCED_LEVEL = 31          # the announcer has recorded the stages 1 to 31 (assets/sounds/level<n>.wav); past it, silence
 
 
@@ -2069,14 +2071,9 @@ class Game:
         """Accumulate alnum from the high-score menu and fire known codes."""
         self.cheat_buffer = (self.cheat_buffer + ch.upper())[-10:]
         buf = self.cheat_buffer
-        if "LVL5" in buf:
-            self._start_at_stage(5)
-        elif "LVL4" in buf:
-            self._start_at_stage(4)
-        elif "LVL3" in buf:
-            self._start_at_stage(3)
-        elif "LVL2" in buf:
-            self._start_at_stage(2)
+        lv = re.search(r"LV(\d\d)$", buf)                  # LV02 ... LV99: straight into that stage (LV00 and LV01 do nothing)
+        if lv and CHEAT_MIN_STAGE <= int(lv.group(1)) <= CHEAT_MAX_STAGE:
+            self._start_at_stage(int(lv.group(1)))
         elif "LIVE" in buf:
             self.used_cheat = True
             self.cheat_live = True

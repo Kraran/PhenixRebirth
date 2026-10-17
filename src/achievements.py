@@ -7,7 +7,7 @@ Each catalog row: id + icon key. Titles live in i18n (ach_<id>, ach_<id>_d).
 
 Scalable entries (SCALABLE) store a counter in progress[] and a tier
 normal / bronze / silver / gold. Thresholds are 4-tuples.
-"boldly_go" uses (21,21,21,21) so the first unlock is gold.
+"boldly_go" uses BOLDLY_GO_STAGE four times (stage 31) so the first unlock is gold.
 Old binary saves migrate to progress = first threshold, tier normal.
 """
 import json
@@ -105,6 +105,8 @@ SECRETS = frozenset(("pleiades", "boldly_go", "razor", "one_up_1337", "elite_808
                      "adv_untouchable", "adv_gilded"))
 
 # aid -> (normal, bronze, silver, gold) thresholds
+BOLDLY_GO_STAGE = 31          # the stage "To boldly go" asks for (the announcer's last recorded level)
+
 SCALABLE = {
     "first_blood": (1, 100, 500, 2000),
     "stage2": (2, 5, 10, 20),
@@ -128,7 +130,7 @@ SCALABLE = {
     "marathon": (5000, 20000, 50000, 100000),
     "pleiades": (1, 5, 15, 30),
     "port_pair": (1, 3, 5, 10),
-    "boldly_go": (21, 21, 21, 21),
+    "boldly_go": (BOLDLY_GO_STAGE,) * 4,
     # the Adventure: every mission that can be flown again has its three tiers (counted in victories)
     "adv_sortie": (1, 3, 5, 8),
     "adv_kaki": (1, 3, 5, 8),
