@@ -12,6 +12,7 @@ import random
 import pygame
 
 from settings import (BASE_HEIGHT, BASE_WIDTH, SCREEN_SHAKE_DECAY, stage_speed_mult)
+from achievements import BOLDLY_GO_STAGE
 from enemy import BigBird, Enemy
 from explosion import TeslaCoilFx
 from i18n import t
@@ -136,7 +137,7 @@ def tick_fly_up(game):
             game._note_scalable("stage2", game.stage, absolute=True)
             if game.stage > 1 and (game.stage - 1) % 5 == 0:
                 game._note_scalable("loop")
-            if game.stage >= 21:
+            if game.stage >= BOLDLY_GO_STAGE:
                 game._note_scalable("boldly_go", game.stage, absolute=True)
             game._setup_stage(game.stage)
         for ship in game._ships():
