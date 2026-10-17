@@ -567,12 +567,12 @@ def test_the_announcer_goes_silent_past_the_last_recorded_level_like_everywhere(
     real = g.sounds
     g.sounds = _Voice(real)
     try:
-        g.adventure = {"invaders": True, "level": 22}
+        g.adventure = {"invaders": True, "level": 32}
         g._start_arrive_intro()
         assert g.sounds.vo == []
-        g.adventure = {"invaders": True, "level": 21}
+        g.adventure = {"invaders": True, "level": 31}
         g._start_arrive_intro()
-        assert g.sounds.vo == ["level21"]
+        assert g.sounds.vo == ["level31"]
     finally:
         g.sounds = real
 
