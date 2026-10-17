@@ -67,21 +67,20 @@ def backup_unreadable(path):
     return False
 
 
-# --- Écriture différée -------------------------------------------------------
-# Certains fichiers sont sauvegardés PENDANT la partie (hauts faits : à chaque
-# oiseau abattu). Un fsync peut alors bloquer le jeu 10 à 50 ms sous Windows, ce
-# qui se voit comme un à-coup. Ces fichiers sont donc écrits par un fil
-# d'arrière-plan, avec exactement la même méthode sûre (fichier temporaire,
-# fsync, os.replace). Garanties :
-#   - read_text_latest() renvoie toujours la DERNIÈRE version, même pas encore
-#     sur le disque : une relecture juste après une sauvegarde ne perd rien ;
-#   - plusieurs sauvegardes rapprochées d'un même fichier sont fusionnées ;
-#   - flush() (appelé aussi à la fermeture du jeu) attend que tout soit écrit.
+# --- Deferred writing --------------------------------------------------------
+# Some files are saved DURING the game (achievements: at every bird shot down).
+# An fsync can then block the game for 10 to 50 ms on Windows, which shows as a
+# hitch. So these files are written by a background thread, with exactly the same
+# safe method (temporary file, fsync, os.replace). Guarantees:
+#   - read_text_latest() always returns the LATEST version, even if it is not on
+#     the disk yet: reading right after a save loses nothing;
+#   - several saves of the same file in a short time are merged into one;
+#   - flush() (also called when the game closes) waits until everything is written.
 COALESCE_SEC = 0.3
 
 _cv = threading.Condition()
-_pending = {}      # chemin -> texte à écrire
-_inflight = {}     # chemin -> texte en cours d'écriture
+_pending = {}      # path -> text to write
+_inflight = {}     # path -> text being written
 _flush_requested = False
 _thread = None
 
@@ -139,7 +138,7 @@ def read_text_latest(path):
 
 
 def flush(timeout=10.0):
-    """Attend que toutes les écritures différées soient sur le disque."""
+    """Wait until all the deferred writes are on the disk."""
     global _flush_requested
     with _cv:
         if not _pending and not _inflight:

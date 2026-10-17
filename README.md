@@ -1,6 +1,6 @@
 # Phenix Rebirth
 
-**Version 1.4.5**
+**Version 1.5.0**
 
 A modern, ultra-responsive PC remake of the classic arcade shooter **Phoenix** (1978 / 1980).
 
@@ -26,17 +26,19 @@ Free to play · Open source · MIT License
 
 ## Features
 
-- **Main menu**: Play, Adventure, Extras, Options, Quit. *Play* opens the arcade game screen (mode: 1 player / hot seat / coop, difficulty) before the ship select; *Extras* gathers High Scores, Achievements, Jukebox, Credits, Help and the Add-On
-- **Adventure** (an Extras tab at its far left opens Achievements, Jukebox, Credits and Options) — chapter 1: Shield with a broken dome, mission map, bestiary unlocks, hangar credits
+- **Main menu**: Play, Adventure (Beta), Extras, Options, Quit. *Play* opens the arcade game screen (mode: 1 player / hot seat / coop, difficulty) before the ship select; *Extras* gathers High Scores, Achievements, Jukebox, Credits, Help and the Add-On
+- **Adventure (Beta)** — a story mode in three acts: Act 1 (the weak Shield, the dome), Act 2 (the Phenix, the paint series, the Avioid commander), Act 3 (the attack of Phobos, the choice of the ship, the final series). 4 save slots, Novice / Normal / Veteran (permanent death), mission map, journal, Bestiary, hangar and workshop, loot items, story scenes in pictures and video, a French spoken introduction. An Extras tab at its far left opens Achievements, Jukebox, Credits and Options. It is still in beta: bugs and balance are expected, please report them on GitHub Issues
 - **VIP rescue** (Act 2 BONUS, needs the two-dimensional reactor) — escort a luxury cruise ship across the bottom of the screen while the level 3 birds dive at it (`src/escort.py`); who was on board is told after the victory, then her private concert plays, three songs in a row (films with their sound, `assets/video/`, each one watched again from the journal)
 - **Adventure intro read aloud** (French) — the text follows the voice (`assets/story/voice/`, made with `tools/make_intro_voice.py`)
 - **Adventure intro in video** — the story slides (Huygens, Phobos, Kamarasov; Kamarasov's death in Veteran mode) are short looping clips in `assets/story/`, like Wallems' workshop
 - **Return to base** — a lost mission (Normal mode) is drawn into a blue whirlwind, a flash, and the mission map comes back; Enter / Esc / a pad button skips it (`python tools/make_anchor_sound.py` makes its sound, numpy only)
+- **TEST mission "Asteroids"** (last on every Adventure map) — free flight in the spirit of the Atari arcade game; nothing is won or lost
 - **Shield ship** — second craft: freeze + explosive barrier (2 s, 5 s cooldown)
 - Ship select at start (and P2 in hot-seat); blue tint only when both pick the same hull
 - Achievements in two pages, ARCADE (32) and ADVENTURE (32, Acts 1 to 3): a grid of illustrated cards (the frame's metal is the tier: steel, bronze, silver, gold; grey when locked) and a panel that tells how to get the one under the cursor, its tiers and the date; some are secret until found. The cursor turns the page at the edges of the grid (Tab / LB / RB: High Scores, Jukebox). The pictures are made by `tools/make_achievement_art.py`
 - Jukebox (ID3 titles, PHEQ1 equalizer, intro video)
-- In-game music picker (Off + the 5 soundtrack themes)
+- In-game music picker (Off, the soundtrack themes, the songs of Lyra Voss, and your own tracks dropped in the `musique_perso` folder next to the game)
+- Announcer up to level 31
 - Stereo SFX panned to the event
 - Seasonal title overlay (Christmas 1 Dec–6 Jan, Halloween 24 Oct–1 Nov)
 - April Fools logo gag (1 April, once per boot)
@@ -96,11 +98,15 @@ python main.py
 
 | Action | Keyboard | Gamepad |
 |--------|----------|---------|
-| Move | Arrow keys / WASD | Left stick / D-Pad |
-| Fire | Space / Up / W | A (or face buttons) |
-| **PHENIX** activate / cancel | Left Shift / Right Shift / X | **B** |
+| Move | Arrow keys (keyboard 2) · W/Z A/Q S D (keyboard 1) | Left stick / D-Pad |
+| Fire | Space / Right Ctrl (keyboard 2) · Left Ctrl (keyboard 1) | A (or face buttons) |
+| **PHENIX** / Shield activate | Right Shift (keyboard 2) · Left Shift (keyboard 1) | **B** |
 | Pause | Esc | Start |
 | Menus | Arrows + Enter | Stick / D-Pad + A · B = back |
+
+These are the defaults. In *Options > Game > Touches et boutons* every key (two per action, on two keyboards) and
+every pad button can be changed; in solo the last device used flies the ship, and in coop each player can be given
+a keyboard half or a pad.
 
 - One player shot on screen at a time (classic Phoenix rule); dual shots only in PHENIX form.
 - PHENIX gauge: **+1** per valid kill, **−1** per miss; activate from **3**. Cancel early with B / Shift to keep remaining gauge.
@@ -126,7 +132,7 @@ python main.py
 
 Four tabs: **Game**, **Audio**, **Display**, **Advanced** (Tab / Page Up / Page Down on the keyboard, LB / RB on the pad, or Left / Right on the row of tabs). Persisted in `settings.json` (created at runtime, **not** shipped in the repo):
 
-- Input mode, display (window / fullscreen / borderless)
+- Control (Auto / keyboard / pad), the control of each coop player, key and button bindings, display (window / fullscreen / borderless)
 - SFX & music volume, rumble, autofire
 - Language (13 locales)
 - FPS counter, scanlines OFF / 1 / 2 / 3

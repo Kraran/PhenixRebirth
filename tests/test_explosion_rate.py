@@ -1,4 +1,4 @@
-"""Explosions : identiques à 60 Hz, même étalement à 120 / 144 Hz."""
+"""Explosions: identical at 60 Hz, same spread at 120 / 144 Hz."""
 import copy
 import random
 
@@ -10,7 +10,7 @@ KINDS = ["enemy", "bullet", "collision", "edge", "flame", "dust", "shield", "ele
 
 
 def _old_update(e, dt):
-    """Copie de l'ancien Explosion.update (décélérations « par image »)."""
+    """Copy of the old Explosion.update (decelerations "per frame")."""
     if int(getattr(e, "delay_frames", 0) or 0) > 0:
         e.delay_frames -= 1
         return
@@ -80,7 +80,7 @@ def test_meme_etalement_a_toutes_les_cadences(kind):
     ref = _simulate(kind, 60)
     for fps in (120, 144, 75):
         e = _simulate(kind, fps)
-        # la vitesse horizontale ne subit que la décélération : elle doit être la même
+        # the horizontal speed only undergoes the deceleration: it must be the same
         for a, b in zip(ref.particles, e.particles):
             assert b["vx"] == pytest.approx(a["vx"], rel=1e-9, abs=1e-9)
         for a, b in zip(ref.debris, e.debris):
@@ -91,7 +91,7 @@ def test_meme_etalement_a_toutes_les_cadences(kind):
         for a, b in zip(ref.rings, e.rings):
             assert b["r"] == pytest.approx(a["r"], rel=1e-9)
         assert e.life == pytest.approx(ref.life, abs=1e-9)
-        # et la position, qui dépend aussi de l'intégration image par image : à quelques % près
+        # and the position, which also depends on the frame-by-frame integration: within a few %
         for a, b in zip(ref.particles, e.particles):
             assert b["x"] == pytest.approx(a["x"], rel=0.06, abs=1.5)
 
@@ -104,13 +104,13 @@ def test_delai_en_temps_reel():
         while e.life == e.max_life and updates < 20:
             e.update(1.0 / fps)
             updates += 1
-        # l'explosion démarre à l'image qui suit le délai : ~1/60 s plus tard, pas 1 image
+        # the explosion starts on the frame after the delay: ~1/60 s later, not 1 frame
         started_after = (updates - 1) / fps
         assert 1 / 60 - 1e-6 <= started_after <= 1 / 60 + 1 / fps, (fps, started_after)
 
 
 def test_ancien_comportement_dependait_de_la_cadence():
-    # ce que ce changement corrige : l'ancienne version, simulée 0,5 s
+    # what this change fixes: the old version, simulated for 0.5 s
     def run(fps):
         random.seed(11)
         e = Explosion(0, 0, kind="gameover")
@@ -118,4 +118,4 @@ def test_ancien_comportement_dependait_de_la_cadence():
             _old_update(e, 1.0 / fps)
         return e.sparks[0]["vx"]
 
-    assert run(144) < 0.2 * run(60)       # à 144 Hz les étincelles freinaient bien plus vite
+    assert run(144) < 0.2 * run(60)       # at 144 Hz the sparks used to brake much faster

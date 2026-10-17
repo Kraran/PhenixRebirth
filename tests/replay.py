@@ -280,7 +280,7 @@ def run_scenario(name, frames, setup, events=None, stage_jumps=None, god=False,
     # the random-input scenarios change options, which must not leak into the next one.
     import safe_io
 
-    safe_io.flush()  # les sauvegardes différées du scénario précédent doivent être finies
+    safe_io.flush()  # the deferred saves of the previous scenario must be finished
     user_dir = settings.user_data_dir()
     for entry in os.listdir(user_dir):
         path = os.path.join(user_dir, entry)

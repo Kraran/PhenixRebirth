@@ -1,9 +1,9 @@
-"""Limiteur d'images : intervalle exact, rien à attendre si l'image est déjà en retard."""
+"""Frame limiter: exact interval, nothing to wait for if the frame is already late."""
 from pacing import FramePacer
 
 
 class FakeTime:
-    """Horloge simulée : chaque lecture coûte 10 µs, sleep() dort un peu plus que demandé."""
+    """Simulated clock: every reading costs 10 µs, sleep() sleeps a little more than asked."""
 
     def __init__(self, oversleep=0.0003):
         self.t = 100.0
@@ -25,7 +25,7 @@ class FakeTime:
 def _run(cap, work, frames, oversleep=0.0003):
     ft = FakeTime(oversleep)
     p = FramePacer(clock=ft.clock, sleep=ft.sleep)
-    assert p.wait(cap) is None            # 1er appel : rien à mesurer
+    assert p.wait(cap) is None            # 1st call: nothing to measure
     start = ft.t
     dts = []
     for _ in range(frames):

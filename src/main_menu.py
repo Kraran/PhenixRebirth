@@ -23,7 +23,7 @@ OPTION_TABS = (
 )
 
 # title of each entry / tab (i18n keys)
-MAIN_TITLES = {"play": "play", "story": "story", "extras": "extras_title", "options": "options", "quit": "quit"}
+MAIN_TITLES = {"play": "play", "story": "story_menu", "extras": "extras_title", "options": "options", "quit": "quit"}
 EXTRAS_TITLES = {"highscores": "high_scores", "achievements": "achievements", "jukebox": "jukebox",
                  "credits": "credits", "help": "extras_help", "addon": "addon"}
 TAB_TITLES = {"game": "opt_tab_game", "audio": "opt_tab_audio", "display": "opt_tab_display",

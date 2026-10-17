@@ -71,6 +71,24 @@ def test_five_entries_drawn_without_mode_or_difficulty(run):
     assert len(main_menu.MAIN) == 5
 
 
+def test_the_adventure_entry_says_it_is_in_beta_in_every_language(run):
+    g = run.game
+    assert main_menu.MAIN_TITLES["story"] == "story_menu"
+    assert i18n.T["story_menu"]["fr"] == "AVENTURE (BETA)" and i18n.T["story_menu"]["en"] == "ADVENTURE (BETA)"
+    old = i18n.get_lang() if hasattr(i18n, "get_lang") else "fr"
+    try:
+        for code in i18n.LANG_CODES:
+            i18n.set_lang(code)
+            label = i18n.t("story_menu")
+            assert label.endswith("(BETA)") or label.endswith("(\u0411\u0415\u0422\u0410)"), code
+            # the whole word before "(" is the translated name of the Adventure, not the key
+            assert len(label.split(" (")[0]) >= 5 and label != "story_menu", code
+            # the panel grows with the label: it must stay well inside the 1280 px screen
+            assert g.medium_font.size(label)[0] < 640, (code, g.medium_font.size(label))
+    finally:
+        i18n.set_lang(old)
+
+
 def test_the_cursor_wraps_over_five_entries(run):
     g = run.game
     for _ in range(5):

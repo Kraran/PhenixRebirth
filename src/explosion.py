@@ -8,18 +8,17 @@ import pygame
 import math
 import random
 
-# Les décélérations ci-dessous étaient appliquées « à chaque image » : à 120 ou 144 Hz
-# les explosions freinaient deux à trois fois trop vite. Elles sont maintenant
-# exprimées pour une image à 60 Hz et mises à l'échelle du temps réellement écoulé :
-# à 60 Hz le résultat est exactement le même qu'avant, aux autres cadences
-# l'explosion dure et s'étale pareil.
+# The decelerations below used to be applied "every frame": at 120 or 144 Hz the
+# explosions slowed down two to three times too fast. They are now expressed for a
+# 60 Hz frame and scaled by the time really elapsed: at 60 Hz the result is exactly
+# what it was, at the other rates the explosion lasts and spreads the same.
 REF_FPS = 60.0
-# Reste de délai (en images à 60 Hz) en dessous duquel l'explosion démarre.
+# Remaining delay (in 60 Hz frames) under which the explosion starts.
 _DELAY_EPS = 0.05
 
 
 def _decay(base, k):
-    """base ** k, sans calcul inutile quand k vaut exactement 1 (60 Hz)."""
+    """base ** k, with no needless calculation when k is exactly 1 (60 Hz)."""
     return base if k == 1.0 else base ** k
 
 

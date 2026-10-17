@@ -1,4 +1,4 @@
-"""available_sets() : le menu l'appelle à chaque image, le résultat est gardé quelques secondes."""
+"""available_sets(): the menu calls it every frame, the result is kept for a few seconds."""
 import addon
 
 
@@ -29,8 +29,8 @@ def test_fresh_relit_toujours(monkeypatch):
     addon.available_sets()
     sets["value"] = []
     assert addon.available_sets() == [("phoenix", "Phoenix")]      # encore le cache
-    assert addon.available_sets(fresh=True) == []                  # relu à neuf
-    assert addon.available_sets() == []                            # et le cache est à jour
+    assert addon.available_sets(fresh=True) == []                  # read again from scratch
+    assert addon.available_sets() == []                            # and the cache is up to date
     assert calls["n"] == 2
 
 
