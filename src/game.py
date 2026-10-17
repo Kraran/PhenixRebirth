@@ -52,6 +52,7 @@ from explosion import Explosion, TeslaCoilFx
 from starfield import Starfield
 from sounds import SoundManager
 from pheq import load_pheq, resolve_path as pheq_resolve, sample as pheq_sample, tick as pheq_tick, draw as pheq_draw, clock_y as pheq_clock_y, draw_seek as pheq_draw_seek
+import custom_music
 from ingame_music import cycle as ingame_cycle, label as ingame_label, normalize as ingame_normalize
 from mp3_title import title_from_path, title_for_key
 from i18n import set_lang, get_lang, t, t_help, t_list, get_credits_lines, LANGS, LANG_CODES
@@ -240,9 +241,18 @@ class Game:
         if want == "none":
             return
         try:
-            self.sounds.play_music(want)
+            self._play_ingame_track(want)
         except Exception:
             log_exc("game._tick_ingame_music")
+
+    def _play_ingame_track(self, want):
+        """Start the track chosen in the Options: a theme of the game, or a file of the player's folder `musique_perso`."""
+        if custom_music.is_custom(want):
+            path = custom_music.path_of(want)
+            if path is None:
+                return
+            self.sounds.register_music(want, path)
+        self.sounds.play_music(want)
 
     def _update_music(self):
         """Menu / attract / optional in-game menu theme. Off silences everything."""
@@ -282,7 +292,7 @@ class Game:
             # In-game picker wins (any of the 5 themes). Mix Off stays silent.
             want = ingame_normalize(getattr(self, "ingame_music", "none"))
             if want != "none":
-                self.sounds.play_music(want)
+                self._play_ingame_track(want)
             elif mix in ("sfx_music", "music"):
                 self.sounds.play_music("menu")
             else:
@@ -789,6 +799,14 @@ class Game:
         self.cheat_msg = f"{t('ach_unlocked')} — {title}{extra}"
         self.cheat_kind = "ach"
         self.cheat_msg_timer = 3.2
+        self._say_achievement()
+
+    def _say_achievement(self):
+        """The announcer says "Achievement!" each time a haut-fait is unlocked (arcade, menus, Adventure page)."""
+        try:
+            self.sounds.play_achievement()
+        except Exception:
+            log_exc("game._say_achievement")
 
     def _note_bird_kill(self):
         self._note_scalable("first_blood", 1)
@@ -818,6 +836,7 @@ class Game:
                 self.cheat_msg = f"{t('ach_unlocked')} — {title}"
                 self.cheat_kind = "ach"
                 self.cheat_msg_timer = 3.0
+            self._say_achievement()
             return True
         return False
 
@@ -833,6 +852,7 @@ class Game:
                 self.cheat_msg = f"{t('ach_unlocked')} — {title}"
                 self.cheat_kind = "ach"
                 self.cheat_msg_timer = 4.0
+            self._say_achievement()
             return True
         return False
 
@@ -853,6 +873,7 @@ class Game:
         self.cheat_msg = f"{t('ach_unlocked')} — {t('ach_' + aid)}{extra}"
         self.cheat_kind = "ach"
         self.cheat_msg_timer = 3.2
+        self._say_achievement()
 
     def _tick_listen_achs(self):
         """Unlock when the current theme finishes a full play (loop wrap).
@@ -3210,18 +3231,24 @@ class Game:
         ):
             return
         x, y, w, h = box
+        if key == "ingame_music":
+            # its help is long (folder of the player's music) and the chosen title comes under it: the panel grows to hold both
+            bf = getattr(self, "body_font", None) or self.font
+            n_body = len(self._wrap_ui(t("opt_help_ingame_music"), bf, w - 36))
+            h = max(h, 58 + (n_body + 3) * (bf.get_linesize() + 4) + 12 + 18)
         cache = getattr(self, "_opt_help_cache", None)
         if cache is None:
             cache = self._opt_help_cache = {}
         ckey = (key, get_lang(), w, h)
-        panel = cache.get(ckey)
-        if panel is None:
+        hit = cache.get(ckey)
+        if hit is None:
             panel = pygame.Surface((w, h), pygame.SRCALPHA)
             menu_ui.panel(panel, panel.get_rect())                   # the same panel as the option list
             title = t({
                 "control": "opt_control", "coop_p1": "opt_coop_p1", "coop_p2": "opt_coop_p2", "keybinds": "opt_keybinds",
                 "autofire": "opt_autofire", "sfx": "opt_sfx",
-                "music": "opt_music", "audio_mix": "opt_audio", "rumble": "opt_rumble", "display": "opt_display",
+                "music": "opt_music", "audio_mix": "opt_audio", "ingame_music": "opt_ingame", "rumble": "opt_rumble",
+                "display": "opt_display",
                 "bezel": "opt_bezel", "fps": "opt_fps", "scanlines": "opt_scanlines",
                 "gpu": "opt_gpu", "vsync": "opt_vsync", "hz": "opt_hz",
                 "language": "opt_language", "reset_hs": "opt_reset_hs", "back": "opt_back",
@@ -3235,8 +3262,19 @@ class Game:
                 surf = self._txt(body_font, line, (200, 200, 230))
                 panel.blit(surf, (18, yy))
                 yy += body_font.get_linesize() + 4
-            cache[ckey] = panel
+            hit = cache[ckey] = (panel, yy)
+        panel, yy = hit
         self.game_surface.blit(panel, (x, y))
+        if key == "ingame_music":
+            # the row shows a long title cut short: the whole title of the chosen track is read here
+            body_font = getattr(self, "body_font", None) or self.font
+            yy += 12
+            self.game_surface.blit(self._txt(body_font, t("ingame_now"), (255, 210, 140)), (x + 18, y + yy))
+            yy += body_font.get_linesize() + 4
+            for line in self._wrap_ui(self._option_value("ingame_music"), body_font, w - 36)[:2]:
+                _f, line = draw_frame.fit_text((body_font,), line, w - 36)
+                self.game_surface.blit(self._txt(body_font, line, (235, 235, 250)), (x + 18, y + yy))
+                yy += body_font.get_linesize() + 4
 
     OPTION_LABELS = {
         "control": "opt_control", "coop_p1": "opt_coop_p1", "coop_p2": "opt_coop_p2", "keybinds": "opt_keybinds",

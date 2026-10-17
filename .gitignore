@@ -23,3 +23,6 @@ probe_result.txt
 
 # a hand-placed ffmpeg (see videoclip.find_ffmpeg): too big for the repository
 bin/ffmpeg*
+
+# the player's own in-game music (see src/custom_music.py): never part of the repository
+musique_perso/

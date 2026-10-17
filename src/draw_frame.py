@@ -348,6 +348,27 @@ def _value_with_arrows(game, surf, font, text, right, cy, chosen, col):
     return x
 
 
+ARROW_ROOM = 72           # what the arrows of the chosen row take on both sides of a value (‹ ... ›)
+
+
+def fit_text(fonts, text, max_w):
+    """(font, text) that fit in `max_w` px: the first font of `fonts` the whole text fits in; else the last (smallest)
+    font with the MIDDLE of the text cut out and "..." put in its place, so the end of the title stays readable
+    ("Phoenix - N...e (Final)" and "Phoenix - N...e (Start)" are told apart). The Play font has no ellipsis sign."""
+    for font in fonts:
+        if font.size(text)[0] <= max_w:
+            return font, text
+    font = fonts[-1]
+    tail = text[-min(9, max(1, len(text) // 3)):].lstrip()
+    head = text[:len(text) - len(tail)]
+    while font.size(head.rstrip() + "..." + tail)[0] > max_w and (len(head) > 1 or tail):
+        if len(head) > 1:
+            head = head[:-1]
+        else:
+            tail = tail[1:]                       # (almost no room: the end goes too, never the whole text)
+    return font, head.rstrip() + "..." + tail
+
+
 def _gauge(surf, right, cy, fill, steps, chosen):
     """A row of small segments (volume, vibrations), right-aligned on `right`."""
     seg_w, seg_h, gap = 12, 16, 4
@@ -415,8 +436,15 @@ def draw_options(game, top):
             continue
         right = box.right - 28
         small = getattr(game, "menu_font", None) or font
+        # a long value (the title of a track, "Fullscreen only"...) must never run over the label: smaller, then cut
+        room = right - (box.x + 28 + lab.get_width()) - 24 - ARROW_ROOM
+        if game._option_fill(key) is None:
+            first = small if (greyed or key in ("coop_p1", "coop_p2")) else font
+            vfont, value = fit_text((first, small) if first is not small else (small,), value, room)
+        else:
+            vfont = font
         if greyed:
-            img = game._txt(small, value, menu_ui.TEXT_OFF)
+            img = game._txt(vfont, value, menu_ui.TEXT_OFF)
             surf.blit(img, (right - img.get_width(), cy - img.get_height() // 2))
             continue
         fill = game._option_fill(key)
@@ -427,8 +455,7 @@ def draw_options(game, top):
             _gauge(surf, x - 16, cy, fill, steps, chosen)
         else:
             # the two coop rows have a long value ("Auto (Touches ZQSD/WASD)"): the smaller font keeps it in the box
-            _value_with_arrows(game, surf, small if key in ("coop_p1", "coop_p2") else font, value, right, cy,
-                               chosen, vcol)
+            _value_with_arrows(game, surf, vfont, value, right, cy, chosen, vcol)
     if 0 <= game.menu_index < len(keys):
         game._draw_option_help(keys[game.menu_index], box=(700, box.y, 520, box.h))
 

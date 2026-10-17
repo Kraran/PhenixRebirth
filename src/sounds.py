@@ -73,6 +73,7 @@ class SoundManager:
         self._end_fading = False
         self._loop_wait = 0.0
         self._loop_key = None
+        self._bad_music = {}     # custom tracks the mixer could not play: key -> mtime of the file (not tried again until it changes)
         self._busy_cache = False
         self._busy_age = 1.0
         try:
@@ -92,6 +93,7 @@ class SoundManager:
                 ("enemy_shoot", 0.40),
                 ("enemy_explosion", 0.55),
                 ("1up", 1.0),
+                ("achievement", 0.92),            # the announcer: "Achievement!" (a haut-fait is unlocked)
                 ("phenix_activate", 0.75),
                 ("phenix_end", 0.65),
                 ("shield_zap", 0.70),
@@ -505,6 +507,16 @@ class SoundManager:
         except Exception:
             self._play_on_channel(snd, gain)
 
+    def play_achievement(self):
+        """The announcer says "Achievement!". On the announcer channel (the music steps back) unless that one is busy
+        with another voice (a level, game over): then on a free channel, so it never cuts the other."""
+        if not self.enabled or getattr(self, "sfx_muted", False) or "achievement" not in self.sounds:
+            return
+        if self.vo_is_busy():
+            self.play("achievement")
+        else:
+            self.play_vo("achievement", volume=0.92)
+
     def play_narration(self, path, volume=0.90):
         """A long recorded voice (the Adventure intro) on the announcer channel: the music steps back as for the announcer.
         The file is loaded when it starts and let go of when it stops. True when it plays."""
@@ -606,6 +618,23 @@ class SoundManager:
                 self._electric_channel.stop()
                 self._electric_channel = None
 
+    def register_music(self, key, path):
+        """Make a track of the player's own (a file of `musique_perso`) a theme like the others. No length is known for
+        it: it loops natively and has no soft end-fade."""
+        if self._music_paths.get(key) != path:
+            self._music_paths[key] = path
+        return True
+
+    def _music_is_bad(self, key, path):
+        """True for a custom track that failed to load and whose file has not changed since."""
+        mark = self._bad_music.get(key)
+        if mark is None:
+            return False
+        try:
+            return mark == os.path.getmtime(path)
+        except OSError:
+            return True
+
     def play_music(self, key, loops=-1, fade_ms=None, fade_in_ms=None):
         """Request a theme. Cross-fades from the current one if needed: the old one fades out in `fade_ms`, the new one
         fades in in `fade_in_ms` (default: the same)."""
@@ -615,6 +644,8 @@ class SoundManager:
             return
         path = self._music_paths.get(key)
         if not path:
+            return
+        if self._music_is_bad(key, path):
             return
         # Already on this track — never touch the stream (avoids MP3 reload hitch)
         if self._current_music == key and not self._fading_out:
@@ -720,6 +751,11 @@ class SoundManager:
             print("Music play failed:", e)
             self._current_music = None
             self._fading_out = False
+            if str(key).startswith("custom:"):
+                try:
+                    self._bad_music[key] = os.path.getmtime(path)       # a broken file of the player: asked once, not every frame
+                except OSError:
+                    self._bad_music[key] = 0.0
 
     def _finish_fade(self):
         self._fading_out = False
