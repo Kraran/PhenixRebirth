@@ -147,8 +147,10 @@ def test_changing_the_music_volume_during_the_fade_keeps_it_low(snd):
     assert pygame.mixer.music.get_volume() < 0.05
 
 
-def test_validating_the_paint_in_the_game_fades_the_music(run):
+def test_validating_the_paint_in_the_game_fades_the_music(run, monkeypatch):
     g = run.game
+    monkeypatch.setattr(g.sounds, "play_achievement", lambda: None)    # (the haut-fait unlocked there says its line, and the
+    #                                                                    announcer ducks the music: not what this test measures)
     g.sounds.set_music_volume(0.8)
     g.sounds.play_music("menu", fade_ms=0)
     run.frames(3)

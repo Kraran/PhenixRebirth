@@ -15,6 +15,7 @@ import controls
 from enemy import EnemyFormation
 from gpu_present import GpuPresenter
 from i18n import LANG_CODES, set_lang
+import custom_music
 from ingame_music import normalize as ingame_normalize
 from highscores import load_highscores
 from achievements import load_achievements
@@ -367,6 +368,7 @@ def init_settings(game, soft):
         mix = str(user.get("audio_mix", "sfx") or "sfx")
         game.audio_mix = mix if mix in getattr(game, "AUDIO_MIXES", ["sfx"]) else "sfx"
     if not hasattr(game, "ingame_music"):
+        custom_music.ensure_folder()                      # the folder of the player's own music: made empty at the first start
         game.ingame_music = ingame_normalize(user.get("ingame_music", "none"))
     game.season_force = game._read_season_force(user)
     game.april_gag = "idle"
