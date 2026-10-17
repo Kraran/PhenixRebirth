@@ -5816,6 +5816,22 @@ _VIP_TEXTS = {
     "story_vip_hud": ("VIP : {p} %", "VIP: {p} %"),
     "story_vip_lost": ("LE VAISSEAU VIP EST DÉTRUIT", "THE VIP SHIP IS DESTROYED"),
     "story_vip_safe": ("LE VAISSEAU VIP EST PASSÉ !", "THE VIP SHIP GOT THROUGH!"),
+    "story_m_ast": ("TEST : Astéroïdes", "TEST: Asteroids"),
+    "story_m_ast_hud": ("TEST : astéroïdes", "TEST: asteroids"),
+    "story_m_ast_b": ("Version de test d'un niveau à la Asteroids : ton vaisseau tourne (gauche / droite), pousse (haut) "
+                      "et tire, et ressort de l'autre côté de l'écran. Les astéroïdes se brisent en morceaux de plus "
+                      "en plus petits ; détruis-en 40, puis vide l'écran. Une soucoupe passe de temps en temps. "
+                      "Accessible à tous les actes, ne rapporte rien et ne coûte rien.",
+                      "Test version of an Asteroids-style level: your ship turns (left / right), pushes (up) and fires, "
+                      "and comes out of the other side of the screen. The rocks break into smaller and smaller pieces; "
+                      "destroy 40 of them, then clear the screen. A saucer passes now and then. Open in every act, "
+                      "pays nothing and costs nothing."),
+    "story_log_ast": ("TEST — les astéroïdes ont été balayés.", "TEST — the asteroids were swept away."),
+    "story_asteroids_hud": ("ASTÉROÏDES : {n}/{m}", "ASTEROIDS: {n}/{m}"),
+    "story_test_won": ("Mission de test réussie : rien de gagné, rien de perdu.",
+                       "Test mission complete: nothing won, nothing lost."),
+    "story_test_over": ("Mission de test terminée : rien de gagné, rien de perdu.",
+                        "Test mission over: nothing won, nothing lost."),
     "story_scene_vip_t": ("Lyra Voss", "Lyra Voss"),
     "story_film_lyra1_t": ("Concert privé Lyra Voss - 1. Eternal Dawn", "Lyra Voss private concert - 1. Eternal Dawn"),
     "story_film_lyra2_t": ("Concert privé Lyra Voss - 2. What We Lost", "Lyra Voss private concert - 2. What We Lost"),

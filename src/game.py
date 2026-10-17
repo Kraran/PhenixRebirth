@@ -45,6 +45,7 @@ import crt
 import announce
 import bindings
 import controls
+import asteroids
 import escort
 import galaga
 from galaga import GalagaFormation
@@ -1387,6 +1388,15 @@ class Game:
 
     def _start_arrive_intro(self):
         """New run: fly in from below (same speed as stage transitions) and play stage VO."""
+        if (getattr(self, "adventure", None) or {}).get("asteroids"):
+            # the Asteroids mission: no flight in from below, the ship is in the middle of the field, nose up
+            self.player.x, self.player.y = BASE_WIDTH / 2.0, BASE_HEIGHT / 2.0
+            self.player.ast_angle = -math.pi / 2
+            self.player.invulnerable = max(self.player.invulnerable, 1.5)
+            self.stage_transition = None
+            self.input_grace = 0.5
+            self._play_level_vo(self._announced_level())
+            return
         xs = [BASE_WIDTH // 2 - 70, BASE_WIDTH // 2 + 70] if getattr(self, "play_mode", "solo") == "coop" else [BASE_WIDTH // 2]
         ships = self._ships()
         for i, ship in enumerate(ships):
@@ -1858,6 +1868,12 @@ class Game:
         if loadout.get("vertical"):
             # the two-dimensional impulse reactor (BONUS mission): up and down in the lower third, for the rest of the Adventure
             self.player.vertical_range = (PLAYER_VERTICAL_TOP, PLAYER_VERTICAL_BOTTOM)
+        if spec.get("asteroids"):
+            # the Asteroids mission (src/asteroids.py): the ship turns and pushes, free on the whole screen
+            self.player.asteroid_mode = True
+            self.player.vertical_range = None
+            self._ast_px = self.player.x
+            self._ast_last_x = None
         self.adventure["dome"] = dome
         # the loot items bought in the hangar for this mission (they are used up when it ends, see _end_adventure)
         items = list(spec.get("items") or [])
@@ -1870,7 +1886,7 @@ class Game:
         # and the one that may fall during it (rare, see story_items.plan_drop). The paint missions (Space Invaders)
         # never carry one, and do not count in the gap between two drops; the items bought still work in them.
         story = getattr(self, "story", None)
-        can_loot = story is not None and not spec.get("invaders")
+        can_loot = story is not None and not spec.get("invaders") and not spec.get("asteroids")
         if can_loot and spec.get("reactor"):
             # a BONUS mission: the reactor of its hull falls once, whenever in the waves (the random loot is off)
             self.adventure["loot_plan"] = story_items.reactor_plan(story.state, spec["reactor"], random)
@@ -1951,7 +1967,8 @@ class Game:
         """True while a mission of a Veteran save is played (one death ends the save for good)."""
         story = getattr(self, "story", None)
         state = getattr(story, "state", None) or {}
-        return bool(getattr(self, "adventure", None)) and state.get("mode") == "veteran"
+        return (bool(getattr(self, "adventure", None)) and state.get("mode") == "veteran"
+                and not (self.adventure or {}).get("test"))     # (a test mission never makes a Veteran fall)
 
     def _bank_adventure(self, cleared):
         """Write the result of the mission into the save (once)."""
@@ -2025,6 +2042,16 @@ class Game:
             self.formation.sounds = self.sounds
             self.boss_saucer = None
             return
+        elif adv and adv.get("asteroids"):
+            # the Asteroids test mission (src/asteroids.py): rocks that break, the miniature saucer, a ship that flies free
+            self.stage = 1
+            mult = float(adv.get("speed") or 1.0) * self.difficulty_speed_mult()
+            self.formation = asteroids.AsteroidFormation(speed_mult=mult, target=int(adv.get("target") or asteroids.TARGET))
+            self.formation.sounds = self.sounds
+            self.formation.font = self.font
+            self.sounds.prepare_invader_sfx(invaders.STEP_PITCHES, invaders.STEP_PITCH_GAP, invaders.SAUCER_PASS)
+            self.boss_saucer = None
+            return
         elif adv and adv.get("escort"):
             # the VIP rescue (src/escort.py): blue and khaki birds of one arcade level, for ever, and the cruise ship
             number = int(adv.get("stage") or 6)
@@ -2046,7 +2073,7 @@ class Game:
         else:
             content = stage_content(stage)
             mult = stage_speed_mult(stage) * self.difficulty_speed_mult()
-        if isinstance(self.formation, (InvaderFormation, GalagaFormation, escort.EscortFormation)):
+        if isinstance(self.formation, (InvaderFormation, GalagaFormation, escort.EscortFormation, asteroids.AsteroidFormation)):
             self.formation = EnemyFormation()            # back to the ordinary grids
         self.formation.enemies = []
         self.formation.bullets = []
@@ -3403,6 +3430,15 @@ class Game:
         px = None
         if follow and getattr(self, "player", None) is not None:
             px = self.player.x
+            if getattr(self.player, "asteroid_mode", False):
+                # the ship wraps around the screen: the stars follow its real movement, not the jump of the wrap
+                last = getattr(self, "_ast_last_x", None)
+                if last is not None:
+                    self._ast_px = getattr(self, "_ast_px", px) + ((px - last + BASE_WIDTH / 2) % BASE_WIDTH - BASE_WIDTH / 2)
+                else:
+                    self._ast_px = px
+                self._ast_last_x = px
+                px = self._ast_px
         menu = not bool(getattr(self, "started", False))
         stage = int(getattr(self, "stage", 1) or 1) if not menu else 0
         self.starfield.update(self.dt, px, stage=stage, menu=menu)
@@ -4240,6 +4276,7 @@ class Game:
         
         self.formation.update(self.dt, self.player.x)
         escort.tick(self)                         # the VIP rescue: the cruise ship (nothing in any other mission)
+        asteroids.tick(self)                      # the Asteroids test mission: rocks, saucer, shots (nothing elsewhere)
         update_play.tick_loot(self)
         self._drain_detach_pops()
         self._check_extra_lives()

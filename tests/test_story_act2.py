@@ -13,6 +13,7 @@ DOME = ["dome_1", "dome_2", "dome_3", "dome_4", "dome_5", "act2_gate"]
 PHENIX = ["phenix_1", "phenix_2", "phenix_3", "phenix_4", "phenix_5"]
 PAINT = ["paint_1", "paint_2", "paint_3"]
 GATE3 = ["act3_gate"]           # the last mission of Act 2 (it opens Act 3)
+TEST = ["bonus_asteroids"]      # the TEST mission (Asteroids): on the map of every act, after all the others
 
 
 def _act2():
@@ -54,16 +55,16 @@ def test_veteran_still_dies_for_good():
 # ------------------------------------------------------------------ the map of each act
 def test_the_map_of_act_1_has_no_phenix_mission():
     st = ss.create_slot(1, "NOVA", "normal")
-    assert _ids(ss.visible_missions(st)) == HUNTS + DOME + ["ch2_tease"]
+    assert _ids(ss.visible_missions(st)) == HUNTS + DOME + ["ch2_tease"] + TEST
 
 
 def test_the_map_of_act_2_keeps_the_hunts_and_drops_the_dome_missions():
     st = _act2()
-    assert _ids(ss.visible_missions(st)) == HUNTS + BONUS + BOSS + PHENIX + PAINT + GATE3      # BONUS: open and not flown yet
+    assert _ids(ss.visible_missions(st)) == HUNTS + BONUS + BOSS + PHENIX + PAINT + GATE3 + TEST      # BONUS: open and not flown yet
     st["cleared"].append("bonus_2d")                                            # the waves won, the reactor missed: still to do
-    assert _ids(ss.visible_missions(st)) == HUNTS + BONUS + BOSS + PHENIX + PAINT + GATE3
+    assert _ids(ss.visible_missions(st)) == HUNTS + BONUS + BOSS + PHENIX + PAINT + GATE3 + TEST
     st["items"]["got"]["reactor_shield"] = "found"                              # caught: it leaves the map of Act 2
-    assert _ids(ss.visible_missions(st)) == HUNTS + BOSS + PHENIX + PAINT + GATE3
+    assert _ids(ss.visible_missions(st)) == HUNTS + BOSS + PHENIX + PAINT + GATE3 + TEST
 
 
 def test_the_cheat_lists_every_mission():
@@ -77,7 +78,7 @@ def test_the_gate_starts_act_2():
     st["flags"]["dome_s5"] = True
     res = _win(st, "act2_gate")
     assert res["act"] == 2 and st["act"] == 2 and ss.flag(st, "act2")
-    assert _ids(ss.visible_missions(st)) == HUNTS + BOSS + PHENIX + PAINT + GATE3
+    assert _ids(ss.visible_missions(st)) == HUNTS + BOSS + PHENIX + PAINT + GATE3 + TEST
 
 
 def test_the_hunts_stay_replayable_in_act_2_with_their_level():
@@ -286,7 +287,7 @@ def test_the_map_cursor_walks_the_act_2_list_only():
     hub.pane = "map"
     for _ in range(30):
         hub.nav_v(1)
-    assert hub._mission()["id"] == "act3_gate" and hub.map_index == len(HUNTS + BONUS + BOSS + PHENIX + PAINT + GATE3) - 1
+    assert hub._mission()["id"] == "bonus_asteroids" and hub.map_index == len(HUNTS + BONUS + BOSS + PHENIX + PAINT + GATE3 + TEST) - 1
 
 
 def test_winning_the_gate_puts_the_cursor_on_the_new_map():
@@ -298,7 +299,7 @@ def test_winning_the_gate_puts_the_cursor_on_the_new_map():
     hub.apply_result("act2_gate", 100, True)
     from i18n import t
     assert hub.state["act"] == 2 and hub.map_index == 0 and hub.toast == t("story_act_start").format(n=2)
-    assert _ids(hub.missions()) == HUNTS + BOSS + PHENIX + PAINT + GATE3
+    assert _ids(hub.missions()) == HUNTS + BOSS + PHENIX + PAINT + GATE3 + TEST
 
 
 def test_the_gift_toast_after_the_fifth_mission():

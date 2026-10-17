@@ -140,6 +140,16 @@ class Player:
         
         self.lives = PLAYER_MAX_LIVES
         self.vertical_range = None       # Adventure BONUS reward: (top, bottom) of the ship's centre, it flies up and down there
+        # The Asteroids mission (src/asteroids.py): the ship flies free, turns, pushes, and wraps around the screen
+        self.asteroid_mode = False
+        self.ast_angle = -math.pi / 2    # where the nose points (radians, 0 = right, -pi/2 = up)
+        self.ast_vx = 0.0
+        self.ast_vy = 0.0
+        self.ast_fire = False            # a shot is asked for this frame (the mission makes it)
+        self.ast_hold = False            # the mission is won: the ship turns its nose up and stops
+        self.ast_settled = False         # ... and it has
+        self._ast_held = False
+        self._ast_canvas = None
         self.bullet_speed_mult = 1.0     # Adventure loot (Singularity Core): faster bullets, so the ship fires more often
         self.electric_immune = False     # Adventure loot (Tesla Seal): the electric walls do nothing
         self.infinite_lives = False
@@ -364,6 +374,9 @@ class Player:
             if self.phenix_gauge < 10.0:
                 self.phenix_gauge = min(10.0, self.phenix_gauge + rate * dt)
         
+        if self.asteroid_mode:
+            return self._update_asteroid(dt, keys, input_mode, joystick, allow_shoot)
+
         dx = 0.0
         dy = 0.0
         shoot_pressed = False
@@ -522,6 +535,131 @@ class Player:
         self._shoot_held = bool(shoot_pressed)
         
         return self._check_edge_kill()
+
+    # --- the Asteroids mission: a ship that flies free (src/asteroids.py) ---
+    def _read_asteroid_input(self, input_mode, joystick):
+        """(turn -1..1, push 0/1, fire) from the keys or the pad."""
+        turn, push, fire = 0.0, False, False
+        self._joy = joystick
+        if input_mode == "gamepad" and joystick is None:
+            return turn, push, fire                  # a ship on a pad that is unplugged: no input at all
+        if input_mode == "gamepad":
+            try:
+                axis = joystick.get_axis(0)
+                if abs(axis) > 0.25:
+                    turn = 1.0 if axis > 0 else -1.0
+                if abs(joystick.get_axis(1)) > 0.25 and joystick.get_axis(1) < 0:
+                    push = True
+                if joystick.get_numhats() > 0:
+                    hat = joystick.get_hat(0)
+                    if hat[0] != 0:
+                        turn = 1.0 if hat[0] > 0 else -1.0
+                    if hat[1] > 0:
+                        push = True
+                for b in bindings.current.pad_buttons(int(getattr(self, "pad_slot", 0) or 0), "fire"):
+                    if joystick.get_numbuttons() > b and joystick.get_button(b):
+                        fire = True
+                        break
+            except Exception:
+                log_exc("player._read_asteroid_input")
+            return turn, push, fire
+        profile = bindings.KB1 if getattr(self, "input_scheme", "solo") == "kb1" else bindings.KB2
+
+        def held(action):
+            return any(keys_now[k] for k in bindings.current.keys(profile, action))
+
+        keys_now = self._ast_keys
+        turn = float(held("right")) - float(held("left"))
+        push = bool(held("up"))
+        fire = bool(held("fire"))
+        return turn, push, fire
+
+    def _update_asteroid(self, dt, keys, input_mode, joystick, allow_shoot):
+        """One frame of the free flight: turn, push (keeps its speed, slows down a little), wrap around the screen."""
+        import asteroids as ast
+        self._ast_keys = keys
+        self.vertical_range = None
+        self.climbing = False
+        if self.ast_hold:
+            # the mission is won: nose up, then still
+            err = (-math.pi / 2 - self.ast_angle + math.pi) % (2 * math.pi) - math.pi
+            step = ast.TURN_SPEED * 1.4 * dt
+            self.ast_angle += max(-step, min(step, err))
+            damp = math.exp(-3.5 * dt)
+            self.ast_vx *= damp
+            self.ast_vy *= damp
+            turn, push, fire = 0.0, False, False
+            err = (-math.pi / 2 - self.ast_angle + math.pi) % (2 * math.pi) - math.pi
+            self.ast_settled = abs(err) < 0.04 and math.hypot(self.ast_vx, self.ast_vy) < 25.0
+        else:
+            self.ast_settled = False
+            turn, push, fire = self._read_asteroid_input(input_mode, joystick)
+            self.ast_angle = (self.ast_angle + turn * ast.TURN_SPEED * dt + math.pi) % (2 * math.pi) - math.pi
+            if push:
+                self.ast_vx += math.cos(self.ast_angle) * ast.THRUST * dt
+                self.ast_vy += math.sin(self.ast_angle) * ast.THRUST * dt
+            drag = math.exp(-ast.DRAG * dt)
+            self.ast_vx *= drag
+            self.ast_vy *= drag
+            speed = math.hypot(self.ast_vx, self.ast_vy)
+            limit = ast.MAX_SPEED * self.speed_scale_asteroid()
+            if speed > limit:
+                self.ast_vx *= limit / speed
+                self.ast_vy *= limit / speed
+        self.x = (self.x + self.ast_vx * dt) % BASE_WIDTH
+        self.y = (self.y + self.ast_vy * dt) % BASE_HEIGHT
+        self.rect.center = (int(self.x), int(self.y))
+        self.moving = bool(push)
+        self.engine_time += dt
+        target = 1.0 if push else 0.25
+        self.engine_intensity += (target - self.engine_intensity) * min(1.0, 8.0 * dt)
+        if self.uses_shield and self.is_phenix:
+            self.engine_intensity = 0.0
+        self.boost_engines(dt, bool(push))               # pushing: the long jets of the flight up a stage
+        want = bool(allow_shoot and fire and not self.dying)
+        self.ast_fire = want and (getattr(self, "autofire", True) or not self._ast_held)
+        self._ast_held = bool(fire)
+        return False
+
+    def speed_scale_asteroid(self):
+        """The workshop's speed (40 % .. 100 %) scales the top speed of the free flight a little (from 0.8 to 1.2)."""
+        return 0.8 + 0.4 * max(0.0, min(1.0, (float(self.speed) / float(PLAYER_SPEED) - 0.4) / 0.6))
+
+    def ast_recenter(self):
+        """A life was lost: back to the middle of the screen, still, nose up."""
+        self.x, self.y = BASE_WIDTH / 2.0, BASE_HEIGHT / 2.0
+        self.ast_vx = self.ast_vy = 0.0
+        self.ast_angle = -math.pi / 2
+        self.rect.center = (int(self.x), int(self.y))
+
+    def _draw_asteroid(self, surface):
+        """Draw the ship as usual on a canvas of its own, then turn the canvas to the nose and put it on the screen (and
+        again on the other side when it sticks out: the screen wraps)."""
+        size = (320, 360)
+        canvas = self._ast_canvas
+        if canvas is None:
+            canvas = self._ast_canvas = pygame.Surface(size, pygame.SRCALPHA)
+        canvas.fill((0, 0, 0, 0))
+        saved = (self.x, self.y, self.asteroid_mode)
+        self.x, self.y, self.asteroid_mode = size[0] / 2.0, size[1] / 2.0, False
+        try:
+            self.draw(canvas)
+        finally:
+            self.x, self.y, self.asteroid_mode = saved
+        img = pygame.transform.rotate(canvas, -math.degrees(self.ast_angle) - 90.0)
+        w, h = img.get_size()
+        xs, ys = [0], [0]
+        if self.x > BASE_WIDTH - w / 2:
+            xs.append(-BASE_WIDTH)
+        elif self.x < w / 2:
+            xs.append(BASE_WIDTH)
+        if self.y > BASE_HEIGHT - h / 2:
+            ys.append(-BASE_HEIGHT)
+        elif self.y < h / 2:
+            ys.append(BASE_HEIGHT)
+        for ox in xs:
+            for oy in ys:
+                surface.blit(img, (int(self.x + ox - w / 2), int(self.y + oy - h / 2)))
 
     def _check_edge_kill(self):
         wall = getattr(self, "adventure_wall", None)
@@ -928,6 +1066,9 @@ class Player:
 
     def draw(self, surface):
         if not self.alive:
+            return
+        if self.asteroid_mode:
+            self._draw_asteroid(surface)
             return
         
         # Death disappearance
