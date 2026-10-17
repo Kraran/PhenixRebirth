@@ -7,11 +7,13 @@ real one of the game (lives, dome, death, jets, invulnerability): its `asteroid_
 _update_asteroid) and draws it turned (Player._draw_asteroid). Everything else is here:
 
 - ROCKS: big, medium, small. A rock that is hit breaks in two of the size below; a small one is destroyed. Every rock
-  hit counts, the fragments too: after TARGET the mission is won, once the screen is empty. When the screen is empty
-  and the target is not reached, a new wave comes in from the edges. After the target nothing comes any more (no wave,
-  no saucer) and a rock that is hit is just gone, it no longer breaks in two.
-- THE SAUCER: the miniature saucer of the paint missions (invaders.saucer_image), now and then (about every 18 s,
-  so 3 or 4 times in a mission, more in a long one) it crosses the screen zigzagging and fires at the ship, a little
+  hit counts, the fragments too: after TARGET the mission is won, once the screen is empty. While the target is not
+  reached the field is topped up as the rocks are destroyed: when what is left of it (MASS) gets low, a new big rock
+  comes in from OUTSIDE the screen, drifting in (it only starts to wrap around once it is wholly in). After the target
+  nothing comes any more (no rock, no saucer) and a rock that is hit is just gone, it no longer breaks in two. When
+  the last one is gone the mission ends after a short pause (END_DELAY): no flight up, no level change.
+- THE SAUCER: the miniature saucer of the paint missions (invaders.saucer_image), now and then (about every 20 s,
+  so 4 or 5 times in a mission, more in a long one) it crosses the screen zigzagging and fires at the ship, a little
   wide of it. Its shots break the rocks too. No saucer after the target is reached.
 - Shots: at most MAX_SHOTS on the screen, they carry the speed of the ship and die after SHOT_LIFE seconds.
 - Points (the test mission pays nothing in the hangar, see story_state): ROCK_POINTS, SAUCER_POINTS.
@@ -29,9 +31,13 @@ import invaders
 from errlog import log_exc
 from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
 
-TARGET = 40                          # rocks to destroy (every piece counts) to win
+TARGET = 60                          # rocks to destroy (every piece counts) to win
 FIRST_WAVE = 4                       # big rocks at the start
-WAVE_ROCKS = (4, 6)                  # big rocks of a later wave: this many, more with every wave, at most the second
+ROCK_MASS = {3: 4, 2: 2, 1: 1}       # what a rock weighs in the field (a big one = 2 mediums = 4 smalls)
+MASS_LOW = 10                        # below this a new big rock is sent in (the start is 4 big ones = 16)
+REPOP_GAP = (0.8, 1.6)               # seconds before the next one, so that they do not all come at once
+ENTER_SPEED = (55.0, 95.0)           # a rock that comes in from outside
+END_DELAY = 1.2                      # seconds between the last rock and the end of the mission
 MAX_SHOTS = 4                        # the player's shots on the screen
 SHOT_SPEED = 780.0                   # px / s, on top of the speed of the ship
 SHOT_LIFE = 0.85                     # seconds
@@ -50,14 +56,13 @@ ROCK_SPEED = {3: (40.0, 85.0), 2: (70.0, 150.0), 1: (90.0, 190.0)}
 ROCK_POINTS = {3: 10, 2: 20, 1: 40}
 SAUCER_POINTS = 100
 SAUCER_SCALE = 1.4                   # the miniature of the paint missions is 72 px wide: this much bigger here
-SAUCER_GAP = (14.0, 22.0)            # seconds between two saucers, the first one after SAUCER_FIRST
-SAUCER_FIRST = (9.0, 13.0)
+SAUCER_GAP = (11.0, 17.0)            # seconds between two saucers (once the last one has left), the first one after SAUCER_FIRST
+SAUCER_FIRST = (8.0, 11.0)
 SAUCER_FIRE_GAP = 1.5
 SAUCER_AIM_ERROR = 0.45              # rad: the saucer is not a good shot
 SAUCER_SHOT_SPEED = 340.0
 SAUCER_SHOT_LIFE = 2.2
 SAUCER_HALF = (46, 19)               # what a shot of the ship must touch
-SETTLE_MAX = 2.5                     # seconds the ship takes at most to turn its nose up once the rocks are gone
 SPAWN_CLEAR = 190                    # a rock never comes in this close to the ship
 
 _strips = {}
@@ -106,8 +111,10 @@ def wrapped_delta(ax, ay, bx, by):
 
 # ------------------------------------------------------------------ things
 class Rock:
-    def __init__(self, size, x, y, vx, vy, rng):
+    def __init__(self, size, x, y, vx, vy, rng, entering=False):
         self.size = size
+        self.entering = bool(entering)    # coming in from outside the screen: it does not wrap until it is wholly in
+        self.coming = 0.0
         self.x, self.y, self.vx, self.vy = float(x), float(y), float(vx), float(vy)
         self.variant = rng.randrange(ROCK_VARIANTS)
         self.phase = rng.uniform(0, ROCK_FRAMES)
@@ -120,10 +127,29 @@ class Rock:
         return ROCK_RADIUS[self.size]
 
     def update(self, dt):
-        self.x = (self.x + self.vx * dt) % BASE_WIDTH
-        self.y = (self.y + self.vy * dt) % BASE_HEIGHT
+        if self.entering:
+            self.x += self.vx * dt
+            self.y += self.vy * dt
+            self.coming += dt
+            m = self.radius + 2
+            if m <= self.x <= BASE_WIDTH - m and m <= self.y <= BASE_HEIGHT - m:
+                self.entering = False
+            elif self.coming > 30.0:                  # (never seen to happen: it would wrap like the others)
+                self.entering = False
+                self.x %= BASE_WIDTH
+                self.y %= BASE_HEIGHT
+        else:
+            self.x = (self.x + self.vx * dt) % BASE_WIDTH
+            self.y = (self.y + self.vy * dt) % BASE_HEIGHT
         self.phase = (self.phase + self.spin * dt) % ROCK_FRAMES
         self.rot = (self.rot + self.rspin * dt) % 360
+
+    def delta_to(self, x, y):
+        """From this rock to (x, y): the shortest way round the joined screen, or the plain way while it is coming in
+        (the screen is not joined for it yet: it cannot hit what is on the other side)."""
+        if self.entering:
+            return x - self.x, y - self.y
+        return wrapped_delta(self.x, self.y, x, y)
 
     def image(self):
         cells = rock_frames(self.size, self.variant)
@@ -191,11 +217,12 @@ class AsteroidFormation:
         self.saucer = None
         self.time = 0.0
         self.destroyed = 0                # rocks hit so far (every piece counts)
-        self.waves = 0
+        self.waves = 0                    # 0: the first rocks are not placed yet
         self.fire_cd = 0.0
         self.saucer_in = self.rng.uniform(*SAUCER_FIRST)
-        self.settle = 0.0                 # seconds spent turning the nose up at the end
-        self._aligned = False             # ... and the ship has its nose up and has stopped
+        self.repop = True                 # the field is topped up while the target is not reached
+        self.spawn_in = None              # seconds before the next rock comes in (None: the field is full)
+        self.end_timer = 0.0              # seconds since the last rock and the saucer are gone (target reached)
         self.tip = (180, 220, 255)        # the colour of the shots: the hull's
         self.started = False
 
@@ -221,19 +248,19 @@ class AsteroidFormation:
         return self.remaining()
 
     def all_dead(self):
-        """The mission is won: the target reached, the screen empty, and the ship's nose turned up for its flight."""
-        return self.reached and not self.rocks and self.saucer is None and self.settled()
+        """The mission is won: the target reached, the screen empty, and a short pause to see the last explosion."""
+        return self.reached and not self.rocks and self.saucer is None and self.end_timer >= END_DELAY
 
-    def settled(self):
-        return self.settle >= SETTLE_MAX or self._aligned
+    def field_mass(self):
+        """What is left of the field (see ROCK_MASS)."""
+        return sum(ROCK_MASS[r.size] for r in self.rocks)
 
     # --- the field ---
     def new_wave(self, player=None):
-        """Big rocks come in from the edges, never close to the ship."""
-        n = FIRST_WAVE if self.waves == 0 else min(WAVE_ROCKS[1], WAVE_ROCKS[0] + self.waves - 1)
+        """The first rocks of the mission: FIRST_WAVE big ones, at the edges but already in, never close to the ship."""
         self.waves += 1
         px, py = (player.x, player.y) if player is not None else (BASE_WIDTH / 2, BASE_HEIGHT / 2)
-        for _ in range(n):
+        for _ in range(FIRST_WAVE):
             for _try in range(12):
                 side = self.rng.choice("lrtb")
                 x = self.rng.uniform(0, BASE_WIDTH) if side in "tb" else (0.0 if side == "l" else BASE_WIDTH - 1.0)
@@ -244,6 +271,30 @@ class AsteroidFormation:
             a = self.rng.uniform(0, math.tau)
             sp = self.rng.uniform(*ROCK_SPEED[3]) * self.speed_mult
             self.rocks.append(Rock(3, x, y, math.cos(a) * sp, math.sin(a) * sp, self.rng))
+
+    def spawn_rock(self, player=None):
+        """A big rock comes in from OUTSIDE the screen: it starts just beyond an edge (not in front of the ship) and
+        drifts toward a point inside, so that it slides in smoothly (it wraps only once it is wholly in)."""
+        px, py = (player.x, player.y) if player is not None else (BASE_WIDTH / 2, BASE_HEIGHT / 2)
+        margin = ROCK_RADIUS[3] + 36
+        lane = ROCK_RADIUS[3] + 40                      # along the edge it keeps clear of the corners, so it does come in
+        x = y = 0.0
+        for _try in range(12):
+            side = self.rng.choice("lrtb")
+            if side in "lr":
+                x = -margin if side == "l" else BASE_WIDTH + margin
+                y = self.rng.uniform(lane, BASE_HEIGHT - lane)
+            else:
+                y = -margin if side == "t" else BASE_HEIGHT + margin
+                x = self.rng.uniform(lane, BASE_WIDTH - lane)
+            dx, dy = wrapped_delta(px, py, x, y)
+            if dx * dx + dy * dy > (SPAWN_CLEAR + 60) ** 2:
+                break
+        tx = self.rng.uniform(BASE_WIDTH * 0.2, BASE_WIDTH * 0.8)       # a point well inside: it is sure to come in
+        ty = self.rng.uniform(BASE_HEIGHT * 0.2, BASE_HEIGHT * 0.8)
+        a = math.atan2(ty - y, tx - x) + self.rng.uniform(-0.15, 0.15)
+        sp = self.rng.uniform(*ENTER_SPEED) * self.speed_mult
+        self.rocks.append(Rock(3, x, y, math.cos(a) * sp, math.sin(a) * sp, self.rng, entering=True))
 
     def debris(self, x, y, kind, n, speed, life=(0.4, 1.0), size=(2.0, 5.0)):
         for _ in range(n):
@@ -295,7 +346,7 @@ class AsteroidFormation:
     # --- drawing ---
     def draw(self, surface):
         for r in sorted(self.rocks, key=lambda r: -r.size):
-            _blit_wrapped(surface, r.image(), r.x, r.y)
+            _blit_wrapped(surface, r.image(), r.x, r.y, wrap=not r.entering)
         if self.saucer is not None:
             s = self.saucer
             _blit_wrapped(surface, saucer_frame(s.age), s.x, s.y + math.sin(s.age * 5.0) * 2.0)
@@ -351,11 +402,15 @@ def _add_glow(surface, color, pos, size):
     surface.blit(g, (int(pos[0] - size // 2), int(pos[1] - size // 2)), special_flags=pygame.BLEND_RGB_ADD)
 
 
-def _blit_wrapped(surface, img, x, y):
-    """Draw `img` centred on (x, y), and again on the other side when it sticks out of the screen."""
+def _blit_wrapped(surface, img, x, y, wrap=True):
+    """Draw `img` centred on (x, y), and again on the other side when it sticks out of the screen (not for a rock that
+    is still coming in from outside: it slides in, nothing shows on the other side)."""
     w, h = img.get_size()
     xs = [0]
     ys = [0]
+    if not wrap:
+        surface.blit(img, (int(x - w / 2), int(y - h / 2)))
+        return
     if x > BASE_WIDTH - w / 2:
         xs.append(-BASE_WIDTH)
     elif x < w / 2:
@@ -485,7 +540,7 @@ def tick(game):
             continue
         hit = None
         for r in form.rocks:
-            dx, dy = wrapped_delta(shot.x, shot.y, r.x, r.y)
+            dx, dy = r.delta_to(shot.x, shot.y)
             if dx * dx + dy * dy < (r.radius + 4) ** 2:
                 hit = r
                 break
@@ -510,7 +565,7 @@ def tick(game):
         radius, dome = _ship_circle(p)
         if p.invulnerable <= 0 or dome:
             for r in list(form.rocks):
-                dx, dy = wrapped_delta(p.x, p.y, r.x, r.y)
+                dx, dy = r.delta_to(p.x, p.y)
                 if dx * dx + dy * dy < (r.radius + radius) ** 2:
                     form.break_rock(game, r)
                     _ship_hit(game, form)
@@ -520,14 +575,18 @@ def tick(game):
                 if abs(dx) < SAUCER_HALF[0] + radius * 0.6 and abs(dy) < SAUCER_HALF[1] + radius * 0.6:
                     form.blow_saucer(game)
                     _ship_hit(game, form)
-    # --- a new wave when the screen is empty, and the end
-    if not form.rocks and not form.reached:
-        form.new_wave(p)
+    # --- the field is topped up with rocks coming in from outside, and the end
+    if form.repop and not form.reached:
+        if form.field_mass() < MASS_LOW:
+            if form.spawn_in is None:
+                form.spawn_in = form.rng.uniform(*REPOP_GAP)          # the field got thin: one comes in after a pause
+            form.spawn_in -= dt
+            if form.spawn_in <= 0:
+                form.spawn_rock(p)
+                form.spawn_in = form.rng.uniform(*REPOP_GAP)
+        else:
+            form.spawn_in = None
     if form.reached and not form.rocks and form.saucer is None:
-        p.ast_hold = True                       # the ship turns its nose up and stops: the flight to the map follows
-        form.settle += dt
-        form._aligned = bool(getattr(p, "ast_settled", False))
+        form.end_timer += dt
     else:
-        p.ast_hold = False
-        form.settle = 0.0
-        form._aligned = False
+        form.end_timer = 0.0

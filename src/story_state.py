@@ -511,7 +511,7 @@ MISSIONS = [
     {
         "id": "bonus_asteroids", "acts": (1, 2, 3), "test": True, "asteroids": True, "title": "story_m_ast",
         "hud_title": "story_m_ast_hud", "blurb": "story_m_ast_b", "need": None, "content": 1, "speed": 1.0,
-        "target": 40, "log": "story_log_ast",
+        "target": 60, "log": "story_log_ast",
     },
 ]
 

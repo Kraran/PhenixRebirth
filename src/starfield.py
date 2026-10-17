@@ -44,6 +44,42 @@ PLANET_FILES = [
     "asteroid_pallas.png",
 ]
 
+# The Asteroids mission (src/asteroids.py): the ship flies free in every direction, so the background no longer
+# scrolls from the top to the bottom: it only moves with the ship (see Starfield.set_free). The two rocks of the
+# planet list are never put there: they would be taken for the rocks of the mission.
+FREE_EXCLUDED = ("asteroid_dinkinesh.png", "asteroid_pallas.png")
+FREE_PARALLAX = {"star0": 0.05, "star1": 0.14, "star2": 0.30, "planet": 0.12, "galaxy": 0.06, "nebula": 0.08}
+
+
+def _free_entry(w, h, speed):
+    """Where a thing of w x h comes in from outside the screen in the free mode, and the slow drift that brings it in:
+    (x, y, vx, vy)."""
+    side = random.choice("lrtb")
+    if side in "lr":
+        x = -w / 2 - 20 if side == "l" else BASE_WIDTH + w / 2 + 20
+        y = random.uniform(0, BASE_HEIGHT)
+    else:
+        y = -h / 2 - 20 if side == "t" else BASE_HEIGHT + h / 2 + 20
+        x = random.uniform(0, BASE_WIDTH)
+    tx, ty = random.uniform(BASE_WIDTH * 0.25, BASE_WIDTH * 0.75), random.uniform(BASE_HEIGHT * 0.25, BASE_HEIGHT * 0.75)
+    a = math.atan2(ty - y, tx - x) + random.uniform(-0.3, 0.3)
+    v = random.uniform(*speed)
+    return x, y, math.cos(a) * v, math.sin(a) * v
+
+
+def _free_step(o, dt, dx, dy, parallax):
+    """One step of a decoration in the free mode: its own slow drift minus the ship's movement (nearer = more).
+    It is gone once it has been seen and has left the screen (or after a long while without being seen)."""
+    o.x += o.vx * dt - dx * parallax
+    o.y += o.vy * dt - dy * parallax
+    o.age = getattr(o, "age", 0.0) + dt
+    inside = o.x + o.w / 2 > 0 and o.x - o.w / 2 < BASE_WIDTH and o.y + o.h / 2 > 0 and o.y - o.h / 2 < BASE_HEIGHT
+    if inside:
+        o.seen = True
+    elif o.seen or o.age > 120.0:
+        o.alive = False
+
+
 # Rocks drawn as a short film instead of a still picture: the file of the still (it keeps the draw of the
 # planets as it was) -> the strip of FRAMES cells made by tools/make_planet_strip.py, the seconds one turn
 # lasts (the video is 6 s: this is far slower on purpose), and how much bigger the cell is than the still,
@@ -56,7 +92,7 @@ ANIMATED = {
 class Star:
     __slots__ = (
         "layer", "x", "y", "size", "speed", "parallax", "color",
-        "stamp", "ox", "oy",
+        "stamp", "ox", "oy", "fpar",
     )
 
     def __init__(self, layer=0):
@@ -84,6 +120,7 @@ class Star:
             self.color = random.choice([
                 (160, 190, 255), (200, 220, 255), (140, 180, 255), (180, 210, 255)
             ])
+        self.fpar = FREE_PARALLAX["star%d" % layer]
         self.stamp = Star._stamp(self.size, self.color)
         self.ox = 0 if self.size <= 1 else self.size
         self.oy = self.ox
@@ -107,6 +144,12 @@ class Star:
 
         if self.y > BASE_HEIGHT + 10:
             self.reset()
+
+    def update_free(self, dt, dx, dy):
+        """The free mode: the star only moves with the ship (the far ones a little, the near ones more), in every
+        direction, and comes back by the opposite side."""
+        self.x = (self.x - dx * self.fpar + 5) % (BASE_WIDTH + 10) - 5
+        self.y = (self.y - dy * self.fpar + 10) % (BASE_HEIGHT + 20) - 10
 
     # Shared stamps: (size, color) -> Surface
     _stamps = {}
@@ -148,10 +191,10 @@ class Planet:
 
     _cache = {}
 
-    def __init__(self):
+    def __init__(self, free=False):
         self.parallax = 0.08
         self.alive = True
-        self.reset()
+        self.reset(free)
 
     @classmethod
     def _load_image(cls, filename):
@@ -179,8 +222,10 @@ class Planet:
                 cls._cache[key] = None
         return cls._cache[key]
 
-    def reset(self):
-        filename = random.choice(PLANET_FILES)
+    def reset(self, free=False):
+        names = [n for n in PLANET_FILES if n not in FREE_EXCLUDED] if free else PLANET_FILES
+        filename = random.choice(names)
+        self.filename = filename
         base = self._load_image(filename)
         # Ringed worlds read larger; rocks stay a bit smaller than planets
         if "fantasy" in filename or "saturn" in filename:
@@ -211,6 +256,10 @@ class Planet:
         self.t = 0.0
         self.frames_drawn = {0: self.image}                # film cells already scaled to this size
         self.first_cell = int(self.x) % len(self.film) if self.film else 0   # two rocks do not turn in step
+        self.vx = self.vy = 0.0
+        self.seen = False
+        if free:
+            self.x, self.y, self.vx, self.vy = _free_entry(self.w, self.h, (6.0, 14.0))
 
     def _cell(self):
         """The picture to draw now: for a rock with a film, the cell of the moment (scaled once, then kept)."""
@@ -237,6 +286,10 @@ class Planet:
         if self.y > BASE_HEIGHT + self.h:
             self.alive = False
 
+    def update_free(self, dt, dx, dy):
+        self.t += dt
+        _free_step(self, dt, dx, dy, FREE_PARALLAX["planet"])
+
     def draw(self, surface):
         surface.blit(
             self._cell(),
@@ -247,16 +300,21 @@ class Planet:
 class Galaxy:
     """Small distant galaxy / star cluster decoration."""
 
-    def __init__(self):
+    def __init__(self, free=False):
         self.parallax = 0.03
         self.alive = True
-        self.reset()
+        self.reset(free)
 
-    def reset(self):
+    def reset(self, free=False):
         self.x = random.uniform(40, BASE_WIDTH - 40)
         self.y = random.uniform(-30, -5)
         self.speed = random.uniform(8, 16)
         self.radius = random.randint(3, 7)
+        self.w = self.h = self.radius * 2
+        self.vx = self.vy = 0.0
+        self.seen = False
+        if free:
+            self.x, self.y, self.vx, self.vy = _free_entry(self.w, self.h, (3.0, 8.0))
         self.color = random.choice([
             (80, 100, 160), (100, 80, 140), (60, 90, 150), (120, 100, 160)
         ])
@@ -271,6 +329,9 @@ class Galaxy:
             self.x -= BASE_WIDTH + 40
         if self.y > BASE_HEIGHT + 20:
             self.alive = False
+
+    def update_free(self, dt, dx, dy):
+        _free_step(self, dt, dx, dy, FREE_PARALLAX["galaxy"])
 
     def draw(self, surface):
         pygame.draw.circle(
@@ -288,10 +349,10 @@ class Nebula:
 
     _cache = {}
 
-    def __init__(self, filename=None):
+    def __init__(self, filename=None, free=False):
         self.parallax = 0.05
         self.alive = True
-        self.reset(filename)
+        self.reset(filename, free)
 
     @classmethod
     def _load_image(cls, filename):
@@ -305,7 +366,7 @@ class Nebula:
             cls._cache[filename] = img
         return cls._cache[filename].copy()
 
-    def reset(self, filename=None):
+    def reset(self, filename=None, free=False):
         filename = filename or random.choice(NEBULA_FILES)
         self.image = self._load_image(filename)
         self.kind = filename
@@ -318,6 +379,10 @@ class Nebula:
         self.speed = random.uniform(12, 22)
         self.alive = True
         self._anim = 0.0
+        self.vx = self.vy = 0.0
+        self.seen = False
+        if free:
+            self.x, self.y, self.vx, self.vy = _free_entry(self.w, self.h, (4.0, 9.0))
 
     def update(self, dt, player_dx=0.0):
         self.y += self.speed * dt
@@ -329,6 +394,10 @@ class Nebula:
             self.x -= BASE_WIDTH + self.w * 2
         if self.y > BASE_HEIGHT + self.h:
             self.alive = False
+
+    def update_free(self, dt, dx, dy):
+        self._anim += dt
+        _free_step(self, dt, dx, dy, FREE_PARALLAX["nebula"])
 
     def draw(self, surface):
         # Pulse alpha on the instance surface — no per-frame copy
@@ -453,28 +522,61 @@ class Starfield:
         self.nebula_timer = random.uniform(20.0, 36.0)
 
         self.last_player_x = BASE_WIDTH / 2
+        self.last_player_y = BASE_HEIGHT / 2
+        self.free = False
+        self._free_fresh = True
 
-    def update(self, dt, player_x=None, stage=None, menu=False):
+    def set_free(self, on):
+        """The free mode (the Asteroids mission): the background no longer scrolls from top to bottom, it moves only
+        with the ship, in every direction. The two rocks of the planet list leave (and never come back). Off again, the
+        usual top-to-bottom scrolling resumes. Cheap and idempotent: the game says it every frame."""
+        on = bool(on)
+        if on == self.free:
+            return
+        self.free = on
+        self._free_fresh = True                      # the first step has no movement to follow
+        if not on:
+            return
+        self.planets = [p for p in self.planets if getattr(p, "filename", "") not in FREE_EXCLUDED]
+        for o in self.planets + self.galaxies + ([self.nebula] if self.nebula is not None else []):
+            speed = (6.0, 14.0) if isinstance(o, Planet) else (3.0, 9.0)
+            _, _, o.vx, o.vy = _free_entry(getattr(o, "w", 40), getattr(o, "h", 40), speed)
+            o.seen = True                            # (already in the sky: it leaves for good when it goes out)
+            o.age = 0.0
+            o.w = getattr(o, "w", 40)
+            o.h = getattr(o, "h", 40)
+
+    def update(self, dt, player_x=None, stage=None, menu=False, player_y=None):
         player_dx = 0.0
+        player_dy = 0.0
         if player_x is not None:
             player_dx = player_x - self.last_player_x
             self.last_player_x = player_x
-
-        for star in self.stars:
-            star.update(dt, player_dx)
+        if player_y is not None:
+            player_dy = player_y - self.last_player_y
+            self.last_player_y = player_y
+        if self.free:
+            if self._free_fresh:
+                player_dx = player_dy = 0.0
+                self._free_fresh = False
+            for star in self.stars:
+                star.update_free(dt, player_dx, player_dy)
+        else:
+            for star in self.stars:
+                star.update(dt, player_dx)
 
         for planet in self.planets[:]:
-            planet.update(dt, player_dx)
+            planet.update_free(dt, player_dx, player_dy) if self.free else planet.update(dt, player_dx)
             if not planet.alive:
                 self.planets.remove(planet)
 
         for galaxy in self.galaxies[:]:
-            galaxy.update(dt, player_dx)
+            galaxy.update_free(dt, player_dx, player_dy) if self.free else galaxy.update(dt, player_dx)
             if not galaxy.alive:
                 self.galaxies.remove(galaxy)
 
         if self.nebula is not None:
-            self.nebula.update(dt, player_dx)
+            self.nebula.update_free(dt, player_dx, player_dy) if self.free else self.nebula.update(dt, player_dx)
             if not self.nebula.alive:
                 self.nebula = None
 
@@ -490,24 +592,24 @@ class Starfield:
             # Also ~12% chance to invite a nebula right after a lone planet.
             if len(self.planets) == 0:
                 if self.nebula is None or random.random() < 0.40:
-                    self.planets.append(Planet())
+                    self.planets.append(Planet(free=self.free))
                     if self.nebula is None and random.random() < 0.12:
-                        self.nebula = Nebula()
+                        self.nebula = Nebula(free=self.free)
                         self.nebula_timer = random.uniform(18.0, 32.0)
             self.planet_timer = random.uniform(16.0, 30.0)
 
         self.galaxy_timer -= dt
         if self.galaxy_timer <= 0:
-            self.galaxies.append(Galaxy())
+            self.galaxies.append(Galaxy(free=self.free))
             self.galaxy_timer = random.uniform(12.0, 22.0)
 
         self.nebula_timer -= dt
         if self.nebula_timer <= 0:
             if self.nebula is None:
                 if len(self.planets) == 0 or random.random() < 0.40:
-                    self.nebula = Nebula()
+                    self.nebula = Nebula(free=self.free)
                     if len(self.planets) == 0 and random.random() < 0.12:
-                        self.planets.append(Planet())
+                        self.planets.append(Planet(free=self.free))
                         self.planet_timer = random.uniform(14.0, 28.0)
             self.nebula_timer = random.uniform(22.0, 38.0)
 

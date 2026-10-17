@@ -62,6 +62,7 @@ def _launch(run, **kw):
 
 def _only(form, *rocks):
     form.rocks[:] = list(rocks)
+    form.repop = False                                       # (a still field: nothing comes in)
 
 
 def _rock(size, x, y, vx=0.0, vy=0.0, rng=None):
@@ -82,7 +83,7 @@ def test_the_test_mission_is_on_the_map_of_every_act_and_always_playable(act):
 
 def test_the_test_mission_is_last_on_the_map_and_a_test():
     mission = ss.mission_by_id("bonus_asteroids")
-    assert mission["test"] is True and mission["asteroids"] is True and mission["target"] == 40
+    assert mission["test"] is True and mission["asteroids"] is True and mission["target"] == 60
     assert ss.MISSIONS[-1] is mission
 
 
@@ -101,7 +102,7 @@ def test_the_launch_spec_says_asteroids_and_test():
     hub.open_slot(1)
     hub.map_index = [m["id"] for m in hub.missions()].index("bonus_asteroids")
     spec = hub._launch_selected()
-    assert spec["asteroids"] is True and spec["test"] is True and spec["target"] == 40
+    assert spec["asteroids"] is True and spec["test"] is True and spec["target"] == 60
 
 
 # ------------------------------------------------------------------ the start
@@ -147,6 +148,7 @@ def _calm(run):
     form.rocks[:] = [_rock(3, 40, 40)]                       # one far rock: nothing happens
     form.saucer_in = 10 ** 6
     form.waves = 1
+    form.repop = False
 
 
 def test_left_and_right_turn_the_ship(run):
@@ -264,6 +266,7 @@ def test_the_fire_key_makes_shots_but_no_more_than_four_at_once(run):
     g = run.game
     g.formation.rocks[:] = []
     g.formation.waves = 1
+    g.formation.repop = False
     g.formation.target = 10 ** 6                                 # (no wave, no end in this test)
     g.autofire = True
     _hold_fire(run, 60)
@@ -311,6 +314,7 @@ def test_a_big_rock_breaks_in_two_medium_ones_then_small_ones_then_nothing(run):
     form = g.formation
     _only(form, _rock(3, 640, 500))
     form.waves = 1
+    form.repop = False
     form.saucer_in = 10 ** 6
     _hit(run, form.rocks[0])
     assert sorted(r.size for r in form.rocks) == [2, 2] and form.destroyed == 1
@@ -325,6 +329,7 @@ def test_the_points_of_the_rocks_and_of_the_saucer(run):
     g = run.game
     form = g.formation
     form.waves = 1
+    form.repop = False
     score = g.score
     for size in (3, 2, 1):
         r = _rock(size, 400, 300)
@@ -341,6 +346,7 @@ def test_every_piece_counts_for_the_target(run):
     g = run.game
     form = g.formation
     form.waves = 1
+    form.repop = False
     _only(form, _rock(3, 300, 300))
     score = g.score
     while form.rocks:                                            # one big rock, broken down to nothing
@@ -355,6 +361,7 @@ def test_the_rocks_wrap_around_the_screen(run):
     r = _rock(2, BASE_WIDTH - 2, 300, 120.0, 0.0)
     _only(form, r)
     form.waves = 1
+    form.repop = False
     run.frames(5)
     assert r.x < 50
     r.x, r.y, r.vx, r.vy = 300.0, 2.0, 0.0, -120.0
@@ -362,28 +369,117 @@ def test_the_rocks_wrap_around_the_screen(run):
     assert r.y > BASE_HEIGHT - 50
 
 
-def test_a_new_wave_comes_when_the_screen_is_empty_before_the_target(run):
+def test_rocks_come_in_from_outside_when_the_field_gets_thin(run):
     _launch(run)
     g = run.game
     form = g.formation
+    p = g.player
+    p.invulnerable = 100.0
     run.frames(2)
     form.rocks[:] = []
-    run.frames(2)
-    assert len(form.rocks) >= 4 and form.waves == 2
-    assert all(r.size == 3 for r in form.rocks)
+    seen = []
+    for _ in range(60 * 4):
+        run.frames(1)
+        seen += [r for r in form.rocks if r.entering and r not in seen]
+    assert seen, "nothing came in"
+    assert all(r.size == 3 for r in seen)
+    assert form.field_mass() >= ast.MASS_LOW - 4                 # the field is topped up again
+
+
+def test_a_rock_that_comes_in_starts_beyond_an_edge_and_slides_in_without_wrapping(run):
+    _launch(run)
+    g = run.game
+    form = g.formation
+    for _ in range(300):                                          # (whatever the edge it is drawn at)
+        form.rocks[:] = []
+        form.spawn_rock(g.player)
+        r = form.rocks[0]
+        assert r.entering
+        outside = r.x < -r.radius or r.x > BASE_WIDTH + r.radius or r.y < -r.radius or r.y > BASE_HEIGHT + r.radius
+        assert outside                                           # wholly out of the screen
+        lane = ast.ROCK_RADIUS[3] + 40                            # ... and clear of the corners, so that it does come in
+        if r.x < 0 or r.x > BASE_WIDTH:
+            assert lane <= r.y <= BASE_HEIGHT - lane
+        else:
+            assert lane <= r.x <= BASE_WIDTH - lane
+        for _step in range(60 * 30):
+            x0, y0 = r.x, r.y
+            r.update(DT)
+            assert abs(r.x - x0) < 5 and abs(r.y - y0) < 5       # it never jumps to the other side
+            if not r.entering:
+                break
+        assert not r.entering and r.radius <= r.x <= BASE_WIDTH - r.radius and r.radius <= r.y <= BASE_HEIGHT - r.radius
+
+
+def test_a_rock_coming_in_is_drawn_only_where_it_is(run):
+    _launch(run)
+    g = run.game
+    form = g.formation
+    form.rocks[:] = []
+    r = _rock(3, -20.0, 300.0)                                   # half in on the left
+    r.entering = True
+    form.rocks.append(r)
+    surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+    form.draw(surf)
+    left = any(surf.get_at((x, y))[:3] != (0, 0, 0) for x in range(0, 40) for y in range(250, 350))
+    right = any(surf.get_at((x, y))[:3] != (0, 0, 0) for x in range(BASE_WIDTH - 60, BASE_WIDTH) for y in range(240, 360))
+    assert left and not right                                    # no ghost on the other side
+    r.entering = False                                           # once in, the usual wrap
+    surf.fill((0, 0, 0))
+    form.draw(surf)
+    assert any(surf.get_at((x, y))[:3] != (0, 0, 0) for x in range(BASE_WIDTH - 60, BASE_WIDTH) for y in range(240, 360))
+
+
+def test_a_rock_that_is_not_yet_in_cannot_hit_the_ship_on_the_other_side(run):
+    _launch(run, lives=3)
+    _calm(run)
+    g = run.game
     p = g.player
-    assert all(math.hypot(*ast.wrapped_delta(p.x, p.y, r.x, r.y)) > ast.SPAWN_CLEAR - 5 for r in form.rocks)
+    p.lives = 3
+    p.invulnerable = 0.0
+    p.x, p.y = BASE_WIDTH - 10.0, 300.0
+    r = _rock(3, -40.0, 300.0)
+    r.entering = True
+    g.formation.rocks.append(r)
+    run.frames(1)
+    assert p.lives == 3
 
 
-def test_no_wave_comes_once_the_target_is_reached(run):
+def test_rocks_do_not_come_in_while_the_field_is_full(run):
+    _launch(run)
+    g = run.game
+    form = g.formation
+    g.player.invulnerable = 100.0
+    run.frames(60 * 3)
+    assert form.field_mass() >= ast.MASS_LOW and not any(r.entering for r in form.rocks)
+
+
+def test_one_rock_at_a_time_with_a_pause_between(run):
+    _launch(run)
+    g = run.game
+    form = g.formation
+    g.player.invulnerable = 100.0
+    run.frames(2)
+    form.rocks[:] = []
+    run.frames(int(ast.REPOP_GAP[0] * 60) // 2)
+    assert form.rocks == []                                      # not the very next frame
+    n = []
+    for _ in range(60 * 3):
+        run.frames(1)
+        n.append(len(form.rocks))
+    assert max(n) >= 1 and all(b - a <= 1 for a, b in zip(n, n[1:]) if b >= a)
+
+
+def test_no_rock_comes_in_once_the_target_is_reached(run):
     _launch(run)
     g = run.game
     form = g.formation
     run.frames(2)
     form.destroyed = form.target
-    form.rocks[:] = []
-    run.frames(5)
-    assert form.rocks == [] and form.waves == 1
+    form.rocks[:] = [_rock(2, 40, 40)]                           # (one left: the end has not come yet)
+    g.player.invulnerable = 100.0
+    run.frames(int((ast.REPOP_GAP[1] + 0.5) * 60))
+    assert len(form.rocks) == 1 and form.waves == 1              # a thin field, but the target is reached: nothing comes
 
 
 def test_after_the_target_a_rock_that_is_hit_is_just_gone(run):
@@ -424,7 +520,7 @@ def test_the_counter_is_the_target_then_what_is_left(run):
     form.rocks[:] = [_rock(2, 300, 300), _rock(1, 500, 300)]
     assert form.remaining() == 2
     run.frames(2)                                                # drawn with its text without a crash
-    assert t("story_asteroids_hud").format(n=3, m=40) == "ASTÉROÏDES : 3/40" or t("story_asteroids_hud").format(n=3, m=40) == "ASTEROIDS: 3/40"
+    assert t("story_asteroids_hud").format(n=3, m=60) in ("ASTÉROÏDES : 3/60", "ASTEROIDS: 3/60")
 
 
 # ------------------------------------------------------------------ hits on the ship
@@ -435,6 +531,7 @@ def _on_ship(run, size=2):
     r = _rock(size, p.x, p.y)
     _only(g.formation, r)
     g.formation.waves = 1
+    g.formation.repop = False
     g.formation.saucer_in = 10 ** 6
     return r
 
@@ -540,7 +637,7 @@ def test_the_saucer_comes_now_and_then_crosses_and_leaves(run):
     assert form.saucer is None
 
 
-def test_the_saucer_comes_three_or_four_times_in_a_mission_of_a_minute_and_a_half(run):
+def test_the_saucer_comes_four_or_five_times_in_a_mission_of_a_minute_and_a_half(run):
     import invaders
     _launch(run)
     form = run.game.formation
@@ -552,7 +649,8 @@ def test_the_saucer_comes_three_or_four_times_in_a_mission_of_a_minute_and_a_hal
         while t < 90:
             n += 1
             t += cross + gap
-        assert 3 <= n <= 5, (gap, first, n)
+        assert 4 <= n <= 6, (gap, first, n)
+    assert sum(ast.SAUCER_GAP) / 2 < 18.0                           # a little more often than the first version (18 s)
 
 
 def test_the_saucer_fires_at_the_ship(run):
@@ -619,7 +717,8 @@ def test_the_end_waits_for_the_saucer_to_leave(run):
     form.saucer = ast.Saucer(True, form.rng)
     form.saucer.x = 300.0
     run.frames(5)
-    assert not form.all_dead() and not run.game.player.ast_hold
+    run.frames(int(ast.END_DELAY * 60) + 10)
+    assert not form.all_dead() and run.game.adventure is not None        # the saucer is still there: no end
 
 
 # ------------------------------------------------------------------ the end
@@ -641,11 +740,11 @@ def test_the_mission_is_over_when_the_target_is_reached_and_the_screen_is_empty(
     form.destroyed = form.target - 1
     big = _rock(3, 800, 300)
     _only(form, big)
-    form.break_rock(g, big)                                      # the 40th: the rock is gone, no more piece, no repop
+    form.break_rock(g, big)                                      # the last: the rock is gone, no more piece, no repop
     assert form.reached and form.rocks == []
     run.frames(10)
-    assert form.rocks == [] and form.waves == 1 and g.player.ast_hold
-    assert _until_over(run)
+    assert form.rocks == [] and form.waves == 1 and g.adventure is not None      # the short pause, the last explosion
+    assert _until_over(run, 60 * 3)
     assert g.story.toast == t("story_test_won")
     st = g.story.state
     assert st["credits"] == 700 and "bonus_asteroids" not in st["cleared"]
@@ -666,7 +765,7 @@ def test_the_rocks_left_must_be_cleared_before_the_end(run):
     assert _until_over(run)
 
 
-def test_the_ship_turns_its_nose_up_and_stops_before_the_flight(run):
+def test_the_mission_just_ends_no_flight_up_and_no_level_call(run):
     _launch(run)
     _calm(run)
     g = run.game
@@ -675,9 +774,33 @@ def test_the_ship_turns_its_nose_up_and_stops_before_the_flight(run):
     form.destroyed = form.target
     form.rocks[:] = []
     p.ast_angle, p.ast_vx, p.ast_vy = 0.3, 200.0, 100.0
-    run.frames(90)
-    assert p.ast_hold or g.adventure is None or g.stage_transition is not None
-    assert abs(p.ast_angle + math.pi / 2) < 0.1 and math.hypot(p.ast_vx, p.ast_vy) < 30
+    called = []
+    orig_vo = g._play_level_vo
+    g._play_level_vo = lambda *a, **k: called.append(a)
+    seen = set()
+    for _ in range(60 * 4):
+        run.frames(1)
+        seen.add(g.stage_transition)
+        if g.adventure is None:
+            break
+    g._play_level_vo = orig_vo
+    assert g.adventure is None and "fly_up" not in seen and not called
+    assert g.menu_screen == "story_hub"
+
+
+def test_the_ship_keeps_its_course_and_its_controls_until_the_end(run):
+    _launch(run)
+    _calm(run)
+    g = run.game
+    p = g.player
+    form = g.formation
+    form.destroyed = form.target
+    form.rocks[:] = []
+    p.ast_angle, p.ast_vx, p.ast_vy = 0.3, 200.0, 0.0
+    run.frames(20)
+    assert abs(p.ast_angle - 0.3) < 1e-6 and p.ast_vx > 150          # no automatic turn nose-up any more
+    _fly(run, pygame.K_RIGHT, frames=5)
+    assert p.ast_angle > 0.3 + 0.2
 
 
 def test_a_lost_mission_in_normal_mode_costs_nothing(run):
@@ -757,7 +880,7 @@ def test_the_counter_counts_up_to_the_target_then_tells_what_is_left(run):
     g = run.game
     run.frames(2)
     g.formation.destroyed = 7
-    assert t("story_asteroids_hud").format(n=7, m=40) in _hud_texts(run)
+    assert t("story_asteroids_hud").format(n=7, m=60) in _hud_texts(run)
     g.formation.destroyed = g.formation.target
     g.formation.rocks[:] = [_rock(2, 40, 40), _rock(1, 90, 40)]
     seen = _hud_texts(run)
@@ -921,3 +1044,70 @@ def test_nothing_moves_in_the_field_during_the_flight_up(run):
         g.dt = DT
         ast.tick(g)
     assert form.time == t0 and r.x == x0 and p.lives == 3 and form.saucer is None
+
+
+# ------------------------------------------------------------------ the field is topped up as it is destroyed
+def _after(run, seconds):
+    g = run.game
+    g.player.invulnerable = 1000.0
+    for _ in range(int(seconds * 60)):
+        run.frames(1)
+
+
+def test_a_field_with_little_left_gets_a_rock_and_a_full_one_does_not(run):
+    _launch(run)
+    g = run.game
+    form = g.formation
+    run.frames(2)
+    form.saucer_in = 10 ** 6
+    # 2 medium + 1 small = 5: thin
+    form.rocks[:] = [_rock(2, 300, 200), _rock(2, 900, 200), _rock(1, 600, 500)]
+    assert form.field_mass() == 5 < ast.MASS_LOW
+    _after(run, ast.REPOP_GAP[1] + 0.5)
+    assert any(r.size == 3 for r in form.rocks)
+    # 2 big + 1 medium = 10: full enough
+    form.rocks[:] = [_rock(3, 300, 200), _rock(3, 900, 200), _rock(2, 600, 500)]
+    for r in form.rocks:
+        r.vx = r.vy = 0.0
+    assert form.field_mass() >= ast.MASS_LOW
+    _after(run, ast.REPOP_GAP[1] + 1.0)
+    assert len(form.rocks) == 3
+
+
+def test_each_new_rock_waits_for_its_pause(run):
+    _launch(run)
+    g = run.game
+    form = g.formation
+    run.frames(2)
+    form.saucer_in = 10 ** 6
+    form.rocks[:] = []
+    form.spawn_in = None
+    _after(run, ast.REPOP_GAP[0] * 0.9)
+    assert form.rocks == []                                      # the first one is not instant
+    _after(run, ast.REPOP_GAP[1] - ast.REPOP_GAP[0] * 0.9 + 0.2)
+    assert len(form.rocks) == 1
+
+
+def test_the_target_is_sixty_everywhere():
+    assert ast.TARGET == 60 == ss.mission_by_id("bonus_asteroids")["target"]
+
+
+def test_the_formation_of_the_mission_has_the_target_of_the_map(run):
+    _launch(run)
+    assert run.game.formation.target == 60
+
+
+def test_a_full_field_forgets_the_pause_and_the_next_thinning_starts_a_new_one(run):
+    _launch(run)
+    g = run.game
+    form = g.formation
+    run.frames(2)
+    form.saucer_in = 10 ** 6
+    form.spawn_in = 0.05                                         # a stale count-down from an earlier thin moment
+    run.frames(2)                                                # the field is full: it is forgotten
+    assert form.spawn_in is None
+    for r in form.rocks:
+        r.vx = r.vy = 0.0
+    form.rocks[:] = []
+    _after(run, ast.REPOP_GAP[0] * 0.9)
+    assert form.rocks == []

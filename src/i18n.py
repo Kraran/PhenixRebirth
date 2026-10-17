@@ -5820,11 +5820,11 @@ _VIP_TEXTS = {
     "story_m_ast_hud": ("TEST : astéroïdes", "TEST: asteroids"),
     "story_m_ast_b": ("Version de test d'un niveau à la Asteroids : ton vaisseau tourne (gauche / droite), pousse (haut) "
                       "et tire, et ressort de l'autre côté de l'écran. Les astéroïdes se brisent en morceaux de plus "
-                      "en plus petits ; détruis-en 40, puis vide l'écran. Une soucoupe passe de temps en temps. "
+                      "en plus petits ; détruis-en 60 (de nouveaux arrivent du dehors), puis vide l'écran. Une soucoupe passe de temps en temps. "
                       "Accessible à tous les actes, ne rapporte rien et ne coûte rien.",
                       "Test version of an Asteroids-style level: your ship turns (left / right), pushes (up) and fires, "
                       "and comes out of the other side of the screen. The rocks break into smaller and smaller pieces; "
-                      "destroy 40 of them, then clear the screen. A saucer passes now and then. Open in every act, "
+                      "destroy 60 of them (new ones keep coming in from outside), then clear the screen. A saucer passes now and then. Open in every act, "
                       "pays nothing and costs nothing."),
     "story_log_ast": ("TEST — les astéroïdes ont été balayés.", "TEST — the asteroids were swept away."),
     "story_asteroids_hud": ("ASTÉROÏDES : {n}/{m}", "ASTEROIDS: {n}/{m}"),
