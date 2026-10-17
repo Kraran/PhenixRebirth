@@ -115,6 +115,33 @@ def test_the_addon_going_away_does_not_leave_the_cursor_on_nothing():
     assert hub.confirm() == {"door": "options"}
 
 
+def test_the_bar_is_the_concert_scene_picture_and_loop():
+    """The bar with the stage of the future concert of Lyra Voss (the Phoenix cabinet in the middle, the stage and the old
+    computers on the right): the poster is 1792 x 1008, the clip (no sound) is about 9.5 s and starts over without a cut."""
+    import subprocess
+    pic = pygame.image.load(asset_path("story", "bar_phobos.jpg"))
+    assert pic.get_size() == (1792, 1008)
+    clip = ss.clip_path("bar_phobos")
+    assert os.path.getsize(clip) > 100000
+    import videoclip
+    exe = videoclip.find_ffmpeg()
+    if not exe:
+        pytest.skip("no ffmpeg to read the clip")
+    info = subprocess.run([exe, "-hide_banner", "-i", clip], capture_output=True, text=True).stderr
+    assert "752x416" in info and "Audio:" not in info
+    import re
+    h, m, sec = re.search(r"Duration: (\d+):(\d+):([\d.]+)", info).groups()
+    length = int(h) * 3600 + int(m) * 60 + float(sec)
+    assert 9.0 < length < 10.0                                      # (the old bar clip lasted 5.5 s)
+    # the poster is the first picture of the clip: the same scene, so the same colours on a coarse grid
+    out = subprocess.run([exe, "-v", "error", "-i", clip, "-frames:v", "1", "-vf", "scale=8:4", "-f", "rawvideo",
+                          "-pix_fmt", "rgb24", "-"], capture_output=True).stdout
+    small = pygame.transform.smoothscale(pic, (8, 4))
+    ref = pygame.image.tobytes(small, "RGB")
+    assert len(out) == len(ref) == 96
+    assert sum(abs(a - b) for a, b in zip(out, ref)) / 96 < 25
+
+
 def test_the_tab_draws_five_paragraphs_with_the_bar_title(run):
     hub = _hub(addon=True)
     hub.pane = "extras"
