@@ -1208,6 +1208,9 @@ class StoryHub:
             if res.get("reward"):
                 self.toast = t("story_reward").format(pts=res["reward"])     # the parts salvaged from the wreck
                 self.toast_kind = "gain"
+        elif res.get("no_item"):
+            self.toast = t("story_item_missed").format(name=t("item_%s_name" % res["no_item"]))
+            self.toast_kind = "info"                 # the BONUS item was not caught: no gain, no loss
         elif res["fallen"]:
             self.toast = t("story_fell_msg").format(name=self.state.get("name") or "")
             self.toast_kind = "danger"

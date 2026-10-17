@@ -90,6 +90,7 @@ class FallingItem:
         self.y = START_Y
         self.t = 0.0
         self.alive = True
+        self.holds_clear = False          # True for the item of a BONUS mission: the mission waits until it is gone
         self.cells = frames(item)
         first = self.cells[0] if self.cells else None
         self.w = first.get_width() if first else 40

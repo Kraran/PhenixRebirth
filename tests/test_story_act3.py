@@ -251,6 +251,19 @@ def test_the_singularity_falls_once_and_the_mission_is_done_when_caught():
     assert "item:singularity" in [r[0] for r in ss.shop_for(st)]
 
 
+def test_the_singularity_mission_finished_without_the_core_is_neither_won_nor_lost():
+    st = _act3("phoenix")
+    st["flags"]["ch3_speed"] = True
+    st["credits"] = 900
+    m = ss.mission_by_id("bonus_singularity")
+    res = ss.record_result(st, m["id"], 300, True)
+    assert res["no_item"] == "singularity" and res["cleared"] is False and res["lost"] == 0
+    assert st["credits"] == 900 and m["id"] not in st["cleared"]
+    assert ss.mission_playable(st, m) and not ss.mission_done(st, m)
+    res = ss.record_result(st, m["id"], 300, True, loot="singularity")           # with the core, the win counts
+    assert res["no_item"] is None and res["cleared"] is True and st["credits"] == 1200
+
+
 def test_the_hub_launches_the_drop_mission_with_its_item():
     st = _act3("shield")
     st["flags"]["ch3_speed"] = True

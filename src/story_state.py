@@ -1857,14 +1857,15 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
     `loot` (the item caught during the mission) goes on sale in the hangar, win or lose; `used` (the items that were
     installed for the mission) are used up, win or lose (see story_items.py). The exception is the reactor of a BONUS
     mission: it must be caught AND the mission finished, a ship lost with it in the hold brings nothing back
-    (`res["reactor_lost"]`) and the mission is offered again.
+    (`res["reactor_lost"]`) and the mission is offered again. A BONUS mission finished WITHOUT its item and without a
+    death is neither won nor lost: no score paid, no penalty (`res["no_item"]` = the item missed), offered again.
 
     Returns {"score", "cleared", "first", "lost", "fallen"}. The journal stores a
     text KEY, not the translated text, so it follows the player's language.
     """
     score = max(0, int(score or 0))
     res = {"score": score, "cleared": bool(cleared), "first": False, "lost": 0, "fallen": False, "act": 0,
-           "loot": None, "used": [], "opened": [], "reactor_lost": None}
+           "loot": None, "used": [], "opened": [], "reactor_lost": None, "no_item": None}
     record_kills(state, kills)            # the enemies met count whatever the outcome
     record_mission_kills(state, mission_id, kills)
     res["used"] = story_items.consume(state, used)           # before the Act can change: they belong to this one
@@ -1884,8 +1885,15 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
             res["lost"] = failure_penalty(credits, state.get("mode"))
             state["credits"] = credits - res["lost"]
         return res
-    state["credits"] = int(state.get("credits", 0)) + score
     mission = next((m for m in MISSIONS if m["id"] == mission_id), None)
+    if mission and (mission.get("reactor") or mission.get("drop")) and not mission_done(state, mission):
+        # a BONUS mission won without its item (the reactor): neither a win nor a defeat. Nothing is paid, nothing is
+        # lost, the mission stays on the map and the item falls again next time. (The enemies met are in the Bestiary.)
+        res["cleared"] = False
+        res["score"] = 0
+        res["no_item"] = story_items.REACTORS.get(mission.get("reactor")) or mission.get("drop")
+        return res
+    state["credits"] = int(state.get("credits", 0)) + score
     if is_paint(mission):
         paint = paint_state(state)
         if paint["step"] == int(mission["paint"]) - 1:        # in order only (the cheat can fly any)
