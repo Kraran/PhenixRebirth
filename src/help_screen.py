@@ -7,6 +7,7 @@ Game keeps thin methods with the old names that call them.
 """
 import pygame
 
+import bindings
 import fonts
 import menu_ui
 import os
@@ -15,6 +16,17 @@ from settings import BASE_WIDTH, asset_path
 from i18n import t, t_help, t_list
 from errlog import log_exc
 from phenix_art import ship_size
+
+def help_lines(section):
+    """The lines of a help section with the keys and buttons the player really set (Options > Keys and buttons)."""
+    values = bindings.help_values(t)
+    return [bindings.fill(line, values) for line in t_list(section)]
+
+
+def help_tip():
+    """The caption under the Phenix and Shield columns: the key and the button of the ship's special."""
+    return bindings.fill("{kb_phenix}  \u00b7  {pad_phenix}", bindings.help_values(t))
+
 
 HELP_PHENIX_SHIP_H = 80          # height of the Phenix itself in the help icons (not of its canvas)
 
@@ -182,7 +194,7 @@ def draw_help_page(game, surface, page, y_off):
             y = body(line, y)
         y += 10
         y = hdr(t_help("controls_h"), y)
-        for line in t_list("controls"):
+        for line in help_lines("controls"):
             y = body(line, y)
 
         col_r = BASE_WIDTH // 2 + 90
@@ -248,7 +260,7 @@ def draw_help_page(game, surface, page, y_off):
                     surface.blit(ls, (hx, yy(y)))
                     y += 20
             y += 8
-            tip = game._txt(body_font, "Shift / X  ·  B", (255, 220, 120))
+            tip = game._txt(body_font, help_tip(), (255, 220, 120))
             surface.blit(tip, (hx + (col_w - tip.get_width()) // 2, yy(y)))
             return y + 22
 
@@ -304,8 +316,8 @@ def draw_help_page(game, surface, page, y_off):
         gap = 36
         col_w = (BASE_WIDTH - 64 - gap) // 2
         lx, rx = 32, 32 + col_w + gap
-        y_l = _text_col("PHENIX", t_list("phenix"), lx, col_w, (255, 160, 80), 146)
-        y_r = _text_col("SHIELD", t_list("shield"), rx, col_w, (120, 200, 255), 146)
+        y_l = _text_col("PHENIX", help_lines("phenix"), lx, col_w, (255, 160, 80), 146)
+        y_r = _text_col("SHIELD", help_lines("shield"), rx, col_w, (120, 200, 255), 146)
         art_y = max(y_l, y_r) + 16
         _art_row(lx, col_w, game.help_icons.get("ship"), phenix, (255, 160, 80), art_y,
                  right_ship_h=game.help_icons.get("phenix_ship_h"))

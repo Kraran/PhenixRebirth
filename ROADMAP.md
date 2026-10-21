@@ -1,6 +1,13 @@
 # Roadmap — Phenix Rebirth
 Current release: **v1.5.0**
 
+## Unreleased (towards 1.5.1)
+
+- Help screen: the keys and buttons it names are the ones the player really set (Options > Keys and buttons), no longer the
+  defaults written in the texts. The "Controls" lines (keyboard 2 = the solo keys, first pad's table), the Phenix and Shield
+  texts and the caption under their columns use the placeholders `{kb_move}`, `{kb_fire}`, `{kb_phenix}`, `{pad_fire}`,
+  `{pad_pause}`, `{pad_phenix}` (13 languages), filled by `bindings.help_values` / `bindings.fill`. Tests: `tests/test_help_keys.py`
+
 ## Done in 1.5.0
 
 **Adventure (beta)** — the story mode, Acts 1 to 3, is playable from the main menu ("Adventure (BETA)").
