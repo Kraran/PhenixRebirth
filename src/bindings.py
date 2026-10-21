@@ -304,3 +304,51 @@ _PAD_NAMES = {0: "A", 1: "B", 2: "X", 3: "Y", 4: "LB", 5: "RB", 6: "Back", 7: "S
 def pad_label(button):
     """A pad button as the Xbox pads write it (the numbers the pad gives are those of an Xbox pad)."""
     return _PAD_NAMES.get(int(button), "#%d" % int(button))
+
+
+# ------------------------------------------------------------------------------------- the help screen's texts
+def help_values(t, bindings=None):
+    """What the placeholders of the help texts stand for, from the keys and buttons in force.
+
+    The solo game flies with the arrows keyboard ("kb2") and the first pad's table. `{kb_move}` is the first key of
+    each direction, `{kb_fire}` / `{kb_phenix}` every key of the action, `{pad_fire}` / `{pad_pause}` the first
+    button, `{pad_phenix}` every button of the action. `t` is the translation function (the names of some keys)."""
+    b = bindings or current
+
+    def keys(action):
+        return " / ".join(key_label(k, t) for k in b.keys(KB2, action)) or "—"
+
+    def first_key(action):
+        ks = b.keys(KB2, action)
+        return key_label(ks[0], t) if ks else "—"
+
+    def buttons(action, only_first=False):
+        bs = b.pad_buttons(0, action)
+        if only_first:
+            bs = bs[:1]
+        return " / ".join(pad_label(x) for x in bs) or "—"
+
+    return {
+        "kb_move": " ".join(first_key(a) for a in ("left", "right", "up", "down")),
+        "kb_fire": keys("fire"),
+        "kb_phenix": keys("phenix"),
+        "pad_fire": buttons("fire", True),
+        "pad_pause": buttons("pause", True),
+        "pad_phenix": buttons("phenix"),
+    }
+
+
+class _Keep(dict):
+    """format_map table that leaves an unknown {name} as it is instead of failing."""
+
+    def __missing__(self, key):
+        return "{" + key + "}"
+
+
+def fill(line, values):
+    """A help line with its {placeholders} filled in (a stray brace never raises)."""
+    try:
+        return str(line).format_map(_Keep(values))
+    except (ValueError, IndexError, KeyError, AttributeError):
+        return str(line)
+
