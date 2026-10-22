@@ -272,6 +272,7 @@ class StoryHub:
         self.scene_door = None         # the scene is told for the first time and ends in this screen of the main menu
         self.scene_closing = False     # A was pressed on its last slide: the game fades out and opens that screen
         self._door_request = None      # B / Esc on such a scene: the same request, taken by take_door_request
+        self._launch_request = None    # B / Esc on the scene of a launch: the mission flies at once (take_launch_request)
         self.addon_ready = mame_addon.addon_ready      # (replaced in the tests) is the Add-On available?
         self.cheat_buf = ""            # last letters typed on the mission map
         self.cheat_unlock = False      # UNLK: every mission can be played, nothing is saved any more
@@ -352,6 +353,12 @@ class StoryHub:
         """The game asks every frame: has the player skipped the scene that ends in a screen of the main menu? (Then
         the same fade to black and the same screen as at the end of the scene.) Returns the request once, or None."""
         req, self._door_request = self._door_request, None
+        return req
+
+    def take_launch_request(self):
+        """The game asks after every B / Esc: was it a scene read before a launch, skipped? Then the mission flies at
+        once, like at the end of the scene (nobody has to press again). Returns the launch spec once, or None."""
+        req, self._launch_request = self._launch_request, None
         return req
 
     def scene_music(self):
@@ -1000,7 +1007,10 @@ class StoryHub:
                     self.scene_closing = True
                     self._door_request = {"door": self.scene_door, "scene": True}
             else:
+                launch = self.scene_launch
                 self._end_intro()
+                if launch:
+                    self._launch_request = self._launch_selected()      # skipping the scene is not cancelling the sortie
         else:
             return False
         return True

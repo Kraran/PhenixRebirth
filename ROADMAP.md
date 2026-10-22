@@ -30,6 +30,10 @@ Current release: **v1.5.0**
 - Adventure pause menu: in a mission the last row reads "ABANDON MISSION" (the arcade keeps "QUIT RUN") and asks
   "Abandon?" first, NO lit by default (Esc / B = NO); with the keyboard, the pad buttons, the D-pad and the stick.
   Leaving still gains and loses nothing. Texts in the 13 languages. Tests: `tests/test_pause_abandon.py`
+- Adventure scenes and first sortie: B / Esc on the scene read before a mission (first launch) no longer drops back to
+  the map, the mission flies at once like at the end of the scene. The very first sortie of a new pilot shows for 5 s
+  (fade in / out, once the ship is in play) a reminder of the controls with the player's real keys and buttons:
+  move, fire, pause. Texts in the 13 languages. Tests: `tests/test_story_skip_scene_help.py`
 
 ## Done in 1.5.0
 
