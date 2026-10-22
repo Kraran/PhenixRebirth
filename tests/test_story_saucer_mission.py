@@ -40,11 +40,11 @@ def test_the_mission_is_a_replayable_act_2_hunt_on_the_boss_level():
     assert ss.hunt_stage(m, 1) == 5
 
 
-def test_it_is_on_the_map_of_act_2_only_after_the_hunts_and_before_the_phenix():
+def test_it_is_on_the_map_of_act_2_right_after_the_hunts_and_under_the_story():
     ids = [m["id"] for m in ss.visible_missions(_act2())]
-    between = ids[ids.index("best_s4") + 1:ids.index(ID)]
-    assert between == ["bonus_2d"]                            # (the Shield BONUS mission, not done yet, stays on the map)
-    assert ids.index(ID) + 1 == ids.index("phenix_1")
+    assert ids[ids.index("best_s4") + 1] == ID               # the last of the hunts group (the Phenix story is above it)
+    assert ids.index("phenix_5") < ids.index("best_s2")
+    assert ids.index(ID) < ids.index("bonus_2d")              # (the Shield BONUS mission, not done yet, stays on the map)
     assert ID not in [m["id"] for m in ss.visible_missions(ss.create_slot(1, "A", "normal"))]
     assert ID in [m["id"] for m in ss.visible_missions(ss.create_slot(1, "A", "normal"), cheat=True)]
 

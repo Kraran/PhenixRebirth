@@ -18,6 +18,15 @@ Current release: **v1.5.0**
 - Enemy shots: a soft pink halo (18 px, additive, built once) lights the background around the shots of the enemies, of the
   Galaga / Invaders missions and of the saucer boss, so they stay readable over the stars and the sprites. The shot and its
   hitbox are unchanged (`src/bullet_halo.py`). Tests: `tests/test_bullet_halo.py`
+- Adventure map and workshop (ergonomics): after the introduction the player lands on the Mission map (not on an empty
+  locked Hangar) with the cursor on the next mission to fly, marked "NEXT"; the cursor goes on to the next mission after
+  a story win. The map is grouped under headings (Act 1: replayable hunts, then the story, then bonus; Acts 2 and 3: the
+  story first), a locked mission says "Opens after: <mission>", and the first sortie's text no longer says "dark birds" nor
+  that the dome is offline (it stayed on the map in Acts 2 and 3), and the English journal tab is "STORY LOG" (the map
+  is the "MISSION MAP"). HUD: the "DOME OFFLINE" reminder is quiet (grey, clear of the title) and is no longer shown for
+  the Phenix, which never had a dome. Workshop: rows already at MAX go last, arrows show
+  that more rows are above / below, a locked row says "Opens after: <mission>", and the French wall label reads
+  "IMMUNISÉ". Texts in the 13 languages. Tests: `tests/test_story_map_ux.py`
 
 ## Done in 1.5.0
 

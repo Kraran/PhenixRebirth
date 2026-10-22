@@ -528,7 +528,7 @@ def test_a_key_right_at_the_start_does_not_skip_a_slide():
     assert hub.intro_index == 1 and hub.intro_t == 0.0
 
 
-def test_action_button_walks_the_slides_then_opens_the_hangar():
+def test_action_button_walks_the_slides_then_opens_the_map():
     hub = _new_hub()
     seen = []
     for _ in range(10):
@@ -538,7 +538,7 @@ def test_action_button_walks_the_slides_then_opens_the_hangar():
         _wait(hub, 0.5)
         hub.confirm()
     assert seen == [0, 1, 2, 3]
-    assert hub.screen == "hub" and hub.pane == "hangar"
+    assert hub.screen == "hub" and hub.pane == "map"          # the first sortie waits on the map, not in the empty hangar
     assert ss.intro_seen(hub.state)
     assert ss.load_state(ss.story_path(1))["flags"]["intro_seen"] is True      # saved
 

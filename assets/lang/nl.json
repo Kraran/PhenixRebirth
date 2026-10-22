@@ -212,5 +212,10 @@
  "extras_jukebox_d": "De muziek van het spel opnieuw beluisteren en de introvideo bekijken.",
  "extras_credits_d": "De makers van het spel, in een rollende aftiteling.",
  "extras_help_d": "Het verhaal, de besturing, de vijanden, de Phenix en de Shield.",
- "extras_addon_d": "De originele arcadespellen, gestart met MAME."
+ "extras_addon_d": "De originele arcadespellen, gestart met MAME.",
+ "story_grp_story": "VERHAAL",
+ "story_grp_hunt": "JACHTEN · HERSPEELBAAR",
+ "story_grp_extra": "EXTRA",
+ "story_next": "VOLGENDE",
+ "story_unlock_after": "Opent na: {name}"
 }
