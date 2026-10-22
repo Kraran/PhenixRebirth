@@ -660,6 +660,14 @@ def draw_hotseat_overlays(game):
 
 def draw_pause(game):
     """Pause menu and pause options."""
+    page_lbl = None
+    if getattr(game, "pause_help", False):
+        game.game_surface.blit(game._dim_overlay(225), (0, 0))      # darker: the help is text
+        game._draw_help_page(game.game_surface, game.help_page, 0)
+        page_lbl = game._txt(getattr(game, "menu_font", None) or game.font,
+                             f"{t_help('help_page')} {int(game.help_page) + 1}/2", (140, 140, 180))
+        hint_bar.draw_for(game, game.game_surface, right=page_lbl)
+        return
     overlay = game._dim_overlay(160)
     game.game_surface.blit(overlay, (0, 0))
     if game.pause_options and getattr(game, "keybind", None) is not None:
@@ -677,7 +685,7 @@ def draw_pause(game):
         game.game_surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, 200))
         row_h = game.medium_font.get_linesize()
         menu_ui.draw_rows(game, game.game_surface, game.medium_font,
-                          [t("resume"), t("options"), t("quit_run")], 300, 55, game.pause_index,
+                          [t(main_menu.PAUSE_TITLES[name]) for name in main_menu.PAUSE], 300, 55, game.pause_index,
                           pad_y=(55 - row_h) // 2 - 3, min_width=360, panel_pad=(26, 16))
     hint_bar.draw_for(game, game.game_surface)
 

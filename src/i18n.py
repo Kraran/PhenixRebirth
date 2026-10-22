@@ -3502,6 +3502,13 @@ T = {
         "pt": "CONTINUAR", "nl": "HERVATTEN", "pl": "WZNÓW", "tr": "DEVAM", "sv": "FORTSÄTT",
         "no": "FORTSETT", "da": "FORTSÆT", "ru": "ПРОДОЛЖИТЬ",
     },
+    # the "Help / Controls" row of the pause menu
+    "pause_help": {
+        "fr": "AIDE / COMMANDES", "en": "HELP / CONTROLS", "es": "AYUDA / CONTROLES", "de": "HILFE / STEUERUNG",
+        "it": "AIUTO / COMANDI", "pt": "AJUDA / COMANDOS", "nl": "HULP / BESTURING", "pl": "POMOC / STEROWANIE",
+        "tr": "YARDIM / KONTROLLER", "sv": "HJÄLP / KONTROLLER", "no": "HJELP / KONTROLLER", "da": "HJÆLP / STYRING",
+        "ru": "ПОМОЩЬ / УПРАВЛЕНИЕ",
+    },
     "quit_run": {
         "fr": "QUITTER LA PARTIE", "en": "QUIT RUN", "es": "SALIR DE LA PARTIDA",
         "de": "SPIEL BEENDEN", "it": "ESCI DALLA PARTITA", "pt": "SAIR DA PARTIDA",

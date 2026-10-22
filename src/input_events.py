@@ -10,6 +10,7 @@ import pygame
 import bindings
 import controls
 import keybind_screen
+import main_menu
 from highscores import reset_highscores
 
 
@@ -81,6 +82,8 @@ def on_keydown(game, event):
                 else:
                     game.pause_options = False
                     game.menu_index = 0
+            elif game.paused and getattr(game, "pause_help", False):
+                game.pause_help = False                 # the help: back to the pause menu
             elif game.paused:
                 game.paused = False
                 game.pause_options = False
@@ -101,7 +104,14 @@ def on_keydown(game, event):
             return
     # Pause menu (in-game)
     if game.paused and game.started and not game.game_over:
-        if game.pause_options:
+        if getattr(game, "pause_help", False):
+            if game._is_menu_confirm(event.key):
+                game.pause_help = False
+            elif event.key in (pygame.K_LEFT, pygame.K_UP, pygame.K_a) or game._is_menu_up(event.key):
+                game._help_turn(-1)
+            elif event.key in (pygame.K_RIGHT, pygame.K_DOWN, pygame.K_d) or game._is_menu_down(event.key):
+                game._help_turn(1)
+        elif game.pause_options:
             if event.key in (pygame.K_TAB, pygame.K_PAGEUP, pygame.K_PAGEDOWN) and game.menu_screen == "options":
                 shift = bool(getattr(event, "mod", 0) & pygame.KMOD_SHIFT)
                 game._options_tab_step(-1 if (event.key == pygame.K_PAGEUP or shift) else 1)
@@ -139,16 +149,11 @@ def on_keydown(game, event):
                     game.menu_index = 0
         else:
             if game._is_menu_up(event.key):
-                game.pause_index = (game.pause_index - 1) % 3
+                game.pause_index = (game.pause_index - 1) % len(main_menu.PAUSE)
             elif game._is_menu_down(event.key):
-                game.pause_index = (game.pause_index + 1) % 3
+                game.pause_index = (game.pause_index + 1) % len(main_menu.PAUSE)
             elif game._is_menu_confirm(event.key):
-                if game.pause_index == 0:  # Reprendre
-                    game.paused = False
-                elif game.pause_index == 1:  # Options
-                    game._open_options(pause=True)
-                else:  # Quitter la partie
-                    game._quit_to_menu()
+                if game._pause_confirm():
                     return  # don't also confirm main-menu with same Enter
             elif event.key == pygame.K_ESCAPE:
                 game.paused = False
@@ -371,7 +376,12 @@ def on_joy_button(game, event):
                 game.quit_confirm = True
                 game.quit_index = 1
     elif game.paused and game.started and not game.game_over:
-        if game.pause_options:
+        if getattr(game, "pause_help", False):
+            if event.button in (0, 1):
+                game.pause_help = False                 # A or B: back to the pause menu
+            elif event.button in (4, 5):
+                game._help_turn(-1 if event.button == 4 else 1)      # LB / RB: the pages
+        elif game.pause_options:
             if event.button in (4, 5) and game.menu_screen == "options":
                 game._options_tab_step(-1 if event.button == 4 else 1)  # LB / RB: the tabs of the options
             elif event.button == 0:
@@ -400,12 +410,7 @@ def on_joy_button(game, event):
                     game.menu_index = 0
         else:
             if event.button == 0:
-                if game.pause_index == 0:
-                    game.paused = False
-                elif game.pause_index == 1:
-                    game._open_options(pause=True)
-                else:
-                    game._quit_to_menu()
+                if game._pause_confirm():
                     return  # same A must not confirm main menu
             elif event.button == 1:
                 game.paused = False
@@ -472,11 +477,14 @@ def on_joy_hat(game, event):
                 game._menu_nav(-1)
             elif hy < 0:
                 game._menu_nav(1)
+        elif game.paused and game.started and not game.game_over and getattr(game, "pause_help", False):
+            if hx != 0 or hy != 0:
+                game._help_turn(1 if (hx > 0 or hy < 0) else -1)
         elif game.paused and game.started and not game.game_over and not game.pause_options:
             if hy > 0:
-                game.pause_index = (game.pause_index - 1) % 3
+                game.pause_index = (game.pause_index - 1) % len(main_menu.PAUSE)
             elif hy < 0:
-                game.pause_index = (game.pause_index + 1) % 3
+                game.pause_index = (game.pause_index + 1) % len(main_menu.PAUSE)
         elif not game.started and not game.game_over:
             if game.menu_screen == "help":
                 if getattr(game, "help_manual", False):
@@ -558,7 +566,18 @@ def on_joy_axis(game, event):
                     game._joy_axis_latch_y = 1
                     game._joy_menu_cooldown = 0.28
     elif game.paused and game.started and not game.game_over:
-        if game.pause_options:
+        if getattr(game, "pause_help", False):
+            if event.axis in (0, 1):
+                latch = "_joy_axis_latch_x" if event.axis == 0 else "_joy_axis_latch_y"
+                if abs(event.value) < 0.40:
+                    setattr(game, latch, 0)
+                elif game._joy_menu_cooldown <= 0:
+                    side = -1 if event.value < -DEAD else (1 if event.value > DEAD else 0)
+                    if side and getattr(game, latch, 0) != side:
+                        game._help_turn(side)
+                        setattr(game, latch, side)
+                        game._joy_menu_cooldown = 0.28
+        elif game.pause_options:
             if event.axis == 1:
                 if abs(event.value) < 0.40:
                     game._joy_axis_latch_y = 0
@@ -588,11 +607,11 @@ def on_joy_axis(game, event):
                 game._joy_axis_latch_y = 0
             elif game._joy_menu_cooldown <= 0:
                 if event.value < -DEAD and game._joy_axis_latch_y != -1:
-                    game.pause_index = (game.pause_index - 1) % 3
+                    game.pause_index = (game.pause_index - 1) % len(main_menu.PAUSE)
                     game._joy_axis_latch_y = -1
                     game._joy_menu_cooldown = 0.28
                 elif event.value > DEAD and game._joy_axis_latch_y != 1:
-                    game.pause_index = (game.pause_index + 1) % 3
+                    game.pause_index = (game.pause_index + 1) % len(main_menu.PAUSE)
                     game._joy_axis_latch_y = 1
                     game._joy_menu_cooldown = 0.28
     elif game.quit_confirm and not game.started:
