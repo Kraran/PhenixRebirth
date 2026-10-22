@@ -15,6 +15,9 @@ Current release: **v1.5.0**
 - Pause menu: a new "HELP / CONTROLS" row (between Options and Quit) opens the same two-page help as the main menu,
   drawn over the paused game, with the real keys; Left / Right (or the pad) turn the page, Esc / B comes back to the pause
   menu. Works with the keyboard, the pad buttons, the D-pad and the stick. Tests: `tests/test_pause_help.py`
+- Enemy shots: a soft pink halo (18 px, additive, built once) lights the background around the shots of the enemies, of the
+  Galaga / Invaders missions and of the saucer boss, so they stay readable over the stars and the sprites. The shot and its
+  hitbox are unchanged (`src/bullet_halo.py`). Tests: `tests/test_bullet_halo.py`
 
 ## Done in 1.5.0
 

@@ -15,6 +15,7 @@ import random
 from settings import *
 from settings import asset_path
 from errlog import log_exc
+import bullet_halo
 
 class ArmorCell:
     def __init__(self, x, y, w, h, color, color_dark, tile=None):
@@ -261,6 +262,7 @@ class BossBullet:
     def draw(self, surface):
         if not self.alive:
             return
+        bullet_halo.draw_halo(surface, self.x, self.y + 7)
         pygame.draw.rect(surface, (255, 80, 200), (int(self.x) - 3, int(self.y), 7, 14))
         pygame.draw.rect(surface, (255, 180, 255), (int(self.x) - 1, int(self.y), 3, 14))
 

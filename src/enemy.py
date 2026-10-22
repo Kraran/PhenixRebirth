@@ -14,6 +14,7 @@ import math
 import random
 from settings import *
 from errlog import log_exc
+import bullet_halo
 
 class EnemyBullet:
     def __init__(self, x, y, stage=1):
@@ -33,6 +34,7 @@ class EnemyBullet:
     def draw(self, surface):
         if not self.alive:
             return
+        bullet_halo.draw_halo(surface, self.x, self.y + 6)
         # Same pink as stage-1 birds, all stages / boss fodder
         pygame.draw.rect(surface, (255, 80, 200), (int(self.x) - 3, int(self.y), 6, 12))
         pygame.draw.rect(surface, (255, 180, 255), (int(self.x) - 1, int(self.y), 2, 12))
