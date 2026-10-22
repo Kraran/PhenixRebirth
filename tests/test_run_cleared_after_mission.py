@@ -121,7 +121,7 @@ def test_quitting_by_the_pause_menu_just_after_the_death_leaves_no_old_game_over
     g.player.lives = 1
     g.player.hit()
     run.frames(6)
-    for key in (pygame.K_ESCAPE, pygame.K_DOWN, pygame.K_DOWN, pygame.K_RETURN):
+    for key in (pygame.K_ESCAPE, pygame.K_DOWN, pygame.K_DOWN, pygame.K_DOWN, pygame.K_RETURN):      # Resume, Options, Help, Quit
         pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=key, unicode="", mod=0))
         run.frames(2)
     assert g.started is False and g.adventure is None

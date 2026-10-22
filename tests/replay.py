@@ -109,7 +109,7 @@ def _jump_state(g, rng, kinds=None):
     if k in ("pause", "pause_options", "pause_reset", "hotseat_wait") and (not g.started or g.game_over):
         return k + "-skipped"
     if k == "pause":
-        g.paused, g.pause_options, g.pause_index = True, False, rng.randrange(3)
+        g.paused, g.pause_options, g.pause_index = True, False, rng.randrange(4)
     elif k == "pause_options":
         g.paused, g.pause_options, g.menu_screen, g.menu_index = True, True, "options", rng.randrange(6)
     elif k == "pause_reset":

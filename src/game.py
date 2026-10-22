@@ -2972,6 +2972,7 @@ class Game:
                 self.paused = True
                 self.pause_index = 0
                 self.pause_options = False
+                self.pause_help = False
                 self.quit_confirm = False
             try:
                 self.cheat_msg = t("pad_unplugged")
@@ -3008,6 +3009,7 @@ class Game:
             self.paused = True
             self.pause_index = 0
             self.pause_options = False
+            self.pause_help = False
             self.quit_confirm = False
             n = int(getattr(lost[0], "pid", 1) or 1)
             self.cheat_msg = t("pad_unplugged_n").format(n=n)
@@ -3215,6 +3217,29 @@ class Game:
                 self.menu_screen = "addon"
                 self.menu_index = 0
                 self.input_grace = 0.45              # the same press / key repeat must not launch the first ROM
+
+    def _pause_confirm(self):
+        """Enter / A on a row of the pause menu. True when the run was left (the caller must stop there)."""
+        name = main_menu.PAUSE[self.pause_index % len(main_menu.PAUSE)]
+        if name == "resume":
+            self.paused = False
+        elif name == "options":
+            self._open_options(pause=True)
+        elif name == "help":
+            self._open_pause_help()
+        else:
+            self._quit_to_menu()
+            return True
+        return False
+
+    def _open_pause_help(self):
+        """The help (two pages), over the paused game. Left / Right turn the page, B / Esc / Enter come back."""
+        self.pause_help = True
+        self.help_manual = True
+        self.help_timer = 0.0
+        self.help_page = 0
+        self.help_scroll = 0.0
+        self.help_transitioning = False
 
     def _help_turn(self, direction):
         """The help opened from EXTRAS: Right / Down shows page 2, Left / Up page 1."""
@@ -3872,6 +3897,7 @@ class Game:
         self.paused = not self.paused
         self.pause_index = 0
         self.pause_options = False
+        self.pause_help = False
         if self.paused:
             self.sounds.play_electric(False)
 
@@ -3925,6 +3951,7 @@ class Game:
         self.paused = False
         self.quit_confirm = False
         self.pause_options = False
+        self.pause_help = False
         if back_story:
             self.menu_screen = "story_hub"
             self.menu_index = 1
@@ -4203,6 +4230,8 @@ class Game:
         if self.paused:
             self._tick_stars(follow=False)
             self.sounds.play_electric(False)
+            if getattr(self, "pause_help", False):
+                self.help_anim_t += self.dt            # the ships of the help page move
             return
 
         if getattr(self, "hotseat_pick_p2", False):

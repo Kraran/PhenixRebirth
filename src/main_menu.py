@@ -23,6 +23,9 @@ OPTION_TABS = (
 )
 
 # title of each entry / tab (i18n keys)
+# the pause menu of a run: Resume, Options, Help / Controls, Quit the run
+PAUSE = ("resume", "options", "help", "quit")
+PAUSE_TITLES = {"resume": "resume", "options": "options", "help": "pause_help", "quit": "quit_run"}
 MAIN_TITLES = {"play": "play", "story": "story_menu", "extras": "extras_title", "options": "options", "quit": "quit"}
 EXTRAS_TITLES = {"highscores": "high_scores", "achievements": "achievements", "jukebox": "jukebox",
                  "credits": "credits", "help": "extras_help", "addon": "addon"}

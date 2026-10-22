@@ -104,7 +104,7 @@ def snapshot(game):
     """What the menus show, as plain values that can be compared."""
     g = game
     snap = {
-        "screen": (bool(g.started), bool(g.paused), bool(getattr(g, "pause_options", False)), g.menu_screen,
+        "screen": (bool(g.started), bool(g.paused), bool(getattr(g, "pause_options", False)), bool(getattr(g, "pause_help", False)), g.menu_screen,
                    bool(g.quit_confirm), getattr(g, "fade_phase", None) is not None,
                    bool(g.game_over), getattr(g, "hs_phase", None)),
         "cursor": (g.menu_index, getattr(g, "pause_index", 0), getattr(g, "quit_index", 0),

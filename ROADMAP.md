@@ -7,6 +7,9 @@ Current release: **v1.5.0**
   defaults written in the texts. The "Controls" lines (keyboard 2 = the solo keys, first pad's table), the Phenix and Shield
   texts and the caption under their columns use the placeholders `{kb_move}`, `{kb_fire}`, `{kb_phenix}`, `{pad_fire}`,
   `{pad_pause}`, `{pad_phenix}` (13 languages), filled by `bindings.help_values` / `bindings.fill`. Tests: `tests/test_help_keys.py`
+- Pause menu: a new "HELP / CONTROLS" row (between Options and Quit) opens the same two-page help as the main menu,
+  drawn over the paused game, with the real keys; Left / Right (or the pad) turn the page, Esc / B comes back to the pause
+  menu. Works with the keyboard, the pad buttons, the D-pad and the stick. Tests: `tests/test_pause_help.py`
 
 ## Done in 1.5.0
 
