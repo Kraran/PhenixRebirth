@@ -52,3 +52,11 @@ def tab_of(key):
         if key in rows:
             return i
     return 0
+
+
+def pause_title(name, adventure=False):
+    """i18n key of a row of the pause menu. In an Adventure mission the last row abandons the mission (with a question)
+    instead of quitting the run."""
+    if name == "quit" and adventure:
+        return "pause_abandon"
+    return PAUSE_TITLES[name]
