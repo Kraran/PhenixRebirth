@@ -563,17 +563,22 @@ def draw_menu_footer(game):
 
 def draw_hs_enter(game):
     """High-score entry: three initials."""
-    announce.draw(game, game.game_surface, t("new_record"), "reward", "major",
-                  (BASE_WIDTH // 2, 100 + game.big_font.get_height() // 2))
+    cy = 100 + game.big_font.get_height() // 2
+    img = announce.draw(game, game.game_surface, t("new_record"), "reward", "major", (BASE_WIDTH // 2, cy))
     if game.hotseat or getattr(game, "play_mode", "solo") == "coop":
         who = game._txt(game.font, t("player_n").format(n=game.hs_slot_label), (255, 200, 120))
         game.game_surface.blit(who, (BASE_WIDTH // 2 - who.get_width() // 2, 44))
 
+    # everything below hangs from the bottom of the plate (its height follows the font that fits the text)
+    plate_bottom = cy + img.get_height() // 2 + announce.LEVELS["major"]["pad"][1]
+    score_y = max(180, plate_bottom + 14)
+    shift = score_y - 180
+
     sc = game._txt(game.font, f"{t('score_label')} : {game.format_score(game.score)}", (200, 255, 180))
-    game.game_surface.blit(sc, (BASE_WIDTH // 2 - sc.get_width() // 2, 180))
+    game.game_surface.blit(sc, (BASE_WIDTH // 2 - sc.get_width() // 2, score_y))
 
     hint = game._txt(game.font, t("enter_initials_hint"), (180, 180, 220))
-    game.game_surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, 240))
+    game.game_surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, 240 + shift))
 
     # Three letters
     letter_spacing = 70
@@ -582,11 +587,11 @@ def draw_hs_enter(game):
         col = (255, 255, 120) if i == game.hs_char_index else (220, 220, 255)
         letter = game._txt(game.big_font, ch, col)
         lx = start_x + i * letter_spacing - letter.get_width() // 2
-        game.game_surface.blit(letter, (lx, 320))
+        game.game_surface.blit(letter, (lx, 320 + shift))
         if i == game.hs_char_index:
             pygame.draw.line(
                 game.game_surface, (255, 220, 100),
-                (lx, 400), (lx + letter.get_width(), 400), 3
+                (lx, 400 + shift), (lx + letter.get_width(), 400 + shift), 3
             )
 
     hint_bar.draw_for(game, game.game_surface)

@@ -3,6 +3,11 @@ Current release: **v1.5.0**
 
 ## Unreleased (towards 1.5.1)
 
+- UI polish: the help of the "Control" option no longer says "Ou impose le clavier, ou la manette" (now "Tu peux aussi imposer le
+  clavier ou la manette", rewritten in the 13 languages) and the help of "GPU render" no longer talks about "SDL upscale (SCALED)":
+  "Lets the graphics card scale the picture". Text overlaps fixed: on the "new record" screen the score no longer sits on the bottom
+  of the plate (everything under it hangs from the plate's real bottom), and on the help page 1 the subtitle no longer touches the
+  title nor the text under it (`HELP_TITLE_Y`, `HELP_SUB_Y`). Tests: `tests/test_text_overlaps.py` (13 languages)
 - Help screen: the keys and buttons it names are the ones the player really set (Options > Keys and buttons), no longer the
   defaults written in the texts. The "Controls" lines (keyboard 2 = the solo keys, first pad's table), the Phenix and Shield
   texts and the caption under their columns use the placeholders `{kb_move}`, `{kb_fire}`, `{kb_phenix}`, `{pad_fire}`,

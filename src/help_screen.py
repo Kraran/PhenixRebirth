@@ -17,6 +17,10 @@ from i18n import t, t_help, t_list
 from errlog import log_exc
 from phenix_art import ship_size
 
+HELP_TITLE_Y = 4            # the glyphs of "PHENIX REBIRTH" sit 19 to 67 px below this
+HELP_SUB_Y = 72            # the subtitle's glyphs start 9 px below: clear of the title (they touched it) and of the text under
+
+
 def help_lines(section):
     """The lines of a help section with the keys and buttons the player really set (Options > Keys and buttons)."""
     values = bindings.help_values(t)
@@ -167,9 +171,9 @@ def draw_help_page(game, surface, page, y_off):
         return int(y + y_off)
 
     title = game._txt(game.big_font, "PHENIX REBIRTH", menu_ui.TITLE)
-    surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, yy(28)))
+    surface.blit(title, (BASE_WIDTH // 2 - title.get_width() // 2, yy(HELP_TITLE_Y)))
     sub = game._txt(game.font, t("subtitle"), (180, 160, 220))
-    surface.blit(sub, (BASE_WIDTH // 2 - sub.get_width() // 2, yy(82)))
+    surface.blit(sub, (BASE_WIDTH // 2 - sub.get_width() // 2, yy(HELP_SUB_Y)))
 
     if page <= 0:
         col_l = 48
