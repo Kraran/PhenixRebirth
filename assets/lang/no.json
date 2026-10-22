@@ -217,5 +217,8 @@
  "story_grp_hunt": "JAKTER · KAN SPILLES PÅ NYTT",
  "story_grp_extra": "EKSTRA",
  "story_next": "NESTE",
- "story_unlock_after": "Åpner etter: {name}"
+ "story_unlock_after": "Åpner etter: {name}",
+ "story_log_goal": "MÅL: {name}",
+ "story_log_head_scenes": "SCENER TIL GJENSYN",
+ "story_log_head_log": "LOGGBOK"
 }

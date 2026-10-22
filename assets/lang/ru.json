@@ -217,5 +217,8 @@
  "story_grp_hunt": "ОХОТЫ · МОЖНО ПОВТОРЯТЬ",
  "story_grp_extra": "БОНУС",
  "story_next": "СЛЕДУЮЩАЯ",
- "story_unlock_after": "Откроется после: {name}"
+ "story_unlock_after": "Откроется после: {name}",
+ "story_log_goal": "ЦЕЛЬ: {name}",
+ "story_log_head_scenes": "СЦЕНЫ ДЛЯ ПРОСМОТРА",
+ "story_log_head_log": "БОРТОВОЙ ЖУРНАЛ"
 }

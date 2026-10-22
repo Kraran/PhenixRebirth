@@ -168,7 +168,7 @@ def test_a_seen_scene_has_a_replay_line_right_after_the_intro():
 
 
 def test_down_and_up_go_through_the_replay_lines_before_scrolling():
-    from story import LOG_ROWS
+    from story import LOG_STORY_ROWS
     hub = _hub(seen_scene=True, log=[{"key": "story_log_sortie"}] * 20)
     hub.pane = "log"
     assert hub.log_cursor == 0 and hub.log_scroll == 0
@@ -178,7 +178,7 @@ def test_down_and_up_go_through_the_replay_lines_before_scrolling():
     assert hub.log_cursor == 1 and hub.log_scroll == 1                # past the replay lines: it scrolls
     for _ in range(60):
         hub.nav_v(1)
-    assert hub.log_scroll == len(hub.log_entries()) - LOG_ROWS
+    assert hub.log_scroll == len(hub.story_entries()) - LOG_STORY_ROWS
     for _ in range(60):
         hub.nav_v(-1)
     assert hub.log_scroll == 0 and hub.log_cursor == 0                 # and back up again

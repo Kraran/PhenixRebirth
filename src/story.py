@@ -43,7 +43,8 @@ GREY_MULT = (80, 80, 90, 160)    # the dimming of the ship select screen for the
 CHEAT_NIX = "NIX2"             # typed in the hangar: all the Phenix missions won, the Phenix is yours, nothing saved
 CHEAT_ACT2 = "2222"            # typed on the mission map: go straight to Act 2, save nothing
 CHEAT_ACT3 = "3333"            # typed on the mission map: Acts 1 and 2 won, the attack on Phobos and the choice, save nothing
-LOG_ROWS = 12                  # journal lines shown at once
+LOG_REPLAY_ROWS = 4            # journal: scenes to watch again, shown at once (the cursor moves in them)
+LOG_STORY_ROWS = 6             # journal: lines of what happened, shown at once (they scroll)
 MODE_COLORS = {"novice": (120, 200, 255), "normal": (140, 220, 160), "veteran": (255, 110, 100)}   # title of each mode card
 MAP_HEAD_H = 26                # a group heading of the map (story, hunts, BONUS)
 SHOP_WINDOW = 6                # workshop rows shown at once (the line under them describes a loot item)
@@ -195,6 +196,11 @@ def _text(surface, font, text, color, cy, left=None, right=None, centerx=None):
         x = centerx - img.get_width() // 2
     surface.blit(img, (x, _cap_top(font, cy)))
     return img
+
+
+def _is_replay(entry):
+    """Is this journal line one that replays a scene (the intro, a scene seen, a film seen)?"""
+    return isinstance(entry, dict) and bool(entry.get("intro") or entry.get("scene") or entry.get("film"))
 
 
 def _text_fit(surface, font, text, color, cy, left, max_w, scale=1.0):
@@ -1037,8 +1043,11 @@ class StoryHub:
 
     def replay_entries(self):
         """The journal lines that replay a story scene: the intro first, then each scene seen."""
-        return [e for e in self.log_entries()
-                if isinstance(e, dict) and (e.get("intro") or e.get("scene") or e.get("film"))]
+        return [e for e in self.log_entries() if _is_replay(e)]
+
+    def story_entries(self):
+        """The journal lines that tell what happened (the replay lines are shown apart, above them)."""
+        return [e for e in self.log_entries() if not _is_replay(e)]
 
     def log_entries(self):
         """The journal as a list: first the story intro (always there), then what happened."""
@@ -1054,7 +1063,7 @@ class StoryHub:
         if self.pane == "log":
             # only the replay lines at the top (the intro, then the scenes seen) can be selected: Down goes
             # through them, then scrolls the rest; Up scrolls back first, then goes up through them
-            top = max(0, len(self.log_entries()) - LOG_ROWS)
+            top = max(0, len(self.story_entries()) - LOG_STORY_ROWS)
             last = len(self.replay_entries()) - 1
             if direction > 0 and self.log_cursor < last:
                 self.log_cursor += 1
@@ -1813,33 +1822,63 @@ class StoryHub:
                 _text(surface, body, line, (200, 200, 215) if focus else (130, 135, 155), r.y + 112 + li * 36, centerx=r.centerx)
 
     def _draw_log(self, surface, font, small):
+        """The journal in two zones: the scenes to watch again (the cursor is there) and what happened (it scrolls),
+        under a line that says what to do next."""
         box = pygame.Rect(80, 78, BASE_WIDTH - 160, BASE_HEIGHT - 168)
         _fill(surface, menu_ui.PANEL_FILL, box, 10)
         pygame.draw.rect(surface, menu_ui.PANEL_EDGE, box, 2, border_radius=10)
-        entries = self.log_entries()
-        rows, step = LOG_ROWS, 40
+        head_col = (120, 160, 210)
+        arrow_col = (255, 190, 110)
+        ax = box.right - 22
+        nxt = ss.next_mission(self.state, self.missions())
+        if nxt is not None:
+            _text_fit(surface, small, t("story_log_goal").format(name=t(nxt["title"])), (255, 230, 140), box.y + 30,
+                      box.x + 24, box.w - 48)
+        # zone 1: the scenes to watch again
+        _text_fit(surface, small, t("story_log_head_scenes"), head_col, box.y + 72, box.x + 24, 400, scale=0.8)
+        replay = self.replay_entries()
+        step = 34
+        first = max(0, min(self.log_cursor - 1, len(replay) - LOG_REPLAY_ROWS))
+        y = box.y + 104
+        for i in range(first, min(len(replay), first + LOG_REPLAY_ROWS)):
+            entry = replay[i]
+            focus = i == self.log_cursor
+            if focus:
+                menu_ui.highlight(surface, pygame.Rect(box.x + 12, y - step // 2 + 2, box.w - 24, step - 4))
+            text = t("story_log_intro") if entry.get("intro") else log_text(entry, t)
+            _text_fit(surface, small, text, (255, 230, 140) if focus else (255, 190, 90), y, box.x + 24, box.w - 80)
+            y += step
+        zone2 = box.y + 104 + LOG_REPLAY_ROWS * step
+        if first > 0:
+            pygame.draw.polygon(surface, arrow_col, [(ax - 7, box.y + 100), (ax + 7, box.y + 100), (ax, box.y + 90)])
+        if first + LOG_REPLAY_ROWS < len(replay):
+            pygame.draw.polygon(surface, arrow_col, [(ax - 7, zone2 - 18), (ax + 7, zone2 - 18), (ax, zone2 - 8)])
+        # zone 2: what happened
+        pygame.draw.line(surface, menu_ui.PANEL_EDGE, (box.x + 20, zone2 + 2), (box.right - 20, zone2 + 2), 1)
+        _text_fit(surface, small, t("story_log_head_log"), head_col, zone2 + 26, box.x + 24, 400, scale=0.8)
+        entries = self.story_entries()
+        rows, step = LOG_STORY_ROWS, 36
         start = self.log_scroll = max(0, min(self.log_scroll, len(entries) - rows))
-        y = box.y + 28
+        y = zone2 + 62
+        if not entries:
+            _text(surface, small, t("story_log_empty"), (160, 170, 200), y, left=box.x + 24)
         for i in range(start, min(len(entries), start + rows)):
             entry = entries[i]
-            replay = isinstance(entry, dict) and bool(entry.get("intro") or entry.get("scene") or entry.get("film"))
-            focus = replay and i == self.log_cursor                       # replay lines come first
             indent = 0
-            row = pygame.Rect(box.x + 12, y - step // 2 + 2, box.w - 24, step - 4)
-            if focus:
-                menu_ui.highlight(surface, row)
-            if replay:
-                text = t("story_log_intro") if entry.get("intro") else log_text(entry, t)
-                col = (255, 230, 140) if focus else (255, 190, 90)
-            elif isinstance(entry, dict) and ("kills" in entry or "level" in entry):
+            if isinstance(entry, dict) and ("kills" in entry or "level" in entry):
                 text = log_text(entry, t)
-                col = (255, 215, 130) if focus else (190, 175, 130)
+                col = (190, 175, 130)
                 indent = 56                                   # sits under its mission line
             else:
                 text = log_text(entry, t)
-                col = (235, 235, 245) if focus else (200, 200, 220)
-            _text_fit(surface, small, text, col, y, box.x + 24 + indent, row.w - 24 - indent)
+                col = (200, 200, 220)
+            _text_fit(surface, small, text, col, y, box.x + 24 + indent, box.w - 80 - indent)
             y += step
+        if start > 0:
+            pygame.draw.polygon(surface, arrow_col, [(ax - 7, zone2 + 46), (ax + 7, zone2 + 46), (ax, zone2 + 36)])
+        if start + rows < len(entries):
+            low = zone2 + 62 + rows * step - 16
+            pygame.draw.polygon(surface, arrow_col, [(ax - 7, low), (ax + 7, low), (ax, low + 10)])
 
     def bestiary_picture(self, kind, count):
         """The picture of an enemy met `count` times: small, then 2x, then animated (also 2x)."""
