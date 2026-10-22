@@ -2973,6 +2973,7 @@ class Game:
                 self.pause_index = 0
                 self.pause_options = False
                 self.pause_help = False
+                self.pause_abandon = False
                 self.quit_confirm = False
             try:
                 self.cheat_msg = t("pad_unplugged")
@@ -3010,6 +3011,7 @@ class Game:
             self.pause_index = 0
             self.pause_options = False
             self.pause_help = False
+            self.pause_abandon = False
             self.quit_confirm = False
             n = int(getattr(lost[0], "pid", 1) or 1)
             self.cheat_msg = t("pad_unplugged_n").format(n=n)
@@ -3227,7 +3229,22 @@ class Game:
             self._open_options(pause=True)
         elif name == "help":
             self._open_pause_help()
+        elif getattr(self, "adventure", None):
+            self.pause_abandon = True                # leaving a mission asks first (NO is lit)
+            self.abandon_index = 1
         else:
+            self._quit_to_menu()
+            return True
+        return False
+
+    def _abandon_toggle(self):
+        """Up / Down / Left / Right in the question: the other answer."""
+        self.abandon_index = 1 - int(getattr(self, "abandon_index", 1) or 0)
+
+    def _abandon_answer(self, yes):
+        """Answer the question "abandon the mission?". True when the mission was left (the caller must stop there)."""
+        self.pause_abandon = False
+        if yes:
             self._quit_to_menu()
             return True
         return False
@@ -3898,6 +3915,7 @@ class Game:
         self.pause_index = 0
         self.pause_options = False
         self.pause_help = False
+        self.pause_abandon = False
         if self.paused:
             self.sounds.play_electric(False)
 
@@ -3952,6 +3970,7 @@ class Game:
         self.quit_confirm = False
         self.pause_options = False
         self.pause_help = False
+        self.pause_abandon = False
         if back_story:
             self.menu_screen = "story_hub"
             self.menu_index = 1

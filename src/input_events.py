@@ -82,6 +82,8 @@ def on_keydown(game, event):
                 else:
                     game.pause_options = False
                     game.menu_index = 0
+            elif game.paused and getattr(game, "pause_abandon", False):
+                game.pause_abandon = False              # the question: NO
             elif game.paused and getattr(game, "pause_help", False):
                 game.pause_help = False                 # the help: back to the pause menu
             elif game.paused:
@@ -104,7 +106,14 @@ def on_keydown(game, event):
             return
     # Pause menu (in-game)
     if game.paused and game.started and not game.game_over:
-        if getattr(game, "pause_help", False):
+        if getattr(game, "pause_abandon", False):
+            if game._is_menu_confirm(event.key):
+                if game._abandon_answer(game.abandon_index == 0):
+                    return                              # the mission is left: this Enter is not for the menu
+            elif (event.key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN, pygame.K_a, pygame.K_d)
+                  or game._is_menu_up(event.key) or game._is_menu_down(event.key)):
+                game._abandon_toggle()
+        elif getattr(game, "pause_help", False):
             if game._is_menu_confirm(event.key):
                 game.pause_help = False
             elif event.key in (pygame.K_LEFT, pygame.K_UP, pygame.K_a) or game._is_menu_up(event.key):
@@ -376,7 +385,13 @@ def on_joy_button(game, event):
                 game.quit_confirm = True
                 game.quit_index = 1
     elif game.paused and game.started and not game.game_over:
-        if getattr(game, "pause_help", False):
+        if getattr(game, "pause_abandon", False):
+            if event.button == 0:
+                if game._abandon_answer(game.abandon_index == 0):
+                    return                              # the mission is left
+            elif event.button == 1:
+                game.pause_abandon = False              # B: NO
+        elif getattr(game, "pause_help", False):
             if event.button in (0, 1):
                 game.pause_help = False                 # A or B: back to the pause menu
             elif event.button in (4, 5):
@@ -477,6 +492,9 @@ def on_joy_hat(game, event):
                 game._menu_nav(-1)
             elif hy < 0:
                 game._menu_nav(1)
+        elif game.paused and game.started and not game.game_over and getattr(game, "pause_abandon", False):
+            if hx != 0 or hy != 0:
+                game._abandon_toggle()
         elif game.paused and game.started and not game.game_over and getattr(game, "pause_help", False):
             if hx != 0 or hy != 0:
                 game._help_turn(1 if (hx > 0 or hy < 0) else -1)
@@ -566,7 +584,18 @@ def on_joy_axis(game, event):
                     game._joy_axis_latch_y = 1
                     game._joy_menu_cooldown = 0.28
     elif game.paused and game.started and not game.game_over:
-        if getattr(game, "pause_help", False):
+        if getattr(game, "pause_abandon", False):
+            if event.axis in (0, 1):
+                latch = "_joy_axis_latch_x" if event.axis == 0 else "_joy_axis_latch_y"
+                if abs(event.value) < 0.40:
+                    setattr(game, latch, 0)
+                elif game._joy_menu_cooldown <= 0:
+                    side = -1 if event.value < -DEAD else (1 if event.value > DEAD else 0)
+                    if side and getattr(game, latch, 0) != side:
+                        game._abandon_toggle()
+                        setattr(game, latch, side)
+                        game._joy_menu_cooldown = 0.28
+        elif getattr(game, "pause_help", False):
             if event.axis in (0, 1):
                 latch = "_joy_axis_latch_x" if event.axis == 0 else "_joy_axis_latch_y"
                 if abs(event.value) < 0.40:

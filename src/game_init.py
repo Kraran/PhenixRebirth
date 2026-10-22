@@ -135,6 +135,8 @@ def reset_run(game):
     game.pause_index = 0
     game.pause_options = False
     game.pause_help = False
+    game.pause_abandon = False
+    game.abandon_index = 1                    # the question "abandon the mission?": 0 = YES, 1 = NO (the default)
     game.quit_confirm = False
     game.hotseat = False
     game.slots = [None, None]
@@ -223,6 +225,7 @@ def init_run_state(game):
     game.pause_index = 0  # Reprendre
     game.pause_options = False  # options opened from pause
     game.pause_help = False  # the help opened from pause
+    game.pause_abandon = False
     game.quit_confirm = False
     game.quit_index = 1  # default Non
     game.menu_idle = 0.0

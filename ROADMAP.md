@@ -27,6 +27,9 @@ Current release: **v1.5.0**
   the Phenix, which never had a dome. Workshop: rows already at MAX go last, arrows show
   that more rows are above / below, a locked row says "Opens after: <mission>", and the French wall label reads
   "IMMUNISÉ". Texts in the 13 languages. Tests: `tests/test_story_map_ux.py`
+- Adventure pause menu: in a mission the last row reads "ABANDON MISSION" (the arcade keeps "QUIT RUN") and asks
+  "Abandon?" first, NO lit by default (Esc / B = NO); with the keyboard, the pad buttons, the D-pad and the stick.
+  Leaving still gains and loses nothing. Texts in the 13 languages. Tests: `tests/test_pause_abandon.py`
 
 ## Done in 1.5.0
 

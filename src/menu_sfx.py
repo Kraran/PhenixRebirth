@@ -104,10 +104,10 @@ def snapshot(game):
     """What the menus show, as plain values that can be compared."""
     g = game
     snap = {
-        "screen": (bool(g.started), bool(g.paused), bool(getattr(g, "pause_options", False)), bool(getattr(g, "pause_help", False)), g.menu_screen,
+        "screen": (bool(g.started), bool(g.paused), bool(getattr(g, "pause_options", False)), bool(getattr(g, "pause_help", False)), bool(getattr(g, "pause_abandon", False)), g.menu_screen,
                    bool(g.quit_confirm), getattr(g, "fade_phase", None) is not None,
                    bool(g.game_over), getattr(g, "hs_phase", None)),
-        "cursor": (g.menu_index, getattr(g, "pause_index", 0), getattr(g, "quit_index", 0),
+        "cursor": (g.menu_index, getattr(g, "pause_index", 0), getattr(g, "quit_index", 0), getattr(g, "abandon_index", 0),
                    getattr(g, "play_mode", ""), getattr(g, "difficulty", ""),
                    getattr(g, "ship_select_index", 0), getattr(g, "juke_index", 0),
                    getattr(g, "hs_char_index", 0), tuple(getattr(g, "hs_name", ()) or ()),

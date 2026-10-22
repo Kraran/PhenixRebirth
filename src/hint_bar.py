@@ -292,6 +292,8 @@ def menu_items(game):
             return None
         if not getattr(g, "paused", False):
             return None
+        if getattr(g, "pause_abandon", False):
+            return QUESTION
         if getattr(g, "pause_help", False):
             return [("lr", "hint_page"), BACK]
         if getattr(g, "pause_options", False):
