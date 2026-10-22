@@ -1427,16 +1427,67 @@ def mission_in_act(mission, act):
     return not acts or int(_num(act, 1)) in acts
 
 
+# The map groups its missions. A hunt is a Bestiary mission (replayable); an "extra" is a BONUS, a test or the optional
+# paint series; the rest is the story. Act 1 lists the hunts first (they bring the speed, the life and the walls the
+# Dome series needs), the later acts list the story first.
+GROUP_STORY, GROUP_HUNT, GROUP_EXTRA = "story", "hunt", "extra"
+GROUP_ORDER = {1: (GROUP_HUNT, GROUP_STORY, GROUP_EXTRA), 2: (GROUP_STORY, GROUP_HUNT, GROUP_EXTRA),
+               3: (GROUP_STORY, GROUP_HUNT, GROUP_EXTRA)}
+
+
+def mission_group(mission):
+    """"hunt", "extra" or "story": the section of the map a mission belongs to."""
+    m = mission or {}
+    if m.get("hunt"):
+        return GROUP_HUNT
+    if (m.get("reactor") or m.get("drop") or m.get("needs_reactor") or m.get("reward") or m.get("test")
+            or m.get("paint") or m.get("carry")):
+        return GROUP_EXTRA
+    return GROUP_STORY
+
+
 def visible_missions(state, cheat=False):
-    """The missions the map lists: those of the current act. The UNLK cheat lists every mission."""
+    """The missions the map lists, grouped (see GROUP_ORDER): those of the current act. The UNLK cheat lists every
+    mission, in the order of the table."""
     if cheat:
         return list(MISSIONS)
     act = int(_num(state.get("act"), 1))
     shown = [m for m in MISSIONS if _listed(state, m, act)]
-    if act >= 3:
-        # Act 3: its own missions (the repairs, the BONUS, the final series) first, then the ones kept from before
-        shown.sort(key=lambda m: 0 if tuple(m.get("acts") or ()) == (3,) else 1)
+    order = GROUP_ORDER.get(min(max(act, 1), 3), GROUP_ORDER[3])
+    shown.sort(key=lambda m: order.index(mission_group(m)))            # (stable: the table order inside a group)
     return shown
+
+
+def unlock_source(state, flag_name, act=None):
+    """The mission whose victory raises the story flag `flag_name` (the one the map and the workshop name as "after
+    ..."), or None. When two hulls have their own version of it, the one the pilot can fly."""
+    if not flag_name:
+        return None
+    act = int(_num(state.get("act"), 1)) if act is None else act
+    found = [m for m in MISSIONS if flag_name in (m.get("unlock") or []) and hull_fits(state, m)]
+    found.sort(key=lambda m: 0 if mission_in_act(m, act) else 1)
+    return found[0] if found else None
+
+
+def unlock_hint(state, mission):
+    """The mission to win before this one opens (what the map says on a locked row), or None."""
+    if not mission or mission_open(state, mission):
+        return None
+    if is_paint(mission):
+        prev = int(mission["paint"]) - 1
+        return next((m for m in MISSIONS if m.get("paint") == prev), None) if prev >= 1 else None
+    return unlock_source(state, mission.get("need"))
+
+
+def next_mission(state, missions):
+    """The mission the map suggests: the first one of the list that can be flown and is not won yet (the Asteroids
+    test is never suggested). None when there is none."""
+    for m in missions:
+        if m.get("test") or not mission_playable(state, m):
+            continue
+        if not mission_done(state, m):
+            return m
+    return None
 
 
 def _listed(state, mission, act):
@@ -1769,7 +1820,19 @@ def shop_for(state):
     if state.get("mode") == "novice":
         rows = [(sid, NOVICE_LABELS.get(label, label), cost, need) for sid, label, cost, need in rows]
     # the loot items caught (a reactor only for the hull flown)
-    return rows + [item_row(i) for i in story_items.shop(state, slot.get("id"))]
+    rows = rows + [item_row(i) for i in story_items.shop(state, slot.get("id"))]
+    # what is already at MAX goes last: the rows still to buy stay under the cursor, the finished ones are a footnote
+    todo = [r for r in rows if upgrade_note(state, r[0]) != "story_owned"]
+    return todo + [r for r in rows if upgrade_note(state, r[0]) == "story_owned"]
+
+
+def shop_after(state, sid):
+    """The mission to win before the workshop row `sid` can be bought (it is what its story flag waits for), or None
+    when the row is open or does not wait for a mission."""
+    up = _upgrade(sid)
+    if up is None or not up[3] or flag(state, up[3]):
+        return None
+    return unlock_source(state, up[3])
 
 
 ITEM_PREFIX = "item:"

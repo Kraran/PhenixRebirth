@@ -212,5 +212,10 @@
  "extras_jukebox_d": "Posłuchaj ponownie muzyki z gry i obejrzyj film wprowadzający.",
  "extras_credits_d": "Twórcy gry, w przewijanych napisach końcowych.",
  "extras_help_d": "Fabuła, sterowanie, wrogowie, Phenix i Shield.",
- "extras_addon_d": "Oryginalne gry arcade, uruchamiane przez MAME."
+ "extras_addon_d": "Oryginalne gry arcade, uruchamiane przez MAME.",
+ "story_grp_story": "FABUŁA",
+ "story_grp_hunt": "POLOWANIA · DO POWTÓRZENIA",
+ "story_grp_extra": "EXTRA",
+ "story_next": "NASTĘPNA",
+ "story_unlock_after": "Otwiera się po: {name}"
 }

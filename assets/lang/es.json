@@ -212,5 +212,10 @@
  "extras_jukebox_d": "Volver a escuchar la música del juego y ver el vídeo de introducción.",
  "extras_credits_d": "Quienes han hecho el juego, en unos créditos que desfilan.",
  "extras_help_d": "La historia, los controles, los enemigos, el Phenix y el Shield.",
- "extras_addon_d": "Los juegos arcade originales, lanzados con MAME."
+ "extras_addon_d": "Los juegos arcade originales, lanzados con MAME.",
+ "story_grp_story": "HISTORIA",
+ "story_grp_hunt": "CACERÍAS · REJUGABLES",
+ "story_grp_extra": "EXTRAS",
+ "story_next": "SIGUIENTE",
+ "story_unlock_after": "Se abre tras: {name}"
 }

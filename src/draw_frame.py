@@ -80,6 +80,17 @@ def announce_layer(game):
     game._announce_done = True
 
 
+DOME_HUD_Y = 52                                     # under the mission title (y 16), clear of the Phenix gauge (y 100)
+
+
+def dome_offline(game):
+    """True when the HUD must say "dome offline": an Adventure mission flown with a Shield that has no dome yet."""
+    adv = getattr(game, "adventure", None)
+    if not adv or adv.get("dome"):
+        return False
+    return getattr(game, "ship_id", None) != "phoenix"
+
+
 def draw_play(game):
     """In-run scene: boss saucer, banner, birds, explosions, ships, score, lives and HUD."""
     if game.boss_saucer:
@@ -179,9 +190,10 @@ def draw_play(game):
         wave = tc.get(game.font, t("story_wave_n").format(n=int(adv.get("wave_i", 0)) + 1, m=len(adv["waves"])),
                       announce.INFO)
         game.game_surface.blit(wave, (BASE_WIDTH - 16 - wave.get_width(), 44))
-    if getattr(game, "adventure", None) and not game.adventure.get("dome"):
-        off = tc.get(game.font, t("story_dome_broken"), announce.DANGER)
-        game.game_surface.blit(off, (16, 40))
+    if dome_offline(game):
+        # a quiet reminder under the mission title (the Shield only: the Phenix never had a dome)
+        off = tc.get(game.font, t("story_dome_broken"), announce.NEUTRAL)
+        game.game_surface.blit(off, (16, DOME_HUD_Y))
     _draw_loot_hud(game)
     escort.banner(game, game.game_surface)
     if game.difficulty in ("novice", "veteran") and not game.attract_mode:

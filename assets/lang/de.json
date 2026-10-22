@@ -212,5 +212,10 @@
  "extras_jukebox_d": "Die Musik des Spiels noch einmal hören und das Intro-Video ansehen.",
  "extras_credits_d": "Die Macher des Spiels, in einem laufenden Abspann.",
  "extras_help_d": "Die Geschichte, die Steuerung, die Gegner, der Phenix und das Shield.",
- "extras_addon_d": "Die originalen Arcade-Spiele, gestartet mit MAME."
+ "extras_addon_d": "Die originalen Arcade-Spiele, gestartet mit MAME.",
+ "story_grp_story": "STORY",
+ "story_grp_hunt": "JAGDEN · WIEDERSPIELBAR",
+ "story_grp_extra": "EXTRAS",
+ "story_next": "NÄCHSTE",
+ "story_unlock_after": "Öffnet nach: {name}"
 }

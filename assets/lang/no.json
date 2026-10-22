@@ -212,5 +212,10 @@
  "extras_jukebox_d": "Hør spillets musikk igjen og se introduksjonsvideoen.",
  "extras_credits_d": "Folkene bak spillet, i en rullende rulletekst.",
  "extras_help_d": "Historien, kontrollene, fiendene, Phenix og Shield.",
- "extras_addon_d": "De originale arkadespillene, startet med MAME."
+ "extras_addon_d": "De originale arkadespillene, startet med MAME.",
+ "story_grp_story": "HISTORIE",
+ "story_grp_hunt": "JAKTER · KAN SPILLES PÅ NYTT",
+ "story_grp_extra": "EKSTRA",
+ "story_next": "NESTE",
+ "story_unlock_after": "Åpner etter: {name}"
 }

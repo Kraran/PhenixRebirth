@@ -45,6 +45,7 @@ CHEAT_ACT2 = "2222"            # typed on the mission map: go straight to Act 2,
 CHEAT_ACT3 = "3333"            # typed on the mission map: Acts 1 and 2 won, the attack on Phobos and the choice, save nothing
 LOG_ROWS = 12                  # journal lines shown at once
 MODE_COLORS = {"novice": (120, 200, 255), "normal": (140, 220, 160), "veteran": (255, 110, 100)}   # title of each mode card
+MAP_HEAD_H = 26                # a group heading of the map (story, hunts, BONUS)
 SHOP_WINDOW = 6                # workshop rows shown at once (the line under them describes a loot item)
 
 
@@ -372,7 +373,7 @@ class StoryHub:
 
     def _maybe_intro(self):
         if not ss.intro_seen(self.state):
-            self.start_intro()
+            self.start_intro(back_to="map")          # the story first, then the map: the first sortie waits there
 
     def _intro_next(self):
         """A on a slide: the next one; after the last, the story goes on (a scene before a launch flies the
@@ -705,7 +706,7 @@ class StoryHub:
         self.zone = "slots"
         self.paint_mode = False
         self.shop_index = 0
-        self.map_index = 0
+        self.focus_next()                         # the map opens on the mission to fly next
         self.toast = ""
         story_feats.check(self.state)             # a save made before the Adventure page gets what it has earned
         self._maybe_act3()                        # Act 2 won and no hull chosen yet: the attack on Phobos
@@ -770,6 +771,13 @@ class StoryHub:
     def shop_rows(self):
         """Workshop rows of the selected hull."""
         return ss.shop_for(self.state)
+
+    def focus_next(self):
+        """Put the map cursor on the mission the map suggests (the first one that can be flown and is not won yet),
+        or on the first row when there is none."""
+        rows = self.missions()
+        nxt = ss.next_mission(self.state, rows)
+        self.map_index = next((i for i, m in enumerate(rows) if nxt is not None and m["id"] == nxt["id"]), 0)
 
     def _mission(self, index=None):
         i = self.map_index if index is None else index
@@ -962,7 +970,7 @@ class StoryHub:
             slot = self.sel + 1
             ss.create_slot(slot, self.new_name, ss.MODES[self.mode_index])
             self.open_slot(slot)
-            self.start_intro()
+            self.start_intro(back_to="map")
         return None
 
     def back(self):
@@ -1196,8 +1204,11 @@ class StoryHub:
         if res["cleared"]:
             self.toast = t("story_clear").format(pts=res["score"])
             self.toast_kind = "success"
+            fought = ss.mission_by_id(mission_id) or {}
+            if not fought.get("hunt"):
+                self.focus_next()                    # a story mission is won once: the cursor goes on to the next one
             if res.get("act"):
-                self.map_index = 0                   # a new act has a new map
+                self.focus_next()                    # a new act has a new map
                 self.toast = t("story_act_start").format(n=res["act"])
                 self.toast_kind = "info"
             if res.get("paint"):
@@ -1283,6 +1294,10 @@ class StoryHub:
                 return t("story_locked")
             return t("story_paint_ready").format(pts=ss.PAINT_COST)
         key = ss.upgrade_note(self.state, sid)
+        if key == "story_locked":
+            src = ss.shop_after(self.state, sid)
+            if src is not None:
+                return t("story_unlock_after").format(name=t(src["title"]))     # what to win to open this row
         if key:
             return t(key)
         return f"{cost} PTS"
@@ -1921,19 +1936,37 @@ class StoryHub:
         chapter = "story_ch1" if self.cheat_unlock or act < 2 else ("story_ch2" if act == 2 else "story_ch3")
         _text(surface, small, t(chapter), (255, 170, 80), box.y + 28, left=box.x + 16)
         y = box.y + 52
-        # the list scrolls: rows from `first` on, so that the focused one (taller) always fits
+        # the list scrolls: entries from `first` on, so that the focused row (taller) always fits. The entries are
+        # the missions and, between two groups (story, hunts, BONUS), a small heading
         low = box.bottom - (62 if self._toast_level() == "standard" else 44)      # the rows stop above the toast
         room = low - y
         missions = self.missions()
         focus_i = max(0, min(len(missions) - 1, self.map_index))
+        entries, last = [], None
+        for i, mission in enumerate(missions):
+            group = None if self.cheat_unlock else ss.mission_group(mission)
+            if group is not None and group != last:
+                entries.append(("head", group))
+                last = group
+            entries.append(("row", i))
+        height = lambda e: MAP_HEAD_H if e[0] == "head" else 40
+        focus_e = entries.index(("row", focus_i)) if missions else 0
         first = 0
-        while first < focus_i and sum(40 + 4 for _ in range(first, focus_i)) + 76 + 4 > room:
+        while first < focus_e and sum(height(e) + 4 for e in entries[first:focus_e]) + 76 + 4 > room:
             first += 1
         if first > 0:
             _text(surface, small, "^", (180, 180, 200), box.y + 28, right=box.right - 20)
-        for i, mission in enumerate(missions):
-            if i < first:
+        nxt = ss.next_mission(self.state, missions)
+        for kind, ref in entries[first:]:
+            if kind == "head":
+                if y + MAP_HEAD_H > low:
+                    _text(surface, small, "v", (180, 180, 200), low - 12, right=box.right - 20)
+                    break
+                _text_fit(surface, small, t("story_grp_" + ref), (120, 160, 210), y + MAP_HEAD_H // 2 + 2, box.x + 16,
+                          400, scale=0.8)
+                y += MAP_HEAD_H + 4
                 continue
+            i, mission = ref, missions[ref]
             if y + (76 if i == focus_i else 40) > low:
                 _text(surface, small, "v", (180, 180, 200), low - 12, right=box.right - 20)
                 break
@@ -1953,7 +1986,9 @@ class StoryHub:
                 state = t("story_replay") if mission.get("hunt") else t("story_cleared")
             elif playable:
                 col = (255, 230, 140) if focus else (210, 210, 220)
-                state = t("story_ready")
+                state = t("story_next") if mission is nxt else t("story_ready")
+                if mission is nxt and not focus:
+                    col = (255, 215, 120)                  # the suggested mission stands out in the list
             else:
                 col = (180, 180, 140) if focus else (150, 150, 160)
                 state = t("story_soon")
@@ -1965,7 +2000,12 @@ class StoryHub:
             _text(surface, small, name, col, cy, left=row.x + 16)
             _text(surface, small, state, col, cy, right=row.right - 14)
             if focus:
-                _text_fit(surface, small, t(mission["blurb"]), (170, 175, 195), cy + 34, row.x + 28, row.w - 40)
+                before = None if open_ else ss.unlock_hint(self.state, mission)
+                if before is not None:
+                    _text_fit(surface, small, t("story_unlock_after").format(name=t(before["title"])), (225, 185, 120),
+                              cy + 34, row.x + 28, row.w - 40)       # what opens it, in place of its blurb
+                else:
+                    _text_fit(surface, small, t(mission["blurb"]), (170, 175, 195), cy + 34, row.x + 28, row.w - 40)
             y += row.h + 4
         if self.toast:
             self._draw_toast(surface, medium, small, box)
@@ -2147,6 +2187,13 @@ class StoryHub:
                 _text(surface, small, t(label), col, row.centery, left=row.x + 16)
             _text(surface, small, extra, col, row.centery, right=row.right - 12)
             y += 40
+        # there are more rows than the window shows: an arrow on the right edge says where
+        ax = box.right - 14
+        if start > 0:
+            pygame.draw.polygon(surface, (255, 190, 110), [(ax - 7, box.y + 36), (ax + 7, box.y + 36), (ax, box.y + 26)])
+        if start + window < len(rows):
+            ay = box.y + 46 + window * 40 + 2
+            pygame.draw.polygon(surface, (255, 190, 110), [(ax - 7, ay), (ax + 7, ay), (ax, ay + 10)])
         if 0 <= self.shop_index < len(rows):
             item = ss.item_of(rows[self.shop_index][0])
             if item and self.zone == "shop":

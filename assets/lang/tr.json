@@ -212,5 +212,10 @@
  "extras_jukebox_d": "Oyunun müziklerini yeniden dinle ve giriş videosunu tekrar izle.",
  "extras_credits_d": "Oyunu yapanlar, kayan bir jenerikte.",
  "extras_help_d": "Hikaye, kontroller, düşmanlar, Phenix ve Shield.",
- "extras_addon_d": "MAME ile başlatılan orijinal arcade oyunları."
+ "extras_addon_d": "MAME ile başlatılan orijinal arcade oyunları.",
+ "story_grp_story": "HİKAYE",
+ "story_grp_hunt": "AVLAR · TEKRAR OYNANIR",
+ "story_grp_extra": "EKSTRA",
+ "story_next": "SIRADAKİ",
+ "story_unlock_after": "Şundan sonra açılır: {name}"
 }

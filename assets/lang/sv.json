@@ -212,5 +212,10 @@
  "extras_jukebox_d": "Lyssna på spelets musik igen och se introduktionsfilmen.",
  "extras_credits_d": "De som har gjort spelet, i rullande eftertexter.",
  "extras_help_d": "Berättelsen, kontrollerna, fienderna, Phenix och Shield.",
- "extras_addon_d": "De ursprungliga arkadspelen, startade med MAME."
+ "extras_addon_d": "De ursprungliga arkadspelen, startade med MAME.",
+ "story_grp_story": "BERÄTTELSE",
+ "story_grp_hunt": "JAKTER · KAN SPELAS OM",
+ "story_grp_extra": "EXTRA",
+ "story_next": "NÄSTA",
+ "story_unlock_after": "Öppnas efter: {name}"
 }
