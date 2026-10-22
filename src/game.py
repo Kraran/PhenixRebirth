@@ -1832,6 +1832,8 @@ class Game:
     def _begin_adventure(self, spec):
         """Launch a story mission. Arcade ship select and high scores stay out."""
         self.adventure = dict(spec)
+        if getattr(self, "story", None) and story_state.first_sortie(self.story.state, spec.get("id")):
+            self.adventure["tip_t"] = story_state.FIRST_HELP_SECONDS      # the controls reminder (draw_frame.draw_first_help)
         self.hotseat = False
         self.player2 = None
         self.play_mode = "solo"
@@ -4101,6 +4103,9 @@ class Game:
                 self.menu_index = len(main_menu.ARCADE) - 1
         elif self.menu_screen == "story_hub":
             if getattr(self, "story", None) and self.story.back():
+                spec = self.story.take_launch_request()
+                if isinstance(spec, dict) and spec.get("launch"):
+                    self._begin_adventure(spec)      # a scene skipped before a launch: the mission flies at once
                 return              # one step back inside the Adventure (hangar -> slot list ...)
             self.menu_screen = "main"
             self.menu_index = main_menu.main_index("story")

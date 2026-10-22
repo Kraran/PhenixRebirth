@@ -1479,6 +1479,15 @@ def unlock_hint(state, mission):
     return unlock_source(state, mission.get("need"))
 
 
+FIRST_SORTIE = "ch1_sortie"
+FIRST_HELP_SECONDS = 5.0            # how long the controls reminder stays on screen in the very first sortie
+
+
+def first_sortie(state, mission_id):
+    """True for the first sortie of a pilot who has not won a mission yet: the controls reminder is shown there."""
+    return mission_id == FIRST_SORTIE and not (state or {}).get("cleared")
+
+
 def next_mission(state, missions):
     """The mission the map suggests: the first one of the list that can be flown and is not won yet (the Asteroids
     test is never suggested). None when there is none."""
