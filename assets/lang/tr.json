@@ -217,5 +217,8 @@
  "story_grp_hunt": "AVLAR · TEKRAR OYNANIR",
  "story_grp_extra": "EKSTRA",
  "story_next": "SIRADAKİ",
- "story_unlock_after": "Şundan sonra açılır: {name}"
+ "story_unlock_after": "Şundan sonra açılır: {name}",
+ "story_log_goal": "HEDEF: {name}",
+ "story_log_head_scenes": "TEKRAR İZLENECEK SAHNELER",
+ "story_log_head_log": "SEFER GÜNLÜĞÜ"
 }

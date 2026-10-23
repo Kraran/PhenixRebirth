@@ -217,5 +217,8 @@
  "story_grp_hunt": "POLOWANIA · DO POWTÓRZENIA",
  "story_grp_extra": "EXTRA",
  "story_next": "NASTĘPNA",
- "story_unlock_after": "Otwiera się po: {name}"
+ "story_unlock_after": "Otwiera się po: {name}",
+ "story_log_goal": "CEL: {name}",
+ "story_log_head_scenes": "SCENY DO OBEJRZENIA",
+ "story_log_head_log": "DZIENNIK POKŁADOWY"
 }

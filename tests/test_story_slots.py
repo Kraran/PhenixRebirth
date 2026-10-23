@@ -763,14 +763,14 @@ def test_new_journal_lines_come_after_the_intro_entry():
 
 
 def test_up_and_down_only_scroll_the_journal_and_stay_inside():
-    from story import LOG_ROWS
+    from story import LOG_STORY_ROWS
     few = _hub_in_log(log=[{"key": "story_log_sortie"}, {"key": "story_log_best2"}])
     assert few.log_scroll == 0
     for _ in range(10):
         few.nav_v(1)
     assert few.log_scroll == 0                      # everything fits on the screen: nothing to scroll
     many = _hub_in_log(log=[{"key": "story_log_sortie"}] * 20)
-    top = len(many.log_entries()) - LOG_ROWS
+    top = len(many.story_entries()) - LOG_STORY_ROWS
     many.nav_v(-1)
     assert many.log_scroll == 0
     for _ in range(40):

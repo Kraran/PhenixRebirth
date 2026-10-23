@@ -217,5 +217,8 @@
  "story_grp_hunt": "CACERÍAS · REJUGABLES",
  "story_grp_extra": "EXTRAS",
  "story_next": "SIGUIENTE",
- "story_unlock_after": "Se abre tras: {name}"
+ "story_unlock_after": "Se abre tras: {name}",
+ "story_log_goal": "OBJETIVO: {name}",
+ "story_log_head_scenes": "ESCENAS PARA REVER",
+ "story_log_head_log": "DIARIO DE A BORDO"
 }

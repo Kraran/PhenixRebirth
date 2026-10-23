@@ -34,6 +34,11 @@ Current release: **v1.5.0**
   the map, the mission flies at once like at the end of the scene. The very first sortie of a new pilot shows for 5 s
   (fade in / out, once the ship is in play) a reminder of the controls with the player's real keys and buttons:
   move, fire, pause. Texts in the 13 languages. Tests: `tests/test_story_skip_scene_help.py`
+- Adventure journal: the "watch again" lines (the introduction, the scenes and films seen) no longer fill the screen.
+  The tab has a "GOAL: <next mission>" line, then two zones: "SCENES TO WATCH AGAIN" (4 lines, the cursor is there)
+  and "LOGBOOK" (6 lines, what happened; it scrolls), each with arrows when there is more above / below. Up / Down keep
+  their meaning (cursor through the scenes, then the logbook scrolls). Texts in the 13 languages.
+  Tests: `tests/test_story_journal_layout.py`
 
 ## Done in 1.5.0
 
