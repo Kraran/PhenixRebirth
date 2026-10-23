@@ -6077,13 +6077,107 @@ _VN_TEXTS = {
         "“To this unlikely meeting, then.”"),
     "story_vn2_t": ("Scène 2 : le hangar", "Scene 2: the hangar"),
     "story_vn2_j": ("Visual novel - Scène 2 : le hangar", "Visual novel - Scene 2: the hangar"),
-    "story_vn2_q": ("Tu es rentré en un seul morceau. Bien. … Tu as eu peur, là-haut ?",
-                    "You made it back in one piece. Good. … Were you afraid, up there?"),
-    "story_vn2_a1": ("« Non. C’est mon métier. »", "“No. It’s my job.”"),
-    "story_vn2_a2": ("« Un peu. Comme toujours. »", "“A little. Like always.”"),
-    "story_vn2_a3": ("« Oui. Et je pensais à toi. »", "“Yes. And I was thinking of you.”"),
-    "story_vn2_a4": ("« Oui. J’avais surtout peur de ne pas te revoir. »",
-                     "“Yes. Mostly I was afraid of not seeing you again.”"),
+    "story_vn2_q": (
+        "*Le lendemain, tu rentres d’une mission de reconnaissance. Ton appareil vient à peine de rejoindre son "
+        "emplacement que tu aperçois Lyra près de la zone d’accès.\n"
+        "*Elle discute avec un technicien chargé de vérifier les autorisations de transport. Lorsqu’elle entend "
+        "les moteurs s’arrêter, elle tourne brusquement la tête.\n"
+        "\n"
+        "*Son visage s’éclaire avant qu’elle ne reprenne une expression plus neutre.\n"
+        "*Elle attend que tu descendes.\n"
+        "« Salut. Alors, tu es encore entier. »\n"
+        "*Elle croise les bras.\n"
+        "\n"
+        "« Je sais, je sais. Tu vas me dire que c’est ton boulot et que tu sais ce que tu fais. Mais il y a eu une "
+        "alerte pendant votre sortie. Personne ne savait exactement ce qui se passait. »\n"
+        "*Elle détourne les yeux vers ton appareil.\n"
+        "« J’ai trouvé ça… désagréable. »\n"
+        "\n"
+        "*Un silence.\n"
+        "« C’est idiot, hein ? Je te connais à peine. »",
+        "*The next day, you come back from a reconnaissance mission. Your craft has barely reached its spot when "
+        "you spot Lyra near the access area.\n"
+        "*She is talking with a technician in charge of checking the transport clearances. When she hears the "
+        "engines stop, she turns her head sharply.\n"
+        "\n"
+        "*Her face lights up before she puts on a more neutral expression.\n"
+        "*She waits for you to climb down.\n"
+        "“Hi. So, you’re still in one piece.”\n"
+        "*She crosses her arms.\n"
+        "\n"
+        "“I know, I know. You’re going to tell me it’s your job and you know what you’re doing. But there was an "
+        "alert during your sortie. Nobody knew exactly what was going on.”\n"
+        "*She looks away toward your craft.\n"
+        "“I found that… unpleasant.”\n"
+        "\n"
+        "*A silence.\n"
+        "“It’s silly, isn’t it? I barely know you.”"),
+    "story_vn2_a1": (
+        "« Tu n’as pas à t’inquiéter pour moi. Je connais les risques. »",
+        "“You don’t have to worry about me. I know the risks.”"),
+    "story_vn2_a2": (
+        "« Ça fait partie du métier. Mais je suis content que quelqu’un ait remarqué mon absence. »",
+        "“It’s part of the job. But I’m glad someone noticed I was gone.”"),
+    "story_vn2_a3": (
+        "« Tu t’es inquiétée pour moi ? Je suis touché. »",
+        "“You were worried about me? I’m touched.”"),
+    "story_vn2_a4": (
+        "« Pour être honnête, je me suis demandé si tu allais bien, moi aussi. Tu n’as pas eu une journée facile. »",
+        "“To be honest, I wondered if you were okay too. You haven’t had an easy day.”"),
+    "story_vn2_r1": (
+        "*Lyra pince légèrement les lèvres.\n"
+        "« Je m’en doute. Tu n’as pas vraiment le profil de quelqu’un qui découvre le danger. »\n"
+        "*Elle regarde le sol, puis hausse les épaules.\n"
+        "« Oublie ça. Je voulais juste savoir si tout allait bien. »",
+        "*Lyra purses her lips slightly.\n"
+        "“I figured. You don’t really look like someone discovering danger.”\n"
+        "*She looks at the floor, then shrugs.\n"
+        "“Forget it. I just wanted to know if everything was alright.”"),
+    "story_vn2_r2": (
+        "*Elle relève les yeux vers toi.\n"
+        "« Quelqu’un ? Attention, je pourrais presque croire que tu parles de moi. »\n"
+        "*Elle sourit, visiblement soulagée.\n"
+        "« Bon. Puisque tu es là, je vais arrêter de me faire des films. J’ai déjà assez de choses à gérer en ce "
+        "moment. »",
+        "*She raises her eyes to you.\n"
+        "“Someone? Careful, I could almost believe you’re talking about me.”\n"
+        "*She smiles, visibly relieved.\n"
+        "“Well. Since you’re here, I’ll stop imagining things. I already have enough to deal with right now.”"),
+    "story_vn2_r3": (
+        "*Lyra ouvre la bouche, puis la referme.\n"
+        "« Ne prends pas cet air-là ! Je ne suis pas en train de te déclarer ma flamme. »\n"
+        "*Elle s’interrompt et fronce les sourcils.\n"
+        "« Enfin… ce n’est pas ce que je voulais dire. »\n"
+        "\n"
+        "*Elle passe une main dans ses cheveux.\n"
+        "« Tu vois ? C’est exactement pour ça que je préfère parler devant dix mille personnes. Elles ne peuvent "
+        "pas me poser de questions. »",
+        "*Lyra opens her mouth, then closes it.\n"
+        "“Don’t look like that! I’m not declaring my love for you.”\n"
+        "*She stops and frowns.\n"
+        "“Well… that’s not what I meant.”\n"
+        "\n"
+        "*She runs a hand through her hair.\n"
+        "“See? That’s exactly why I prefer to speak in front of ten thousand people. They can’t ask me "
+        "questions.”"),
+    "story_vn2_r4": (
+        "*Lyra semble déconcertée.\n"
+        "« Tu t’inquiètes pour moi alors que tu viens de rentrer d’une mission où tu aurais pu y rester ? »\n"
+        "*Elle laisse échapper un petit rire incrédule.\n"
+        "« C’est toi qui es censé revenir avec des blessures et réclamer qu’on s’occupe de toi. Pas l’inverse. »\n"
+        "\n"
+        "*Son sourire devient plus tendre.\n"
+        "« Mais… merci. Ça me fait du bien que quelqu’un me demande comment je vais sans attendre que je lui "
+        "raconte une histoire amusante. »",
+        "*Lyra seems thrown.\n"
+        "“You’re worried about me, when you’ve just come back from a mission where you could have died?”\n"
+        "*She lets out a small, incredulous laugh.\n"
+        "“You’re the one who’s supposed to come back wounded and ask to be looked after. Not the other way "
+        "around.”\n"
+        "\n"
+        "*Her smile becomes softer.\n"
+        "“But… thank you. It does me good that someone asks how I am without waiting for me to tell them a funny "
+        "story.”"),
 }
 
 for _k, (_fr, _en) in list(_ACT3_TEXTS.items()) + list(_VIP_TEXTS.items()) + list(_BELT_TEXTS.items()) + list(_VN_TEXTS.items()):

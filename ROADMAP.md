@@ -3,6 +3,9 @@ Current release: **v1.5.0**
 
 ## Unreleased (towards 1.5.1)
 
+- Adventure: scene 2 of the visual novel (the hangar) rewritten like scene 1: a staging in narration, Lyra's lines, four new answers
+  (hidden points 1, 3, 2, 4, shown in a random order) and a reaction of Lyra to each, in four pages. A save that already answered scene 2
+  keeps its pick number, which now means the answer with the same number in the new list. The picture is unchanged for now.
 - Cheat code `VNOV` (typed on the HIGH SCORES screen, like `LIVE` / `PHEN`; typed again it goes off): in the Adventure every film and
   scene of the visual novel is listed in the journal and can be told at once, whatever the missions won or the scenes answered. Nothing is
   saved (the "CHEAT - NOT SAVED" banner, like `UNLK`), the answers are not kept (a scene answered for real is told afresh and its real
