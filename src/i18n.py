@@ -5877,22 +5877,16 @@ _VIP_TEXTS = {
     "story_vip_hud": ("VIP : {p} %", "VIP: {p} %"),
     "story_vip_lost": ("LE VAISSEAU VIP EST DÉTRUIT", "THE VIP SHIP IS DESTROYED"),
     "story_vip_safe": ("LE VAISSEAU VIP EST PASSÉ !", "THE VIP SHIP GOT THROUGH!"),
-    "story_m_ast": ("TEST : Astéroïdes", "TEST: Asteroids"),
-    "story_m_ast_hud": ("TEST : astéroïdes", "TEST: asteroids"),
-    "story_m_ast_b": ("Version de test d'un niveau à la Asteroids : ton vaisseau tourne (gauche / droite), pousse (haut) "
-                      "et tire, et ressort de l'autre côté de l'écran. Les astéroïdes se brisent en morceaux de plus "
-                      "en plus petits ; détruis-en 60 (de nouveaux arrivent du dehors), puis vide l'écran. Une soucoupe passe de temps en temps. "
-                      "Accessible à tous les actes, ne rapporte rien et ne coûte rien.",
-                      "Test version of an Asteroids-style level: your ship turns (left / right), pushes (up) and fires, "
-                      "and comes out of the other side of the screen. The rocks break into smaller and smaller pieces; "
-                      "destroy 60 of them (new ones keep coming in from outside), then clear the screen. A saucer passes now and then. Open in every act, "
-                      "pays nothing and costs nothing."),
-    "story_log_ast": ("TEST — les astéroïdes ont été balayés.", "TEST — the asteroids were swept away."),
+    "story_m_ast1": ("Ceinture d'astéroïdes I", "Asteroid belt I"),
+    "story_m_ast2": ("Ceinture d'astéroïdes II", "Asteroid belt II"),
+    "story_m_ast3": ("Ceinture d'astéroïdes III", "Asteroid belt III"),
+    "story_m_ast_hud": ("Ceinture d'astéroïdes", "Asteroid belt"),
+    "story_m_ast_b": ("Ouvre la route : détruis {n} astéroïdes (gauche / droite pour tourner, haut pour pousser), puis vide l'écran. Rejouable.",
+                      "Open the road: destroy {n} asteroids (left / right to turn, up to thrust), then clear the screen. Replayable."),
+    "story_log_ast1": ("La route à travers la ceinture est ouverte.", "The road through the belt is open."),
+    "story_log_ast2": ("Le couloir de la ceinture est rouvert.", "The corridor through the belt is open again."),
+    "story_log_ast3": ("La porte de la ceinture est forcée.", "The gate of the belt is forced."),
     "story_asteroids_hud": ("ASTÉROÏDES : {n}/{m}", "ASTEROIDS: {n}/{m}"),
-    "story_test_won": ("Mission de test réussie : rien de gagné, rien de perdu.",
-                       "Test mission complete: nothing won, nothing lost."),
-    "story_test_over": ("Mission de test terminée : rien de gagné, rien de perdu.",
-                        "Test mission over: nothing won, nothing lost."),
     "story_scene_vip_t": ("Lyra Voss", "Lyra Voss"),
     "story_film_lyra1_t": ("Concert privé Lyra Voss - 1. Eternal Dawn", "Lyra Voss private concert - 1. Eternal Dawn"),
     "story_film_lyra2_t": ("Concert privé Lyra Voss - 2. What We Lost", "Lyra Voss private concert - 2. What We Lost"),
@@ -5912,7 +5906,62 @@ _VIP_TEXTS = {
         "Damn, today I have one more reason to love my job as a pilot."),
 }
 
-for _k, (_fr, _en) in list(_ACT3_TEXTS.items()) + list(_VIP_TEXTS.items()):
+# The scenes of the asteroid belt, the prelude of the main series of each act (French and English; the other languages show
+# the English text until the French one is validated).
+_BELT_TEXTS = {
+    "story_scene_ast1_t": ("Ceinture I : la route de Jupiter", "Belt I: the road to Jupiter"),
+    "story_scene_ast1": (
+        "Entre Mars et Jupiter, la ceinture d’astéroïdes s’étire comme un mur de roche en mouvement. Des millions de blocs, du "
+        "caillou au rocher grand comme une station, tournent dans un ballet que personne n’a jamais vraiment dompté. Avant "
+        "l’invasion, les convois la traversaient par des couloirs balisés. Aujourd’hui les balises se sont tues, et les "
+        "Avioïdes se glissent derrière les blocs pour tendre leurs embuscades.\n\n"
+        "Pour atteindre l’épave du Shield, il faut d’abord rouvrir une route. Grok a tracé un corridor sur ses cartes : "
+        "il suffira de pulvériser assez de roche pour qu’un vaisseau passe sans se faire écraser. Soixante blocs, pas un de moins.\n\n"
+        "Le NX01 n’a pas été conçu pour ça. Il tourne, il pousse, il tire, et il dérive, sans rien pour le freiner. "
+        "Alors je ferai ce que font les pilotes de la ceinture depuis toujours : tirer sur tout ce qui bouge, "
+        "et ne jamais cesser de bouger.",
+        "Between Mars and Jupiter, the asteroid belt stretches like a moving wall of rock. Millions of blocks, from pebbles to "
+        "rocks the size of a station, turn in a ballet nobody has ever really tamed. Before the invasion, convoys crossed it "
+        "by marked corridors. Today the beacons have fallen silent, and the Avioids slip behind the blocks to set their "
+        "ambushes.\n\n"
+        "To reach the wreck of the Shield, a road must be opened first. Grok has drawn a corridor on his charts: it is enough "
+        "to pulverise enough rock for a ship to pass without being crushed. Sixty blocks, not one fewer.\n\n"
+        "The NX01 was not built for this. It turns, it thrusts, it fires, and it drifts, with nothing to stop it. "
+        "So I will do what the belt pilots have always done: shoot at everything that moves, and never stop moving."),
+    "story_scene_ast2_t": ("Ceinture II : le couloir de Hungaria", "Belt II: the Hungaria corridor"),
+    "story_scene_ast2": (
+        "La route que nous avions ouverte s’est refermée. En quelques semaines, les Avioïdes ont poussé de nouveaux blocs "
+        "dans le couloir, par centaines, avec une précision qui ne doit rien au hasard. Depuis son astéroïde de Hungaria, "
+        "le vieux Wallems nous a fait passer un message : plus personne n’arrive jusqu’à lui, et ses trompettes ne portent "
+        "plus assez loin pour couvrir le vacarme des impacts.\n\n"
+        "Le signal du Phenix vient de l’autre côté de la ceinture. Pour l’atteindre, il faut rouvrir le couloir. "
+        "Quatre-vingts blocs, cette fois : plus de roche, plus de morceaux, et plus de temps pour que les soucoupes "
+        "viennent nous chercher.\n\n"
+        "Je connais la manœuvre. Je tourne, je pousse, je tire, et je laisse la roche faire le reste.",
+        "The road we had opened has closed again. In a few weeks, the Avioids have pushed new blocks into the corridor, by "
+        "the hundred, with a precision that owes nothing to chance. From his asteroid in Hungaria, old Wallems has sent us "
+        "a message: nobody reaches him any more, and his trumpets no longer carry far enough to cover the din of the "
+        "impacts.\n\n"
+        "The Phenix signal comes from the other side of the belt. To reach it, the corridor must be opened again. "
+        "Eighty blocks this time: more rock, more pieces, and more time for the saucers to come for us.\n\n"
+        "I know the manoeuvre. I turn, I thrust, I fire, and I let the rock do the rest."),
+    "story_scene_ast3_t": ("Ceinture III : la porte de la Riposte", "Belt III: the gate of the Riposte"),
+    "story_scene_ast3": (
+        "Tout est prêt. Le vaisseau est à cent pour cent, et la route de Jupiter passe, une dernière fois, par la ceinture. "
+        "Mais ce n’est plus un champ de roche que je vais traverser : c’est une porte que les Avioïdes ont refermée de toute "
+        "leur masse. Cent blocs, selon Grok, avant que le passage tienne assez longtemps pour laisser filer une flotte "
+        "entière.\n\n"
+        "Derrière moi, les pilotes de Phobos attendent le signal. Devant moi, la poussière. Je n’ai qu’une chose à faire : "
+        "ouvrir. Après, il n’y aura plus de retour.",
+        "Everything is ready. The ship is at one hundred per cent, and the road to Jupiter passes, one last time, through the "
+        "belt. But this is no longer a field of rock I am about to cross: it is a gate the Avioids have shut with all "
+        "their mass. One hundred blocks, according to Grok, before the passage holds long enough for a whole fleet to "
+        "slip through.\n\n"
+        "Behind me, the Phobos pilots wait for the signal. Ahead of me, the dust. I have only one thing to do: open it. "
+        "After that, there will be no way back."),
+}
+
+for _k, (_fr, _en) in list(_ACT3_TEXTS.items()) + list(_VIP_TEXTS.items()) + list(_BELT_TEXTS.items()):
     T[_k] = {_code: _en for _code in LANG_CODES}          # the English text until the French one is validated
     T[_k]["fr"] = _fr
 

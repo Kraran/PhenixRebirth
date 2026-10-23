@@ -198,6 +198,12 @@ def _text(surface, font, text, color, cy, left=None, right=None, centerx=None):
     return img
 
 
+def mission_blurb(mission):
+    """The one line the map shows under a mission; a mission with a `target` (the Asteroids prelude) gives it as {n}."""
+    text = t(mission["blurb"])
+    return text.format(n=int(mission["target"])) if mission.get("target") else text
+
+
 def _is_replay(entry):
     """Is this journal line one that replays a scene (the intro, a scene seen, a film seen)?"""
     return isinstance(entry, dict) and bool(entry.get("intro") or entry.get("scene") or entry.get("film"))
@@ -1200,8 +1206,6 @@ class StoryHub:
         if mission.get("asteroids"):
             spec["asteroids"] = True                  # the Asteroids level (src/asteroids.py)
             spec["target"] = int(mission.get("target") or 40)
-        if mission.get("test"):
-            spec["test"] = True                       # a test mission: nothing won, nothing lost, nobody falls
         if mission.get("escort"):
             spec["escort"] = True                 # the VIP rescue: the cruise ship to bring across (src/escort.py)
             spec["stage"] = int(mission.get("stage") or 6)
@@ -1243,9 +1247,6 @@ class StoryHub:
             if res.get("reward"):
                 self.toast = t("story_reward").format(pts=res["reward"])     # the parts salvaged from the wreck
                 self.toast_kind = "gain"
-        elif res.get("test"):
-            self.toast = t("story_test_won" if res["test"] == "won" else "story_test_over")
-            self.toast_kind = "info"                 # a test mission: nothing won, nothing lost
         elif res.get("no_item"):
             self.toast = t("story_item_missed").format(name=t("item_%s_name" % res["no_item"]))
             self.toast_kind = "info"                 # the BONUS item was not caught: no gain, no loss
@@ -2054,7 +2055,7 @@ class StoryHub:
                     _text_fit(surface, small, t("story_unlock_after").format(name=t(before["title"])), (225, 185, 120),
                               cy + 34, row.x + 28, row.w - 40)       # what opens it, in place of its blurb
                 else:
-                    _text_fit(surface, small, t(mission["blurb"]), (170, 175, 195), cy + 34, row.x + 28, row.w - 40)
+                    _text_fit(surface, small, mission_blurb(mission), (170, 175, 195), cy + 34, row.x + 28, row.w - 40)
             y += row.h + 4
         if self.toast:
             self._draw_toast(surface, medium, small, box)

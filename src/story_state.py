@@ -175,11 +175,28 @@ MISSIONS = [
     # The dome series: Dome I is open from the start, each mission opens the next one and can be flown only once.
     # `waves` are arcade stage numbers (1, 6, 11 = the same wave at 1.0x, 1.1x, 1.2x speed).
     {
+        # the prelude of each act's main series (Act 1: the Dome; Act 2: the Phenix; Act 3: la Riposte): the Asteroids level
+        # (src/asteroids.py) that opens a road through the belt. Replayable and paid every time; its first victory opens the
+        # first mission of the series
+        "id": "ast_1",
+        "acts": (1,),
+        "asteroids": True,
+        "title": "story_m_ast1",
+        "hud_title": "story_m_ast_hud",
+        "blurb": "story_m_ast_b",
+        "need": None,                       # open from the start, like the first Bestiary sortie
+        "content": 1,
+        "target": 60,
+        "speed": 1.0,
+        "unlock": ["ast_s1"],
+        "log": "story_log_ast1",
+    },
+    {
         "id": "dome_1",
         "acts": (1,),
         "title": "story_m_dome1",
         "blurb": "story_m_dome1_b",
-        "need": None,                       # open from the start, like the first Bestiary sortie
+        "need": "ast_s1",                   # the road through the belt first (ast_1)
         "content": 1,
         "waves": [1, 6, 11],
         "speed": 1.0,
@@ -286,11 +303,25 @@ MISSIONS = [
     # Act 2: the Phenix series. Five chained missions, flown once each (arcade levels 16 and up,
     # x1.3 speed). The last one hands over the Phenix and opens its workshop.
     {
+        "id": "ast_2",
+        "acts": (2,),
+        "asteroids": True,
+        "title": "story_m_ast2",
+        "hud_title": "story_m_ast_hud",
+        "blurb": "story_m_ast_b",
+        "need": "act2",
+        "content": 1,
+        "target": 80,
+        "speed": 1.0,
+        "unlock": ["ast_s2"],
+        "log": "story_log_ast2",
+    },
+    {
         "id": "phenix_1",
         "acts": (2,),
         "title": "story_m_ph1",
         "blurb": "story_m_ph1_b",
-        "need": "act2",
+        "need": "ast_s2",
         "content": 1,
         "waves": [16, 17],
         "speed": 1.0,
@@ -481,7 +512,12 @@ MISSIONS = [
     # Act 3: the final series, "la Riposte", once the hull is at 100 % (ch3_ready): from Jupiter to Triton, where the
     # first station fell. Flown once each, in order; the last victory ends the Adventure (scene "epilogue").
     {
-        "id": "final_1", "acts": (3,), "title": "story_m_fin1", "blurb": "story_m_fin1_b", "need": "ch3_ready",
+        "id": "ast_3", "acts": (3,), "asteroids": True, "title": "story_m_ast3", "hud_title": "story_m_ast_hud",
+        "blurb": "story_m_ast_b", "need": "ch3_ready", "content": 1, "target": 100, "speed": 1.0,
+        "unlock": ["ast_s3"], "log": "story_log_ast3",
+    },
+    {
+        "id": "final_1", "acts": (3,), "title": "story_m_fin1", "blurb": "story_m_fin1_b", "need": "ast_s3",
         "content": 1, "waves": [21, 22], "speed": 1.0, "once": True, "unlock": ["final_s1"],
         "log": "story_log_fin1",
     },
@@ -504,14 +540,6 @@ MISSIONS = [
         "id": "final_5", "acts": (3,), "title": "story_m_fin5", "blurb": "story_m_fin5_b", "need": "final_s4",
         "content": 1, "waves": [26, 27, 28, 29, 30], "speed": 1.0, "once": True,
         "unlock": ["final_s5", GAME_WON], "epilogue": True, "log": "story_log_fin5",
-    },
-    # TEST: the Asteroids level (src/asteroids.py). On the map of every act, always playable, as often as one likes. A
-    # test mission is neither won nor lost: nothing is paid, nothing is taken, no unlock, no journal line, no
-    # achievement, and a death does not make a Veteran fall (see record_result).
-    {
-        "id": "bonus_asteroids", "acts": (1, 2, 3), "test": True, "asteroids": True, "title": "story_m_ast",
-        "hud_title": "story_m_ast_hud", "blurb": "story_m_ast_b", "need": None, "content": 1, "speed": 1.0,
-        "target": 60, "log": "story_log_ast",
     },
 ]
 
@@ -827,6 +855,23 @@ def _to_act1_hangar(sl):
             sl["wall"] = "slow"
 
 
+# The Asteroids prelude of each act and the first mission of the main series it opens (Dome I, Phenix I, la Riposte).
+BELT_PRELUDES = (("ast_1", "dome_1"), ("ast_2", "phenix_1"), ("ast_3", "final_1"))
+
+
+def _open_started_series(state):
+    """A save made before the preludes existed: a series already started (its first mission won) does not wait for the
+    belt, the prelude counts as won."""
+    cleared = state.setdefault("cleared", [])
+    flags = state.setdefault("flags", {})
+    for prelude, first in BELT_PRELUDES:
+        if first in cleared:
+            for name in (mission_by_id(prelude) or {}).get("unlock") or []:
+                flags[name] = True
+            if prelude not in cleared:
+                cleared.append(prelude)
+
+
 def migrate_state(data):
     """Turn any saved dict (version 2 or 3) into a complete version-3 state.
 
@@ -898,6 +943,7 @@ def migrate_state(data):
         if flags.get("bestiary_s3"):
             flags["ch1_wall"] = True
         flags.pop("dome_online", None)
+    _open_started_series(base)
     base["version"] = SAVE_VERSION
     return base
 
@@ -1145,11 +1191,16 @@ SCENES = {
     "dome_1": {"title": "story_scene_dome_1_t", "slides": [("epave_shield", "story_scene_dome_1")]},
     "best_boss": {"title": "story_scene_bestboss_t", "slides": [("soucoupe_commandement", "story_scene_bestboss")]},
     "paint_1": {"title": "story_scene_paint_1_t", "slides": [("atelier_wallems", "story_scene_paint_1")]},
+    # the prelude of each act: the road through the asteroid belt (the picture will come later: until then the slide is
+    # a dark sky behind the text)
+    "ast_1": {"title": "story_scene_ast1_t", "slides": [("ceinture_asteroides", "story_scene_ast1")]},
+    "ast_2": {"title": "story_scene_ast2_t", "slides": [("ceinture_asteroides", "story_scene_ast2")]},
     # Act 3 (the pictures will come later: until then the slide is a dark sky behind the text)
     "up_shield_1": {"title": "story_scene_ups_t", "slides": [("remise_en_etat", "story_scene_ups")]},
     "up_phenix_1": {"title": "story_scene_upp_t", "slides": [("remise_en_etat", "story_scene_upp")]},
     "bonus_wreck_phenix": {"title": "story_scene_wreckp_t", "slides": [("epave_phenix", "story_scene_wreckp")]},
     "bonus_wreck_shield": {"title": "story_scene_wrecks_t", "slides": [("epave_nx01", "story_scene_wrecks")]},
+    "ast_3": {"title": "story_scene_ast3_t", "slides": [("ceinture_asteroides", "story_scene_ast3")]},
     "final_1": {"title": "story_scene_fin_t", "slides": [("riposte", "story_scene_fin")]},
 }
 
@@ -1175,9 +1226,9 @@ STORY_SCENES = {
 }
 # The order of the journal (the order of the story): the mission scenes of Acts 1 and 2, the attack, the loss, the
 # Act 3 scenes, the end; the Phobos bar (Add-On) last.
-SCENE_ORDER = (["ch1_sortie", "best_s2", "best_s3", "best_s4", "dome_1", "best_boss", "paint_1", VIP_SCENE,
-                ACT3_ATTACK, "act3_kept_shield", "act3_kept_phoenix", "up_shield_1", "up_phenix_1",
-                "bonus_wreck_phenix", "bonus_wreck_shield", "final_1", EPILOGUE])
+SCENE_ORDER = (["ch1_sortie", "best_s2", "best_s3", "best_s4", "ast_1", "dome_1", "best_boss", "ast_2", "paint_1",
+                VIP_SCENE, ACT3_ATTACK, "act3_kept_shield", "act3_kept_phoenix", "up_shield_1", "up_phenix_1",
+                "bonus_wreck_phenix", "bonus_wreck_shield", "ast_3", "final_1", EPILOGUE])
 
 
 # The films: videos watched full screen with their sound (assets/video/<video>.mp4, silent, and <video>.ogg, its
@@ -1346,7 +1397,7 @@ def jump_to_act2(state):
     flags = state.setdefault("flags", {})
     cleared = state.setdefault("cleared", [])
     for mission in MISSIONS:
-        if mission_in_act(mission, 1) and mission.get("playable") is not False and not mission.get("test"):
+        if mission_in_act(mission, 1) and mission.get("playable") is not False:
             for name in mission.get("unlock") or []:
                 flags[name] = True
             if mission["id"] not in cleared:
@@ -1356,13 +1407,13 @@ def jump_to_act2(state):
 
 
 def grant_phenix(state):
-    """The NIX2 cheat: Act 2 is on, the five Phenix missions count as won and the Phenix is in the hangar."""
+    """The NIX2 cheat: Act 2 is on, the belt and the five Phenix missions count as won and the Phenix is in the hangar."""
     if int(_num(state.get("act"), 1)) < 2:
         jump_to_act2(state)
     flags = state.setdefault("flags", {})
     cleared = state.setdefault("cleared", [])
     for mission in MISSIONS:
-        if not str(mission.get("id", "")).startswith("phenix_"):
+        if not (str(mission.get("id", "")).startswith("phenix_") or mission.get("id") == "ast_2"):
             continue
         for name in mission.get("unlock") or []:
             flags[name] = True
@@ -1427,8 +1478,8 @@ def mission_in_act(mission, act):
     return not acts or int(_num(act, 1)) in acts
 
 
-# The map groups its missions. A hunt is a Bestiary mission (replayable); an "extra" is a BONUS, a test or the optional
-# paint series; the rest is the story. Act 1 lists the hunts first (they bring the speed, the life and the walls the
+# The map groups its missions. A hunt is a Bestiary mission (replayable); an "extra" is a BONUS or the optional
+# paint series; the rest is the story (the Asteroids prelude of each act among them). Act 1 lists the hunts first (they bring the speed, the life and the walls the
 # Dome series needs), the later acts list the story first.
 GROUP_STORY, GROUP_HUNT, GROUP_EXTRA = "story", "hunt", "extra"
 GROUP_ORDER = {1: (GROUP_HUNT, GROUP_STORY, GROUP_EXTRA), 2: (GROUP_STORY, GROUP_HUNT, GROUP_EXTRA),
@@ -1440,7 +1491,7 @@ def mission_group(mission):
     m = mission or {}
     if m.get("hunt"):
         return GROUP_HUNT
-    if (m.get("reactor") or m.get("drop") or m.get("needs_reactor") or m.get("reward") or m.get("test")
+    if (m.get("reactor") or m.get("drop") or m.get("needs_reactor") or m.get("reward")
             or m.get("paint") or m.get("carry")):
         return GROUP_EXTRA
     return GROUP_STORY
@@ -1489,10 +1540,10 @@ def first_sortie(state, mission_id):
 
 
 def next_mission(state, missions):
-    """The mission the map suggests: the first one of the list that can be flown and is not won yet (the Asteroids
-    test is never suggested). None when there is none."""
+    """The mission the map suggests: the first one of the list that can be flown and is not won yet. None when there is
+    none."""
     for m in missions:
-        if m.get("test") or not mission_playable(state, m):
+        if not mission_playable(state, m):
             continue
         if not mission_done(state, m):
             return m
@@ -1968,7 +2019,7 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
     """
     score = max(0, int(score or 0))
     res = {"score": score, "cleared": bool(cleared), "first": False, "lost": 0, "fallen": False, "act": 0,
-           "loot": None, "used": [], "opened": [], "reactor_lost": None, "no_item": None, "test": None}
+           "loot": None, "used": [], "opened": [], "reactor_lost": None, "no_item": None}
     record_kills(state, kills)            # the enemies met count whatever the outcome
     record_mission_kills(state, mission_id, kills)
     res["used"] = story_items.consume(state, used)           # before the Act can change: they belong to this one
@@ -1979,14 +2030,6 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
         res["loot"] = loot
         if loot in story_items.REACTOR_IDS:
             state.setdefault("log", []).append({"key": "story_log_" + loot})      # story_log_reactor_shield / _phenix
-    test = next((m for m in MISSIONS if m["id"] == mission_id and m.get("test")), None)
-    if test:
-        # a TEST mission: neither won nor lost. Nothing is paid, nothing is taken, nobody falls, no flag, no journal line;
-        # the enemies met are in the Bestiary and the items used are used up, as in every mission
-        res["cleared"] = False
-        res["score"] = 0
-        res["test"] = "won" if cleared else "over"
-        return res
     if not cleared:
         if state.get("mode") == "veteran":
             state["fallen"] = True

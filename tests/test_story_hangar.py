@@ -16,7 +16,7 @@ PHENIX = ["phenix_1", "phenix_2", "phenix_3", "phenix_4", "phenix_5"]
 PAINT = ["paint_1", "paint_2", "paint_3"]
 GATE3 = ["act3_gate"]           # the last mission of Act 2 (it opens Act 3)
 # the map of Act 2 is grouped: the story first, then the hunts, then the bonus and the paint series
-ACT2_MAP = PHENIX + GATE3 + HUNTS + ["best_boss", "bonus_2d"] + PAINT + ["bonus_asteroids"]
+ACT2_MAP = ["ast_2"] + PHENIX + GATE3 + HUNTS + ["best_boss", "bonus_2d"] + PAINT
 
 
 def _state(phenix=True, selected=0):
@@ -244,7 +244,8 @@ def test_the_jump_gives_the_save_of_a_pilot_who_finished_act_1():
     assert st["act"] == 2 and ss.flag(st, "act2") and ss.flag(st, "dome_online") and ss.flag(st, "ch1_speed")
     assert "act2_gate" in st["cleared"] and "ch2_tease" not in st["cleared"]
     assert _ids(ss.visible_missions(st)) == ACT2_MAP
-    assert ss.mission_playable(st, ss.mission_by_id("phenix_1")) and not ss.mission_playable(st, ss.mission_by_id("phenix_2"))
+    assert ss.mission_playable(st, ss.mission_by_id("ast_2")) and not ss.mission_playable(st, ss.mission_by_id("phenix_1"))
+    assert "ast_1" in st["cleared"] and "ast_2" not in st["cleared"]           # the first belt is crossed, the second waits
     assert ss.mission_playable(st, ss.mission_by_id("paint_1"))
     assert all(ss.mission_playable(st, ss.mission_by_id(m)) for m in HUNTS)
     assert st["log"] == [] and st["credits"] == 0 and not st["slots"][1]["owned"]
@@ -268,7 +269,7 @@ def test_act2_typed_on_the_map_goes_to_act_2_and_saves_nothing():
     assert _ids(hub.missions()) == ACT2_MAP
     from i18n import t
     assert hub.toast == t("story_cheat_act2")
-    hub.apply_result("phenix_1", 300, True)
+    hub.apply_result("ast_2", 300, True)
     hub.save()
     assert _file() == before                                           # not a byte written
     assert hub.state["credits"] == 300                                 # but the cheated game goes on in memory
@@ -295,7 +296,7 @@ def test_loading_the_save_again_clears_the_cheat():
     _type(hub, "2222")
     hub.open_slot(1)
     assert not hub.cheat_act2 and not hub.cheating and hub.state["act"] == 1
-    assert _ids(hub.missions())[-2:] == ["ch2_tease", "bonus_asteroids"]
+    assert _ids(hub.missions())[-1:] == ["ch2_tease"]
 
 
 def test_act2_typed_elsewhere_does_nothing():
@@ -309,12 +310,12 @@ def test_act2_typed_elsewhere_does_nothing():
 def test_a_pilot_already_in_act_2_keeps_his_progress():
     st = _state(phenix=False)
     st["act"] = 2
-    st["flags"].update(act2=True)
-    st["cleared"] = ["phenix_1"]
+    st["flags"].update(act2=True, ast_s2=True)
+    st["cleared"] = ["ast_2", "phenix_1"]
     hub = _hub(st)
     hub.pane = "map"
     _type(hub, "2222")
-    assert hub.cheat_act2 and hub.state["cleared"] == ["phenix_1"]     # nothing is reset or added
+    assert hub.cheat_act2 and hub.state["cleared"] == ["ast_2", "phenix_1"]     # nothing is reset or added
 
 
 def test_act2_then_unlk_lists_everything_and_keeps_the_focus():

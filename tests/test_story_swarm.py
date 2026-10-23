@@ -276,7 +276,7 @@ def test_the_dome_upgrade_comes_before_the_longer_dome_of_act_two():
 
 # ------------------------------------------------------------------ in the game
 def _launch(g, mission_id, **flags):
-    base = dict(bestiary_s4=True, dome_s1=True, dome_s2=True, dome_s3=True, dome_s4=True, dome_s5=True)
+    base = dict(bestiary_s4=True, ast_s1=True, dome_s1=True, dome_s2=True, dome_s3=True, dome_s4=True, dome_s5=True)
     base.update(flags)
     _open(**base)
     g.story.open_slot(1)
