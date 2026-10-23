@@ -601,7 +601,15 @@ def test_a_page_shown_at_once_is_complete_whatever_its_length(monkeypatch):
         assert hub.vn_page_done(), length
 
 
-def test_watched_again_in_a_scene_without_reaction_the_last_a_closes():
+def _without_reactions(monkeypatch, scene_id=None):
+    """A scene without reactions (the mechanism stays for the scenes to come): scene two with two-item answers."""
+    sc = dict(story_vn.VN_SCENES["vn_2"])
+    sc["answers"] = [a[:2] for a in sc["answers"]]
+    monkeypatch.setitem(story_vn.VN_SCENES, "vn_2", sc)
+
+
+def test_watched_again_in_a_scene_without_reaction_the_last_a_closes(monkeypatch):
+    _without_reactions(monkeypatch)
     hub = _hub_after_scene1()
     story_vn.choose(hub.state, SCENE2, 1, 1)
     hub.start_vn(SCENE2, back_to="log")
@@ -643,9 +651,11 @@ def test_a_wrapped_line_never_begins_with_a_closing_quote():
         assert " ".join(lines).split() == text.replace(story_vn.NBSP, " ").split()
 
 
-def test_every_answer_of_scene_one_has_a_reaction_and_scene_two_has_none():
-    for k, ans in enumerate(story_vn.scene(SCENE)["answers"]):
-        assert story_vn.reaction(SCENE, k) == ans[2] and story_vn.pages(i18n.T[ans[2]]["en"])
+def test_every_answer_of_the_scenes_has_a_reaction(monkeypatch):
+    for scene in (SCENE, SCENE2):
+        for k, ans in enumerate(story_vn.scene(scene)["answers"]):
+            assert story_vn.reaction(scene, k) == ans[2] and story_vn.pages(i18n.T[ans[2]]["en"])
+    _without_reactions(monkeypatch)
     assert [story_vn.reaction(SCENE2, k) for k in range(4)] == [None] * 4
     for scene, index in (("nope", 0), (SCENE, -1), (SCENE, 4), (SCENE, True), (SCENE, None), (SCENE, "1")):
         assert story_vn.reaction(scene, index) is None
@@ -659,7 +669,8 @@ def test_the_answers_of_scene_one_come_in_a_random_order():
         seen.add(tuple(order))
     assert len(seen) > 12                                             # (24 are possible)
     assert REAL_ORDER(SCENE, shuffled=False) == [0, 1, 2, 3]          # (watched again: the list as it is)
-    assert all(REAL_ORDER(SCENE2) == [0, 1, 2, 3] for _ in range(20))   # (scene two keeps its order)
+    assert len({tuple(REAL_ORDER(SCENE2)) for _ in range(100)}) > 6     # (scene two comes in a random order too)
+    assert REAL_ORDER(SCENE2, shuffled=False) == [0, 1, 2, 3]
     assert REAL_ORDER("nope") == []
 
 
@@ -797,14 +808,15 @@ def _hub_after_scene1(wins_before=0):
     return hub
 
 
-def test_scene_two_is_the_hangar_with_four_answers_worth_1_2_3_4():
+def test_scene_two_is_the_hangar_with_four_answers_worth_1_3_2_4():
     sc = story_vn.scene(SCENE2)
     assert sc["film"] is None and sc["after"] == SCENE and sc["wins"] == 1 and sc["panel"] == "right"
     assert sc["image"] == "vn_2_hangar" and sc["speaker"] == "story_vn_lyra" and sc["text"] == EN2
     assert sc["journal"] == "story_vn2_j" and sc["title"] == "story_vn2_t"
     assert [a[0] for a in sc["answers"]] == ["story_vn2_a1", "story_vn2_a2", "story_vn2_a3", "story_vn2_a4"]
-    assert [a[1] for a in sc["answers"]] == [1, 2, 3, 4]
-    assert not sc.get("shuffle") and all(len(a) == 2 for a in sc["answers"])
+    assert [a[1] for a in sc["answers"]] == [1, 3, 2, 4]
+    assert [a[2] for a in sc["answers"]] == ["story_vn2_r1", "story_vn2_r2", "story_vn2_r3", "story_vn2_r4"]
+    assert sc["shuffle"] is True
 
 
 def test_the_picture_of_scene_two_is_in_the_game_folder():
@@ -815,11 +827,11 @@ def test_the_points_of_the_scenes_add_up():
     st = {}
     story_vn.choose(st, SCENE, 2)
     story_vn.choose(st, SCENE2, 1)
-    assert story_vn.points(st) == 4 + 2
+    assert story_vn.points(st) == 4 + 3
     st = {}
     story_vn.choose(st, SCENE, 0)
     story_vn.choose(st, SCENE2, 2)
-    assert story_vn.points(st) == 2 + 3
+    assert story_vn.points(st) == 2 + 2
 
 
 def test_the_scenes_come_one_after_the_other():
@@ -975,8 +987,11 @@ def test_choosing_in_scene_two_keeps_the_answer_and_counts_from_there():
     hub.nav_v(1)
     hub.nav_v(1)
     hub.confirm()
-    assert hub.screen == "hub" and story_vn.pick(hub.state, SCENE2) == 2
-    assert story_vn.points(hub.state) == 3 + 3                    # (scene 1: answer 2 of the list, 3 points)
+    assert hub.screen == "vn" and hub.vn_phase == "react" and story_vn.pick(hub.state, SCENE2) == 2
+    assert hub.vn_pages() == story_vn.pages(i18n.t("story_vn2_r3"))
+    _finish(hub)
+    assert hub.screen == "hub"
+    assert story_vn.points(hub.state) == 3 + 2                    # (scene 1: answer 2 of the list, 3 points; scene 2: answer 3, 2 points)
     assert story_vn.mark(hub.state, SCENE2) == ss.story_wins(hub.state)
     saved = ss.load_state(ss.story_path(1))
     assert story_vn.pick(saved, SCENE2) == 2
@@ -998,6 +1013,9 @@ def test_scene_two_is_in_the_journal_once_answered_and_watched_again_from_it(fre
     assert hub.vn_return == "log"
     _ready(hub)
     hub.confirm()
+    assert hub.screen == "vn" and hub.vn_phase == "react"          # (Lyra answers again)
+    assert hub.vn_pages() == story_vn.pages(i18n.t("story_vn2_r4"))
+    _finish(hub)
     assert hub.screen == "hub" and hub.pane == "log" and story_vn.pick(hub.state, SCENE2) == 3
 
 
@@ -1019,20 +1037,99 @@ def test_scene_two_has_its_text_on_the_right_and_scene_one_on_the_left():
 
 
 def test_the_french_text_of_scene_two_is_the_one_asked_for(french):
-    assert i18n.t("story_vn2_q") == "Tu es rentré en un seul morceau. Bien. … Tu as eu peur, là-haut ?"
+    assert i18n.t("story_vn2_q") == (
+        "*Le lendemain, tu rentres d’une mission de reconnaissance. Ton appareil vient à peine de rejoindre son "
+        "emplacement que tu aperçois Lyra près de la zone d’accès.\n"
+        "*Elle discute avec un technicien chargé de vérifier les autorisations de transport. Lorsqu’elle entend "
+        "les moteurs s’arrêter, elle tourne brusquement la tête.\n\n"
+        "*Son visage s’éclaire avant qu’elle ne reprenne une expression plus neutre.\n"
+        "*Elle attend que tu descendes.\n"
+        "« Salut. Alors, tu es encore entier. »\n"
+        "*Elle croise les bras.\n\n"
+        "« Je sais, je sais. Tu vas me dire que c’est ton boulot et que tu sais ce que tu fais. Mais il y a eu une "
+        "alerte pendant votre sortie. Personne ne savait exactement ce qui se passait. »\n"
+        "*Elle détourne les yeux vers ton appareil.\n"
+        "« J’ai trouvé ça… désagréable. »\n\n"
+        "*Un silence.\n"
+        "« C’est idiot, hein ? Je te connais à peine. »")
     assert [i18n.t(a[0]) for a in story_vn.scene(SCENE2)["answers"]] == [
-        "« Non. C’est mon métier. »", "« Un peu. Comme toujours. »", "« Oui. Et je pensais à toi. »",
-        "« Oui. J’avais surtout peur de ne pas te revoir. »"]
+        "« Tu n’as pas à t’inquiéter pour moi. Je connais les risques. »",
+        "« Ça fait partie du métier. Mais je suis content que quelqu’un ait remarqué mon absence. »",
+        "« Tu t’es inquiétée pour moi ? Je suis touché. »",
+        "« Pour être honnête, je me suis demandé si tu allais bien, moi aussi. Tu n’as pas eu une journée facile. »"]
     assert i18n.t("story_vn2_t") == "Scène 2 : le hangar"
 
 
+def test_the_french_reactions_of_scene_two_are_the_ones_asked_for(french):
+    r = [i18n.t("story_vn2_r%d" % k).split("\n") for k in (1, 2, 3, 4)]
+    assert r[0] == ["*Lyra pince légèrement les lèvres.",
+                    "« Je m’en doute. Tu n’as pas vraiment le profil de quelqu’un qui découvre le danger. »",
+                    "*Elle regarde le sol, puis hausse les épaules.",
+                    "« Oublie ça. Je voulais juste savoir si tout allait bien. »"]
+    assert r[1][:2] == ["*Elle relève les yeux vers toi.", "« Quelqu’un ? Attention, je pourrais presque croire que tu parles de moi. »"]
+    assert r[1][-1].startswith("« Bon. Puisque tu es là, je vais arrêter de me faire des films.")
+    assert r[2][:2] == ["*Lyra ouvre la bouche, puis la referme.", "« Ne prends pas cet air-là ! Je ne suis pas en train de te déclarer ma flamme. »"]
+    assert r[2][-1].endswith("Elles ne peuvent pas me poser de questions. »")
+    assert r[3][0] == "*Lyra semble déconcertée." and r[3][-1].endswith("une histoire amusante. »")
+    assert "Pas l’inverse. »" in " ".join(r[3])
+
+
 def test_the_english_text_of_scene_two_is_there():
-    keys = ["story_vn2_q", "story_vn2_t", "story_vn2_j"] + [a[0] for a in story_vn.scene(SCENE2)["answers"]]
+    keys = ["story_vn2_q", "story_vn2_t", "story_vn2_j"] + [k for a in story_vn.scene(SCENE2)["answers"] for k in (a[0], a[2])]
     for key in keys:
         assert i18n.T[key]["en"] and i18n.T[key]["fr"]
         for code in i18n.LANG_CODES:
             assert i18n.T[key].get(code)
-    assert i18n.T["story_vn2_a3"]["en"] == "“Yes. And I was thinking of you.”"
+    assert i18n.T["story_vn2_a3"]["en"] == "“You were worried about me? I’m touched.”"
+
+
+def test_the_french_and_the_english_texts_of_scene_two_have_the_same_shape():
+    for key in ["story_vn2_q", "story_vn2_r1", "story_vn2_r2", "story_vn2_r3", "story_vn2_r4"]:
+        fr, en = (story_vn.pages(i18n.T[key][code]) for code in ("fr", "en"))
+        assert [[n for n, _w in page] for page in fr] == [[n for n, _w in page] for page in en], key
+
+
+def test_scene_two_is_told_in_four_pages_and_the_answers_come_with_the_last_one(french):
+    hub = _hub_after_scene1()
+    hub.start_vn(SCENE2)
+    assert [len(p) for p in hub.vn_pages()] == [2, 4, 3, 2]
+    _ready(hub)
+    assert hub.vn_page == 3 and hub.vn_last_page()
+
+
+def test_the_scene_two_answers_come_in_a_random_order_and_the_pick_is_the_one_of_the_list(monkeypatch):
+    monkeypatch.setattr(story_vn, "order", lambda scene_id, shuffled=True: [3, 1, 0, 2])
+    hub = _hub_after_scene1()
+    hub.start_vn(SCENE2)
+    assert hub.vn_order == [3, 1, 0, 2] and hub.vn_index == 3
+    _ready(hub)
+    hub.nav_v(1)
+    assert hub.vn_index == 1
+    hub.confirm()
+    assert story_vn.pick(hub.state, SCENE2) == 1 and story_vn.points(hub.state) == 3 + 3     # (scene 1: 3; scene 2: 3)
+    _finish(hub)
+
+
+def test_the_panel_of_every_page_of_scene_two_stays_on_the_screen():
+    for lang in ("fr", "en"):
+        i18n.set_lang(lang)
+        for index in range(4):
+            hub = _hub_after_scene1()
+            hub.start_vn(SCENE2)
+            for phase in ("ask", "react"):
+                if phase == "react":
+                    _ready(hub)
+                    hub.vn_index = index
+                    hub.confirm()
+                for _ in range(6):
+                    hub.vn_t = hub.VN_FADE + 999.0
+                    surf = _draw_real(hub)
+                    assert surf.get_at((BASE_WIDTH - 300, BASE_HEIGHT - 2))[:3] != (70, 90, 130)
+                    assert surf.get_at((BASE_WIDTH - 300, BASE_HEIGHT - 20))[:3] != (70, 90, 130)
+                    if hub.vn_ready():
+                        break
+                    hub.confirm()
+    i18n.set_lang("fr")
 
 
 # ================================================================== the code VNOV (typed on the HIGH SCORES screen)

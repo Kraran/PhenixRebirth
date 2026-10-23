@@ -28,8 +28,9 @@ VN_SCENES = {
     },
     "vn_2": {
         "film": None, "after": "vn_1", "wins": 1, "panel": "right", "image": "vn_2_hangar", "title": "story_vn2_t",
-        "journal": "story_vn2_j", "speaker": "story_vn_lyra", "text": "story_vn2_q",
-        "answers": [("story_vn2_a1", 1), ("story_vn2_a2", 2), ("story_vn2_a3", 3), ("story_vn2_a4", 4)],
+        "journal": "story_vn2_j", "speaker": "story_vn_lyra", "text": "story_vn2_q", "shuffle": True,
+        "answers": [("story_vn2_a1", 1, "story_vn2_r1"), ("story_vn2_a2", 3, "story_vn2_r2"),
+                    ("story_vn2_a3", 2, "story_vn2_r3"), ("story_vn2_a4", 4, "story_vn2_r4")],
     },
 }
 VN_ORDER = ["vn_1", "vn_2"]            # the scenes in the order of the story
