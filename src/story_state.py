@@ -1777,6 +1777,9 @@ def _st_wall_immune(slot):
     return None
 
 
+# The dome lasts longer in two steps (1 s -> 1.5 s -> 2 s), the second one costs more than the first
+DOME_DUR_PRICES = (2000, 3000)
+
 # id, i18n label, cost, flag required, apply(slot) -> bool, status(slot) -> str|None, act
 # `act` is the act whose workshop sells it. Only Act 1 is built so far: the dome comes with
 # its own series of quests (nothing sets "dome_online" yet), the rest is for Acts 2 and 3.
@@ -1786,14 +1789,33 @@ UPGRADES = [
     ("lives_2", "story_shop_lives2", 2000, "ch1_life_2", _up_lives_2, _st_lives_2, 1),
     ("wall_slow", "story_shop_wall_slow", 1000, "ch1_wall", _up_wall_slow, _st_wall_slow, 1),
     ("dome_on", "story_shop_dome_on", 800, "dome_online", _up_dome_on, _st_dome_on, 1),
-    ("phenix_cap_80", "story_shop_phenix80", 1000, "phenix_owned", _up_cap_80, _st_cap_80, 2),
-    ("speed_100", "story_shop_speed100", 1000, "ch3_speed", _up_speed_100, _st_speed_100, 3),
-    ("lives_3", "story_shop_lives3", 900, "ch3_lives", _up_lives_3, _st_lives_3, 3),
-    ("dome_dur", "story_shop_dome", 800, "ch3_dome", _up_dome_dur, _st_dome_dur, 3),
+    ("phenix_cap_80", "story_shop_phenix80", 3000, "phenix_owned", _up_cap_80, _st_cap_80, 2),
+    ("speed_100", "story_shop_speed100", 4000, "ch3_speed", _up_speed_100, _st_speed_100, 3),
+    ("lives_3", "story_shop_lives3", 5000, "ch3_lives", _up_lives_3, _st_lives_3, 3),
+    ("dome_dur", "story_shop_dome", DOME_DUR_PRICES[0], "ch3_dome", _up_dome_dur, _st_dome_dur, 3),
     ("dome_lat", "story_shop_latency", 800, "dome_online", _up_dome_lat, _st_dome_lat, 2),
-    ("wall_immune", "story_shop_wall_immune", 1400, "ch3_wall", _up_wall_immune, _st_wall_immune, 3),
-    ("phenix_cap_100", "story_shop_phenix100", 1500, "ch3_gauge", _up_cap_100, _st_cap_100, 3),
+    ("wall_immune", "story_shop_wall_immune", 4000, "ch3_wall", _up_wall_immune, _st_wall_immune, 3),
+    ("phenix_cap_100", "story_shop_phenix100", 5000, "ch3_gauge", _up_cap_100, _st_cap_100, 3),
 ]
+
+# The prices above are the Shield's. The Phenix, whose workshop opens in Act 2 when the credits are already higher, pays more
+# for the steps it shares with the Shield; the Phenix-only rows (the gauge) have their own price in the table.
+PHENIX_PRICES = {"speed_80": 2000, "wall_slow": 3000, "lives_2": 4000}
+
+
+def upgrade_cost(slot, sid):
+    """Credits the workshop asks for the row `sid` of the hull `slot` (the table price, or the price of that hull / step)."""
+    up = _upgrade(sid)
+    if up is None:
+        return 0
+    if sid == "dome_dur":
+        dur = _num((slot or {}).get("dome_dur"), DOME_DUR_START) or DOME_DUR_START
+        step = int((dur - DOME_DUR_START) / DOME_DUR_STEP + 0.5) if (slot or {}).get("dome") else 0
+        return DOME_DUR_PRICES[max(0, min(step, len(DOME_DUR_PRICES) - 1))]
+    if (slot or {}).get("id") == "phoenix" and sid in PHENIX_PRICES:
+        return PHENIX_PRICES[sid]
+    return up[2]
+
 
 # What the workshop shows in Act 1: id, i18n label, cost, flag required before it is buyable
 SHOP = [(u[0], u[1], u[2], u[3]) for u in UPGRADES if u[6] == 1]
@@ -1822,7 +1844,7 @@ def shop_for(state):
     ids = PHENIX_SHOP_IDS if hull == "phoenix" else [u[0] for u in SHOP]
     if act >= 3:
         ids = list(ids) + list(ACT3_SHOP_IDS[hull])
-    rows = [(u[0], u[1], u[2], u[3]) for sid in ids for u in UPGRADES if u[0] == sid]
+    rows = [(u[0], u[1], upgrade_cost(slot, u[0]), u[3]) for sid in ids for u in UPGRADES if u[0] == sid]
     target = paint_target(state)
     if act >= 2 and target is not None and target.get("id") == slot.get("id"):
         rows.append(PAINT_ROW)                 # the paint shop: PAINT_COST credits, and one change per finished series
@@ -1911,11 +1933,12 @@ def buy(state, sid):
     slot = selected_slot(state)
     if slot is None or not slot.get("owned"):
         return False
-    if int(state.get("credits", 0)) < up[2]:
+    cost = upgrade_cost(slot, sid)                     # before the purchase: the step it buys decides the price
+    if int(state.get("credits", 0)) < cost:
         return False
     if not up[4](slot):
         return False
-    state["credits"] = int(state.get("credits", 0)) - up[2]
+    state["credits"] = int(state.get("credits", 0)) - cost
     return True
 
 
