@@ -207,7 +207,8 @@ def mission_blurb(mission):
 
 def _is_replay(entry):
     """Is this journal line one that replays a scene (the intro, a scene seen, a film seen)?"""
-    return isinstance(entry, dict) and bool(entry.get("intro") or entry.get("scene") or entry.get("film"))
+    return isinstance(entry, dict) and bool(entry.get("intro") or entry.get("scene") or entry.get("film")
+                                           or entry.get("vn"))
 
 
 def _text_fit(surface, font, text, color, cy, left, max_w, scale=1.0):
@@ -579,7 +580,7 @@ class StoryHub:
             self.vn_t = self.VN_FADE + len(t(sc["text"])) / self.VN_TYPE_CPS     # A shows the whole text at once
         elif self.vn_review:
             self._end_vn()
-        elif story_vn.choose(self.state, self.vn_id, self.vn_index):
+        elif story_vn.choose(self.state, self.vn_id, self.vn_index, ss.story_wins(self.state)):
             self.save()
             self._end_vn()
 
@@ -592,13 +593,15 @@ class StoryHub:
     def _maybe_vn(self):
         """The concert is over and a scene of the visual novel was not told (a save made before it, or the game left
         in the middle): it comes now, with its film when that was not watched."""
-        if self.state is None or self.screen not in ("hub",):
+        if self.state is None or self.screen not in ("hub",) or self.paint_mode or self.cheating:
             return
+        if story_vn.ensure_marks(self.state, ss.story_wins(self.state)):
+            self.save()
         sid = ss.vn_due(self.state)
         if not sid:
             return
-        film = story_vn.scene(sid)["film"]
-        if ss.film_seen(self.state, film):
+        film = story_vn.scene(sid).get("film")
+        if not film or ss.film_seen(self.state, film):
             self.start_vn(sid, back_to="map")
         else:
             self.start_film(film, back_to="map")
@@ -649,6 +652,8 @@ class StoryHub:
         if self.screen == "vn":
             self.vn_t += max(0.0, min(0.25, float(dt)))
             return
+        if self.screen == "hub":
+            self._maybe_vn()                       # a scene of the visual novel comes back with the map, after a mission
         if self._film is not None:
             self._stop_film()
         if self.screen != "intro":
@@ -1207,6 +1212,8 @@ class StoryHub:
                 self.start_scene(entry["scene"], back_to="log")       # watch a scene again
             elif entry.get("film"):
                 self.start_film(entry["film"], back_to="log")         # a film again (the concert)
+            elif entry.get("vn"):
+                self.start_vn(entry["vn"], back_to="log")             # a scene of the visual novel again
             else:
                 self.start_intro(back_to="log")          # watch the introduction again
             return None
@@ -1460,6 +1467,7 @@ class StoryHub:
         self._draw_tabs(surface)
 
     VN_PANEL = pygame.Rect(40, 52, 700, 0)         # the text and the answers, on the left (the height follows the text)
+    VN_PANEL_RIGHT = pygame.Rect(560, 52, 680, 0)  # ... or on the right, when the face of Lyra is on the left
 
     def _draw_vn(self, surface, medium, small):
         """A scene of the visual novel: its picture, and over it a panel with the speaker, the text (typed) and the answers
@@ -1469,14 +1477,15 @@ class StoryHub:
         if sc is None:
             return
         body = getattr(self, "_body", None) or small
-        top, width = self.VN_PANEL.y, self.VN_PANEL.w
-        x, w = self.VN_PANEL.x + 28, width - 56
+        base = self.VN_PANEL_RIGHT if sc.get("panel") == "right" else self.VN_PANEL
+        top, width = base.y, base.w
+        x, w = base.x + 28, width - 56
         full = t(sc["text"])
         text_lines = _wrap(body, full, w)
         answers = [_wrap(body, "%d. %s" % (k + 1, t(key)), w - 24) for k, (key, _pts) in enumerate(sc["answers"])]
         # the panel has the height of the whole scene from the first moment (it does not grow while the text is typed)
         height = 100 + 34 * len(text_lines) + 22 + sum(12 + 32 * len(a) + 8 for a in answers) + 6
-        r = pygame.Rect(self.VN_PANEL.x, top, width, height)
+        r = pygame.Rect(base.x, top, width, height)
         menu_ui.panel(surface, r, radius=12)
         _text(surface, medium, t(sc["speaker"]), menu_ui.TEXT_SEL, r.y + 36, left=x)
         pygame.draw.line(surface, menu_ui.PANEL_EDGE, (x, r.y + 66), (r.right - 28, r.y + 66), 1)

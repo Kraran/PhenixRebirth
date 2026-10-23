@@ -3,6 +3,11 @@ Current release: **v1.5.0**
 
 ## Unreleased (towards 1.5.1)
 
+- Adventure: visual novel scene 2 (the hangar). Lyra asks "Were you afraid, up there?" (four answers, hidden points 1 to 4) when the
+  map is back after the next story mission won (the series and the asteroid belts count, hunts, bonuses and paint do not). A scene
+  without a film comes after the previous one: `after` and `wins` in `story_vn.VN_SCENES`; the answer remembers the story missions won
+  (`vn.marks`), a save made before counts from its next win. The text can sit on the right of the picture (`panel`). Watched again from the
+  journal (`{"vn": id}` lines). New: `story_state.story_wins`, `vn_due`, picture `assets/story/vn_2_hangar.jpg`.
 - Adventure: the visual novel begins. Right after the third song of Lyra Voss's concert, a film of the Phobos bar, then scene 1: Lyra's
   question and four answers (hidden points 1 to 4, kept in the save as `vn.picks`; the answer is final). The scene is watched again from
   the journal (the answer given is lit). A save made after the concert tells it when it is opened. Texts in French and English (the

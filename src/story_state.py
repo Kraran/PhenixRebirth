@@ -1280,15 +1280,28 @@ def film_flag(film_id):
     return "film_" + str(film_id)
 
 
+def story_wins(state):
+    """How many story missions (the series and the asteroid belts: no hunt, bonus or paint) are won. A mission replayed
+    does not count twice."""
+    cleared = set((state or {}).get("cleared") or [])
+    return sum(1 for m in MISSIONS if m["id"] in cleared and mission_group(m) == GROUP_STORY)
+
+
 def vn_due(state):
-    """The visual novel scene to tell now: the film before it comes after a film already watched (the concert) and the
-    scene is not answered. None when there is none."""
-    for sid in story_vn.VN_ORDER:
-        film = FILMS.get(story_vn.scene(sid)["film"]) or {}
-        prev = film.get("after")
-        if not story_vn.answered(state, sid) and (not prev or film_seen(state, prev)):
-            return sid
-    return None
+    """The visual novel scene to tell now, or None. The scenes come one after the other: only the first one not
+    answered can be due. One with a film follows the film before it (the concert), one without comes once enough
+    story missions are won since the answer to the scene it follows."""
+    sid = story_vn.next_scene(state)
+    if sid is None:
+        return None
+    scene = story_vn.scene(sid)
+    if scene.get("film"):
+        prev = (FILMS.get(scene["film"]) or {}).get("after")
+        return sid if (not prev or film_seen(state, prev)) else None
+    base = story_vn.mark(state, scene.get("after"))
+    if base is None:
+        return None
+    return sid if story_wins(state) - base >= int(scene.get("wins") or 1) else None
 
 
 def film_seen(state, film_id):
@@ -2123,6 +2136,8 @@ def journal_entries(state):
         out.extend({"film": fid} for fid in film_chain(mid) if film_seen(state, fid))
     shown = {e.get("film") for e in out}
     out.extend({"film": fid} for fid in FILMS if fid not in shown and film_seen(state, fid))
+    out.extend({"vn": sid} for sid in story_vn.VN_ORDER                          # (a scene with a film is listed by it)
+               if not story_vn.scene(sid).get("film") and story_vn.answered(state, sid))
     hunts = {m["log"]: m["id"] for m in MISSIONS if (is_hunt(m) or is_paint(m)) and m.get("log")}
     for entry in state.get("log") or []:
         out.append(entry)
@@ -2141,6 +2156,9 @@ def log_text(entry, translate):
         if "scene" in entry:
             scene = scene_of(entry.get("scene")) or {}
             return translate("story_log_scene").format(title=translate(scene.get("title") or "story_log_scene"))
+        if "vn" in entry:
+            scene = story_vn.scene(entry.get("vn")) or {}
+            return translate("story_log_scene").format(title=translate(scene.get("journal") or "story_log_scene"))
         if "film" in entry:
             film = FILMS.get(entry.get("film")) or {}
             return translate("story_log_scene").format(title=translate(film.get("title") or "story_log_scene"))
