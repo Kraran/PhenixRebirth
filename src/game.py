@@ -871,7 +871,7 @@ class Game:
         queue.extend(story_feats.take_news())
         story = getattr(self, "story", None)
         if (getattr(self, "menu_screen", "") == "story_hub" and story is not None
-                and getattr(story, "screen", "") in ("intro", "choice", "film")):
+                and getattr(story, "screen", "") in ("intro", "choice", "film", "vn")):
             return                                        # not over a scene of the story, nor over the choice of the hull
         if not queue or self.cheat_msg_timer > 0:
             return

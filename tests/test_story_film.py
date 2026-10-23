@@ -1,6 +1,6 @@
 """The films of the Adventure (story_state.FILMS): a video with its sound, full screen. Lyra Voss's private concert,
 three songs in a row (1. Eternal Dawn, 2. What We Lost, 3. No Mercy Left), comes right after the scene of the VIP
-rescue, then the journal keeps each song."""
+rescue, then the journal keeps each song. The film of the Phobos bar (the visual novel) follows the third song."""
 import pygame
 import pytest
 
@@ -70,6 +70,14 @@ def _scene_then_end(hub):
     hub.back()                                   # (skipped or read to the end: the same way out)
 
 
+def _answer_vn(hub):
+    """The scene of the visual novel that ends the concert: the whole text, then the first answer."""
+    assert hub.screen == "vn"
+    hub.confirm()
+    hub.confirm()
+    assert hub.screen == "hub"
+
+
 def _skip_concert(hub):
     """B on each song, as long as one is playing. The songs seen, in order."""
     seen = []
@@ -82,14 +90,14 @@ def _skip_concert(hub):
 # ------------------------------------------------------------------ the film and its files
 def test_the_concert_is_three_films_after_the_scene_of_the_vip_rescue(french):
     from i18n import t
-    assert ss.film_after(ss.VIP_SCENE) == FILM and ss.film_chain(ss.VIP_SCENE) == SONGS
+    assert ss.film_after(ss.VIP_SCENE) == FILM and ss.film_chain(ss.VIP_SCENE) == SONGS + ["vn_1"]
     videos = ["lyra_1_eternal_dawn", "lyra_2_what_we_lost", "lyra_3_no_mercy_left"]
     for fid, video, title in zip(SONGS, videos, TITLES):
         film = ss.FILMS[fid]
         assert film["video"] == video and t(film["title"]) == title
         mp4, sound = ss.film_files(fid)
         assert mp4.endswith(video + ".mp4") and sound.endswith(video + ".ogg")
-    assert ss.film_after("lyra_3") is None                                 # the last song
+    assert ss.film_after("lyra_3") == "vn_1" and ss.film_after("vn_1") is None      # the last song, then the bar
 
 
 @pytest.mark.parametrize("fid,minutes", [("lyra_1", (5.0, 5.3)), ("lyra_2", (4.7, 4.9)), ("lyra_3", (3.7, 3.9))])
@@ -119,9 +127,11 @@ def test_it_starts_when_the_scene_is_over_and_b_skips_it(fake_clip):
     assert clip.closed and ss.film_seen(hub.state, FILM)
     assert ss.film_seen(ss.load_state(ss.story_path(1)), FILM)             # saved
     assert hub.screen == "film" and hub.film_id == "lyra_2"                # B skips one song: the next one comes
-    assert _skip_concert(hub) == ["lyra_2", "lyra_3"]
-    assert hub.screen == "hub" and hub.pane == "map" and not hub.film_playing()
-    assert all(ss.film_seen(hub.state, fid) for fid in SONGS)
+    assert _skip_concert(hub) == ["lyra_2", "lyra_3", "vn_1"]
+    assert hub.screen == "vn" and not hub.film_playing()                   # the scene of the bar comes after the songs
+    assert all(ss.film_seen(hub.state, fid) for fid in SONGS + ["vn_1"])
+    _answer_vn(hub)
+    assert hub.pane == "map"
 
 
 def test_the_three_songs_follow_each_other(fake_clip):
@@ -134,7 +144,7 @@ def test_the_three_songs_follow_each_other(fake_clip):
         played.append(hub.film_id)
         hub._film.ended = True                                             # the end of the song
         hub.update(1 / 60)
-    assert played == SONGS and hub.screen == "hub" and hub.pane == "map"
+    assert played == SONGS + ["vn_1"] and hub.screen == "vn" and hub.vn_return == "map"
 
 
 def test_it_ends_by_itself_at_the_end_of_the_video(fake_clip):
@@ -174,9 +184,11 @@ def test_the_journal_keeps_each_song_right_after_the_scene(fake_clip, french):
     hub = _hub()
     _scene_then_end(hub)
     _skip_concert(hub)
+    _answer_vn(hub)
     entries = hub.replay_entries()
     i = entries.index({"scene": ss.VIP_SCENE})
     assert entries[i + 1:i + 4] == [{"film": fid} for fid in SONGS]
+    assert entries[i + 4] == {"film": "vn_1"}
     from i18n import t
     assert [ss.log_text({"film": fid}, t) for fid in SONGS] == ["Revoir : " + title for title in TITLES]
     hub.pane = "log"
@@ -223,11 +235,11 @@ def test_the_game_leaves_the_music_to_the_film_then_the_menu_theme_comes_back(ru
     assert g.story.screen == "film" and g.sounds.current_music_key() == "film"
     run.frames(10)
     assert g.sounds.current_music_key() == "film"                         # the menu theme did not come back over it
-    for song in SONGS:
+    for song in SONGS + ["vn_1"]:
         assert g.story.film_id == song
         pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_ESCAPE, unicode="", mod=0, scancode=0))
         run.frames(3)
-    assert g.story.screen == "hub" and g.menu_screen == "story_hub"
+    assert g.story.screen == "vn" and g.menu_screen == "story_hub"
     assert g.sounds.current_music_key() == "menu"
 
 

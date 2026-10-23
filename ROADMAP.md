@@ -3,6 +3,10 @@ Current release: **v1.5.0**
 
 ## Unreleased (towards 1.5.1)
 
+- Adventure: the visual novel begins. Right after the third song of Lyra Voss's concert, a film of the Phobos bar, then scene 1: Lyra's
+  question and four answers (hidden points 1 to 4, kept in the save as `vn.picks`; the answer is final). The scene is watched again from
+  the journal (the answer given is lit). A save made after the concert tells it when it is opened. Texts in French and English (the
+  other languages show English for now). New: `src/story_vn.py`, `StoryHub` screen `vn`, `tests/test_story_vn.py`.
 - UI polish: the help of the "Control" option no longer says "Ou impose le clavier, ou la manette" (now "Tu peux aussi imposer le
   clavier ou la manette", rewritten in the 13 languages) and the help of "GPU render" no longer talks about "SDL upscale (SCALED)":
   "Lets the graphics card scale the picture". Text overlaps fixed: on the "new record" screen the score no longer sits on the bottom
