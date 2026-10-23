@@ -1551,10 +1551,11 @@ class StoryHub:
         right = sc.get("panel") == "right"
         base = self.VN_PANEL_RIGHT if right else self.VN_PANEL
         asking = self.vn_phase == "ask" and self.vn_last_page()      # the answers come with the last page of the question
-        for wide in (False, True):
+        for wide in (0, 1, 2, 3):
             px, top, width = base.x, base.y, base.w
             if wide:                                      # long answers: a wider panel, higher, so that all of it fits
-                px, top, width = (BASE_WIDTH - 24 - self.VN_PANEL_WIDE if right else 24), 20, self.VN_PANEL_WIDE
+                width = min(self.VN_PANEL_WIDE, base.w + 60 * wide)         # (as narrow as it can be: the face stays seen)
+                px, top = (BASE_WIDTH - 24 - width if right else 24), 20
             x, w = px + 28, width - 56
             paras = [(narration, _wrap_nb(body, words, w)) for narration, words in self._vn_page()]
             n_lines = sum(len(lines) for _n, lines in paras)

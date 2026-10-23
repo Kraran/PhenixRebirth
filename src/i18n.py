@@ -6178,6 +6178,119 @@ _VN_TEXTS = {
         "*Her smile becomes softer.\n"
         "“But… thank you. It does me good that someone asks how I am without waiting for me to tell them a funny "
         "story.”"),
+    "story_vn3_t": ("Scène 3 : le pont d’observation", "Scene 3: the observation deck"),
+    "story_vn3_j": ("Visual novel - Scène 3 : le pont d’observation", "Visual novel - Scene 3: the observation deck"),
+    "story_vn3_q": (
+        "*La baie d’observation donne sur Mars. La planète occupe l’horizon, immense, avec ses lumières "
+        "artificielles qui témoignent de l’activité des colonies encore debout.\n"
+        "*Lyra est seule. Elle porte un casque audio autour du cou et écoute une maquette musicale sur son "
+        "terminal.\n"
+        "\n"
+        "*Lorsqu’elle te voit, elle retire son casque.\n"
+        "« Tu arrives à point nommé. J’ai besoin d’un avis extérieur. »\n"
+        "*Elle te tend une oreillette.\n"
+        "« C’est un morceau que je prépare pour le concert d’Eloncity. Je ne sais pas encore si je le garde. »\n"
+        "\n"
+        "*Elle hésite.\n"
+        "« Il est différent de ce que je fais d’habitude. Plus lent. Moins… spectaculaire. »\n"
+        "*Elle regarde Mars.\n"
+        "« Tout le monde attend que je revienne avec un grand show. Des lumières, des guitares, des explosions sur "
+        "les écrans. Quelque chose qui leur fasse oublier la guerre pendant deux heures. »\n"
+        "\n"
+        "*Elle te regarde à nouveau.\n"
+        "« Mais je ne suis pas certaine d’avoir envie de faire semblant que tout va bien. »",
+        "*The observation window looks out on Mars. The planet fills the horizon, immense, with the artificial "
+        "lights that show the activity of the colonies still standing.\n"
+        "*Lyra is alone. She wears headphones around her neck and listens to a demo on her terminal.\n"
+        "\n"
+        "*When she sees you, she takes off her headphones.\n"
+        "“You’re just in time. I need an outside opinion.”\n"
+        "*She holds out an earbud.\n"
+        "“It’s a piece I’m preparing for the Eloncity concert. I don’t know yet whether I’ll keep it.”\n"
+        "\n"
+        "*She hesitates.\n"
+        "“It’s different from what I usually do. Slower. Less… spectacular.”\n"
+        "*She looks at Mars.\n"
+        "“Everyone expects me to come back with a big show. Lights, guitars, explosions on the screens. "
+        "Something that makes them forget the war for two hours.”\n"
+        "\n"
+        "*She looks at you again.\n"
+        "“But I’m not sure I feel like pretending everything is fine.”"),
+    "story_vn3_a1": (
+        "« Les gens ont besoin de spectacle. Donne-leur ce qu’ils attendent de toi. »",
+        "“People need a show. Give them what they expect from you.”"),
+    "story_vn3_a2": (
+        "« Je ne connais pas grand-chose à la musique, mais si ce morceau te ressemble, garde-le. »",
+        "“I don’t know much about music, but if this piece is like you, keep it.”"),
+    "story_vn3_a3": (
+        "« Je pense que les gens ont besoin d’entendre quelque chose de vrai. Ils savent que la guerre existe. Tu "
+        "n’as pas besoin de leur mentir pour leur redonner espoir. »",
+        "“I think people need to hear something real. They know the war exists. You don’t need to lie to them to "
+        "give them hope.”"),
+    "story_vn3_a4": (
+        "« Si tu veux, je peux te donner un avis honnête. Mais je préfère te prévenir : je risque de te dire ce que "
+        "je pense vraiment. »",
+        "“If you like, I can give you an honest opinion. But I’d better warn you: I might tell you what I really "
+        "think.”"),
+    "story_vn3_r1": (
+        "*Lyra hoche lentement la tête.\n"
+        "« C’est probablement ce que mon producteur dirait. »\n"
+        "*Elle remet son casque autour du cou.\n"
+        "« Et il n’aurait pas forcément tort. Mais j’espérais que tu me donnerais un avis un peu plus "
+        "personnel. »",
+        "*Lyra slowly nods.\n"
+        "“That’s probably what my producer would say.”\n"
+        "*She puts her headphones back around her neck.\n"
+        "“And he wouldn’t necessarily be wrong. But I was hoping you’d give me a more personal opinion.”"),
+    "story_vn3_r2": (
+        "*Elle te regarde avec un sourire discret.\n"
+        "« Tu sais, je passe ma vie à entendre des gens m’expliquer ce qui va marcher. Les producteurs, les "
+        "journalistes, les organisateurs… »\n"
+        "*Elle tapote son terminal.\n"
+        "« C’est reposant, quelqu’un qui me dit simplement de faire ce que je veux. »",
+        "*She looks at you with a discreet smile.\n"
+        "“You know, I spend my life hearing people explain what will work. Producers, journalists, "
+        "organizers…”\n"
+        "*She taps her terminal.\n"
+        "“It’s restful, someone who simply tells me to do what I want.”"),
+    "story_vn3_r3": (
+        "*Lyra reste silencieuse quelques secondes.\n"
+        "« C’est exactement ce que je n’arrivais pas à formuler. »\n"
+        "*Elle relance un passage du morceau.\n"
+        "« Je veux qu’ils puissent chanter, danser, crier… mais aussi se rappeler pourquoi ils sont encore là. "
+        "Pour ceux qui sont morts. Pour ceux qui se battent. Pour ceux qui n’ont plus grand-chose à attendre. »\n"
+        "\n"
+        "*Elle retire l’oreillette et te la tend.\n"
+        "« Tu pourrais rester encore un peu ? J’aimerais te faire écouter le reste. »\n"
+        "*Sa voix devient plus légère.\n"
+        "« Et ne t’inquiète pas, je ne te demanderai pas de signer un contrat avec ma maison de disques. »",
+        "*Lyra stays silent for a few seconds.\n"
+        "“That’s exactly what I couldn’t put into words.”\n"
+        "*She replays a passage of the piece.\n"
+        "“I want them to be able to sing, dance, shout… but also to remember why they’re still here. For those "
+        "who died. For those who fight. For those who have little left to look forward to.”\n"
+        "\n"
+        "*She takes out the earbud and hands it to you.\n"
+        "“Could you stay a little longer? I’d like you to hear the rest.”\n"
+        "*Her voice becomes lighter.\n"
+        "“And don’t worry, I won’t ask you to sign a contract with my record label.”"),
+    "story_vn3_r4": (
+        "*Lyra sourit franchement.\n"
+        "« Voilà qui est terrifiant. Une personne qui n’a pas peur de contrarier Lyra Voss. »\n"
+        "*Elle te tend l’oreillette.\n"
+        "« D’accord. Mais si tu me dis que c’est mauvais, tu devras au moins m’expliquer pourquoi. »\n"
+        "\n"
+        "*Elle marque une pause.\n"
+        "« Et si tu aimes, tu peux le dire aussi. Je ne suis pas complètement immunisée contre les compliments, "
+        "contrairement à ce qu’on raconte. »",
+        "*Lyra smiles openly.\n"
+        "“How terrifying. Someone who isn’t afraid of upsetting Lyra Voss.”\n"
+        "*She holds out the earbud.\n"
+        "“Alright. But if you tell me it’s bad, you’ll have to at least explain why.”\n"
+        "\n"
+        "*She pauses.\n"
+        "“And if you like it, you can say so too. I’m not completely immune to compliments, whatever they "
+        "say.”"),
 }
 
 for _k, (_fr, _en) in list(_ACT3_TEXTS.items()) + list(_VIP_TEXTS.items()) + list(_BELT_TEXTS.items()) + list(_VN_TEXTS.items()):

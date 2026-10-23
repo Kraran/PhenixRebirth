@@ -108,7 +108,7 @@ def test_scene_one_is_the_bar_of_phobos_with_four_answers_worth_2_3_4_3():
     assert [a[0] for a in sc["answers"]] == ["story_vn1_a1", "story_vn1_a2", "story_vn1_a3", "story_vn1_a4"]
     assert [a[2] for a in sc["answers"]] == ["story_vn1_r1", "story_vn1_r2", "story_vn1_r3", "story_vn1_r4"]
     assert sc["shuffle"] is True
-    assert story_vn.VN_ORDER == [SCENE, "vn_2"]
+    assert story_vn.VN_ORDER == [SCENE, "vn_2", "vn_3"]
 
 
 @pytest.mark.parametrize("index,expected", [(0, 2), (1, 3), (2, 4), (3, 3)])
@@ -761,6 +761,7 @@ def test_the_page_of_the_answers_is_wide_and_the_text_pages_are_not():
     _ready(hub)
     last = _panel_span(_draw_real(hub), 300)
     assert last is not None and last[1] - last[0] > 800                # (long answers: wider, and higher)
+    assert last[1] - last[0] <= story.StoryHub.VN_PANEL_WIDE           # (but never wider than the limit)
 
 
 def test_the_panel_of_every_page_stays_on_the_screen():
@@ -786,6 +787,7 @@ def test_the_panel_of_every_page_stays_on_the_screen():
 
 # ================================================================== scene 2: the hangar
 SCENE2 = "vn_2"
+SCENE3 = "vn_3"
 EN2 = "story_vn2_q"
 
 
@@ -840,6 +842,8 @@ def test_the_scenes_come_one_after_the_other():
     story_vn.choose(st, SCENE2, 0)                       # (a scene two answered before one: the first is still to tell)
     assert story_vn.next_scene(st) == SCENE
     story_vn.choose(st, SCENE, 0)
+    assert story_vn.next_scene(st) == SCENE3
+    story_vn.choose(st, SCENE3, 0)
     assert story_vn.next_scene(st) is None
 
 
@@ -1132,6 +1136,202 @@ def test_the_panel_of_every_page_of_scene_two_stays_on_the_screen():
     i18n.set_lang("fr")
 
 
+# ================================================================== scene 3: the observation deck
+def _hub_after_scene2(wins_before=0):
+    """A save where scenes 1 and 2 were answered (scene 2 when `wins_before` + 1 story missions were won)."""
+    st = _state()
+    for mid in ("phenix_1", "phenix_2", "phenix_3")[:wins_before]:
+        _story_win(st, mid)
+    story_vn.choose(st, SCENE, 1, ss.story_wins(st))
+    _story_win(st, "ast_2")
+    story_vn.choose(st, SCENE2, 1, ss.story_wins(st))
+    ss.save_state(ss.story_path(1), st)
+    hub = StoryHub()
+    hub.open_slot(1)
+    hub.screen, hub.pane = "hub", "map"
+    return hub
+
+
+def test_scene_three_is_the_observation_deck_with_four_answers_worth_1_3_4_2():
+    sc = story_vn.scene(SCENE3)
+    assert sc["film"] is None and sc["after"] == SCENE2 and sc["wins"] == 1 and sc["panel"] == "right"
+    assert sc["image"] == "vn_3_pont" and sc["speaker"] == "story_vn_lyra" and sc["text"] == "story_vn3_q"
+    assert sc["journal"] == "story_vn3_j" and sc["title"] == "story_vn3_t" and sc["shuffle"] is True
+    assert [a[0] for a in sc["answers"]] == ["story_vn3_a1", "story_vn3_a2", "story_vn3_a3", "story_vn3_a4"]
+    assert [a[1] for a in sc["answers"]] == [1, 3, 4, 2]
+    assert [a[2] for a in sc["answers"]] == ["story_vn3_r1", "story_vn3_r2", "story_vn3_r3", "story_vn3_r4"]
+
+
+def test_the_picture_of_scene_three_is_in_the_game_folder():
+    assert os.path.isfile(asset_path("story", "vn_3_pont.jpg"))
+    assert pygame.image.load(asset_path("story", "vn_3_pont.jpg")).get_size() == (1168, 784)
+
+
+@pytest.mark.parametrize("index,expected", [(0, 1), (1, 3), (2, 4), (3, 2)])
+def test_each_answer_of_scene_three_gives_its_own_points(index, expected):
+    st = {}
+    assert story_vn.choose(st, SCENE3, index) and story_vn.points(st) == expected
+
+
+def test_the_points_of_the_three_scenes_add_up():
+    st = {}
+    story_vn.choose(st, SCENE, 2)
+    story_vn.choose(st, SCENE2, 1)
+    story_vn.choose(st, SCENE3, 2)
+    assert story_vn.points(st) == 4 + 3 + 4
+
+
+def test_scene_three_is_not_due_before_scene_two_is_answered():
+    st = _state()
+    story_vn.choose(st, SCENE, 0, ss.story_wins(st))
+    _story_win(st, "phenix_1")
+    assert ss.vn_due(st) == SCENE2                       # (scene 2 first)
+    _story_win(st, "ast_2")
+    assert ss.vn_due(st) == SCENE2
+
+
+def test_scene_three_is_due_after_the_next_story_mission_won_after_scene_two():
+    st = _state()
+    story_vn.choose(st, SCENE, 0, ss.story_wins(st))
+    _story_win(st, "phenix_1")
+    story_vn.choose(st, SCENE2, 0, ss.story_wins(st))
+    assert ss.vn_due(st) is None                         # nothing won since
+    st["cleared"].append("best_s2")
+    assert ss.vn_due(st) is None                         # (a hunt is not a story mission)
+    _story_win(st, "ast_2")
+    assert ss.vn_due(st) == SCENE3
+    story_vn.choose(st, SCENE3, 0, ss.story_wins(st))
+    assert ss.vn_due(st) is None
+
+
+def test_the_map_brings_scene_three_back_after_a_won_mission():
+    hub = _hub_after_scene2()
+    hub.update(1 / 60)
+    assert hub.screen == "hub"                           # nothing won since scene two
+    hub.state["cleared"].append("phenix_1")
+    hub.update(1 / 60)
+    assert hub.screen == "vn" and hub.vn_id == SCENE3 and hub.vn_return == "map" and not hub.vn_review
+
+
+def test_the_french_text_of_scene_three_is_the_one_asked_for(french):
+    assert i18n.t("story_vn3_t") == "Scène 3 : le pont d’observation"
+    assert i18n.t("story_vn3_j") == "Visual novel - Scène 3 : le pont d’observation"
+    assert ss.log_text({"vn": SCENE3}, i18n.t) == "Revoir : Visual novel - Scène 3 : le pont d’observation"
+    q = i18n.t("story_vn3_q").split("\n")
+    assert q[0].startswith("*La baie d’observation donne sur Mars. La planète occupe l’horizon, immense")
+    assert q[0].endswith("l’activité des colonies encore debout.")
+    assert q[1] == ("*Lyra est seule. Elle porte un casque audio autour du cou et écoute une maquette musicale sur "
+                    "son terminal.")
+    assert "« Tu arrives à point nommé. J’ai besoin d’un avis extérieur. »" in q
+    assert ("« C’est un morceau que je prépare pour le concert d’Eloncity. Je ne sais pas encore si je le garde. »"
+            in q)
+    assert "« Il est différent de ce que je fais d’habitude. Plus lent. Moins… spectaculaire. »" in q
+    assert q[-2:] == ["*Elle te regarde à nouveau.",
+                      "« Mais je ne suis pas certaine d’avoir envie de faire semblant que tout va bien. »"]
+    assert [i18n.t(a[0]) for a in story_vn.scene(SCENE3)["answers"]] == [
+        "« Les gens ont besoin de spectacle. Donne-leur ce qu’ils attendent de toi. »",
+        "« Je ne connais pas grand-chose à la musique, mais si ce morceau te ressemble, garde-le. »",
+        "« Je pense que les gens ont besoin d’entendre quelque chose de vrai. Ils savent que la guerre existe. Tu "
+        "n’as pas besoin de leur mentir pour leur redonner espoir. »",
+        "« Si tu veux, je peux te donner un avis honnête. Mais je préfère te prévenir : je risque de te dire ce que "
+        "je pense vraiment. »"]
+
+
+def test_the_french_reactions_of_scene_three_are_the_ones_asked_for(french):
+    r = [i18n.t("story_vn3_r%d" % k).split("\n") for k in (1, 2, 3, 4)]
+    assert r[0] == ["*Lyra hoche lentement la tête.", "« C’est probablement ce que mon producteur dirait. »",
+                    "*Elle remet son casque autour du cou.",
+                    "« Et il n’aurait pas forcément tort. Mais j’espérais que tu me donnerais un avis un peu plus "
+                    "personnel. »"]
+    assert r[1][0] == "*Elle te regarde avec un sourire discret."
+    assert r[1][-1] == "« C’est reposant, quelqu’un qui me dit simplement de faire ce que je veux. »"
+    assert r[2][:2] == ["*Lyra reste silencieuse quelques secondes.", "« C’est exactement ce que je n’arrivais pas à formuler. »"]
+    assert "Pour ceux qui n’ont plus grand-chose à attendre. »" in " ".join(r[2])
+    assert r[2][-1].endswith("signer un contrat avec ma maison de disques. »")
+    assert r[3][:2] == ["*Lyra sourit franchement.", "« Voilà qui est terrifiant. Une personne qui n’a pas peur de contrarier Lyra Voss. »"]
+    assert r[3][-1].endswith("contrairement à ce qu’on raconte. »")
+
+
+def test_the_english_text_of_scene_three_is_there_and_has_the_shape_of_the_french_one():
+    keys = ["story_vn3_q", "story_vn3_t", "story_vn3_j"] + [k for a in story_vn.scene(SCENE3)["answers"] for k in (a[0], a[2])]
+    for key in keys:
+        assert i18n.T[key]["en"] and i18n.T[key]["fr"]
+        for code in i18n.LANG_CODES:
+            assert i18n.T[key].get(code)
+    for key in ["story_vn3_q"] + ["story_vn3_r%d" % k for k in (1, 2, 3, 4)]:
+        fr, en = (story_vn.pages(i18n.T[key][code]) for code in ("fr", "en"))
+        assert [[n for n, _w in page] for page in fr] == [[n for n, _w in page] for page in en], key
+
+
+def test_scene_three_is_told_in_four_pages_and_the_answers_come_with_the_last_one(french):
+    hub = _hub_after_scene2()
+    hub.start_vn(SCENE3)
+    assert [len(p) for p in hub.vn_pages()] == [2, 4, 4, 2]
+    _ready(hub)
+    assert hub.vn_page == 3 and hub.vn_last_page()
+
+
+def test_scene_three_answer_gives_its_points_and_lyra_reacts_to_it(monkeypatch, french):
+    monkeypatch.setattr(story_vn, "order", lambda scene_id, shuffled=True: [2, 0, 3, 1])
+    hub = _hub_after_scene2()
+    hub.start_vn(SCENE3)
+    assert hub.vn_order == [2, 0, 3, 1] and hub.vn_index == 2
+    _ready(hub)
+    before = story_vn.points(hub.state)
+    hub.confirm()
+    assert story_vn.pick(hub.state, SCENE3) == 2 and story_vn.points(hub.state) == before + 4
+    assert hub.vn_pages() == story_vn.pages(i18n.t("story_vn3_r3")) and len(hub.vn_pages()) == 2
+    _finish(hub)
+    assert hub.screen == "hub"
+
+
+def test_the_panel_of_every_page_of_scene_three_stays_on_the_screen():
+    for lang in ("fr", "en"):
+        i18n.set_lang(lang)
+        for index in range(4):
+            hub = _hub_after_scene2()
+            hub.start_vn(SCENE3)
+            for phase in ("ask", "react"):
+                if phase == "react":
+                    _ready(hub)
+                    hub.vn_index = index
+                    hub.confirm()
+                for _ in range(6):
+                    hub.vn_t = hub.VN_FADE + 999.0
+                    surf = _draw_real(hub)
+                    assert surf.get_at((BASE_WIDTH - 300, BASE_HEIGHT - 2))[:3] != (70, 90, 130)
+                    assert surf.get_at((BASE_WIDTH - 300, BASE_HEIGHT - 20))[:3] != (70, 90, 130)
+                    if hub.vn_ready():
+                        break
+                    hub.confirm()
+    i18n.set_lang("fr")
+
+
+def test_the_panel_of_the_answers_is_only_as_wide_as_it_has_to_be():
+    hub = _hub_after_scene2()
+    hub.start_vn(SCENE3)
+    _ready(hub)
+    span = _panel_span(_draw_real(hub), 400)
+    assert span is not None and 700 < span[1] - span[0] < story.StoryHub.VN_PANEL_WIDE - 20     # (the face of Lyra stays seen)
+    assert span[1] > BASE_WIDTH - 60                                    # (on the right of the picture)
+
+
+def test_scene_three_is_listed_in_the_journal_when_answered_and_watched_again_from_it(french):
+    hub = _hub_after_scene2()
+    assert {"vn": SCENE3} not in ss.journal_entries(hub.state)
+    story_vn.choose(hub.state, SCENE3, 3, 2)
+    assert {"vn": SCENE3} in ss.journal_entries(hub.state)
+    hub.pane = "log"
+    hub.log_cursor = hub.replay_entries().index({"vn": SCENE3})
+    hub._hub_confirm()
+    assert hub.screen == "vn" and hub.vn_id == SCENE3 and hub.vn_review and hub.vn_index == 3
+    _ready(hub)
+    hub.confirm()
+    assert hub.vn_phase == "react" and hub.vn_pages() == story_vn.pages(i18n.t("story_vn3_r4"))
+    _finish(hub)
+    assert hub.screen == "hub" and hub.pane == "log"
+
+
 # ================================================================== the code VNOV (typed on the HIGH SCORES screen)
 import menu_actions                                      # noqa: E402
 import main_menu                                         # noqa: E402
@@ -1215,18 +1415,19 @@ def test_the_cheat_is_off_by_default_and_is_a_cheat_for_the_saves():
 def test_the_journal_lists_every_scene_under_the_cheat_even_with_nothing_seen():
     st = _state(concert=False)
     plain = ss.journal_entries(st)
-    assert {"film": "vn_1"} not in plain and {"vn": SCENE2} not in plain
+    assert {"film": "vn_1"} not in plain and {"vn": SCENE2} not in plain and {"vn": SCENE3} not in plain
     entries = ss.journal_entries(st, cheat_vn=True)
-    assert {"film": "vn_1"} in entries and {"vn": SCENE2} in entries
-    assert entries.index({"film": "vn_1"}) < entries.index({"vn": SCENE2})
-    assert entries.count({"film": "vn_1"}) == 1 and entries.count({"vn": SCENE2}) == 1
-    assert plain == [e for e in entries if e not in ({"film": "vn_1"}, {"vn": SCENE2})]       # (nothing else changes)
+    assert {"film": "vn_1"} in entries and {"vn": SCENE2} in entries and {"vn": SCENE3} in entries
+    assert entries.index({"film": "vn_1"}) < entries.index({"vn": SCENE2}) < entries.index({"vn": SCENE3})
+    assert entries.count({"film": "vn_1"}) == 1 and entries.count({"vn": SCENE2}) == 1 and entries.count({"vn": SCENE3}) == 1
+    assert plain == [e for e in entries if e not in ({"film": "vn_1"}, {"vn": SCENE2}, {"vn": SCENE3})]   # (nothing else changes)
 
 
 def test_the_journal_does_not_list_a_scene_twice_when_it_is_already_there():
     st = _state()
     ss.mark_film_seen(st, "vn_1")
     story_vn.choose(st, SCENE2, 0, 0)
+    story_vn.choose(st, SCENE3, 0, 0)
     entries = ss.journal_entries(st, cheat_vn=True)
     assert entries == ss.journal_entries(st)
 
