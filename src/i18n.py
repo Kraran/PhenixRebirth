@@ -5977,6 +5977,15 @@ _VN_TEXTS = {
     "story_vn1_a3": ("« Je voulais te revoir. »", "“I wanted to see you again.”"),
     "story_vn1_a4": ("« Je voulais être sûr que tu allais bien. Et te revoir. »",
                      "“I wanted to be sure you were okay. And to see you again.”"),
+    "story_vn2_t": ("Scène 2 : le hangar", "Scene 2: the hangar"),
+    "story_vn2_j": ("Visual novel - Scène 2 : le hangar", "Visual novel - Scene 2: the hangar"),
+    "story_vn2_q": ("Tu es rentré en un seul morceau. Bien. … Tu as eu peur, là-haut ?",
+                    "You made it back in one piece. Good. … Were you afraid, up there?"),
+    "story_vn2_a1": ("« Non. C’est mon métier. »", "“No. It’s my job.”"),
+    "story_vn2_a2": ("« Un peu. Comme toujours. »", "“A little. Like always.”"),
+    "story_vn2_a3": ("« Oui. Et je pensais à toi. »", "“Yes. And I was thinking of you.”"),
+    "story_vn2_a4": ("« Oui. J’avais surtout peur de ne pas te revoir. »",
+                     "“Yes. Mostly I was afraid of not seeing you again.”"),
 }
 
 for _k, (_fr, _en) in list(_ACT3_TEXTS.items()) + list(_VIP_TEXTS.items()) + list(_BELT_TEXTS.items()) + list(_VN_TEXTS.items()):
