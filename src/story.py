@@ -80,6 +80,23 @@ def _wrap(font, text, width):
     return lines
 
 
+def _wrap_nb(font, text, width):
+    """Like _wrap, but an unbreakable space (U+00A0) keeps its two words on one line; it is drawn as a plain space."""
+    lines, cur = [], ""
+    for word in str(text).split(" "):
+        if not word:
+            continue
+        trial = (cur + " " + word).strip()
+        if cur and font.size(trial.replace("\u00a0", " "))[0] > width:
+            lines.append(cur)
+            cur = word
+        else:
+            cur = trial
+    if cur:
+        lines.append(cur)
+    return [line.replace("\u00a0", " ") for line in lines]
+
+
 def _italic_runs(line):
     """`a *Phoenix* b` -> (`a Phoenix b`, [False, ..., True, ..., False]) : the text without the stars and, for each of
     its characters, whether it is in italics (the title of a work). A line whose stars do not pair up is left as it is."""
@@ -306,6 +323,9 @@ class StoryHub:
         self.vn_t = 0.0                # seconds since the scene appeared (fade in, then the text is typed)
         self.vn_review = False         # the scene is answered already: shown again, nothing can change
         self.vn_return = "map"         # pane to go back to when it is over
+        self.vn_phase = "ask"          # "ask": the text and the answers, then "react": what Lyra says to the answer given
+        self.vn_page = 0               # the page of the text on screen (an empty line of the text cuts a new page)
+        self.vn_order = [0, 1, 2, 3]   # the indexes of the answers in the order they are shown (random in some scenes)
         self._clip_name = None
         self._clip_shade = None
         self._clip_paths = {}          # picture name -> its clip file (None: a still)
@@ -551,38 +571,75 @@ class StoryHub:
     def start_vn(self, scene_id, back_to="map"):
         """Show a scene of the visual novel. Answered already (watched again from the journal): the answer given is lit
         and nothing can change."""
-        if story_vn.scene(scene_id) is None:
+        sc = story_vn.scene(scene_id)
+        if sc is None:
             return False
         self.vn_id = scene_id
         self.vn_review = story_vn.answered(self.state, scene_id)
         pick = story_vn.pick(self.state, scene_id)
-        self.vn_index = pick if pick is not None else 0
+        self.vn_order = story_vn.order(scene_id, shuffled=not self.vn_review)   # (watched again: the order of the list)
+        self.vn_index = pick if pick is not None else self.vn_order[0]
+        self.vn_phase = "ask"
+        self.vn_page = 0
         self.vn_t = 0.0
         self.vn_return = back_to
         self.screen = "vn"
         return True
 
+    def vn_pages(self):
+        """The pages of the text on screen: the question of the scene, then (after the answer) the reaction to it."""
+        sc = story_vn.scene(self.vn_id)
+        if sc is None:
+            return []
+        if self.vn_phase == "react":
+            key = story_vn.reaction(self.vn_id, story_vn.pick(self.state, self.vn_id))
+            return story_vn.pages(t(key)) if key else []
+        return story_vn.pages(t(sc["text"]))
+
     def vn_typed(self):
-        """How many characters of the text are on screen (the whole text once it has been typed)."""
+        """How many characters of the page are on screen (the whole page once it has been typed)."""
         sc = story_vn.scene(self.vn_id) or {}
         return max(0, int((self.vn_t - self.VN_FADE) * self.VN_TYPE_CPS)) if sc else 0
 
+    def _vn_page(self):
+        pages = self.vn_pages()
+        return pages[min(self.vn_page, len(pages) - 1)] if pages else []
+
+    def vn_page_done(self):
+        """The page on screen is complete."""
+        return story_vn.scene(self.vn_id) is not None and self.vn_typed() >= story_vn.page_length(self._vn_page())
+
+    def vn_last_page(self):
+        return self.vn_page >= len(self.vn_pages()) - 1
+
     def vn_ready(self):
-        """The text is complete: the answers can be chosen."""
-        sc = story_vn.scene(self.vn_id)
-        return sc is not None and self.vn_typed() >= len(t(sc["text"]))
+        """The last page of the text is complete: the answers can be chosen (or, after the answer, the scene closed)."""
+        return self.vn_page_done() and self.vn_last_page()
+
+    def _vn_react(self):
+        """After the answer: what Lyra says to it (nothing for a scene without reactions)."""
+        self.vn_phase = "react"
+        self.vn_page = 0
+        self.vn_t = self.VN_FADE
+        if not self.vn_pages():
+            self._end_vn()
 
     def _vn_confirm(self):
         sc = story_vn.scene(self.vn_id)
         if sc is None:
             self._end_vn()
-        elif not self.vn_ready():
-            self.vn_t = self.VN_FADE + len(t(sc["text"])) / self.VN_TYPE_CPS     # A shows the whole text at once
-        elif self.vn_review:
+        elif not self.vn_page_done():                    # A shows the whole page at once
+            self.vn_t = self.VN_FADE + story_vn.page_length(self._vn_page()) / self.VN_TYPE_CPS + 0.01
+        elif not self.vn_last_page():
+            self.vn_page += 1
+            self.vn_t = self.VN_FADE
+        elif self.vn_phase == "react":
             self._end_vn()
+        elif self.vn_review:
+            self._vn_react()
         elif story_vn.choose(self.state, self.vn_id, self.vn_index, ss.story_wins(self.state)):
             self.save()
-            self._end_vn()
+            self._vn_react()
 
     def _end_vn(self):
         self.vn_id = None
@@ -1016,8 +1073,10 @@ class StoryHub:
             self.del_yes = direction > 0
         elif self.screen == "vn":
             sc = story_vn.scene(self.vn_id)
-            if sc is not None and self.vn_ready() and not self.vn_review:
-                self.vn_index = max(0, min(len(sc["answers"]) - 1, self.vn_index + (1 if direction > 0 else -1)))
+            if sc is not None and self.vn_ready() and not self.vn_review and self.vn_phase == "ask":
+                pos = self.vn_order.index(self.vn_index) if self.vn_index in self.vn_order else 0
+                pos = max(0, min(len(self.vn_order) - 1, pos + (1 if direction > 0 else -1)))
+                self.vn_index = self.vn_order[pos]
         elif self.screen == "name":
             self.entry.move(0, 1 if direction > 0 else -1)
         elif self.screen == "mode":
@@ -1100,8 +1159,8 @@ class StoryHub:
         elif self.screen == "vn":
             if self.vn_review:
                 self._end_vn()                           # watched again: B / Esc closes it
-            elif not self.vn_ready():
-                self._vn_confirm()                       # the answer cannot be skipped: B only shows the whole text
+            elif not self.vn_ready() or self.vn_phase == "react":
+                self._vn_confirm()                       # the answer cannot be skipped: B only shows the text (next page)
         elif self.screen == "film":
             self._end_film()                             # B / Esc: the film is skipped (A does nothing: no accident)
         elif self.screen == "intro":
@@ -1469,38 +1528,58 @@ class StoryHub:
     VN_PANEL = pygame.Rect(40, 52, 700, 0)         # the text and the answers, on the left (the height follows the text)
     VN_PANEL_RIGHT = pygame.Rect(560, 52, 680, 0)  # ... or on the right, when the face of Lyra is on the left
 
+    VN_PANEL_WIDE = 840            # the width of the panel when the answers do not fit in the usual one
+    VN_GAP = 12                    # blank space between two paragraphs of the text
+    VN_NARRATION = (165, 190, 220) # the color of the narration (the words of the speaker are drawn lighter)
+
     def _draw_vn(self, surface, medium, small):
-        """A scene of the visual novel: its picture, and over it a panel with the speaker, the text (typed) and the answers
-        (once the text is complete; the one given is lit when the scene is watched again)."""
+        """A scene of the visual novel: its picture, and over it a panel with the speaker, the page of the text (typed)
+        and, on the last page of the question, the answers (once the text is complete; the one given is lit when the
+        scene is watched again)."""
         sc = story_vn.scene(self.vn_id)
         surface.blit(self._intro_picture(sc["image"]) if sc else _night_sky(), (0, 0))
         if sc is None:
             return
         body = getattr(self, "_body", None) or small
-        base = self.VN_PANEL_RIGHT if sc.get("panel") == "right" else self.VN_PANEL
-        top, width = base.y, base.w
-        x, w = base.x + 28, width - 56
-        full = t(sc["text"])
-        text_lines = _wrap(body, full, w)
-        answers = [_wrap(body, "%d. %s" % (k + 1, t(key)), w - 24) for k, (key, _pts) in enumerate(sc["answers"])]
-        # the panel has the height of the whole scene from the first moment (it does not grow while the text is typed)
-        height = 100 + 34 * len(text_lines) + 22 + sum(12 + 32 * len(a) + 8 for a in answers) + 6
-        r = pygame.Rect(base.x, top, width, height)
+        right = sc.get("panel") == "right"
+        base = self.VN_PANEL_RIGHT if right else self.VN_PANEL
+        asking = self.vn_phase == "ask" and self.vn_last_page()      # the answers come with the last page of the question
+        for wide in (False, True):
+            px, top, width = base.x, base.y, base.w
+            if wide:                                      # long answers: a wider panel, higher, so that all of it fits
+                px, top, width = (BASE_WIDTH - 24 - self.VN_PANEL_WIDE if right else 24), 20, self.VN_PANEL_WIDE
+            x, w = px + 28, width - 56
+            paras = [(narration, _wrap_nb(body, words, w)) for narration, words in self._vn_page()]
+            n_lines = sum(len(lines) for _n, lines in paras)
+            text_h = 34 * n_lines + self.VN_GAP * max(0, len(paras) - 1)
+            answers = []
+            if asking:
+                for pos, k in enumerate(self.vn_order):           # (shown in this order: the number is the place)
+                    answers.append((k, _wrap_nb(body, "%d. %s" % (pos + 1, story_vn.tidy(t(sc["answers"][k][0]))), w - 24)))
+            # the panel has the height of the whole page from the first moment (it does not grow while the text is typed)
+            height = 100 + text_h + 6
+            if asking:
+                height += 22 + sum(12 + 32 * len(a) + 8 for _k, a in answers)
+            if top + height <= BASE_HEIGHT - 16:
+                break
+        r = pygame.Rect(px, top, width, height)
         menu_ui.panel(surface, r, radius=12)
         _text(surface, medium, t(sc["speaker"]), menu_ui.TEXT_SEL, r.y + 36, left=x)
         pygame.draw.line(surface, menu_ui.PANEL_EDGE, (x, r.y + 66), (r.right - 28, r.y + 66), 1)
         shown = self.vn_typed()                                  # the text, typed
         y = r.y + 100
         taken = 0
-        for line in text_lines:
-            if taken >= shown:
-                break
-            _text(surface, body, line[:max(0, shown - taken)], (225, 225, 240), y, left=x)
-            taken += len(line) + 1
-            y += 34
-        if self.vn_ready():                                      # the answers, once the text is complete
-            y = r.y + 100 + 34 * len(text_lines) + 22
-            for k, lines in enumerate(answers):
+        for i, (narration, lines) in enumerate(paras):
+            for line in lines:
+                if taken < shown:
+                    _text(surface, body, line[:max(0, shown - taken)],
+                          self.VN_NARRATION if narration else (232, 232, 245), y, left=x)
+                taken += len(line) + 1
+                y += 34
+            y += self.VN_GAP
+        if asking and self.vn_ready():                           # the answers, once the text is complete
+            y = r.y + 100 + text_h + 22
+            for k, lines in answers:
                 h = 12 + 32 * len(lines)
                 focus = k == self.vn_index
                 if focus:
@@ -1576,10 +1655,12 @@ class StoryHub:
             quiet = (ss.FILMS.get(self.film_id) or {}).get("quiet")
             return ([("back", "hint_skip")] if quiet or self.film_t < self.FILM_TITLE_SEC else []), None
         if self.screen == "vn":
-            if self.vn_review:
-                return [("ok", "hint_close")], None
             if not self.vn_ready():
                 return [("ok", "hint_next")], None
+            if self.vn_phase == "react":
+                return [("ok", "hint_close")], None
+            if self.vn_review:                           # watched again: the reaction (when there is one) comes, then it closes
+                return [("ok", "hint_next" if story_vn.reaction(self.vn_id, self.vn_index) else "hint_close")], None
             return [("ud", "hint_choose"), ("ok", "hint_ok")], None
         if self.screen == "slots":
             if self.col == 1:
