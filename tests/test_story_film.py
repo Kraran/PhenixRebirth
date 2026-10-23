@@ -71,10 +71,13 @@ def _scene_then_end(hub):
 
 
 def _answer_vn(hub):
-    """The scene of the visual novel that ends the concert: the whole text, then the first answer."""
+    """The scene of the visual novel that ends the concert: A through the pages of the text, the answer under the cursor,
+    then what Lyra says to it."""
     assert hub.screen == "vn"
-    hub.confirm()
-    hub.confirm()
+    for _ in range(40):
+        if hub.screen != "vn":
+            break
+        hub.confirm()
     assert hub.screen == "hub"
 
 

@@ -5967,16 +5967,112 @@ _VN_TEXTS = {
     "story_film_vn1_t": ("Visual novel - Scène 1 : le bar de Phobos", "Visual novel - Scene 1: the Phobos bar"),
     "story_vn_lyra": ("LYRA VOSS", "LYRA VOSS"),
     "story_vn1_t": ("Scène 1 : le bar de Phobos", "Scene 1: the Phobos bar"),
+    # (a line that begins with a star is narration; an empty line cuts the text in pages, see story_vn.pages)
     "story_vn1_q": (
-        "Tu m’as sortie de ce vaisseau. Je ne sais toujours pas comment te remercier. "
-        "Tu es venu juste pour vérifier que je tenais encore debout, ou tu veux vraiment boire un verre avec moi ?",
-        "You pulled me out of that ship. I still don’t know how to thank you. "
-        "Did you come just to check that I was still standing, or do you really want to have a drink with me?"),
-    "story_vn1_a1": ("« C’était mon travail. Rien de plus. »", "“It was my job. Nothing more.”"),
-    "story_vn1_a2": ("« Un verre, pourquoi pas. »", "“A drink, why not.”"),
-    "story_vn1_a3": ("« Je voulais te revoir. »", "“I wanted to see you again.”"),
-    "story_vn1_a4": ("« Je voulais être sûr que tu allais bien. Et te revoir. »",
-                     "“I wanted to be sure you were okay. And to see you again.”"),
+        "« Ah. Mon sauveur est vivant. C’est plutôt rassurant. »\n"
+        "*Elle désigne la chaise en face d’elle.\n"
+        "« Assieds-toi, si tu as le temps. Je t’offre un verre. Enfin… avec les restrictions actuelles, ce sera "
+        "probablement un truc synthétique qui prétend être du whisky. »\n"
+        "\n"
+        "*Un bref sourire.\n"
+        "« Je voulais te remercier. Pour de vrai, cette fois. Pas avec un communiqué de presse ou une photo "
+        "officielle. »\n"
+        "*Elle joue avec son verre.\n"
+        "\n"
+        "« Alors, dis-moi… tu savais qui j’étais, quand tu m’as sortie de là-bas ? »",
+        "“Ah. My savior is alive. That’s rather reassuring.”\n"
+        "*She points to the chair across from her.\n"
+        "“Sit down, if you have the time. I’ll buy you a drink. Well… with the current restrictions, it will "
+        "probably be some synthetic stuff pretending to be whisky.”\n"
+        "\n"
+        "*A brief smile.\n"
+        "“I wanted to thank you. For real, this time. Not with a press release or an official photo.”\n"
+        "*She plays with her glass.\n"
+        "\n"
+        "“So, tell me… did you know who I was, when you pulled me out of there?”"),
+    "story_vn1_a1": (
+        "« Oui. Tu es Lyra Voss, la chanteuse. Mais j’avais des gens à sauver. Je n’allais pas te laisser mourir. »",
+        "“Yes. You’re Lyra Voss, the singer. But I had people to save. I wasn’t going to let you die.”"),
+    "story_vn1_a2": (
+        "« Bien sûr que je te connaissais. Même dans une base militaire, il faudrait vivre dans un caisson pour "
+        "ne jamais avoir entendu parler de toi. »",
+        "“Of course I knew you. Even on a military base, you’d have to live in a cryo-pod never to have heard of "
+        "you.”"),
+    "story_vn1_a3": (
+        "« Je savais qui tu étais. Mais à ce moment-là, tu n’étais pas une star. Tu étais quelqu’un qui allait se "
+        "faire tuer. »",
+        "“I knew who you were. But at that moment, you weren’t a star. You were someone who was about to get "
+        "killed.”"),
+    "story_vn1_a4": (
+        "« Je ne savais pas qui tu étais. J’ai compris après. Tu m’aurais vu agir exactement de la même façon si "
+        "tu avais été n’importe qui d’autre. »",
+        "“I didn’t know who you were. I understood afterwards. You’d have seen me act exactly the same way if you "
+        "had been anyone else.”"),
+    "story_vn1_r1": (
+        "*Lyra paraît sincèrement surprise.\n"
+        "« C’est tout ? Pas de demande d’autographe ? Pas de déclaration sur la façon dont ma musique a changé ta "
+        "vie ? »\n"
+        "*Elle rit doucement.\n"
+        "« Je plaisante. Enfin, à moitié. C’est agréable, pour une fois, de ne pas avoir l’impression que quelqu’un "
+        "attend quelque chose de moi. »",
+        "*Lyra looks genuinely surprised.\n"
+        "“That’s it? No request for an autograph? No speech about how my music changed your life?”\n"
+        "*She laughs softly.\n"
+        "“I’m kidding. Well, half kidding. It’s nice, for once, not to feel like someone expects something from "
+        "me.”"),
+    "story_vn1_r2": (
+        "*Elle relève le menton avec un air faussement majestueux.\n"
+        "« Je vois. Ma réputation me précède jusque dans les installations militaires. Je vais finir par croire que "
+        "je suis plus dangereuse que les extraterrestres. »\n"
+        "*Elle rit, puis son expression s’adoucit.\n"
+        "« Mais sérieusement… merci. Je suis contente que tu sois venu t’asseoir avec moi. »",
+        "*She lifts her chin with a mock-majestic air.\n"
+        "“I see. My reputation precedes me all the way into military installations. I’ll end up thinking I’m more "
+        "dangerous than the aliens.”\n"
+        "*She laughs, then her expression softens.\n"
+        "“But seriously… thank you. I’m glad you came to sit with me.”"),
+    "story_vn1_r3": (
+        "*Lyra cesse de jouer avec son verre.\n"
+        "« Quelqu’un. »\n"
+        "*Elle répète le mot à voix basse, comme si elle voulait en vérifier le sens.\n"
+        "« Tu sais, c’est bizarre. Des milliers de personnes me disent que je suis exceptionnelle. Mais j’ai "
+        "parfois l’impression qu’elles ne voient que ce qu’elles veulent voir. »\n"
+        "\n"
+        "*Elle te regarde.\n"
+        "« Toi, tu ne me connaissais même pas personnellement. Et pourtant, tu as risqué ta peau. »\n"
+        "*Elle esquisse un sourire un peu maladroit.\n"
+        "« Je ne sais pas trop quoi te dire. Ce n’est pas habituel pour moi. »",
+        "*Lyra stops playing with her glass.\n"
+        "“Someone.”\n"
+        "*She repeats the word in a low voice, as if to check its meaning.\n"
+        "“You know, it’s strange. Thousands of people tell me I’m exceptional. But sometimes I feel they only see "
+        "what they want to see.”\n"
+        "\n"
+        "*She looks at you.\n"
+        "“You didn’t even know me personally. And yet you risked your neck.”\n"
+        "*She gives a slightly awkward smile.\n"
+        "“I don’t really know what to say to you. This isn’t usual for me.”"),
+    "story_vn1_r4": (
+        "*Lyra semble réfléchir à ta réponse.\n"
+        "« Tu veux dire que j’ai été sauvée par un type qui ne connaissait même pas mes chansons ? »\n"
+        "*Elle secoue la tête avec un sourire.\n"
+        "« Mon ego vient de prendre un sacré coup. »\n"
+        "\n"
+        "*Puis, plus sérieusement :\n"
+        "« Mais je crois que je préfère ça. Au moins, je sais que tu ne l’as pas fait pour pouvoir raconter à tes "
+        "copains que tu as sauvé Lyra Voss. »\n"
+        "*Elle lève son verre.\n"
+        "« À cette rencontre improbable, alors. »",
+        "*Lyra seems to think over your answer.\n"
+        "“You mean I was saved by a guy who didn’t even know my songs?”\n"
+        "*She shakes her head with a smile.\n"
+        "“My ego just took quite a blow.”\n"
+        "\n"
+        "*Then, more seriously:\n"
+        "“But I think I prefer it that way. At least I know you didn’t do it to tell your friends you saved Lyra "
+        "Voss.”\n"
+        "*She raises her glass.\n"
+        "“To this unlikely meeting, then.”"),
     "story_vn2_t": ("Scène 2 : le hangar", "Scene 2: the hangar"),
     "story_vn2_j": ("Visual novel - Scène 2 : le hangar", "Visual novel - Scene 2: the hangar"),
     "story_vn2_q": ("Tu es rentré en un seul morceau. Bien. … Tu as eu peur, là-haut ?",

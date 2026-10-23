@@ -3,6 +3,13 @@ Current release: **v1.5.0**
 
 ## Unreleased (towards 1.5.1)
 
+- Adventure: scene 1 of the visual novel rewritten. The text is now a conversation in three pages (Lyra's words in white, the narration
+  in blue-grey; A shows the page, then the next one), the four answers are new (hidden points 2, 3, 4, 3) and come in a random
+  order each time (the saved pick is still the index in the list, so the points do not depend on the order shown; watched again, the
+  list is in its own order). After the answer Lyra reacts (a text per answer, same pages), then the map comes back; watched again from the
+  journal, the reaction follows too. A page of long answers uses a wider panel so everything fits. A save that already answered scene 1
+  keeps its pick number, which now means the answer with the same number in the new list. New in `story_vn`: `pages`, `page_length`,
+  `tidy`, `reaction`, `order`; the scene keys `shuffle` and the third item of an answer (its reaction).
 - Adventure: visual novel scene 2 (the hangar). Lyra asks "Were you afraid, up there?" (four answers, hidden points 1 to 4) when the
   map is back after the next story mission won (the series and the asteroid belts count, hunts, bonuses and paint do not). A scene
   without a film comes after the previous one: `after` and `wins` in `story_vn.VN_SCENES`; the answer remembers the story missions won

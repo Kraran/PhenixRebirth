@@ -8,17 +8,23 @@ points are always worked out from it, so a change of the table below changes the
 This module knows nothing of the screen (story.py draws it) nor of the other save fields (story_state.py keeps the
 films and the journal). Texts are keys of i18n.T.
 """
+import random
 
 # id -> scene. "film": the film (story_state.FILMS) shown right before it, or None; "image": assets/story/<image>.jpg, the
 # support of the text and of the menu; "answers": [(text key, hidden points)]. A scene without a film comes after
 # another one: "after": its id, "wins": how many story missions (the series and the asteroid belts, see
 # story_state.story_wins) have to be won once that one is answered. "panel": the side of the picture the text sits on.
 # "journal": the title of its line in the journal (a scene with a film is listed by its film).
+# A text is a list of paragraphs, one per line: a line that begins with a star is narration ("*She smiles."), the others
+# are the words of the speaker; an empty line cuts the text in pages (see `pages`). An answer may have a third item, the
+# key of the reaction that follows it (same format as the text). "shuffle": the answers are shown in a random order
+# (the points and the saved pick stay those of the order of the list below).
 VN_SCENES = {
     "vn_1": {
         "film": "vn_1", "image": "vn_1_bar", "title": "story_vn1_t", "speaker": "story_vn_lyra",
-        "text": "story_vn1_q",
-        "answers": [("story_vn1_a1", 1), ("story_vn1_a2", 2), ("story_vn1_a3", 3), ("story_vn1_a4", 4)],
+        "text": "story_vn1_q", "shuffle": True,
+        "answers": [("story_vn1_a1", 2, "story_vn1_r1"), ("story_vn1_a2", 3, "story_vn1_r2"),
+                    ("story_vn1_a3", 4, "story_vn1_r3"), ("story_vn1_a4", 3, "story_vn1_r4")],
     },
     "vn_2": {
         "film": None, "after": "vn_1", "wins": 1, "panel": "right", "image": "vn_2_hangar", "title": "story_vn2_t",
@@ -63,6 +69,61 @@ def scene_of_film(film_id):
         if VN_SCENES[sid]["film"] == film_id:
             return sid
     return None
+
+
+NBSP = "\u00a0"
+
+
+def tidy(text):
+    """A text with its extra spaces dropped and the spaces inside the French quotes (and before a `?` `!` `:` `;`)
+    made unbreakable, so that a line never begins with the closing quote (see story._wrap_nb)."""
+    out = " ".join(str(text).split())
+    for old, new in ((" »", NBSP + "»"), ("« ", "«" + NBSP), (" ?", NBSP + "?"), (" !", NBSP + "!"),
+                     (" :", NBSP + ":"), (" ;", NBSP + ";")):
+        out = out.replace(old, new)
+    return out
+
+
+def pages(text):
+    """A text cut in pages: a list of pages, each a list of paragraphs (narration, words) -- `narration`: the line began
+    with a star. Extra spaces are dropped and the empty lines only separate the pages (never an empty page)."""
+    out, page = [], []
+    for raw in str(text).split("\n"):
+        line = raw.strip()
+        if not line:
+            if page:
+                out.append(page)
+                page = []
+            continue
+        narration = line.startswith("*")
+        words = tidy(line.lstrip("*"))
+        if words:
+            page.append((narration, words))
+    if page:
+        out.append(page)
+    return out
+
+
+def page_length(page):
+    """How many characters a page types (the line breaks of the wrapping count as the space they replace)."""
+    return sum(len(words) + 1 for _narration, words in page)
+
+
+def reaction(scene_id, index):
+    """The key of the text that follows this answer, or None (a scene without reactions, an answer that does not exist)."""
+    sc = VN_SCENES.get(scene_id)
+    if sc is None or isinstance(index, bool) or not isinstance(index, int) or not 0 <= index < len(sc["answers"]):
+        return None
+    ans = sc["answers"][index]
+    return ans[2] if len(ans) > 2 else None
+
+
+def order(scene_id, shuffled=True):
+    """The order the answers are shown in: a list of the indexes of the answers. Random for a scene that asks for it
+    (`shuffled`), otherwise the order of the list."""
+    sc = VN_SCENES.get(scene_id) or {"answers": []}
+    n = len(sc["answers"])
+    return random.sample(range(n), n) if shuffled and sc.get("shuffle") else list(range(n))
 
 
 def pick(state, scene_id):
