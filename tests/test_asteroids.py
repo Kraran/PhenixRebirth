@@ -1,5 +1,5 @@
-"""The TEST mission "Asteroids" (src/asteroids.py): a ship that flies free, rocks that break, the miniature saucer, a
-mission that is neither won nor lost."""
+"""The mission "Asteroids" (src/asteroids.py), the prelude of the main series of each act: a ship that flies free, rocks
+that break, the miniature saucer."""
 import math
 import os
 
@@ -47,12 +47,12 @@ def _state(mode="normal", act=1, credits=0, hull="shield", dome=False, lives=Non
     return st
 
 
-def _launch(run, **kw):
+def _launch(run, mission="ast_1", **kw):
     g = run.game
     st = _state(**kw)
     ss.save_state(ss.story_path(1), st)
     g.story.open_slot(1)
-    g.story.map_index = [m["id"] for m in g.story.missions()].index("bonus_asteroids")
+    g.story.map_index = [m["id"] for m in g.story.missions()].index(mission)
     spec = g.story._launch_selected()
     g._begin_adventure(spec)
     g.input_grace = 0.0
@@ -71,38 +71,21 @@ def _rock(size, x, y, vx=0.0, vy=0.0, rng=None):
 
 
 # ------------------------------------------------------------------ on the map
-@pytest.mark.parametrize("act", (1, 2, 3))
-def test_the_test_mission_is_on_the_map_of_every_act_and_always_playable(act):
-    st = _state(act=act)
-    if act == 3:
-        st["act3_ship"] = "shield"
-    mission = ss.mission_by_id("bonus_asteroids")
-    assert mission in ss.visible_missions(st)
-    assert ss.mission_playable(st, mission) and not ss.mission_done(st, mission)
-
-
-def test_the_test_mission_is_last_on_the_map_and_a_test():
-    mission = ss.mission_by_id("bonus_asteroids")
-    assert mission["test"] is True and mission["asteroids"] is True and mission["target"] == 60
-    assert ss.MISSIONS[-1] is mission
-
-
-def test_the_act_two_cheat_does_not_count_the_test_mission_as_won():
-    st = _state()
-    ss.jump_to_act2(st)
-    assert "bonus_asteroids" not in st["cleared"]
-    assert ss.mission_playable(st, ss.mission_by_id("bonus_asteroids"))
-
-
-def test_the_launch_spec_says_asteroids_and_test():
+@pytest.mark.parametrize("act,mid,target", ((1, "ast_1", 60), (2, "ast_2", 80), (3, "ast_3", 100)))
+def test_the_launch_spec_says_asteroids_and_the_target_of_the_act(act, mid, target):
     from story import StoryHub
     hub = StoryHub()
-    st = _state()
+    st = _state(act=act)
+    if act == 2:
+        st["flags"]["act2"] = True
+    if act == 3:
+        st["act3_ship"] = "shield"
+        st["flags"]["ch3_ready"] = True
     ss.save_state(ss.story_path(1), st)
     hub.open_slot(1)
-    hub.map_index = [m["id"] for m in hub.missions()].index("bonus_asteroids")
+    hub.map_index = [m["id"] for m in hub.missions()].index(mid)
     spec = hub._launch_selected()
-    assert spec["asteroids"] is True and spec["test"] is True and spec["target"] == 60
+    assert spec["asteroids"] is True and spec["target"] == target and "test" not in spec
 
 
 # ------------------------------------------------------------------ the start
@@ -745,9 +728,10 @@ def test_the_mission_is_over_when_the_target_is_reached_and_the_screen_is_empty(
     run.frames(10)
     assert form.rocks == [] and form.waves == 1 and g.adventure is not None      # the short pause, the last explosion
     assert _until_over(run, 60 * 3)
-    assert g.story.toast == t("story_test_won")
     st = g.story.state
-    assert st["credits"] == 700 and "bonus_asteroids" not in st["cleared"]
+    gained = st["credits"] - 700
+    assert gained > 0 and g.story.toast == t("story_clear").format(pts=gained)       # the points are paid, like any mission
+    assert "ast_1" in st["cleared"] and ss.flag(st, "ast_s1") and ss.mission_playable(st, ss.mission_by_id("dome_1"))
 
 
 def test_the_rocks_left_must_be_cleared_before_the_end(run):
@@ -803,7 +787,7 @@ def test_the_ship_keeps_its_course_and_its_controls_until_the_end(run):
     assert p.ast_angle > 0.3 + 0.2
 
 
-def test_a_lost_mission_in_normal_mode_costs_nothing(run):
+def test_a_lost_mission_in_normal_mode_costs_five_percent(run):
     from i18n import t
     _launch(run, credits=900)
     g = run.game
@@ -813,11 +797,11 @@ def test_a_lost_mission_in_normal_mode_costs_nothing(run):
     run.frames(1)
     assert _until_over(run, 60 * 6)
     st = g.story.state
-    assert st["credits"] == 900 and not st.get("fallen")
-    assert g.story.toast == t("story_test_over")
+    assert st["credits"] == 855 and not st.get("fallen") and "ast_1" not in st["cleared"]
+    assert g.story.toast == t("story_fail_pen").format(pts=45)
 
 
-def test_a_veteran_does_not_fall_in_the_test_mission(run):
+def test_a_veteran_falls_in_the_asteroid_belt(run):
     _launch(run, mode="veteran", credits=900)
     g = run.game
     p = g.player
@@ -826,33 +810,43 @@ def test_a_veteran_does_not_fall_in_the_test_mission(run):
     run.frames(1)
     assert _until_over(run, 60 * 6)
     st = g.story.state
-    assert st["credits"] == 900 and not st.get("fallen")
+    assert st["credits"] == 900 and st.get("fallen")
 
 
 # ------------------------------------------------------------------ the result
-def test_the_result_of_a_test_mission_pays_and_takes_nothing():
-    for cleared in (True, False):
-        for mode in ("normal", "veteran"):
-            st = _state(mode=mode, credits=1234)
-            res = ss.record_result(st, "bonus_asteroids", 99999, cleared, kills={"drone": 3})
-            assert res["test"] == ("won" if cleared else "over")
-            assert res["cleared"] is False and res["score"] == 0 and res["lost"] == 0 and not res["fallen"]
-            assert st["credits"] == 1234 and "bonus_asteroids" not in st["cleared"] and not st.get("fallen")
-            assert not st.get("log")
+def test_the_result_of_the_mission_is_the_usual_one():
+    for mode in ("normal", "novice", "veteran"):
+        st = _state(mode=mode, credits=1000)
+        res = ss.record_result(st, "ast_1", 700, True, kills={"drone": 3})
+        assert res["cleared"] is True and res["first"] is True and res["score"] == 700 and res["lost"] == 0
+        assert st["credits"] == 1700 and "ast_1" in st["cleared"] and ss.flag(st, "ast_s1")
+        assert st["log"] == [{"key": "story_log_ast1"}]
+        res = ss.record_result(st, "ast_1", 500, True)                  # again: paid again, nothing else
+        assert res["first"] is False and st["credits"] == 2200 and st["cleared"].count("ast_1") == 1
+        assert len(st["log"]) == 1
 
 
-def test_the_enemies_met_in_a_test_mission_still_go_into_the_bestiary():
+@pytest.mark.parametrize("mode,lost,fallen", (("normal", 50, False), ("novice", 20, False), ("veteran", 0, True)))
+def test_a_lost_result_follows_the_rules_of_the_mode(mode, lost, fallen):
+    st = _state(mode=mode, credits=1000)
+    res = ss.record_result(st, "ast_1", 700, False)
+    assert res["cleared"] is False and res["lost"] == lost and res["fallen"] is fallen
+    assert st["credits"] == 1000 - lost and "ast_1" not in st["cleared"] and not ss.flag(st, "ast_s1")
+    assert bool(st.get("fallen")) is fallen
+
+
+def test_the_enemies_met_in_the_belt_still_go_into_the_bestiary():
     st = _state()
     kind = ss.BESTIARY[0]["id"]
     before = ss.encounters(st, kind)
-    ss.record_result(st, "bonus_asteroids", 0, True, kills={kind: 2})
+    ss.record_result(st, "ast_1", 0, True, kills={kind: 2})
     assert ss.encounters(st, kind) == before + 2
 
 
 def test_other_missions_keep_the_usual_result():
     st = _state(credits=100)
     res = ss.record_result(st, "m1", 400, True)
-    assert res["test"] is None and res["cleared"] is True and st["credits"] == 500
+    assert res["cleared"] is True and st["credits"] == 500
 
 
 # ------------------------------------------------------------------ the picture
@@ -966,8 +960,8 @@ def test_the_generator_is_deterministic(tmp_path):
 
 def test_the_texts_exist_in_french_and_english():
     from i18n import T
-    for key in ("story_m_ast", "story_m_ast_hud", "story_m_ast_b", "story_log_ast", "story_asteroids_hud",
-                "story_test_won", "story_test_over"):
+    for key in ("story_m_ast1", "story_m_ast2", "story_m_ast3", "story_m_ast_hud", "story_m_ast_b", "story_log_ast1",
+                "story_log_ast2", "story_log_ast3", "story_asteroids_hud"):
         v = T[key]
         assert v["fr"] and v["en"] and v["fr"] != v["en"], key
 
@@ -1095,7 +1089,7 @@ def test_each_new_rock_waits_for_its_pause(run):
 
 
 def test_the_target_is_sixty_everywhere():
-    assert ast.TARGET == 60 == ss.mission_by_id("bonus_asteroids")["target"]
+    assert ast.TARGET == 60 == ss.mission_by_id("ast_1")["target"]
 
 
 def test_the_formation_of_the_mission_has_the_target_of_the_map(run):

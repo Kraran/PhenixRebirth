@@ -204,7 +204,10 @@ def test_the_shield_reaches_the_arcade_ship():
     lo = ss.loadout(st)
     assert (lo["speed_pct"], lo["lives"], lo["wall"], lo["dome_dur"]) == (100, 3, "immune", 2.0)
     assert ss.act_caps(st) == {"speed": 100, "lives": 3}
-    assert ss.flag(st, "ch3_ready") and ss.mission_playable(st, ss.mission_by_id("final_1"))
+    assert ss.flag(st, "ch3_ready") and not ss.mission_playable(st, ss.mission_by_id("final_1"))      # the belt first
+    assert ss.mission_playable(st, ss.mission_by_id("ast_3"))
+    _win(st, "ast_3")
+    assert ss.mission_playable(st, ss.mission_by_id("final_1"))
 
 
 def test_the_phenix_reaches_the_arcade_ship():
@@ -219,6 +222,8 @@ def test_the_phenix_reaches_the_arcade_ship():
         assert ss.buy(st, sid), sid
     lo = ss.loadout(st)
     assert (lo["speed_pct"], lo["lives"], lo["phenix_pct"], lo["wall"]) == (100, 3, 100, "slow")
+    assert not ss.mission_playable(st, ss.mission_by_id("final_1")) and ss.mission_playable(st, ss.mission_by_id("ast_3"))
+    _win(st, "ast_3")
     assert ss.mission_playable(st, ss.mission_by_id("final_1"))
 
 
@@ -279,6 +284,7 @@ def test_the_hub_launches_the_drop_mission_with_its_item():
 def test_the_final_series_goes_to_triton_and_ends_the_adventure():
     st = _act3("shield")
     st["flags"]["ch3_ready"] = True
+    _win(st, "ast_3")                                                # the belt first
     for i, mid in enumerate(FINAL):
         m = ss.mission_by_id(mid)
         assert ss.mission_playable(st, m), mid

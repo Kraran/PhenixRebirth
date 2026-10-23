@@ -13,6 +13,7 @@ COUNTS = {"dome_1": 13, "dome_2": 22, "dome_3": 7, "dome_4": 10}
 def _open(**flags):
     st = ss.create_slot(1, "NOVA", "normal")
     ss.mark_intro_seen(st)
+    st["flags"]["ast_s1"] = True                    # (the belt is crossed: these tests are about the Dome series)
     st["flags"].update(flags)
     ss.save_state(ss.story_path(1), st)
     hub = StoryHub()
@@ -25,9 +26,9 @@ def test_the_series_is_four_chained_missions_after_the_bestiary_hunts_in_the_lis
     ids = [m["id"] for m in ss.MISSIONS]
     after = ids.index("best_s4") + 1
     assert ids[after:after + 3] == ["bonus_2d", "bonus_2d_phenix", "bonus_vip"]   # the BONUS missions after the last hunt
-    assert ids[after + 3:after + 7] == list(DOME)
+    assert ids[after + 3] == "ast_1" and ids[after + 4:after + 8] == list(DOME)      # the belt, then the series
     chain = [ss.mission_by_id(i) for i in DOME]
-    assert chain[0]["need"] is None                            # Dome I is open from the start, like the first sortie
+    assert chain[0]["need"] == "ast_s1"                        # Dome I waits for the belt (ast_1), open from the start
     assert ss.mission_by_id("ch1_sortie")["need"] is None
     for prev, nxt in zip(chain, chain[1:]):
         assert nxt["need"] in prev["unlock"], nxt["id"]       # each one opens the next
@@ -56,18 +57,22 @@ def test_the_old_gate_mission_is_gone_and_the_teaser_waits_for_act_two():
 
 
 # ------------------------------------------------------------------ the rules
-def test_dome_one_and_the_first_sortie_can_be_flown_on_a_new_save():
+def test_the_belt_and_the_first_sortie_can_be_flown_on_a_new_save_and_dome_one_waits_for_the_belt():
     st = ss.create_slot(1, "NOVA", "normal")
     assert st["flags"].get("bestiary_s4") is None and not st["cleared"]
-    assert ss.mission_playable(st, ss.mission_by_id("dome_1"))
+    assert ss.mission_playable(st, ss.mission_by_id("ast_1"))
     assert ss.mission_playable(st, ss.mission_by_id("ch1_sortie"))
+    assert not ss.mission_playable(st, ss.mission_by_id("dome_1"))
+    ss.record_result(st, "ast_1", 100, True)
+    assert ss.mission_playable(st, ss.mission_by_id("dome_1"))
     for mid in ("best_s2", "best_s3", "best_s4", "dome_2", "dome_3", "dome_4", "dome_5", "act2_gate"):
         assert not ss.mission_playable(st, ss.mission_by_id(mid)), mid      # the rest still waits its turn
 
 
 def test_a_dome_mission_is_locked_until_the_previous_one_is_cleared():
     st = ss.default_state()
-    assert ss.mission_playable(st, ss.mission_by_id("dome_1"))               # no Bestiary hunt needed
+    st["flags"]["ast_s1"] = True
+    assert ss.mission_playable(st, ss.mission_by_id("dome_1"))               # no Bestiary hunt needed, only the belt
     assert not ss.mission_open(st, ss.mission_by_id("dome_2"))
     assert not ss.mission_open(st, ss.mission_by_id("dome_2"))
     ss.record_result(st, "dome_1", 100, True)
@@ -78,7 +83,7 @@ def test_a_dome_mission_is_locked_until_the_previous_one_is_cleared():
 
 def test_a_cleared_dome_mission_cannot_be_flown_again():
     st = ss.default_state()
-    st["flags"]["bestiary_s4"] = True
+    st["flags"]["bestiary_s4"] = st["flags"]["ast_s1"] = True
     m = ss.mission_by_id("dome_1")
     assert ss.mission_playable(st, m)
     ss.record_result(st, "dome_1", 100, True)
@@ -89,7 +94,7 @@ def test_a_cleared_dome_mission_cannot_be_flown_again():
 
 def test_a_failed_try_can_be_flown_again_and_the_hunts_stay_replayable():
     st = ss.default_state()
-    st["flags"]["bestiary_s4"] = True
+    st["flags"]["bestiary_s4"] = st["flags"]["ast_s1"] = True
     m = ss.mission_by_id("dome_1")
     ss.record_result(st, "dome_1", 0, False)
     assert ss.mission_playable(st, m) and st["cleared"] == []
@@ -101,7 +106,7 @@ def test_a_failed_try_can_be_flown_again_and_the_hunts_stay_replayable():
 
 def test_the_whole_series_in_order_gives_one_journal_line_each():
     st = ss.create_slot(1, "NOVA", "normal")
-    for mid in ("ch1_sortie", "best_s2", "best_s3", "best_s4") + DOME:
+    for mid in ("ch1_sortie", "best_s2", "best_s3", "best_s4", "ast_1") + DOME:
         assert ss.mission_playable(st, ss.mission_by_id(mid)), mid
         ss.record_result(st, mid, 50, True)
     assert [e["key"] for e in st["log"]][-4:] == ["story_log_dome1", "story_log_dome2", "story_log_dome3", "story_log_dome4"]

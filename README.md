@@ -32,7 +32,7 @@ Free to play · Open source · MIT License
 - **Adventure intro read aloud** (French) — the text follows the voice (`assets/story/voice/`, made with `tools/make_intro_voice.py`)
 - **Adventure intro in video** — the story slides (Huygens, Phobos, Kamarasov; Kamarasov's death in Veteran mode) are short looping clips in `assets/story/`, like Wallems' workshop
 - **Return to base** — a lost mission (Normal mode) is drawn into a blue whirlwind, a flash, and the mission map comes back; Enter / Esc / a pad button skips it (`python tools/make_anchor_sound.py` makes its sound, numpy only)
-- **TEST mission "Asteroids"** (last on every Adventure map) — free flight in the spirit of the Atari arcade game; nothing is won or lost
+- **Asteroids belt** (Adventure, the prelude of the main series of each act: 60, 80 then 100 rocks to destroy) — free flight in the spirit of the Atari arcade game; replayable, and its first victory opens the Dome, the Phenix and la Riposte series
 - **Shield ship** — second craft: freeze + explosive barrier (2 s, 5 s cooldown)
 - Ship select at start (and P2 in hot-seat); blue tint only when both pick the same hull
 - Achievements in two pages, ARCADE (32) and ADVENTURE (32, Acts 1 to 3): a grid of illustrated cards (the frame's metal is the tier: steel, bronze, silver, gold; grey when locked) and a panel that tells how to get the one under the cursor, its tiers and the date; some are secret until found. The cursor turns the page at the edges of the grid (Tab / LB / RB: High Scores, Jukebox). The pictures are made by `tools/make_achievement_art.py`

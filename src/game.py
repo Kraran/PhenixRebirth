@@ -1970,8 +1970,7 @@ class Game:
         """True while a mission of a Veteran save is played (one death ends the save for good)."""
         story = getattr(self, "story", None)
         state = getattr(story, "state", None) or {}
-        return (bool(getattr(self, "adventure", None)) and state.get("mode") == "veteran"
-                and not (self.adventure or {}).get("test"))     # (a test mission never makes a Veteran fall)
+        return bool(getattr(self, "adventure", None)) and state.get("mode") == "veteran"
 
     def _bank_adventure(self, cleared):
         """Write the result of the mission into the save (once)."""
@@ -2046,7 +2045,7 @@ class Game:
             self.boss_saucer = None
             return
         elif adv and adv.get("asteroids"):
-            # the Asteroids test mission (src/asteroids.py): rocks that break, the miniature saucer, a ship that flies free
+            # the Asteroids mission (src/asteroids.py): rocks that break, the miniature saucer, a ship that flies free
             self.stage = 1
             mult = float(adv.get("speed") or 1.0) * self.difficulty_speed_mult()
             self.formation = asteroids.AsteroidFormation(speed_mult=mult, target=int(adv.get("target") or asteroids.TARGET))
@@ -4336,7 +4335,7 @@ class Game:
         
         self.formation.update(self.dt, self.player.x)
         escort.tick(self)                         # the VIP rescue: the cruise ship (nothing in any other mission)
-        asteroids.tick(self)                      # the Asteroids test mission: rocks, saucer, shots (nothing elsewhere)
+        asteroids.tick(self)                      # the Asteroids mission: rocks, saucer, shots (nothing elsewhere)
         update_play.tick_loot(self)
         self._drain_detach_pops()
         self._check_extra_lives()

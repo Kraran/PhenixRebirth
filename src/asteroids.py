@@ -1,4 +1,4 @@
-"""The BONUS test mission "Asteroids" (story_state.py, id `bonus_asteroids`): the game of Atari's Asteroids, played with
+"""The mission "Asteroids" (story_state.py, ids `ast_1`, `ast_2`, `ast_3`: the prelude of the main series of each act): the game of Atari's Asteroids, played with
 the ship of the hangar.
 
 The ship turns (left / right), pushes (up) and fires; it keeps its speed, and what leaves one side of the screen comes
@@ -16,7 +16,7 @@ _update_asteroid) and draws it turned (Player._draw_asteroid). Everything else i
   so 4 or 5 times in a mission, more in a long one) it crosses the screen zigzagging and fires at the ship, a little
   wide of it. Its shots break the rocks too. No saucer after the target is reached.
 - Shots: at most MAX_SHOTS on the screen, they carry the speed of the ship and die after SHOT_LIFE seconds.
-- Points (the test mission pays nothing in the hangar, see story_state): ROCK_POINTS, SAUCER_POINTS.
+- Points (paid in the hangar like any mission, see story_state): ROCK_POINTS, SAUCER_POINTS.
 
 `AsteroidFormation` is the formation of the mission (nothing a bird has: no enemy, no bullet in the generic lists);
 `tick(game)` runs it every frame and `draw(surface)` draws it. The pictures of the rocks are made by

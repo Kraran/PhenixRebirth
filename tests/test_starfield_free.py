@@ -176,7 +176,7 @@ def _launch(run):
     ss.mark_intro_seen(st)
     ss.save_state(ss.story_path(1), st)
     g.story.open_slot(1)
-    g.story.map_index = [m["id"] for m in g.story.missions()].index("bonus_asteroids")
+    g.story.map_index = [m["id"] for m in g.story.missions()].index("ast_1")
     g._begin_adventure(g.story._launch_selected())
     g.input_grace = 0.0
     g.player.infinite_lives = False

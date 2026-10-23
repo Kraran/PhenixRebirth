@@ -43,6 +43,13 @@ Current release: **v1.5.0**
   they share (speed 80 % 2 000, walls: slow down 3 000, lives 4 000, gauge 80 % 3 000) and the Act 3 rows are dear (speed 100 %
   4 000, lives 5 000, walls: immunity 4 000, gauge 100 % 5 000, the dome lasts longer in two steps: 2 000 then 3 000). The Act 1
   prices of the Shield, the paint shop (500) and the loot items are unchanged. Tests: `tests/test_story_prices.py`
+- Adventure asteroid belt: the Asteroids level leaves the test missions and becomes the prelude of the main series of each act
+  ("Asteroid belt I / II / III": 60, 80 then 100 rocks to destroy, a road through the belt). It sits on the map right before
+  Dome I, Phenix I and Riposte I (Riposte: after the hull is at 100 %), which it now opens. It is replayable, paid every time
+  and follows the usual rules of failure (Normal and Novice lose a share of the points, the Veteran falls). Each one is told by a
+  scene before the first launch (the picture will come later, a dark sky until then, journal line, French and English). The
+  cheats 2222 and NIX2 count the belts of their act as crossed, and an old save whose series is already started skips the
+  belt. Tests: `tests/test_story_asteroids_series.py`
 
 ## Done in 1.5.0
 
