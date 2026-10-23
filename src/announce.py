@@ -59,6 +59,7 @@ KIND_STYLE = {
     "live": ("special", "standard"),
     "phen": ("special", "standard"),
     "stage": ("special", "standard"),
+    "vn": ("special", "standard"),
     "pad": ("danger", "discreet"),
     "system": ("neutral", "discreet"),
 }

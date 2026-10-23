@@ -308,6 +308,8 @@ class StoryHub:
         self.cheat_buf = ""            # last letters typed on the mission map
         self.cheat_unlock = False      # UNLK: every mission can be played, nothing is saved any more
         self.cheat_act2 = False        # ACT2: the save jumped to Act 2, nothing is saved any more
+        self.cheat_vn = False          # VNOV (typed on the high scores): every scene of the visual novel, nothing saved
+        self.vn_pick = None            # the answer given in the scene on screen (the reaction of Lyra follows it)
         self.best_index = 0            # cursor in the Bestiary list
         self.extras_index = 0          # which paragraph of the Extras tab is chosen
         self.anim_t = 0.0              # seconds, drives the Bestiary animation
@@ -575,8 +577,9 @@ class StoryHub:
         if sc is None:
             return False
         self.vn_id = scene_id
-        self.vn_review = story_vn.answered(self.state, scene_id)
-        pick = story_vn.pick(self.state, scene_id)
+        pick = None if self.cheat_vn else story_vn.pick(self.state, scene_id)      # (VNOV: always told afresh)
+        self.vn_review = pick is not None
+        self.vn_pick = pick
         self.vn_order = story_vn.order(scene_id, shuffled=not self.vn_review)   # (watched again: the order of the list)
         self.vn_index = pick if pick is not None else self.vn_order[0]
         self.vn_phase = "ask"
@@ -592,7 +595,7 @@ class StoryHub:
         if sc is None:
             return []
         if self.vn_phase == "react":
-            key = story_vn.reaction(self.vn_id, story_vn.pick(self.state, self.vn_id))
+            key = story_vn.reaction(self.vn_id, self.vn_pick)
             return story_vn.pages(t(key)) if key else []
         return story_vn.pages(t(sc["text"]))
 
@@ -637,8 +640,12 @@ class StoryHub:
             self._end_vn()
         elif self.vn_review:
             self._vn_react()
+        elif self.cheat_vn:                              # VNOV: the answer is not kept, Lyra answers all the same
+            self.vn_pick = self.vn_index
+            self._vn_react()
         elif story_vn.choose(self.state, self.vn_id, self.vn_index, ss.story_wins(self.state)):
             self.save()
+            self.vn_pick = self.vn_index
             self._vn_react()
 
     def _end_vn(self):
@@ -918,7 +925,7 @@ class StoryHub:
     @property
     def cheating(self):
         """A cheat code is on: nothing is written to the save until it is loaded again."""
-        return bool(self.cheat_unlock or self.cheat_act2)
+        return bool(self.cheat_unlock or self.cheat_act2 or self.cheat_vn)
 
     def missions(self):
         """The missions of the map: those of the current act (every one under the UNLK cheat)."""
@@ -1207,7 +1214,7 @@ class StoryHub:
 
     def log_entries(self):
         """The journal as a list: first the story intro (always there), then what happened."""
-        return ss.journal_entries(self.state)
+        return ss.journal_entries(self.state, cheat_vn=self.cheat_vn)
 
     def _hub_nav_v(self, direction):
         if self.paint_mode:

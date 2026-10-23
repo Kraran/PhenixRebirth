@@ -2124,11 +2124,12 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
     return res
 
 
-def journal_entries(state):
+def journal_entries(state, cheat_vn=False):
     """The journal as a list: the story intro first (always there), then what happened.
 
     Right under the first-clear line of a hunt mission comes a line with the total of
     enemies destroyed in all the runs of that mission (only once there is something to count).
+    `cheat_vn` (the code VNOV): every scene of the visual novel is listed, answered or not.
     """
     out = [{"intro": True}]                                  # lines that replay a story scene, then the films
     for mid in scenes_seen(state):
@@ -2136,8 +2137,12 @@ def journal_entries(state):
         out.extend({"film": fid} for fid in film_chain(mid) if film_seen(state, fid))
     shown = {e.get("film") for e in out}
     out.extend({"film": fid} for fid in FILMS if fid not in shown and film_seen(state, fid))
+    if cheat_vn:                                                                 # every film and scene of the visual novel
+        shown = {e.get("film") for e in out}
+        out.extend({"film": story_vn.scene(sid)["film"]} for sid in story_vn.VN_ORDER
+                   if story_vn.scene(sid).get("film") and story_vn.scene(sid)["film"] not in shown)
     out.extend({"vn": sid} for sid in story_vn.VN_ORDER                          # (a scene with a film is listed by it)
-               if not story_vn.scene(sid).get("film") and story_vn.answered(state, sid))
+               if not story_vn.scene(sid).get("film") and (cheat_vn or story_vn.answered(state, sid)))
     hunts = {m["log"]: m["id"] for m in MISSIONS if (is_hunt(m) or is_paint(m)) and m.get("log")}
     for entry in state.get("log") or []:
         out.append(entry)

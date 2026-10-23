@@ -173,6 +173,7 @@ def menu_confirm(game):
                 from story import StoryHub
                 game.story = StoryHub()
                 game.story.sounds = getattr(game, "sounds", None)
+            game.story.cheat_vn = bool(getattr(game, "cheat_vn", False))     # (the code VNOV, typed on the high scores)
             game.story.open_slots()
             game.menu_screen = "story_hub"
             game.menu_idle = 0.0

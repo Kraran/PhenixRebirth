@@ -7,7 +7,7 @@ pause/options, high scores, attract-mode help, and credits.
 Play modes: solo, hot-seat (alternating), coop (simultaneous). Options cover
 controls, autofire, volumes, session audio mix, rumble, display, GPU present,
 VSync, refresh cap, bezels, FPS counter, CRT scanlines and language.
-Cheats on the high-score menu: LV02–LV99, LIVE, PHEN.
+Cheats on the high-score menu: LV02–LV99, LIVE, PHEN, VNOV.
 v1.5.0 — Adventure (beta): Acts 1-3, rebindable controls, music, announcer to level 31.
 v1.4.5 — 144 Hz option, smoother fullscreen, safer saves, errors.log.
 v1.4.4 — Adventure chapter 1 (Shield, broken dome, bestiary, hangar credits).
@@ -20,7 +20,7 @@ Architecture notes:
 - Display rebuild (GPU/bezel/mode) covers the desktop then refocuses the pad.
 - State flags: started, game_over, paused, stage_transition, menu_screen, hs_phase.
 - Stages cycle content 1–5 forever with rising speed (stage_speed_mult).
-- Cheats on the menu high-score screen: LV02–LV99 (a stage), LIVE, PHEN (stackable).
+- Cheats on the menu high-score screen: LV02–LV99 (a stage), LIVE, PHEN (stackable), VNOV (every visual novel scene).
 - hs_phase "card" = GAME OVER hold (voice + fading rumble) before scores / hot-seat.
 
 This file is intentionally large; split only if a future refactor needs it.
@@ -2111,6 +2111,14 @@ class Game:
             self.cheat_buffer = ""
             self.cheat_msg = t("cheat_live")
             self.cheat_kind = "live"
+            self.cheat_msg_timer = 5.0
+        elif "VNOV" in buf:                                # the Adventure: every scene of the visual novel, nothing saved
+            self.cheat_vn = not getattr(self, "cheat_vn", False)          # (typed again: back to normal)
+            if getattr(self, "story", None) is not None:
+                self.story.cheat_vn = self.cheat_vn
+            self.cheat_buffer = ""
+            self.cheat_msg = t("cheat_vn_on" if self.cheat_vn else "cheat_vn_off")
+            self.cheat_kind = "vn"
             self.cheat_msg_timer = 5.0
         elif "PHEN" in buf:
             self.used_cheat = True
