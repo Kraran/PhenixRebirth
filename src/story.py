@@ -20,6 +20,7 @@ import announce
 import story_feats
 import story_items
 import story_state as ss
+import story_vn
 import loot
 from text_cache import TextCache
 import bestiary_art
@@ -299,6 +300,11 @@ class StoryHub:
         self._film = None              # its videoclip.ClipPlayer
         self._film_sound = None        # path of its sound, until the sound has started
         self.film_t = 0.0              # seconds since it started
+        self.vn_id = None              # the visual novel scene on screen (screen "vn", story_vn.VN_SCENES)
+        self.vn_index = 0              # the answer under the cursor
+        self.vn_t = 0.0                # seconds since the scene appeared (fade in, then the text is typed)
+        self.vn_review = False         # the scene is answered already: shown again, nothing can change
+        self.vn_return = "map"         # pane to go back to when it is over
         self._clip_name = None
         self._clip_shade = None
         self._clip_paths = {}          # picture name -> its clip file (None: a still)
@@ -458,6 +464,9 @@ class StoryHub:
                 clip.close()
             ss.mark_film_seen(self.state, film_id)
             self.save()
+            vn = story_vn.scene_of_film(film_id)
+            if vn:
+                self.start_vn(vn, back_to=back_to)       # no film to show: the scene comes straight away
             return False
         self._stop_film()
         self.film_id = film_id
@@ -531,6 +540,68 @@ class StoryHub:
         self.zone = "slots"
         if nxt:
             self.start_film(nxt, back_to=self.film_return)     # the next song of the concert
+        elif film and story_vn.scene_of_film(film):
+            self.start_vn(story_vn.scene_of_film(film), back_to=self.film_return)   # the film of a visual novel scene
+
+    # --- the visual novel: a picture, a text and the answers to choose from (story_vn.VN_SCENES) ---
+    VN_FADE = 0.8                  # seconds of black fading away when the scene appears
+    VN_TYPE_CPS = 52.0             # characters of the text shown per second
+
+    def start_vn(self, scene_id, back_to="map"):
+        """Show a scene of the visual novel. Answered already (watched again from the journal): the answer given is lit
+        and nothing can change."""
+        if story_vn.scene(scene_id) is None:
+            return False
+        self.vn_id = scene_id
+        self.vn_review = story_vn.answered(self.state, scene_id)
+        pick = story_vn.pick(self.state, scene_id)
+        self.vn_index = pick if pick is not None else 0
+        self.vn_t = 0.0
+        self.vn_return = back_to
+        self.screen = "vn"
+        return True
+
+    def vn_typed(self):
+        """How many characters of the text are on screen (the whole text once it has been typed)."""
+        sc = story_vn.scene(self.vn_id) or {}
+        return max(0, int((self.vn_t - self.VN_FADE) * self.VN_TYPE_CPS)) if sc else 0
+
+    def vn_ready(self):
+        """The text is complete: the answers can be chosen."""
+        sc = story_vn.scene(self.vn_id)
+        return sc is not None and self.vn_typed() >= len(t(sc["text"]))
+
+    def _vn_confirm(self):
+        sc = story_vn.scene(self.vn_id)
+        if sc is None:
+            self._end_vn()
+        elif not self.vn_ready():
+            self.vn_t = self.VN_FADE + len(t(sc["text"])) / self.VN_TYPE_CPS     # A shows the whole text at once
+        elif self.vn_review:
+            self._end_vn()
+        elif story_vn.choose(self.state, self.vn_id, self.vn_index):
+            self.save()
+            self._end_vn()
+
+    def _end_vn(self):
+        self.vn_id = None
+        self.screen = "hub"
+        self.pane = self.vn_return
+        self.zone = "slots"
+
+    def _maybe_vn(self):
+        """The concert is over and a scene of the visual novel was not told (a save made before it, or the game left
+        in the middle): it comes now, with its film when that was not watched."""
+        if self.state is None or self.screen not in ("hub",):
+            return
+        sid = ss.vn_due(self.state)
+        if not sid:
+            return
+        film = story_vn.scene(sid)["film"]
+        if ss.film_seen(self.state, film):
+            self.start_vn(sid, back_to="map")
+        else:
+            self.start_film(film, back_to="map")
 
     # --- Act 3: the choice of the hull that keeps the quantum anchor ---
     def _maybe_act3(self):
@@ -574,6 +645,9 @@ class StoryHub:
         self.anim_t += max(0.0, min(0.25, float(dt)))
         if self.screen == "film":
             self._tick_film(max(0.0, min(0.25, float(dt))))
+            return
+        if self.screen == "vn":
+            self.vn_t += max(0.0, min(0.25, float(dt)))
             return
         if self._film is not None:
             self._stop_film()
@@ -729,6 +803,7 @@ class StoryHub:
         self.toast = ""
         story_feats.check(self.state)             # a save made before the Adventure page gets what it has earned
         self._maybe_act3()                        # Act 2 won and no hull chosen yet: the attack on Phobos
+        self._maybe_vn()                          # the concert is over, the visual novel has not begun
 
     def save(self):
         if self.slot_no is None or self.cheating:
@@ -934,6 +1009,10 @@ class StoryHub:
                 self.col = 0
         elif self.screen in ("delete", "leave"):
             self.del_yes = direction > 0
+        elif self.screen == "vn":
+            sc = story_vn.scene(self.vn_id)
+            if sc is not None and self.vn_ready() and not self.vn_review:
+                self.vn_index = max(0, min(len(sc["answers"]) - 1, self.vn_index + (1 if direction > 0 else -1)))
         elif self.screen == "name":
             self.entry.move(0, 1 if direction > 0 else -1)
         elif self.screen == "mode":
@@ -966,6 +1045,8 @@ class StoryHub:
             return self._intro_next()
         elif self.screen == "choice":
             self._choice_confirm()
+        elif self.screen == "vn":
+            self._vn_confirm()
         elif self.screen == "delete":
             if self.del_yes:
                 ss.delete_slot(self.sel + 1)
@@ -1011,6 +1092,11 @@ class StoryHub:
             self.screen = "name"
         elif self.screen == "choice":
             self.choice_ask = False                      # the choice itself cannot be skipped
+        elif self.screen == "vn":
+            if self.vn_review:
+                self._end_vn()                           # watched again: B / Esc closes it
+            elif not self.vn_ready():
+                self._vn_confirm()                       # the answer cannot be skipped: B only shows the whole text
         elif self.screen == "film":
             self._end_film()                             # B / Esc: the film is skipped (A does nothing: no accident)
         elif self.screen == "intro":
@@ -1325,7 +1411,7 @@ class StoryHub:
     def covers_screen(self):
         """True when the current screen paints every pixel itself (the slide pictures), so the
         starfield underneath need not be drawn."""
-        return self.screen in ("intro", "film")
+        return self.screen in ("intro", "film", "vn")
 
     # --- draw ---
     def draw(self, surface, font, medium, small, body=None):
@@ -1337,6 +1423,9 @@ class StoryHub:
             return
         if self.screen == "film":
             self._draw_film(surface, medium)
+            return
+        if self.screen == "vn":
+            self._draw_vn(surface, medium, small)
             return
         if self.screen != "hub":
             self._draw_gate(surface, font, medium, small)
@@ -1370,6 +1459,54 @@ class StoryHub:
 
         self._draw_tabs(surface)
 
+    VN_PANEL = pygame.Rect(40, 52, 700, 0)         # the text and the answers, on the left (the height follows the text)
+
+    def _draw_vn(self, surface, medium, small):
+        """A scene of the visual novel: its picture, and over it a panel with the speaker, the text (typed) and the answers
+        (once the text is complete; the one given is lit when the scene is watched again)."""
+        sc = story_vn.scene(self.vn_id)
+        surface.blit(self._intro_picture(sc["image"]) if sc else _night_sky(), (0, 0))
+        if sc is None:
+            return
+        body = getattr(self, "_body", None) or small
+        top, width = self.VN_PANEL.y, self.VN_PANEL.w
+        x, w = self.VN_PANEL.x + 28, width - 56
+        full = t(sc["text"])
+        text_lines = _wrap(body, full, w)
+        answers = [_wrap(body, "%d. %s" % (k + 1, t(key)), w - 24) for k, (key, _pts) in enumerate(sc["answers"])]
+        # the panel has the height of the whole scene from the first moment (it does not grow while the text is typed)
+        height = 100 + 34 * len(text_lines) + 22 + sum(12 + 32 * len(a) + 8 for a in answers) + 6
+        r = pygame.Rect(self.VN_PANEL.x, top, width, height)
+        menu_ui.panel(surface, r, radius=12)
+        _text(surface, medium, t(sc["speaker"]), menu_ui.TEXT_SEL, r.y + 36, left=x)
+        pygame.draw.line(surface, menu_ui.PANEL_EDGE, (x, r.y + 66), (r.right - 28, r.y + 66), 1)
+        shown = self.vn_typed()                                  # the text, typed
+        y = r.y + 100
+        taken = 0
+        for line in text_lines:
+            if taken >= shown:
+                break
+            _text(surface, body, line[:max(0, shown - taken)], (225, 225, 240), y, left=x)
+            taken += len(line) + 1
+            y += 34
+        if self.vn_ready():                                      # the answers, once the text is complete
+            y = r.y + 100 + 34 * len(text_lines) + 22
+            for k, lines in enumerate(answers):
+                h = 12 + 32 * len(lines)
+                focus = k == self.vn_index
+                if focus:
+                    menu_ui.highlight(surface, pygame.Rect(x - 12, y - 18, w + 24, h))
+                col = menu_ui.TEXT_SEL if focus else menu_ui.TEXT
+                for j, line in enumerate(lines):
+                    _text(surface, body, line, col, y + 32 * j, left=x + 4)
+                y += h + 8
+        fade = 1.0 - min(1.0, self.vn_t / self.VN_FADE)
+        if fade > 0:
+            if self._intro_black is None:
+                self._intro_black = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+            self._intro_black.set_alpha(int(255 * fade))
+            surface.blit(self._intro_black, (0, 0))
+
     FILM_TITLE_SEC = 5.0           # the title of a film shows over its first seconds
 
     def _draw_film(self, surface, medium):
@@ -1379,7 +1516,7 @@ class StoryHub:
         if img is not None:
             surface.blit(img, ((BASE_WIDTH - img.get_width()) // 2, (BASE_HEIGHT - img.get_height()) // 2))
         film = ss.FILMS.get(self.film_id) or {}
-        if film.get("title") and self.film_t < self.FILM_TITLE_SEC:
+        if film.get("title") and not film.get("quiet") and self.film_t < self.FILM_TITLE_SEC:
             fade = min(1.0, self.film_t / 0.6, (self.FILM_TITLE_SEC - self.film_t) / 0.8)
             title = _render(medium, t(film["title"]), (255, 225, 140)).copy()      # (the cached one stays opaque)
             band = pygame.Surface((BASE_WIDTH, title.get_height() + 24), pygame.SRCALPHA)
@@ -1427,7 +1564,14 @@ class StoryHub:
             return [("ok", ok), ("ud", "hint_speed"), ("back", "hint_skip")], lit
         if self.screen == "film":
             # with the title only: after that the bar would hide the words of the song (the bottom of the picture)
-            return ([("back", "hint_skip")] if self.film_t < self.FILM_TITLE_SEC else []), None
+            quiet = (ss.FILMS.get(self.film_id) or {}).get("quiet")
+            return ([("back", "hint_skip")] if quiet or self.film_t < self.FILM_TITLE_SEC else []), None
+        if self.screen == "vn":
+            if self.vn_review:
+                return [("ok", "hint_close")], None
+            if not self.vn_ready():
+                return [("ok", "hint_next")], None
+            return [("ud", "hint_choose"), ("ok", "hint_ok")], None
         if self.screen == "slots":
             if self.col == 1:
                 return [choose, ("ok", "hint_delete"), ("l", "hint_back"), back], None

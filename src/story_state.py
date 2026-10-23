@@ -18,6 +18,7 @@ import time
 import unicodedata
 
 import story_items
+import story_vn
 from safe_io import atomic_write_json, backup_unreadable
 from settings import asset_path, user_data_dir, ENEMY_VETERAN_BONUS
 
@@ -825,6 +826,7 @@ def default_state():
         "mission_clears": {},    # how many times a hunt mission was won (its level is one more)
         "paint": {"step": 0, "runs": 0, "token": False},   # the Act 2 paint series (see paint_state)
         "items": story_items.clean(None),   # the loot items of the current Act (see story_items.py)
+        "vn": story_vn.clean(None),         # the answers of the visual novel (hidden points, see story_vn.py)
     }
 
 
@@ -912,6 +914,8 @@ def migrate_state(data):
         base["paint"] = paint_state(data)
     if isinstance(data.get("items"), dict):
         base["items"] = story_items.clean(data["items"])
+    if isinstance(data.get("vn"), dict):
+        base["vn"] = story_vn.clean(data["vn"])
     if base["flags"].get(LEGACY_VERTICAL_FLAG):
         # a save made when the first BONUS mission gave the flight outright: the Shield keeps its reactor, installed
         base["items"] = story_items.clean(base["items"])
@@ -1239,6 +1243,9 @@ FILMS = {
     "lyra_1": {"title": "story_film_lyra1_t", "video": "lyra_1_eternal_dawn", "after": VIP_SCENE},
     "lyra_2": {"title": "story_film_lyra2_t", "video": "lyra_2_what_we_lost", "after": "lyra_1"},
     "lyra_3": {"title": "story_film_lyra3_t", "video": "lyra_3_no_mercy_left", "after": "lyra_2"},
+    # the visual novel begins right after the concert: the film of the bar (no title over it), then the scene vn_1
+    # (story_vn.VN_SCENES). Without its files the scene comes straight away.
+    "vn_1": {"title": "story_film_vn1_t", "video": "vn_1_bar", "after": "lyra_3", "quiet": True, "vn": "vn_1"},
 }
 
 
@@ -1271,6 +1278,17 @@ def film_chain(start):
 
 def film_flag(film_id):
     return "film_" + str(film_id)
+
+
+def vn_due(state):
+    """The visual novel scene to tell now: the film before it comes after a film already watched (the concert) and the
+    scene is not answered. None when there is none."""
+    for sid in story_vn.VN_ORDER:
+        film = FILMS.get(story_vn.scene(sid)["film"]) or {}
+        prev = film.get("after")
+        if not story_vn.answered(state, sid) and (not prev or film_seen(state, prev)):
+            return sid
+    return None
 
 
 def film_seen(state, film_id):

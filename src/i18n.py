@@ -5961,7 +5961,25 @@ _BELT_TEXTS = {
         "After that, there will be no way back."),
 }
 
-for _k, (_fr, _en) in list(_ACT3_TEXTS.items()) + list(_VIP_TEXTS.items()) + list(_BELT_TEXTS.items()):
+# The visual novel that begins after the concert of Lyra Voss (French and English; the other languages show the English text
+# until the French one is validated).
+_VN_TEXTS = {
+    "story_film_vn1_t": ("Visual novel - Scène 1 : le bar de Phobos", "Visual novel - Scene 1: the Phobos bar"),
+    "story_vn_lyra": ("LYRA VOSS", "LYRA VOSS"),
+    "story_vn1_t": ("Scène 1 : le bar de Phobos", "Scene 1: the Phobos bar"),
+    "story_vn1_q": (
+        "Tu m’as sortie de ce vaisseau. Je ne sais toujours pas comment te remercier. "
+        "Tu es venu juste pour vérifier que je tenais encore debout, ou tu veux vraiment boire un verre avec moi ?",
+        "You pulled me out of that ship. I still don’t know how to thank you. "
+        "Did you come just to check that I was still standing, or do you really want to have a drink with me?"),
+    "story_vn1_a1": ("« C’était mon travail. Rien de plus. »", "“It was my job. Nothing more.”"),
+    "story_vn1_a2": ("« Un verre, pourquoi pas. »", "“A drink, why not.”"),
+    "story_vn1_a3": ("« Je voulais te revoir. »", "“I wanted to see you again.”"),
+    "story_vn1_a4": ("« Je voulais être sûr que tu allais bien. Et te revoir. »",
+                     "“I wanted to be sure you were okay. And to see you again.”"),
+}
+
+for _k, (_fr, _en) in list(_ACT3_TEXTS.items()) + list(_VIP_TEXTS.items()) + list(_BELT_TEXTS.items()) + list(_VN_TEXTS.items()):
     T[_k] = {_code: _en for _code in LANG_CODES}          # the English text until the French one is validated
     T[_k]["fr"] = _fr
 
