@@ -3,6 +3,11 @@ Current release: **v1.5.0**
 
 ## Unreleased (towards 1.5.1)
 
+- Adventure: visual novel scene 4 (the refuge, "Une chanson pour personne"). During a partial curfew the pilot hears a guitar and finds Lyra
+  singing alone, without an audience, who asks him to forget it: a staging in narration, four pages, four answers (hidden points 2, 3, 4, 1,
+  random order) and a two-page reaction to each. It comes after the next story mission won once scene 3 is answered (the series and the
+  asteroid belts count). Lyra is on the right of the picture, so the text stays on the left. New picture `assets/story/vn_4_refuge.jpg`;
+  the cheat `VNOV` lists it too.
 - Adventure: visual novel scene 3 (the observation deck, "La femme derrière la voix"). Lyra listens to a demo for the Eloncity concert
   and asks for an opinion: a staging in narration, four pages, four answers (hidden points 1, 3, 4, 2, random order) and a reaction to
   each. It comes after the next story mission won once scene 2 is answered (the series and the asteroid belts count). The text sits on the

@@ -38,8 +38,14 @@ VN_SCENES = {
         "answers": [("story_vn3_a1", 1, "story_vn3_r1"), ("story_vn3_a2", 3, "story_vn3_r2"),
                     ("story_vn3_a3", 4, "story_vn3_r3"), ("story_vn3_a4", 2, "story_vn3_r4")],
     },
+    "vn_4": {                                      # (Lyra is on the right of the picture: the text is on the left)
+        "film": None, "after": "vn_3", "wins": 1, "image": "vn_4_refuge", "title": "story_vn4_t",
+        "journal": "story_vn4_j", "speaker": "story_vn_lyra", "text": "story_vn4_q", "shuffle": True,
+        "answers": [("story_vn4_a1", 2, "story_vn4_r1"), ("story_vn4_a2", 3, "story_vn4_r2"),
+                    ("story_vn4_a3", 4, "story_vn4_r3"), ("story_vn4_a4", 1, "story_vn4_r4")],
+    },
 }
-VN_ORDER = ["vn_1", "vn_2", "vn_3"]            # the scenes in the order of the story
+VN_ORDER = ["vn_1", "vn_2", "vn_3", "vn_4"]    # the scenes in the order of the story
 
 
 def clean(data):
