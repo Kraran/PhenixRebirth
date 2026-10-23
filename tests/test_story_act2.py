@@ -205,7 +205,7 @@ def test_the_phenix_gauge_goes_from_60_to_80_once():
     assert ss.phenix_cap(st["slots"][1]) == 60
     before = st["credits"]
     assert ss.buy(st, "phenix_cap_80")
-    assert ss.phenix_cap(st["slots"][1]) == 80 and st["credits"] == before - 1000
+    assert ss.phenix_cap(st["slots"][1]) == 80 and st["credits"] == before - 3000
     assert not ss.buy(st, "phenix_cap_80")                               # already owned
     assert ss.upgrade_note(st, "phenix_cap_80") == "story_owned"
     assert ss.loadout(st)["phenix_pct"] == 80

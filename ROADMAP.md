@@ -39,6 +39,10 @@ Current release: **v1.5.0**
   and "LOGBOOK" (6 lines, what happened; it scrolls), each with arrows when there is more above / below. Up / Down keep
   their meaning (cursor through the scenes, then the logbook scrolls). Texts in the 13 languages.
   Tests: `tests/test_story_journal_layout.py`
+- Adventure workshop prices follow the income, which doubles with each act: the Phenix pays more than the Shield for the steps
+  they share (speed 80 % 2 000, walls: slow down 3 000, lives 4 000, gauge 80 % 3 000) and the Act 3 rows are dear (speed 100 %
+  4 000, lives 5 000, walls: immunity 4 000, gauge 100 % 5 000, the dome lasts longer in two steps: 2 000 then 3 000). The Act 1
+  prices of the Shield, the paint shop (500) and the loot items are unchanged. Tests: `tests/test_story_prices.py`
 
 ## Done in 1.5.0
 
