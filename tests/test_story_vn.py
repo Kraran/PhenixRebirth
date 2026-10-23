@@ -1033,3 +1033,198 @@ def test_the_english_text_of_scene_two_is_there():
         for code in i18n.LANG_CODES:
             assert i18n.T[key].get(code)
     assert i18n.T["story_vn2_a3"]["en"] == "“Yes. And I was thinking of you.”"
+
+
+# ================================================================== the code VNOV (typed on the HIGH SCORES screen)
+import menu_actions                                      # noqa: E402
+import main_menu                                         # noqa: E402
+from test_smoke import run                               # noqa: E402,F401  (fixture: a game)
+
+
+def _type_code(g, text):
+    for ch in text:
+        g._feed_cheat(ch)
+
+
+def _highscores(run):
+    g = run.game
+    g.started, g.game_over, g.used_cheat = False, False, False
+    g.cheat_buffer, g.cheat_vn = "", False
+    g.menu_screen = "highscores"
+    return g
+
+
+def test_vnov_turns_the_cheat_on_and_off(run, french):
+    g = _highscores(run)
+    _type_code(g, "VNOV")
+    assert g.cheat_vn is True and g.cheat_buffer == ""
+    assert g.cheat_msg == "VISUAL NOVEL : TOUTES LES SCÈNES" and g.cheat_kind == "vn" and g.cheat_msg_timer > 0
+    assert g.used_cheat is False                                      # (the arcade high scores are not concerned)
+    _type_code(g, "VNOV")
+    assert g.cheat_vn is False and g.cheat_msg == "VISUAL NOVEL : NORMAL"
+
+
+def test_vnov_is_typed_among_other_letters_and_leaves_the_other_codes_alone(run):
+    g = _highscores(run)
+    _type_code(g, "XXVNOV")
+    assert g.cheat_vn is True
+    g.player.infinite_lives = False
+    _type_code(g, "LIVE")
+    assert g.cheat_live and g.cheat_vn
+    _type_code(g, "VNO")
+    assert g.cheat_vn is True                                         # (an unfinished code does nothing)
+
+
+def test_the_keys_of_the_high_score_screen_reach_vnov(run):
+    g = _highscores(run)
+    g.input_grace = 0.0
+    for ch in "vnov":
+        pygame.event.post(pygame.event.Event(pygame.KEYDOWN, key=ord(ch), unicode=ch, mod=0, scancode=0))
+        run.frames(1)
+    assert g.cheat_vn is True
+
+
+def test_the_banner_of_the_code_has_a_style():
+    from announce import KIND_STYLE
+    assert KIND_STYLE["vn"] == ("special", "standard")
+
+
+def test_vnov_reaches_the_adventure_already_open_and_the_one_opened_after(run):
+    g = _highscores(run)
+    from story import StoryHub
+    g.story = StoryHub()
+    _type_code(g, "VNOV")
+    assert g.story.cheat_vn is True
+    _type_code(g, "VNOV")
+    assert g.story.cheat_vn is False
+    _type_code(g, "VNOV")
+    g.story = None
+    g.menu_screen, g.menu_index = "main", main_menu.MAIN.index("story")
+    menu_actions.menu_confirm(g)                                      # the Adventure is created, with the cheat
+    assert g.story is not None and g.story.cheat_vn is True and g.menu_screen == "story_hub"
+    g.cheat_vn = False
+    g.menu_screen, g.menu_index = "main", main_menu.MAIN.index("story")
+    menu_actions.menu_confirm(g)
+    assert g.story.cheat_vn is False
+
+
+def test_the_cheat_is_off_by_default_and_is_a_cheat_for_the_saves():
+    hub = _hub()
+    assert hub.cheat_vn is False and not hub.cheating
+    hub.cheat_vn = True
+    assert hub.cheating
+
+
+def test_the_journal_lists_every_scene_under_the_cheat_even_with_nothing_seen():
+    st = _state(concert=False)
+    plain = ss.journal_entries(st)
+    assert {"film": "vn_1"} not in plain and {"vn": SCENE2} not in plain
+    entries = ss.journal_entries(st, cheat_vn=True)
+    assert {"film": "vn_1"} in entries and {"vn": SCENE2} in entries
+    assert entries.index({"film": "vn_1"}) < entries.index({"vn": SCENE2})
+    assert entries.count({"film": "vn_1"}) == 1 and entries.count({"vn": SCENE2}) == 1
+    assert plain == [e for e in entries if e not in ({"film": "vn_1"}, {"vn": SCENE2})]       # (nothing else changes)
+
+
+def test_the_journal_does_not_list_a_scene_twice_when_it_is_already_there():
+    st = _state()
+    ss.mark_film_seen(st, "vn_1")
+    story_vn.choose(st, SCENE2, 0, 0)
+    entries = ss.journal_entries(st, cheat_vn=True)
+    assert entries == ss.journal_entries(st)
+
+
+def test_the_scenes_of_the_cheat_are_replay_lines_of_the_journal():
+    hub = _hub(concert=False)
+    hub.cheat_vn = True
+    entries = hub.replay_entries()
+    assert {"film": "vn_1"} in entries and {"vn": SCENE2} in entries
+    assert {"vn": SCENE2} not in hub.story_entries()
+
+
+def test_a_scene_that_was_not_unlocked_is_told_from_the_journal_under_the_cheat():
+    hub = _hub(concert=False)
+    hub.cheat_vn = True
+    hub.pane = "log"
+    hub.log_cursor = hub.replay_entries().index({"vn": SCENE2})
+    hub._hub_confirm()
+    assert hub.screen == "vn" and hub.vn_id == SCENE2 and hub.vn_return == "log" and not hub.vn_review
+    assert hub.vn_pick is None
+
+
+def test_the_film_of_scene_one_leads_to_the_scene_under_the_cheat():
+    hub = _hub(concert=False)
+    hub.cheat_vn = True
+    hub.pane = "log"
+    hub.log_cursor = hub.replay_entries().index({"film": "vn_1"})
+    hub._hub_confirm()                                             # (no film file here: the scene comes at once)
+    assert hub.screen == "vn" and hub.vn_id == SCENE and not hub.vn_review
+
+
+def test_under_the_cheat_the_answer_is_not_kept_and_nothing_is_saved():
+    hub = _hub(concert=False)
+    before = open(ss.story_path(1), "rb").read()
+    hub.cheat_vn = True
+    hub.start_vn(SCENE, back_to="log")
+    _ready(hub)
+    hub.vn_index = 2
+    hub.confirm()
+    assert hub.vn_phase == "react" and hub.vn_pick == 2
+    assert hub.vn_pages() == story_vn.pages(i18n.t("story_vn1_r3"))          # (Lyra answers this answer)
+    _finish(hub)
+    assert hub.screen == "hub" and hub.pane == "log"
+    assert not story_vn.answered(hub.state, SCENE) and story_vn.points(hub.state) == 0
+    assert open(ss.story_path(1), "rb").read() == before
+
+
+def test_under_the_cheat_a_scene_already_answered_is_told_afresh_and_can_be_answered_again():
+    hub = _hub()
+    _answer(hub, 1)
+    assert story_vn.pick(hub.state, SCENE) == 1
+    hub.cheat_vn = True
+    hub.start_vn(SCENE, back_to="log")
+    assert not hub.vn_review and hub.vn_pick is None
+    _ready(hub)
+    hub.vn_index = 3
+    hub.confirm()
+    _finish(hub)
+    assert story_vn.pick(hub.state, SCENE) == 1                         # (the real answer is untouched)
+
+
+def test_under_the_cheat_the_answers_of_scene_one_still_come_in_a_random_order(monkeypatch):
+    monkeypatch.setattr(story_vn, "order", REAL_ORDER)
+    hub = _hub()
+    hub.cheat_vn = True
+    orders = set()
+    for _ in range(40):
+        hub.start_vn(SCENE)
+        orders.add(tuple(hub.vn_order))
+    assert len(orders) > 3
+
+
+def test_the_scenes_do_not_come_by_themselves_under_the_cheat():
+    hub = _hub(concert=False)
+    hub.cheat_vn = True
+    for fid in ("lyra_1", "lyra_2", "lyra_3"):
+        ss.mark_film_seen(hub.state, fid)
+    hub.update(1 / 60)
+    assert hub.screen == "hub"
+
+
+def test_the_cheat_stays_when_a_slot_is_opened_again_and_shows_the_banner():
+    hub = _hub(concert=False)
+    hub.cheat_vn = True
+    hub.open_slot(1)
+    assert hub.cheat_vn is True and hub.cheating
+    surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+    font = pygame.font.Font(None, 28)
+    hub.screen, hub.pane = "hub", "map"
+    plain = _draw_hub_pixels(hub, surf, font, cheat=False)
+    cheated = _draw_hub_pixels(hub, surf, font, cheat=True)
+    assert plain != cheated                                              # (the "CHEAT - NOT SAVED" banner)
+
+
+def _draw_hub_pixels(hub, surf, font, cheat):
+    hub.cheat_vn = cheat
+    hub.draw(surf, font, font, font)
+    return pygame.image.tostring(surf, "RGB")

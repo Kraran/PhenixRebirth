@@ -3,6 +3,11 @@ Current release: **v1.5.0**
 
 ## Unreleased (towards 1.5.1)
 
+- Cheat code `VNOV` (typed on the HIGH SCORES screen, like `LIVE` / `PHEN`; typed again it goes off): in the Adventure every film and
+  scene of the visual novel is listed in the journal and can be told at once, whatever the missions won or the scenes answered. Nothing is
+  saved (the "CHEAT - NOT SAVED" banner, like `UNLK`), the answers are not kept (a scene answered for real is told afresh and its real
+  answer is untouched) and Lyra still reacts to the answer chosen. It does not touch the arcade high scores. `story_state.journal_entries`
+  takes `cheat_vn`; the Adventure reads `game.cheat_vn` when it is opened from the main menu.
 - Adventure: scene 1 of the visual novel rewritten. The text is now a conversation in three pages (Lyra's words in white, the narration
   in blue-grey; A shows the page, then the next one), the four answers are new (hidden points 2, 3, 4, 3) and come in a random
   order each time (the saved pick is still the index in the list, so the points do not depend on the order shown; watched again, the

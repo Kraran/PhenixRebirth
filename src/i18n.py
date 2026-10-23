@@ -5965,6 +5965,8 @@ _BELT_TEXTS = {
 # until the French one is validated).
 _VN_TEXTS = {
     "story_film_vn1_t": ("Visual novel - Scène 1 : le bar de Phobos", "Visual novel - Scene 1: the Phobos bar"),
+    "cheat_vn_on": ("VISUAL NOVEL : TOUTES LES SCÈNES", "VISUAL NOVEL: ALL SCENES"),
+    "cheat_vn_off": ("VISUAL NOVEL : NORMAL", "VISUAL NOVEL: NORMAL"),
     "story_vn_lyra": ("LYRA VOSS", "LYRA VOSS"),
     "story_vn1_t": ("Scène 1 : le bar de Phobos", "Scene 1: the Phobos bar"),
     # (a line that begins with a star is narration; an empty line cuts the text in pages, see story_vn.pages)

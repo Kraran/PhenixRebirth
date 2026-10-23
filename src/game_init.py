@@ -220,6 +220,7 @@ def init_run_state(game):
     game.cheat_kind = ""
     game.used_cheat = False
     game.phenix_cheat = False
+    game.cheat_vn = False                     # VNOV (high-score screen): the Adventure shows every scene of the visual novel
     game.cheat_live = False
     game.paused = False
     game.pause_index = 0  # Reprendre
