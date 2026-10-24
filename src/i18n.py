@@ -6291,6 +6291,123 @@ _VN_TEXTS = {
         "*She pauses.\n"
         "“And if you like it, you can say so too. I’m not completely immune to compliments, whatever they "
         "say.”"),
+    "story_vn4_t": ("Scène 4 : le refuge", "Scene 4: the refuge"),
+    "story_vn4_j": ("Visual novel - Scène 4 : le refuge", "Visual novel - Scene 4: the refuge"),
+    "story_vn4_q": (
+        "*La station a instauré un couvre-feu partiel après une nouvelle alerte. Les couloirs sont calmes et les "
+        "réfugiés se sont regroupés dans les espaces communs.\n"
+        "*Tu passes devant une petite salle de repos et tu entends une guitare. La porte est entrouverte.\n"
+        "\n"
+        "*À l’intérieur, Lyra est assise sur un canapé, une guitare acoustique sur les genoux. Elle chante à voix "
+        "basse, sans amplification, sans effets, sans public.\n"
+        "*Lorsqu’elle te remarque, elle s’interrompt brusquement.\n"
+        "« Oh, merde. Depuis combien de temps tu es là ? »\n"
+        "*Elle pose une main sur les cordes pour les étouffer.\n"
+        "\n"
+        "« Ce n’est pas un morceau terminé. Et ce n’est pas prévu pour le concert. »\n"
+        "*Elle cherche ses mots.\n"
+        "« C’est juste… quelque chose que je joue quand j’arrive pas à dormir. »\n"
+        "\n"
+        "*Elle rit nerveusement.\n"
+        "« Tu peux oublier que tu as entendu ça. Je suis sérieuse. »",
+        "*The station has imposed a partial curfew after a new alert. The corridors are quiet and the refugees "
+        "have gathered in the common areas.\n"
+        "*You walk past a small rest room and hear a guitar. The door is ajar.\n"
+        "\n"
+        "*Inside, Lyra sits on a couch, an acoustic guitar on her lap. She sings in a low voice, without "
+        "amplification, without effects, without an audience.\n"
+        "*When she notices you, she stops abruptly.\n"
+        "“Oh, damn. How long have you been there?”\n"
+        "*She lays a hand on the strings to mute them.\n"
+        "\n"
+        "“It’s not a finished piece. And it’s not meant for the concert.”\n"
+        "*She searches for her words.\n"
+        "“It’s just… something I play when I can’t sleep.”\n"
+        "\n"
+        "*She laughs nervously.\n"
+        "“You can forget you heard that. I’m serious.”"),
+    "story_vn4_a1": (
+        "« D’accord. Je ne dirai rien à personne. »",
+        "“Alright. I won’t tell anyone.”"),
+    "story_vn4_a2": (
+        "« Je comprends. Tout le monde a besoin d’un endroit où il n’a pas à jouer un rôle. »",
+        "“I understand. Everyone needs a place where they don’t have to play a part.”"),
+    "story_vn4_a3": (
+        "« Tu n’as pas besoin de te cacher avec moi. Je ne suis pas venu chercher une performance. »",
+        "“You don’t need to hide with me. I didn’t come looking for a performance.”"),
+    "story_vn4_a4": (
+        "« Tu sais, si tu veux me convaincre que tu es une grande chanteuse, tu devras faire mieux que ça. »",
+        "“You know, if you want to convince me you’re a great singer, you’ll have to do better than that.”"),
+    "story_vn4_r1": (
+        "*Lyra semble soulagée.\n"
+        "« Merci. »\n"
+        "*Elle repose les doigts sur les cordes, puis ajoute :\n"
+        "« C’est idiot, je sais. Je monte sur scène devant des foules entières, mais je ne supporte pas qu’on "
+        "m’entende quand je ne suis pas prête. »\n"
+        "\n"
+        "*Elle te lance un petit sourire.\n"
+        "« Tu peux rester, si tu veux. Je ne jouerai peut-être pas, mais tu peux rester. »",
+        "*Lyra looks relieved.\n"
+        "“Thank you.”\n"
+        "*She puts her fingers back on the strings, then adds:\n"
+        "“It’s silly, I know. I go on stage in front of entire crowds, but I can’t stand being heard when I’m "
+        "not ready.”\n"
+        "\n"
+        "*She gives you a small smile.\n"
+        "“You can stay, if you like. I might not play, but you can stay.”"),
+    "story_vn4_r2": (
+        "*Lyra te regarde attentivement.\n"
+        "« Oui. C’est exactement ça. »\n"
+        "*Elle effleure les cordes de sa guitare.\n"
+        "« Quand je suis sur scène, je sais qui je dois être. Je sais quoi dire, quoi faire, où regarder. Même "
+        "les silences sont prévus. »\n"
+        "\n"
+        "*Elle baisse les yeux.\n"
+        "« Ici, je ne sais pas toujours quoi faire de moi-même. »",
+        "*Lyra looks at you attentively.\n"
+        "“Yes. That’s exactly it.”\n"
+        "*She brushes the strings of her guitar.\n"
+        "“When I’m on stage, I know who I’m supposed to be. I know what to say, what to do, where to look. Even "
+        "the silences are planned.”\n"
+        "\n"
+        "*She lowers her eyes.\n"
+        "“Here, I don’t always know what to do with myself.”"),
+    "story_vn4_r3": (
+        "*Lyra reste immobile un instant.\n"
+        "« Tu sais que tu dis des choses assez déstabilisantes, parfois ? »\n"
+        "*Elle sourit, mais son regard reste sérieux.\n"
+        "« Je crois que c’est la première fois depuis longtemps que je peux être avec quelqu’un sans me demander "
+        "ce qu’il attend de moi. »\n"
+        "\n"
+        "*Elle tapote la place libre sur le canapé.\n"
+        "« Assieds-toi. Je vais essayer de terminer le morceau. Mais tu as intérêt à être indulgent. »",
+        "*Lyra stays still for a moment.\n"
+        "“You know, you say rather unsettling things sometimes.”\n"
+        "*She smiles, but her gaze stays serious.\n"
+        "“I think it’s the first time in a long while that I can be with someone without wondering what they "
+        "expect from me.”\n"
+        "\n"
+        "*She pats the empty spot on the couch.\n"
+        "“Sit down. I’ll try to finish the piece. But you’d better be forgiving.”"),
+    "story_vn4_r4": (
+        "*Lyra te fixe, bouche entrouverte. Puis elle éclate de rire.\n"
+        "« Pardon ? Tu viens vraiment de dire ça à Lyra Voss ? »\n"
+        "*Elle secoue la tête, amusée.\n"
+        "« Je pourrais te faire virer de la station pour moins que ça. »\n"
+        "\n"
+        "*Elle recommence à jouer quelques accords.\n"
+        "« Très bien, monsieur le critique. Puisque tu es si exigeant, tu vas devoir écouter jusqu’au bout. »\n"
+        "*Son rire s’estompe. Pour la première fois, elle joue sans se préoccuper de son apparence ou de la "
+        "réaction qu’elle provoque.",
+        "*Lyra stares at you, mouth half open. Then she bursts out laughing.\n"
+        "“Excuse me? Did you really just say that to Lyra Voss?”\n"
+        "*She shakes her head, amused.\n"
+        "“I could have you thrown off the station for less than that.”\n"
+        "\n"
+        "*She starts playing a few chords again.\n"
+        "“Very well, Mr. Critic. Since you’re so demanding, you’ll have to listen to the end.”\n"
+        "*Her laughter fades. For the first time, she plays without worrying about her appearance or the "
+        "reaction she causes."),
 }
 
 for _k, (_fr, _en) in list(_ACT3_TEXTS.items()) + list(_VIP_TEXTS.items()) + list(_BELT_TEXTS.items()) + list(_VN_TEXTS.items()):
