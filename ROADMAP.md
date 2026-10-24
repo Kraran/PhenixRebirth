@@ -3,6 +3,11 @@ Current release: **v1.5.0**
 
 ## Unreleased (towards 1.5.1)
 
+- Adventure: visual novel scene 5 (leaving for Eloncity, "Ce qu'on emporte avec soi"). In the transit terminal of Phobos, Lyra asks the
+  pilot whether he would like to see her again: a staging in narration, six pages, four answers (hidden points 1, 2, 3, 4, random order)
+  and a reaction to each (the last one in five pages). It comes after the next story mission won once scene 4 is answered. Lyra's face is
+  near the middle of the picture, so the text panel is narrower and further right (a new `panel_x` setting of a scene) and the panel of
+  the answers can now grow up to 840 px in more steps. New picture `assets/story/vn_5_depart.jpg`; the cheat `VNOV` lists it too.
 - Adventure: visual novel scene 4 (the refuge, "Une chanson pour personne"). During a partial curfew the pilot hears a guitar and finds Lyra
   singing alone, without an audience, who asks him to forget it: a staging in narration, four pages, four answers (hidden points 2, 3, 4, 1,
   random order) and a two-page reaction to each. It comes after the next story mission won once scene 3 is answered (the series and the

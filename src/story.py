@@ -1550,8 +1550,10 @@ class StoryHub:
         body = getattr(self, "_body", None) or small
         right = sc.get("panel") == "right"
         base = self.VN_PANEL_RIGHT if right else self.VN_PANEL
+        if right and sc.get("panel_x"):                       # a panel narrower still, for a face that is nearer the middle
+            base = pygame.Rect(sc["panel_x"], base.y, BASE_WIDTH - 40 - sc["panel_x"], 0)
         asking = self.vn_phase == "ask" and self.vn_last_page()      # the answers come with the last page of the question
-        for wide in (0, 1, 2, 3):
+        for wide in range(6):
             px, top, width = base.x, base.y, base.w
             if wide:                                      # long answers: a wider panel, higher, so that all of it fits
                 width = min(self.VN_PANEL_WIDE, base.w + 60 * wide)         # (as narrow as it can be: the face stays seen)
