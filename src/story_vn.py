@@ -13,7 +13,8 @@ import random
 # id -> scene. "film": the film (story_state.FILMS) shown right before it, or None; "image": assets/story/<image>.jpg, the
 # support of the text and of the menu; "answers": [(text key, hidden points)]. A scene without a film comes after
 # another one: "after": its id, "wins": how many story missions (the series and the asteroid belts, see
-# story_state.story_wins) have to be won once that one is answered. "panel": the side of the picture the text sits on.
+# story_state.story_wins) have to be won once that one is answered. "panel": the side of the picture the text sits on
+# ("panel_x": with the right side, the left edge of the panel in pixels, when the face on the picture is near the middle).
 # "journal": the title of its line in the journal (a scene with a film is listed by its film).
 # A text is a list of paragraphs, one per line: a line that begins with a star is narration ("*She smiles."), the others
 # are the words of the speaker; an empty line cuts the text in pages (see `pages`). An answer may have a third item, the
@@ -44,8 +45,15 @@ VN_SCENES = {
         "answers": [("story_vn4_a1", 2, "story_vn4_r1"), ("story_vn4_a2", 3, "story_vn4_r2"),
                     ("story_vn4_a3", 4, "story_vn4_r3"), ("story_vn4_a4", 1, "story_vn4_r4")],
     },
+    "vn_5": {
+        "film": None, "after": "vn_4", "wins": 1, "panel": "right", "panel_x": 660, "image": "vn_5_depart",
+        "title": "story_vn5_t",
+        "journal": "story_vn5_j", "speaker": "story_vn_lyra", "text": "story_vn5_q", "shuffle": True,
+        "answers": [("story_vn5_a1", 1, "story_vn5_r1"), ("story_vn5_a2", 2, "story_vn5_r2"),
+                    ("story_vn5_a3", 3, "story_vn5_r3"), ("story_vn5_a4", 4, "story_vn5_r4")],
+    },
 }
-VN_ORDER = ["vn_1", "vn_2", "vn_3", "vn_4"]    # the scenes in the order of the story
+VN_ORDER = ["vn_1", "vn_2", "vn_3", "vn_4", "vn_5"]    # the scenes in the order of the story
 
 
 def clean(data):
