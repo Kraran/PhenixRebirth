@@ -133,7 +133,7 @@ def test_wing_tips_have_transparent_margins_in_every_animation_cell(display):
 
 
 @pytest.mark.parametrize("fps", [30, 60, 120, 144])
-def test_dive_locks_player_position_crosses_it_and_returns_without_teleport(display, fps):
+def test_dive_locks_player_position_crosses_it_and_returns_from_above(display, fps):
     bird = gd.Guardian(320, 150, 0)
     target = (720, 560)
     bird.start_dive(*target)
@@ -145,21 +145,43 @@ def test_dive_locks_player_position_crosses_it_and_returns_without_teleport(disp
         assert not bird.diving
     passed_target = False
     seen_dive = False
+    seen_wrap = False
     last = origin
+    last_state = bird.state
     for _ in range(10 * fps):
         bird.update(dt, 100, 660)  # moving the player must not bend a locked dive
         assert bird.target == target
         distance = ((bird.x-last[0])**2 + (bird.y-last[1])**2)**0.5
-        assert distance <= max(gd.DIVE_SPEED, gd.RETURN_SPEED) * dt + 1e-6
+        if last_state == "dive" and bird.state == "recover":
+            assert last[1] + bird.vy * dt > gd.BASE_HEIGHT + 85
+            assert bird.y == -85
+            seen_wrap = True
+        else:
+            assert distance <= max(gd.DIVE_SPEED, gd.RETURN_SPEED) * dt + 1e-6
+            if bird.state == "recover":
+                assert bird.y >= last[1]  # re-enters downwards from the top
         if bird.diving:
             seen_dive = True
             # Swept contact with the original target, even at 30 FPS.
             swept = pygame.Rect(round(last[0]-24), round(last[1]-19), 48, 58).union(bird.get_hitbox())
             passed_target |= swept.collidepoint(*target)
         last = (bird.x, bird.y)
+        last_state = bird.state
         if seen_dive and bird.state == "patrol":
             break
-    assert seen_dive and passed_target and bird.state == "patrol"
+    assert seen_dive and passed_target and seen_wrap and bird.state == "patrol"
+
+
+def test_dive_preparation_does_not_show_markers_or_trajectory(display):
+    bird = gd.Guardian(320, 150, 0)
+    plain = pygame.Surface((1280, 720))
+    plain.fill((10, 20, 30))
+    bird.draw(plain)
+    bird.start_dive(700, 625)
+    preparing = pygame.Surface((1280, 720))
+    preparing.fill((10, 20, 30))
+    bird.draw(preparing)
+    assert pygame.image.tobytes(plain, "RGB") == pygame.image.tobytes(preparing, "RGB")
 
 
 def test_patrol_pursues_the_player_and_can_schedule_a_dive(display):

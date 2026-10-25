@@ -120,6 +120,10 @@ class Guardian:
             self.x += self.vx * dt
             self.y += self.vy * dt
             if self.y > BASE_HEIGHT + 85 or self.x < -85 or self.x > BASE_WIDTH + 85:
+                # Wrap only once the whole sprite is off-screen, as gargoyles
+                # do: return from above instead of flying back up past the ship.
+                self.x = max(100, min(BASE_WIDTH - 100, self.x))
+                self.y = -85.0
                 self.state = "recover"
             return
         if self.state == "recover":
@@ -156,11 +160,6 @@ class Guardian:
         row = int(self.charge > 0 or self.firing > 0)
         frame = int(self.time * 8) % 4
         surface.blit(self.frames[row][frame], (round(self.x - 80), round(self.y - 80)))
-        if self.state == "windup":
-            start = (round(self.x), round(self.y + 16))
-            target = (round(self.target[0]), round(self.target[1]))
-            pygame.draw.line(surface, (180, 85, 45), start, target, 1)
-            pygame.draw.circle(surface, (255, 130, 65), target, 12, 2)
         if self.charge:
             radius = 3 + int(6 * min(1, self.charge / CHARGE_SECONDS))
             pygame.draw.circle(surface, (255, 145, 35), (round(self.x), round(self.y + 16)), radius)

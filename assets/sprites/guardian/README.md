@@ -27,9 +27,11 @@ without an unlock in acts I–III, replayable before and after a victory.
   at a low frame rate. Each enemy has its own 1.1-second minimum cooldown.
 - No homing or instantaneous beam. Destroying a charging enemy cancels its shot.
 - Patrols pursue the player's horizontal position. A dive locks the player's
-  current position, shows its line and target for 0.55 seconds, then attacks at
-  340 pixels/second. The Guardian flies back to its patrol position at 300 px/s
-  without teleporting. It cannot shoot during a dive or its return.
+  current position, prepares for 0.55 seconds without a target marker, trajectory
+  line or explanatory message, then attacks at 340 pixels/second. Once fully
+  off-screen, it wraps to above the top edge like the gargoyles and descends to
+  its patrol position at 300 px/s. It never climbs back through the playfield
+  from below, and cannot shoot during a dive or its return.
 - Minimum three lives and safe screen edges. The owned ship and its speed are kept.
 - Simulation: no credits, loot, item consumption, bestiary, story/VN progression,
   flawless achievement or permanent Veteran death.
