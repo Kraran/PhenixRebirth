@@ -51,8 +51,9 @@ def test_the_missions_are_made_for_their_act(mid, first, flag, target, act):
     assert ss.mission_group(m) == ss.GROUP_STORY
 
 
-def test_no_test_mission_is_left():
-    assert not [m["id"] for m in ss.MISSIONS if m.get("test") or m["id"] == "bonus_asteroids"]
+def test_the_old_asteroids_test_mission_is_removed():
+    assert ss.mission_by_id("bonus_asteroids") is None
+    assert not [m["id"] for m in ss.MISSIONS if m.get("asteroids") and m.get("test")]
     assert "bonus_asteroids" not in ss.SCENES
 
 

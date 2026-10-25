@@ -1340,6 +1340,8 @@ class StoryHub:
             "dome": bool(self.loadout(ship).get("dome")),
             "items": story_items.installed(self.state),       # bought in the hangar: they work in this mission only
         }
+        if mission.get("guardians"):
+            spec.update(guardians=True, training=True, items=[])
         if ship:
             spec["ship"] = ship                       # a mission that imposes its hull
         waves = ss.mission_waves(mission)
@@ -1379,6 +1381,11 @@ class StoryHub:
         """End of a mission: credits, penalty or fall (see story_state.record_result). `loot` is the item caught
         during the mission, `used` the items that were installed for it; `flawless`: no life was lost."""
         res = ss.record_result(self.state, mission_id, score, cleared, kills, loot=loot, used=used)
+        if res.get("training"):
+            self.toast = t("story_guardians_clear") if cleared else t("story_guardians_retry")
+            self.toast_kind = "success" if cleared else "info"
+            self.pane = "map"
+            return
         if res["cleared"] and flawless and not self.cheating:
             story_feats.note_flawless()
             if mission_id == "final_5":

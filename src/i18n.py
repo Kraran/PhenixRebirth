@@ -6623,6 +6623,22 @@ def _load_lang_files():
 _load_lang_files()
 _build_adv_feats()
 
+# Prototype encounter: English fallback for languages without a dedicated text.
+_GUARDIAN_TEXTS = {
+    "story_m_guardians_test": ("TEST - Avioïdes Gardiens", "TEST - Avioid Guardians"),
+    "story_m_guardians_test_b": (
+        "2 vagues de 3 Sentinelles. Charge orange, puis laser. 3 vies min., bords sûrs. Test sans gain ni perte.",
+        "2 waves of 3 Sentinelles. Orange charge, then laser. At least 3 lives, safe edges. No gain or loss."),
+    "story_guardians_hud": ("VAGUE {w}/2 · GARDIENS {n}/{total}", "WAVE {w}/2 · GUARDIANS {n}/{total}"),
+    "story_guardians_hint": ("Charge orange : laser rapide !", "Orange charge: fast laser!"),
+    "story_guardians_clear": ("Test réussi ! Vous pouvez recommencer à volonté.",
+                              "Test complete! Replay whenever you like."),
+    "story_guardians_retry": ("Test terminé. Aucun progrès perdu : vous pouvez réessayer.",
+                              "Test ended. No progress lost: you can try again."),
+}
+for _key, (_fr, _en) in _GUARDIAN_TEXTS.items():
+    T[_key] = {code: _fr if code == "fr" else _en for code in LANG_CODES}
+
 _lang = "fr"
 
 def set_lang(code):

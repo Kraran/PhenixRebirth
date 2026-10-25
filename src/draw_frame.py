@@ -202,6 +202,13 @@ def draw_play(game):
     if adv and adv.get("swarm") and game.play_mode != "coop":
         left = tc.get(game.font, t("story_swarm_left").format(n=game.formation.swarm_remaining()), announce.INFO)
         game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
+    elif adv and adv.get("guardians"):
+        form = game.formation
+        label = t("story_guardians_hud").format(w=form.wave, n=form.destroyed, total=6)
+        text = tc.get(game.font, label, (255, 190, 110))
+        game.game_surface.blit(text, (BASE_WIDTH - 16 - text.get_width(), 52))
+        hint = tc.get(game.font, t("story_guardians_hint"), (255, 190, 110))
+        game.game_surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 34))
     elif adv and adv.get("escort") and game.play_mode != "coop" and hasattr(game.formation, "cruise"):
         pct = int(game.formation.cruise.progress() * 100)
         left = tc.get(game.font, t("story_vip_hud").format(p=pct), announce.INFO)

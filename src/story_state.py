@@ -543,6 +543,11 @@ MISSIONS = [
         "content": 1, "waves": [26, 27, 28, 29, 30], "speed": 1.0, "once": True,
         "unlock": ["final_s5", GAME_WON], "epilogue": True, "log": "story_log_fin5",
     },
+    {
+        "id": "test_guardians", "training": True, "test": True, "guardians": True,
+        "title": "story_m_guardians_test", "blurb": "story_m_guardians_test_b",
+        "need": None, "content": 3, "speed": 1.0,
+    },
 ]
 
 
@@ -1552,7 +1557,7 @@ def mission_group(mission):
     m = mission or {}
     if m.get("hunt"):
         return GROUP_HUNT
-    if (m.get("reactor") or m.get("drop") or m.get("needs_reactor") or m.get("reward")
+    if (m.get("training") or m.get("reactor") or m.get("drop") or m.get("needs_reactor") or m.get("reward")
             or m.get("paint") or m.get("carry")):
         return GROUP_EXTRA
     return GROUP_STORY
@@ -1604,6 +1609,8 @@ def next_mission(state, missions):
     """The mission the map suggests: the first one of the list that can be flown and is not won yet. None when there is
     none."""
     for m in missions:
+        if m.get("training"):
+            continue
         if not mission_playable(state, m):
             continue
         if not mission_done(state, m):
@@ -2081,6 +2088,9 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
     score = max(0, int(score or 0))
     res = {"score": score, "cleared": bool(cleared), "first": False, "lost": 0, "fallen": False, "act": 0,
            "loot": None, "used": [], "opened": [], "reactor_lost": None, "no_item": None}
+    if (mission_by_id(mission_id) or {}).get("training"):
+        res.update(score=0, training=True)
+        return res  # the simulation never changes progression, items or Veteran saves
     record_kills(state, kills)            # the enemies met count whatever the outcome
     record_mission_kills(state, mission_id, kills)
     res["used"] = story_items.consume(state, used)           # before the Act can change: they belong to this one

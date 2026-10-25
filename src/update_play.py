@@ -14,6 +14,7 @@ import pygame
 from settings import (BASE_HEIGHT, BASE_WIDTH, SCREEN_SHAKE_DECAY, stage_speed_mult)
 from achievements import BOLDLY_GO_STAGE
 from enemy import BigBird, Enemy
+from guardian import GuardianFormation
 from explosion import TeslaCoilFx
 from i18n import t
 from loot import FallingItem
@@ -180,7 +181,10 @@ def tick_arrive(game):
             ship.engine_intensity = 1.0
             ship.boost_engines(game.dt, False)              # the long jets die back as the ship arrives
     game._tick_stars(follow=True)
-    game.formation.update(game.dt, game.player.x)
+    if isinstance(game.formation, GuardianFormation):
+        game.formation.update(game.dt, game.player.x, game.player.y)
+    else:
+        game.formation.update(game.dt, game.player.x)
     game._drain_detach_pops()
     if all((not s.alive) or s.y <= target_y for s in game._ships()):
         for ship in game._ships():
