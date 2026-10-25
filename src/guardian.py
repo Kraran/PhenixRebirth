@@ -4,10 +4,13 @@ The formation implements the ordinary enemy/bullet interface. Its timing is in
 seconds and independent of adventure act, difficulty and arcade random state.
 """
 import math
+import random
 
 import pygame
 
-from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
+from enemy import Enemy, EnemyBullet
+
+from settings import BASE_HEIGHT, BASE_WIDTH, ENEMY_DIVE_SPEED, asset_path
 
 CHARGE_SECONDS = 0.95
 LASER_SPEED = 780.0
@@ -19,8 +22,9 @@ FIRE_STAGGER = 0.18
 DIVE_WARNING = 0.55
 DIVE_SPEED = 340.0
 RETURN_SPEED = 300.0
-WAVES = 2
-PER_WAVE = 3
+WAVES = 1
+PER_WAVE = 5
+BIRDS_PER_COLOUR = 5
 _ART = None
 
 
@@ -56,6 +60,30 @@ class FireLaser:
         top = max(self.origin_y, self.prev_y - LASER_LENGTH)
         return pygame.Rect(round(self.x - LASER_WIDTH / 2), math.floor(top),
                            LASER_WIDTH, max(1, math.ceil(self.y - top)))
+
+    def hits_moving_rect(self, previous, current):
+        """Continuous overlap with a moving bird, including the growing tail."""
+        # Each gap must be nonnegative at the same time in this tick.
+        # tail=max(origin, tip-length), so both tail constraints must hold.
+        gaps = (
+            (previous.right - (self.x - LASER_WIDTH / 2),
+             current.right - (self.x - LASER_WIDTH / 2)),
+            (self.x + LASER_WIDTH / 2 - previous.left,
+             self.x + LASER_WIDTH / 2 - current.left),
+            (self.prev_y - previous.top, self.y - current.top),
+            (previous.bottom - self.origin_y, current.bottom - self.origin_y),
+            (previous.bottom - self.prev_y + LASER_LENGTH,
+             current.bottom - self.y + LASER_LENGTH),
+        )
+        enter, leave = 0.0, 1.0
+        for start, end in gaps:
+            if start < 0 and end < 0:
+                return False
+            if start < 0:
+                enter = max(enter, -start / (end - start))
+            elif end < 0:
+                leave = min(leave, start / (start - end))
+        return enter <= leave
 
     def draw(self, surface):
         if not self.alive:
@@ -150,7 +178,7 @@ class Guardian:
                 self.y += dy / distance * RETURN_SPEED * dt
             return
         if not self.charge:
-            aim = self.home_x if player_x is None else player_x + (self.index - 1) * 150
+            aim = self.home_x if player_x is None else player_x + (self.index - (PER_WAVE - 1) / 2) * 150
             target_x = max(100, min(BASE_WIDTH - 100, aim + math.sin(self.time * 0.9 + self.index) * 65))
             target_y = self.home_y + math.sin(self.time * 0.7 + self.index) * 24
             self.x += max(-110 * dt, min(110 * dt, target_x - self.x))
@@ -178,6 +206,126 @@ class Guardian:
             pygame.draw.circle(surface, (255, 245, 180), (round(self.x), round(self.y + 16)), max(2, radius // 2))
 
 
+# Burning frames are prepared once per colour, never transformed during draw.
+BURN_SECONDS = 1.35
+BURN_FRAME_COUNT = 24
+_BIRD_ART = {}
+_BURN_ART = {}
+
+
+def burning_frames(stage, source):
+    """Ignition, charred silhouette, then rising ash from the original pixels."""
+    if stage in _BURN_ART:
+        return _BURN_ART[stage]
+    size = max(128, source.get_width() + 64, source.get_height() + 64)
+    ox, oy = (size - source.get_width()) // 2, (size - source.get_height()) // 2
+    pixels = [(x, y, source.get_at((x, y))) for y in range(source.get_height())
+              for x in range(source.get_width()) if source.get_at((x, y)).a > 32]
+    frames = []
+    for frame in range(BURN_FRAME_COUNT):
+        t = frame / (BURN_FRAME_COUNT - 1)
+        pic = pygame.Surface((size, size), pygame.SRCALPHA)
+        for x, y, colour in pixels:
+            # A stable spatial threshold eats away the silhouette.
+            noise = ((x * 73 + y * 151) % 101) / 100
+            dissolve = max(0.0, (t - 0.36) / 0.36)
+            if t < 0.72 and noise >= dissolve:
+                heat = min(1.0, t / 0.2)
+                char = max(0.0, (t - 0.2) / 0.38)
+                rgb = [int((colour[i] * (1 - heat) + (255, 100, 15)[i] * heat)
+                           * (1 - 0.9 * min(1, char))) for i in range(3)]
+                pic.set_at((x + ox, y + oy), (*rgb, colour.a))
+        if t < 0.62:
+            strength = math.sin(math.pi * t / 0.62)
+            for j in range(9):
+                px = size // 2 + (j - 4) * 5
+                py = size // 2 + 6 - (j % 3) * 4
+                height = max(1, int((14 + (j * 7 + frame * 3) % 15) * strength))
+                pygame.draw.polygon(pic, (255, 75 + j * 9, 12, 230),
+                                    [(px - 5, py), (px + 5, py), (px + (frame + j) % 5 - 2, py - height)])
+                pygame.draw.line(pic, (255, 235, 100, 240), (px, py), (px, py - height // 2), 2)
+        if pixels and 0.32 <= t < 1:
+            drift = (t - 0.32) / 0.68
+            for j in range(min(48, len(pixels))):
+                x, y, _ = pixels[j * len(pixels) // min(48, len(pixels))]
+                px = ox + x + math.sin(j * 2.4) * drift * 30 + drift * 8
+                py = oy + y - drift * (12 + j % 7 * 5)
+                alpha = int(255 * (1 - drift))
+                ember = t < 0.58 and j % 3 == 0
+                colour = (255, 120, 25, alpha) if ember else (135, 130, 125, alpha)
+                pygame.draw.circle(pic, colour, (round(px), round(py)), 1 + (j % 4 == 0))
+        frames.append(pic)
+    _BURN_ART[stage] = tuple(frames)
+    return _BURN_ART[stage]
+
+
+class BurningBird:
+    def __init__(self, bird):
+        self.x, self.y = bird.x, bird.y
+        self.frames = burning_frames(bird.stage, bird.frames[0])
+        self.age = 0.0
+
+    @property
+    def alive(self):
+        return self.age < BURN_SECONDS
+
+    def update(self, dt):
+        self.age += dt
+
+    def draw(self, surface):
+        if self.alive:
+            index = min(len(self.frames) - 1, int(self.age / BURN_SECONDS * len(self.frames)))
+            frame = self.frames[index]
+            surface.blit(frame, frame.get_rect(center=(round(self.x), round(self.y))))
+
+
+class EscortBird(Enemy):
+    """Ordinary blue/green birds, with local deterministic attack timings."""
+    def _load_bird_frames(self, stage=1):
+        if stage not in _BIRD_ART:
+            _BIRD_ART[stage] = super()._load_bird_frames(stage)
+        return _BIRD_ART[stage]
+
+    def __init__(self, x, y, index, stage):
+        rng_state = random.getstate()
+        try:
+            super().__init__(x, y, formation_index=index, stage=stage)
+        finally:
+            random.setstate(rng_state)
+        self.owner_id = ("bird", index)
+        self.anim_phase = index * 0.73
+        self.flap_rate = 5.2
+        self.glow_period = 2.0
+        self.glow_len = 0.35
+        self.attack_wait = 3.2 + index * 0.43
+        self.shot_wait = 2.0 + index * 0.27
+        burning_frames(stage, self.frames[0])
+
+    def update_encounter(self, dt, clock, player_x):
+        self.attack_wait = max(0.0, self.attack_wait - dt)
+        self.shot_wait = max(0.0, self.shot_wait - dt)
+        if not self.dying and self.attack_wait <= 0 and self.state == "formation":
+            # Own lanes prevent all ten birds from stacking on the ship.
+            self.state = "diving"
+            self.dive_lane = max(28, min(BASE_WIDTH - 28, player_x + (self.formation_index % 5 - 2) * 90))
+            self.dive_target_x = self.dive_lane
+            self.attack_wait = 6.0 + self.formation_index * 0.2
+        # The base bird animation/death remains unchanged. Its random dive wrap
+        # is replaced here so this encounter never consumes arcade RNG per tick.
+        if self.state == "diving" and not self.dying:
+            self._tick_wings(dt)
+            self.y += ENEMY_DIVE_SPEED * dt
+            self.x += (self.dive_lane - self.x) * 0.55 * dt
+            self.x += math.sin(self.time * 5.5 + self.formation_index) * 36 * dt
+            self.x = max(20, min(BASE_WIDTH - 20, self.x))
+            if self.y > BASE_HEIGHT + 50:
+                self.y = -40
+                self.state = "returning"
+            self.rect.center = (round(self.x), round(self.y))
+        else:
+            super().update(dt, math.sin(clock * 0.7) * 45, player_x)
+
+
 class GuardianFormation:
     def __init__(self):
         self.enemies = []
@@ -190,32 +338,73 @@ class GuardianFormation:
         self.next_charge = 0.0
         self.next_fire = 0.0
         self.destroyed = 0
+        self.burned = 0
+        self.effects = []
         self._spawn()
 
     def _spawn(self):
         self.wave += 1
-        self.enemies = [Guardian(BASE_WIDTH * (i + 1) / 4, 150 + (self.wave - 1) * 35, i)
-                        for i in range(PER_WAVE)]
-        for bird in self.enemies:
-            bird.owner_id = (self.wave - 1) * PER_WAVE + bird.index
+        self.guardians = [Guardian(BASE_WIDTH * (i + 1) / (PER_WAVE + 1), 130, i)
+                          for i in range(PER_WAVE)]
+        self.birds = [EscortBird(BASE_WIDTH * (i + 1) / (BIRDS_PER_COLOUR + 1),
+                                 250 + (stage - 1) * 85,
+                                 (stage - 1) * BIRDS_PER_COLOUR + i, stage)
+                      for stage in (1, 2) for i in range(BIRDS_PER_COLOUR)]
+        self.enemies = self.guardians + self.birds
+
+    @property
+    def total(self):
+        return PER_WAVE + BIRDS_PER_COLOUR * 2
+
+    def _burn_birds(self, previous_boxes):
+        for bolt in self.bullets:
+            if not isinstance(bolt, FireLaser):
+                continue
+            # A bolt leaving the screen can still cross a bird this tick.
+            for bird in self.birds:
+                if not bird.alive or bird.dying:
+                    continue
+                current = bird.get_hitbox()
+                previous = previous_boxes.get(bird, current)
+                # Wrapping from below to above is a teleport, not a sweep
+                # through every laser on screen.
+                if abs(previous.centery - current.centery) > BASE_HEIGHT / 2:
+                    previous = current
+                if bolt.hits_moving_rect(previous, current):
+                    self.effects.append(BurningBird(bird))
+                    bird.kill(flash=False)
+                    self.burned += 1
+                    if self.sounds:
+                        self.sounds.play("enemy_explosion", volume=0.35, x=bird.x)
 
     def update(self, dt, player_x, player_y=BASE_HEIGHT - 95):
         self.clock += dt
+        for effect in self.effects:
+            effect.update(dt)
+        self.effects = [effect for effect in self.effects if effect.alive]
+        previous_boxes = {bird: bird.get_hitbox() for bird in self.birds
+                          if bird.alive and not bird.dying}
+        self.bullets = [bolt for bolt in self.bullets if bolt.alive]
         for bolt in self.bullets:
             bolt.update(dt)
-        self.bullets = [bolt for bolt in self.bullets if bolt.alive]
-        for bird in self.enemies:
+        for bird in self.guardians:
             if bird.alive:
                 bird.update(dt, player_x, player_y)
-        living = self.get_alive_enemies()
-        self.destroyed = (self.wave - 1) * PER_WAVE + PER_WAVE - len(living)
-        if not living:
-            if self.wave < self.waves and not self.bullets:
-                self.wait -= dt
-                if self.wait <= 0:
-                    self._spawn()
-                    self.wait = 1.5
-            return
+        for bird in self.birds:
+            if bird.alive:
+                bird.update_encounter(dt, self.clock, player_x)
+        self._burn_birds(previous_boxes)
+        self.bullets = [bolt for bolt in self.bullets if bolt.alive]
+        self.destroyed = self.total - len(self.get_alive_enemies())
+        living = [bird for bird in self.guardians if bird.alive]
+        for bird in self.birds:
+            if (bird.alive and not bird.dying and bird.shot_wait <= 0
+                    and 0 < bird.y < player_y - 50
+                    and not any(b.owner_id == bird.owner_id for b in self.bullets)):
+                bolt = EnemyBullet(bird.x, bird.y + bird.height / 2, stage=bird.stage)
+                bolt.owner_id = bird.owner_id
+                self.bullets.append(bolt)
+                bird.shot_wait = 2.4 + bird.formation_index * 0.1
         for bird in living:
             active = any(b.owner_id == bird.owner_id for b in self.bullets)
             if bird.charge:
@@ -241,14 +430,17 @@ class GuardianFormation:
     def draw(self, surface):
         for bird in self.enemies:
             bird.draw(surface)
+        for effect in self.effects:
+            effect.draw(surface)
         for bolt in self.bullets:
             bolt.draw(surface)
 
     def get_alive_enemies(self):
-        return [bird for bird in self.enemies if bird.alive]
+        return [bird for bird in self.enemies if bird.alive and not bird.dying]
 
     def get_hittable_enemies(self):
         return self.get_alive_enemies()
 
     def all_dead(self):
-        return self.wave >= self.waves and not self.get_alive_enemies() and not any(b.alive for b in self.bullets)
+        return (not any(b.alive for b in self.enemies) and not self.effects
+                and not any(b.alive for b in self.bullets))
