@@ -59,3 +59,22 @@ embers. Frames derive from the existing blue/green sprites and are cached once
 per colour at encounter creation; drawing only blits. No new image files or
 dependencies are required. Birds keep their normal wing animation, regular shots
 and dives; their return wraps invisibly above the screen.
+
+## Lasers against the player's ship
+
+In this mission only, a Guardian laser destroys one life on contact, bypassing
+the Shield dome, Phenix mode, morph transitions, temporary invulnerability and
+infinite-life cheats. It keeps travelling after contact. Ordinary enemy shots,
+divers and every other mission keep their usual damage rules.
+
+Both hulls have distinct normal/active destruction silhouettes: the normal
+Shield, Shield with dome, normal Phoenix hull, and transformed Phenix wings.
+The 32 cached frames heat the original form, engulf it in flames, carbonise it
+and disperse it into embers and ash over 1.4 seconds. Both forms of the selected
+hull/tint are prepared on mission entry; impact and drawing only use the cache.
+
+The destroyed ship cannot move, shoot, collide or clear the mission during this
+animation. A remaining life respawns the normal hull at the starting position.
+Respawn protection still works for ordinary attacks; Guardian lasers bypass it.
+The final life returns to the adventure map after the full animation. Training
+save/progression rules are unchanged.

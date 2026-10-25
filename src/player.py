@@ -192,6 +192,7 @@ class Player:
         # Death disappearance
         self.dying = False
         self.death_timer = 0.0
+        self.guardian_burn = None
         self.DEATH_DURATION = 0.70
         self.death_flash = False
         self._white_image = None
@@ -203,6 +204,7 @@ class Player:
 
     def set_ship(self, ship_id, tint="argent"):
         """Load hull PNG. Phoenix: argent/blue/gold. Shield: red/green/violet."""
+        self.guardian_burn = None
         sid = "shield" if ship_id == "shield" else "phoenix"
         self.ship_id = sid
         if sid == "shield":
@@ -296,6 +298,18 @@ class Player:
 
     def update(self, dt, keys, input_mode="keyboard", joystick=None, allow_shoot=True, ai_move=None, ai_shoot=None):
         if not self.alive:
+            return False
+        if self.guardian_burn is not None:
+            self.guardian_burn.update(dt)
+            if self.guardian_burn.finished:
+                self.guardian_burn = None
+                self.dying = False
+                self.alive = self.lives > 0
+                if self.alive:
+                    self.x, self.y = BASE_WIDTH / 2, BASE_HEIGHT - 95
+                    self.rect.center = (round(self.x), round(self.y))
+                    # Only ordinary attacks respect this respawn protection.
+                    self.invulnerable = PLAYER_INVULN_TIME
             return False
         self.shield_punch = max(0.0, float(getattr(self, "shield_punch", 0.0) or 0.0) - dt)
         
@@ -907,6 +921,36 @@ class Player:
         if before < 10.0 and self.phenix_gauge >= 10.0 and not self.uses_shield:
             self.flag_gauge_max = True
 
+    def burn_by_guardian(self):
+        """Destroy one life regardless of Shield, Phenix, blink or infinite-life cheats."""
+        if not self.alive or self.dying or self.guardian_burn is not None:
+            return False
+        from ship_burn import ShipBurn
+        # Capture the visible hull/form before cancelling every defensive state.
+        self.guardian_burn = ShipBurn(self)
+        self.lives = max(0, self.lives - 1)
+        self.just_lost_life = True
+        self.dying = True
+        self.death_timer = 0.0
+        self.invulnerable = 0.0
+        self.clear_wall_status()
+        self.shots.clear()
+        self.phenix_gauge = float(self.phenix_min_gauge)
+        self.combo_streak = 0
+        self.phenix_timer = self.phenix_duration = 0.0
+        self.morph_dir = 0
+        self.morph_timer = self.morph_duration = 0.0
+        self._morph_lead = []
+        self.phenix_saved_gauge = None
+        self._special_lock = 0.0
+        self.shield_flash = 0
+        self.shield_punch = 0.0
+        self.engine_intensity = 0.0
+        if self.uses_shield:
+            self.phenix_cooldown = self.SHIELD_COOLDOWN
+        self.rumble(1.0, 1.0, 640)
+        return True
+
     def hit(self):
         """Apply damage. Returns True if this hit started the death sequence."""
         # Phenix: immune to normal hits (bullets / dives). Hull/edge handled separately.
@@ -1051,6 +1095,9 @@ class Player:
 
     def draw(self, surface):
         if not self.alive:
+            return
+        if self.guardian_burn is not None:
+            self.guardian_burn.draw(surface)
             return
         if self.asteroid_mode:
             self._draw_asteroid(surface)

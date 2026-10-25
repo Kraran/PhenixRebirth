@@ -2028,6 +2028,8 @@ class Game:
         waves = (adv or {}).get("waves")
         if adv and adv.get("guardians"):
             self.stage = 3
+            from ship_burn import prepare as prepare_ship_burn
+            prepare_ship_burn(self.player)
             self.formation = GuardianFormation()
             self.formation.sounds = self.sounds
             self.boss_saucer = None
