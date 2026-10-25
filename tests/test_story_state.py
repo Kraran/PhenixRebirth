@@ -270,6 +270,64 @@ def test_damaged_numbers_do_not_crash_the_loadout():
     assert (lo["lives"], lo["speed_pct"], lo["dome_dur"], lo["dome_cd"]) == (1, 40, 1.0, 5.0)
 
 
+@pytest.mark.parametrize("value", [None, "oops", [], {}, True, float("nan"), float("inf"), -float("inf")])
+@pytest.mark.parametrize("version", [2, 3, ss.SAVE_VERSION])
+def test_invalid_save_fields_are_repaired_before_loading(tmp_path, value, version):
+    path = tmp_path / "story_1.json"
+    data = ss.default_state()
+    data.update(version=version, act=value, credits=value, selected_slot=value)
+    data["slots"][0].update({key: value for key in (
+        "lives", "lives_base", "speed", "dome_dur", "dome_cd", "phenix_cap", "wall", "tint", "id")})
+    data["items"].update(act=value, since=value)
+    data["paint"].update(step=value, runs=value)
+    data["mission_clears"] = {"ch1_sortie": value}
+    data["mission_kills"] = {"ch1_sortie": value}
+    path.write_text(json.dumps(data), encoding="utf-8")
+    state, status = ss.read_state(str(path))
+    assert status == "ok"
+    assert state["act"] == 1 and state["credits"] == 0 and state["selected_slot"] == 0
+    loadout = ss.loadout(state)
+    assert loadout["ship_id"] == "shield"
+    assert (loadout["lives"], loadout["speed_pct"], loadout["dome_dur"], loadout["dome_cd"]) == (1, 40, 1, 5)
+    assert ss.visible_missions(state)
+    ss.shop_for(state)
+    for entry in ss.journal_entries(state):
+        ss.log_text(entry, t)
+
+
+@pytest.mark.parametrize("version", [None, "oops", [], {}, True, float("nan"), float("inf"), -float("inf")])
+def test_invalid_version_falls_back_to_legacy_migration(version):
+    state = ss.migrate_state({"version": version})
+    assert state["version"] == ss.SAVE_VERSION
+    assert ss.loadout(state)["ship_id"] == "shield"
+
+
+def test_save_numeric_bounds_and_invalid_collection_entries():
+    state = ss.default_state()
+    state.update(act=99, credits=-20, selected_slot=20, fallen="false")
+    state["flags"].update(dome_online="false", act2=[], act3=True)
+    state["cleared"] = ["ch1_sortie", {}, None]
+    state["log"] = ["legacy", {"key": "story_log_clear"}, {"key": []}, None, []]
+    state["slots"][0].update(speed=1000, lives=100, lives_base=-2, dome_dur=-1, dome_cd=100,
+                              owned="false", destroyed="false")
+    migrated = ss.migrate_state(state)
+    assert (migrated["act"], migrated["credits"], migrated["selected_slot"], migrated["fallen"]) == (3, 0, 0, False)
+    assert not ss.flag(migrated, "dome_online") and ss.flag(migrated, "act3")
+    assert migrated["cleared"] == ["ch1_sortie"]
+    assert migrated["log"] == ["legacy", {"key": "story_log_clear"}]
+    ship = migrated["slots"][0]
+    assert (ship["speed"], ship["lives"], ship["lives_base"], ship["dome_dur"], ship["dome_cd"]) == (100, 5, 1, 1, 5)
+    assert ship["owned"] is True and not ship.get("destroyed")
+
+
+def test_valid_novice_act3_hull_survives_migration():
+    state = ss.default_state()
+    state.update(act=3, mode="novice", selected_slot=1, act3_ship="phoenix", credits=12345)
+    state["slots"][0].update(owned=False, destroyed=True)
+    state["slots"][1].update(owned=True, lives=5, lives_base=3, speed=100, phenix=True, phenix_cap=100)
+    assert ss.migrate_state(state) == state
+
+
 def test_save_and_load_roundtrip(tmp_path):
     path = str(tmp_path / "story_2.json")
     st = _state()

@@ -13,6 +13,7 @@ Version 4 is the Act 1 hangar: the Shield starts at 40 % speed with one life,
 no dome and deadly walls (see ACT_CAPS and UPGRADES).
 """
 import json
+import math
 import os
 import time
 import unicodedata
@@ -835,9 +836,31 @@ def _num(value, default):
     try:
         if isinstance(value, bool):
             return default
-        return float(value)
-    except (TypeError, ValueError):
+        number = float(value)
+        return number if math.isfinite(number) else default
+    except (TypeError, ValueError, OverflowError):
         return default
+
+
+def _clean_hull(slot, defaults):
+    """Validate a migrated hull before menus or gameplay consume its fields."""
+    out = dict(defaults)
+    if slot.get("id") in HULLS:
+        out["id"] = slot["id"]
+    for key in ("owned", "dome", "phenix", "destroyed"):
+        if isinstance(slot.get(key), bool):
+            out[key] = slot[key]
+    limits = {"lives": (1, 5), "lives_base": (1, NOVICE_LIVES), "speed": (SPEED_START, 100),
+              "phenix_cap": (PHENIX_CAP_START, PHENIX_CAP_MAX),
+              "dome_dur": (DOME_DUR_START, DOME_DUR_MAX), "dome_cd": (DOME_CD_MIN, DOME_CD_START)}
+    for key, (low, high) in limits.items():
+        if key in defaults or key in slot:
+            value = max(low, min(high, _num(slot.get(key), defaults.get(key, low))))
+            out[key] = value if key in ("dome_dur", "dome_cd") else int(value)
+    out["tint"] = _hull_tint(out["id"], slot.get("tint", defaults.get("tint")))
+    if slot.get("wall") in ("instant", "slow", "immune"):
+        out["wall"] = slot["wall"]
+    return out
 
 
 def _to_act1_hangar(sl):
@@ -875,7 +898,7 @@ def _open_started_series(state):
 
 
 def migrate_state(data):
-    """Turn any saved dict (version 2 or 3) into a complete version-3 state.
+    """Migrate older saves and validate fields for the current save version.
 
     Unknown or damaged fields fall back to the defaults. Returns None when
     `data` is not a dict at all.
@@ -884,26 +907,27 @@ def migrate_state(data):
         return None
     base = default_state()
     old_version = int(_num(data.get("version"), 2))
-    for key in ("credits", "selected_slot"):
-        if key in data:
-            base[key] = data[key]
+    base["credits"] = max(0, int(_num(data.get("credits"), 0)))
+    base["selected_slot"] = int(_num(data.get("selected_slot"), 0))
     # chapter (v2) became act (v3)
-    base["act"] = data.get("act", data.get("chapter", 1))
+    base["act"] = max(1, min(3, int(_num(data.get("act", data.get("chapter")), 1))))
     if isinstance(data.get("name"), str):
         base["name"] = data["name"]
     if data.get("mode") in MODES:
         base["mode"] = data["mode"]
-    base["fallen"] = bool(data.get("fallen"))
+    if isinstance(data.get("fallen"), bool):
+        base["fallen"] = data["fallen"]
     if isinstance(data.get("saved_at"), str):
         base["saved_at"] = data["saved_at"]
     flags = dict(base["flags"])
     if isinstance(data.get("flags"), dict):
-        flags.update(data["flags"])
+        flags.update({k: v for k, v in data["flags"].items() if isinstance(k, str) and isinstance(v, bool)})
     base["flags"] = flags
     if isinstance(data.get("cleared"), list):
-        base["cleared"] = list(data["cleared"])
+        base["cleared"] = [mid for mid in data["cleared"] if isinstance(mid, str)]
     if isinstance(data.get("log"), list):
-        base["log"] = list(data["log"])
+        base["log"] = [entry for entry in data["log"] if isinstance(entry, str)
+                       or (isinstance(entry, dict) and isinstance(entry.get("key"), str))]
     if isinstance(data.get("bestiary"), dict):
         record_kills(base, {k: v for k, v in data["bestiary"].items()})
     if isinstance(data.get("mission_clears"), dict):
@@ -930,6 +954,8 @@ def migrate_state(data):
             proto = dict(base["slots"][i] if i < len(base["slots"]) else {})
             if isinstance(sl, dict):
                 sl = dict(sl)
+                if sl.get("id") not in HULLS:
+                    sl["id"] = proto["id"]
                 if old_version < 3:
                     # v2 stored the dome times in frames at 60 Hz
                     for key in ("dome_dur", "dome_cd"):
@@ -937,9 +963,13 @@ def migrate_state(data):
                             sl[key] = _num(sl[key], 0.0) / 60.0
                 if old_version < 4:
                     _to_act1_hangar(sl)
-                proto.update(sl)
+                proto = _clean_hull(sl, proto)
             merged.append(proto)
         base["slots"] = merged
+    if not 0 <= base["selected_slot"] < len(base["slots"]):
+        base["selected_slot"] = 0
+    if data.get("act3_ship") in HULLS:
+        base["act3_ship"] = data["act3_ship"]
     if old_version < 4:
         flags = base["flags"]
         if flags.pop("ch1_speed_80", False):
