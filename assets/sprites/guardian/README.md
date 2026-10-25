@@ -20,6 +20,11 @@ without an unlock in acts I–III, replayable before and after a victory.
 
 - Two waves of three Sentinelles, one vulnerable body per enemy.
 - Charge warning: 0.95 seconds. The shooter stops moving during the warning.
+- The shooter also stays fixed on both axes while its own growing laser is
+  attached to its mouth. Movement and dives resume as soon as the tail leaves
+  the emission point (144 / 780 seconds, about 0.185 s), or the bolt is removed.
+  Other Guardians are not frozen, and the shooter need not wait for the laser
+  to leave the screen.
 - Finite downward laser bolt: 144 pixels long, 780 pixels/second.
 - Collision core: 10 pixels wide, narrower than the decorative flames.
 - One laser in flight per Guardian (up to three in a wave). Charge starts are

@@ -83,6 +83,7 @@ class Guardian:
         self.dying = False
         self.charge = 0.0
         self.firing = 0.0
+        self.emission = None
         self.state = "patrol"
         self.shot_wait = SHOT_GAP + index * 0.38
         self.dive_wait = 4.6 + index * 1.2
@@ -95,7 +96,16 @@ class Guardian:
     def diving(self):
         return self.alive and self.state == "dive"
 
+    @property
+    def laser_attached(self):
+        """The bolt's growing tail still touches its emission point."""
+        bolt = self.emission
+        return (bolt is not None and bolt.alive
+                and bolt.y - bolt.origin_y <= LASER_LENGTH)
+
     def start_dive(self, player_x, player_y):
+        if self.laser_attached:
+            return
         self.state = "windup"
         self.warning = DIVE_WARNING
         self.target = (max(96, min(BASE_WIDTH - 96, player_x)),
@@ -108,6 +118,8 @@ class Guardian:
         self.firing = max(0.0, self.firing - dt)
         self.shot_wait = max(0.0, self.shot_wait - dt)
         self.dive_wait = max(0.0, self.dive_wait - dt)
+        if self.laser_attached:
+            return  # freeze both axes until this Guardian's own laser detaches
         if self.state == "windup":
             self.warning -= dt
             if self.warning <= 0:
@@ -209,7 +221,8 @@ class GuardianFormation:
             if bird.charge:
                 bird.charge += dt
                 if bird.charge >= CHARGE_SECONDS and self.clock >= self.next_fire and not active:
-                    self.bullets.append(FireLaser(bird.x, bird.y + 16, bird.owner_id))
+                    bird.emission = FireLaser(bird.x, bird.y + 16, bird.owner_id)
+                    self.bullets.append(bird.emission)
                     bird.charge = 0.0
                     bird.firing = 0.2
                     bird.shot_wait = SHOT_GAP + bird.index * 0.15
@@ -217,7 +230,7 @@ class GuardianFormation:
                     if self.sounds:
                         self.sounds.play("enemy_shoot", x=bird.x)
                 continue
-            if bird.state != "patrol":
+            if bird.state != "patrol" or bird.laser_attached:
                 continue
             if bird.dive_wait <= 0 and not any(b.state in ("windup", "dive") for b in living):
                 bird.start_dive(player_x, player_y)

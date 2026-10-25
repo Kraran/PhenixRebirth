@@ -81,7 +81,8 @@ def test_charge_stops_aiming_and_killing_the_shooter_cancels_it(display):
     assert shooter.x == origin
     while shooter.charge:
         form.update(1 / 120, 50)
-    form.update(1 / 120, 50)
+    while shooter.laser_attached:
+        form.update(1 / 120, 50)
     assert abs(shooter.x - origin) < 1  # no teleport when movement resumes
     form.bullets.clear()
     shooter.shot_wait = 0
@@ -90,6 +91,48 @@ def test_charge_stops_aiming_and_killing_the_shooter_cancels_it(display):
     form.update(1.0, 50)
     assert not any(b.owner_id == shooter.owner_id for b in form.bullets)
     assert shooter.charge == 0
+
+
+@pytest.mark.parametrize("fps", [30, 60, 120, 144])
+def test_shooter_stays_fixed_until_its_own_laser_detaches(display, fps):
+    form = gd.GuardianFormation()
+    shooter = form.enemies[0]
+    shooter.shot_wait = 0
+    dt = 1 / fps
+    while shooter.emission is None:
+        form.update(dt, 640, 625)
+    origin = shooter.x, shooter.y
+    bolt = shooter.emission
+    other = form.enemies[2]
+    other_origin = other.x, other.y
+    shooter.dive_wait = 0  # an overdue dive must also wait for detachment
+    for _ in range(fps):
+        was_attached = shooter.laser_attached
+        form.update(dt, 1100, 625)
+        if shooter.laser_attached:
+            assert (shooter.x, shooter.y) == origin
+            assert shooter.state == "patrol"
+            assert bolt.x == shooter.x and bolt.origin_y == shooter.y + 16
+        elif was_attached:
+            break
+    assert not shooter.laser_attached and bolt.alive  # still travelling on screen
+    assert (other.x, other.y) != other_origin
+    assert shooter.state == "windup"  # deferred dive starts immediately
+    assert (shooter.x, shooter.y) != origin
+
+
+def test_removed_laser_releases_the_shooter_without_waiting_for_a_timer(display):
+    form = gd.GuardianFormation()
+    shooter = form.enemies[0]
+    shooter.emission = gd.FireLaser(shooter.x, shooter.y + 16, shooter.owner_id)
+    form.bullets.append(shooter.emission)
+    assert shooter.laser_attached
+    shooter.start_dive(640, 625)
+    assert shooter.state == "patrol"
+    origin = shooter.x, shooter.y
+    shooter.emission.alive = False
+    form.update(1 / 120, 1100, 625)
+    assert not shooter.laser_attached and (shooter.x, shooter.y) != origin
 
 
 @pytest.mark.parametrize("fps", [30, 60, 120, 144])
