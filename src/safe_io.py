@@ -22,10 +22,7 @@ def atomic_write_text(path, text):
         with open(tmp, "w", encoding="utf-8") as f:
             f.write(text)
             f.flush()
-            try:
-                os.fsync(f.fileno())
-            except OSError:
-                pass
+            os.fsync(f.fileno())
         # On Windows the target can be briefly locked (antivirus, indexer): retry.
         for attempt in range(4):
             try:
@@ -36,14 +33,13 @@ def atomic_write_text(path, text):
                     raise
                 time.sleep(0.05)
     except Exception:
-        # Last resort: the old behaviour (direct write), so saving still works.
+        # Never truncate the previous save when the atomic write fails.
         try:
             if os.path.exists(tmp):
                 os.remove(tmp)
         except OSError:
             pass
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(text)
+        raise
 
 
 def atomic_write_json(path, data, indent=2):
@@ -81,6 +77,7 @@ COALESCE_SEC = 0.3
 _cv = threading.Condition()
 _pending = {}      # path -> text to write
 _inflight = {}     # path -> text being written
+_failed = {}       # path -> latest text that could not be saved (retry on flush)
 _flush_requested = False
 _thread = None
 
@@ -96,15 +93,28 @@ def _worker():
             _pending.clear()
             _inflight.update(batch)
         for path, text in batch.items():
+            failed = False
             try:
-                atomic_write_text(path, text)
+                for attempt in range(3):
+                    try:
+                        atomic_write_text(path, text)
+                        break
+                    except OSError:
+                        if attempt == 2:
+                            raise
+                        time.sleep(0.05)
             except Exception:
+                failed = True
                 try:
                     from errlog import log_exc
                     log_exc("safe_io.write_behind")
                 except Exception:
                     pass
             with _cv:
+                if failed:
+                    _failed[path] = text
+                else:
+                    _failed.pop(path, None)
                 if _inflight.get(path) is text:
                     del _inflight[path]
                 _cv.notify_all()
@@ -114,6 +124,7 @@ def write_behind(path, text):
     """Comme atomic_write_text, mais sans faire attendre l'appelant."""
     global _thread
     with _cv:
+        _failed.pop(path, None)   # a newer save supersedes the failed version
         _pending[path] = text
         if _thread is None or not _thread.is_alive():
             _thread = threading.Thread(target=_worker, name="phenix-save", daemon=True)
@@ -133,22 +144,34 @@ def read_text_latest(path):
             return _pending[path]
         if path in _inflight:
             return _inflight[path]
+        if path in _failed:
+            return _failed[path]
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
 
 
 def flush(timeout=10.0):
-    """Wait until all the deferred writes are on the disk."""
+    """Retry failed saves and wait; return False on a write error or timeout.
+
+    Failed data stays readable through read_text_latest() until a later flush
+    or a newer save succeeds. Each flush retries it once (with bounded retries
+    in the worker), so a full disk cannot cause an endless retry loop.
+    """
     global _flush_requested
     with _cv:
+        for path, text in _failed.items():
+            if path not in _pending and path not in _inflight:
+                _pending[path] = text
+        _failed.clear()
         if not _pending and not _inflight:
             return True
         _flush_requested = True
         _cv.notify_all()
-        ok = _cv.wait_for(lambda: not _pending and not _inflight, timeout=timeout)
+        drained = _cv.wait_for(lambda: not _pending and not _inflight, timeout=timeout)
         _flush_requested = False
-        leftovers = {} if ok else dict(_pending)
-    if not ok and (_thread is None or not _thread.is_alive()):
+        ok = drained and not _failed
+        leftovers = {} if drained else dict(_pending)
+    if not drained and (_thread is None or not _thread.is_alive()):
         # le fil est mort : on écrit nous-mêmes ce qui reste
         for path, text in leftovers.items():
             try:
@@ -158,7 +181,8 @@ def flush(timeout=10.0):
                         del _pending[path]
             except Exception:
                 pass
-        ok = True
+        with _cv:
+            ok = not _pending and not _inflight and not _failed
     return ok
 
 
