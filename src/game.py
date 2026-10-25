@@ -49,6 +49,7 @@ import controls
 import asteroids
 import escort
 import galaga
+from guardian import GuardianFormation
 from galaga import GalagaFormation
 from boss import BossSaucer
 from explosion import Explosion, TeslaCoilFx
@@ -1859,6 +1860,8 @@ class Game:
         self.player.sounds = self.sounds
         self.player.pid = 1
         self.player.lives = int(loadout.get("lives") or 1)
+        if spec.get("training"):
+            self.player.lives = max(3, self.player.lives)
         self.player.infinite_lives = False
         pct = int(loadout.get("speed_pct") or 40)
         self.player.speed = PLAYER_SPEED * (pct / 100.0)
@@ -1868,6 +1871,8 @@ class Game:
             # the Phenix form lasts a share of the arcade one: 60 % at first, more after the workshop
             self.player.phenix_sec_per_point *= max(0.1, int(loadout.get("phenix_pct") or 60) / 100.0)
         self.player.adventure_wall = loadout.get("wall") or "instant"
+        if spec.get("training"):
+            self.player.adventure_wall = "immune"
         if loadout.get("vertical"):
             # the two-dimensional impulse reactor (BONUS mission): up and down in the lower third, for the rest of the Adventure
             self.player.vertical_range = (PLAYER_VERTICAL_TOP, PLAYER_VERTICAL_BOTTOM)
@@ -1879,7 +1884,7 @@ class Game:
             self._ast_last_x = self._ast_last_y = None
         self.adventure["dome"] = dome
         # the loot items bought in the hangar for this mission (they are used up when it ends, see _end_adventure)
-        items = list(spec.get("items") or [])
+        items = [] if spec.get("training") else list(spec.get("items") or [])
         fx = story_items.effects(items)
         self.adventure["items"] = items
         self.player.lives += fx["extra_lives"]
@@ -1889,7 +1894,8 @@ class Game:
         # and the one that may fall during it (rare, see story_items.plan_drop). The paint missions (Space Invaders)
         # never carry one, and do not count in the gap between two drops; the items bought still work in them.
         story = getattr(self, "story", None)
-        can_loot = story is not None and not spec.get("invaders") and not spec.get("asteroids")
+        can_loot = (story is not None and not spec.get("invaders") and not spec.get("asteroids")
+                    and not spec.get("training"))
         if can_loot and spec.get("reactor"):
             # a BONUS mission: the reactor of its hull falls once, whenever in the waves (the random loot is off)
             self.adventure["loot_plan"] = story_items.reactor_plan(story.state, spec["reactor"], random)
@@ -1970,7 +1976,8 @@ class Game:
         """True while a mission of a Veteran save is played (one death ends the save for good)."""
         story = getattr(self, "story", None)
         state = getattr(story, "state", None) or {}
-        return bool(getattr(self, "adventure", None)) and state.get("mode") == "veteran"
+        adv = getattr(self, "adventure", None) or {}
+        return bool(adv) and not adv.get("training") and state.get("mode") == "veteran"
 
     def _bank_adventure(self, cleared):
         """Write the result of the mission into the save (once)."""
@@ -2019,6 +2026,12 @@ class Game:
         self.stage_touched_edge = False
         adv = getattr(self, "adventure", None)
         waves = (adv or {}).get("waves")
+        if adv and adv.get("guardians"):
+            self.stage = 3
+            self.formation = GuardianFormation()
+            self.formation.sounds = self.sounds
+            self.boss_saucer = None
+            return
         if adv and waves:
             # a mission of several waves: each one plays like that stage of the arcade game
             number = int(waves[max(0, min(len(waves) - 1, int(adv.get("wave_i", 0) or 0)))])
@@ -2075,7 +2088,8 @@ class Game:
         else:
             content = stage_content(stage)
             mult = stage_speed_mult(stage) * self.difficulty_speed_mult()
-        if isinstance(self.formation, (InvaderFormation, GalagaFormation, escort.EscortFormation, asteroids.AsteroidFormation)):
+        if isinstance(self.formation, (InvaderFormation, GalagaFormation, escort.EscortFormation,
+                                       asteroids.AsteroidFormation, GuardianFormation)):
             self.formation = EnemyFormation()            # back to the ordinary grids
         self.formation.enemies = []
         self.formation.bullets = []
