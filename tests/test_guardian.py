@@ -298,7 +298,11 @@ def test_game_launch_collision_and_return_to_arcade(tmp_path, monkeypatch):
     game.formation.bullets = [bolt]
     lives = game.player.lives
     update_play.enemy_attacks_vs_players(game)
-    assert game.player.lives == lives - 1 and not bolt.alive
+    assert game.player.lives == lives - 1 and bolt.alive and game.player.dying
+    from ship_burn import DURATION
+    game.player.update(DURATION + 0.01, {})
+    assert game.player.alive and not game.player.dying
+    game.formation.bullets.clear()  # manual ship-only animation step above
     game.player.invulnerable = 0
     diver = game.formation.enemies[0]
     diver.state = "dive"
@@ -325,9 +329,13 @@ def test_game_launch_collision_and_return_to_arcade(tmp_path, monkeypatch):
     # A lost Veteran test also returns to the map with the same save.
     game._begin_adventure(spec)
     game.stage_transition = None
-    game.player.alive = False
-    game.player.dying = False
-    game.player.lives = 0
+    game.player.lives = 1
+    game.player.phenix_timer = 2.0
+    assert game.player.burn_by_guardian()
+    game.dt = 1 / 60
+    game.update()
+    assert game.started and game.player.dying  # final-life flames finish first
+    game.player.update(DURATION + 0.01, {})
     game.update()
     assert not game.started and game.menu_screen == "story_hub"
     assert game.story.state == before

@@ -14,7 +14,7 @@ import pygame
 from settings import (BASE_HEIGHT, BASE_WIDTH, SCREEN_SHAKE_DECAY, stage_speed_mult)
 from achievements import BOLDLY_GO_STAGE
 from enemy import BigBird, Enemy
-from guardian import GuardianFormation
+from guardian import FireLaser, GuardianFormation
 from explosion import TeslaCoilFx
 from i18n import t
 from loot import FallingItem
@@ -514,6 +514,16 @@ def enemy_attacks_vs_players(game):
                     break
         for bullet in game.formation.bullets[:]:
             if bullet.alive and bullet.get_hitbox().colliderect(player_hitbox):
+                if (isinstance(game.formation, GuardianFormation)
+                        and (getattr(game, "adventure", None) or {}).get("guardians")
+                        and isinstance(bullet, FireLaser)):
+                    if ship.burn_by_guardian():
+                        _life_lost(game)
+                        game.shake_amount = max(game.shake_amount, 22.0)
+                        game.sounds.play("explosion_big", x=ship.x)
+                    # Pierces the ship as it pierces birds; no shield absorption
+                    # or score/gauge reward. One life only per destruction.
+                    break
                 bullet.alive = False
                 if ship.is_phenix and getattr(ship, "uses_shield", False):
                     bh = bullet.get_hitbox()
