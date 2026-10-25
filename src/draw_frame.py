@@ -204,7 +204,7 @@ def draw_play(game):
         game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
     elif adv and adv.get("guardians"):
         form = game.formation
-        label = t("story_guardians_hud").format(w=form.wave, n=form.destroyed, total=6)
+        label = t("story_guardians_hud").format(n=form.destroyed, total=form.total)
         text = tc.get(game.font, label, (255, 190, 110))
         game.game_surface.blit(text, (BASE_WIDTH - 16 - text.get_width(), 52))
         hint = tc.get(game.font, t("story_guardians_hint"), (255, 190, 110))

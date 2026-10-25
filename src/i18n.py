@@ -6627,9 +6627,9 @@ _build_adv_feats()
 _GUARDIAN_TEXTS = {
     "story_m_guardians_test": ("TEST - Avioïdes Gardiens", "TEST - Avioid Guardians"),
     "story_m_guardians_test_b": (
-        "2 vagues de 3 Sentinelles. Charge orange, puis laser. 3 vies min., bords sûrs. Test sans gain ni perte.",
-        "2 waves of 3 Sentinelles. Orange charge, then laser. At least 3 lives, safe edges. No gain or loss."),
-    "story_guardians_hud": ("VAGUE {w}/2 · GARDIENS {n}/{total}", "WAVE {w}/2 · GUARDIANS {n}/{total}"),
+        "5 Gardiens, 5 oiseaux bleus et 5 verts. Les lasers brûlent aussi les oiseaux. 3 vies min., bords sûrs. Sans gain ni perte.",
+        "5 Guardians, 5 blue birds and 5 green birds. Lasers burn birds too. At least 3 lives, safe edges. No gain or loss."),
+    "story_guardians_hud": ("ENNEMIS {n}/{total}", "ENEMIES {n}/{total}"),
     "story_guardians_hint": ("Charge orange : laser rapide !", "Orange charge: fast laser!"),
     "story_guardians_clear": ("Test réussi ! Vous pouvez recommencer à volonté.",
                               "Test complete! Replay whenever you like."),

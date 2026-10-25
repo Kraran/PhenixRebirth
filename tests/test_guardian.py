@@ -59,11 +59,11 @@ def test_charge_and_bolt_speed_do_not_depend_on_framerate(display, fps):
     form = gd.GuardianFormation()
     dt = 1 / fps
     elapsed = 0
-    while not form.bullets and elapsed < 4:
+    while not any(isinstance(b, gd.FireLaser) for b in form.bullets) and elapsed < 4:
         form.update(dt, 640)
         elapsed += dt
     assert gd.SHOT_GAP + gd.CHARGE_SECONDS - 1e-8 <= elapsed <= gd.SHOT_GAP + gd.CHARGE_SECONDS + 3 * dt
-    bolt = form.bullets[0]
+    bolt = next(b for b in form.bullets if isinstance(b, gd.FireLaser))
     start = bolt.y
     for _ in range(fps):
         bolt.update(dt)
@@ -141,15 +141,16 @@ def test_one_laser_per_guardian_with_overlapping_but_staggered_shots(display, fp
     max_active = 0
     fired_at = []
     for _ in range(30 * fps):
-        previous = {id(b) for b in form.bullets}
+        previous = {id(b) for b in form.bullets if isinstance(b, gd.FireLaser)}
         form.update(1 / fps, 640)
-        max_active = max(max_active, len(form.bullets))
-        assert all(count <= 1 for count in Counter(b.owner_id for b in form.bullets).values())
-        assert len(form.bullets) <= gd.PER_WAVE
-        for b in form.bullets:
+        lasers = [b for b in form.bullets if isinstance(b, gd.FireLaser)]
+        max_active = max(max_active, len(lasers))
+        assert all(count <= 1 for count in Counter(b.owner_id for b in lasers).values())
+        assert len(lasers) <= gd.PER_WAVE
+        for b in lasers:
             if id(b) not in previous:
                 fired_at.append(form.clock)
-    assert max_active == 3
+    assert 3 <= max_active <= 5
     assert len(fired_at) >= 9
     assert all(b - a >= gd.FIRE_STAGGER - 1e-8 for a, b in zip(fired_at, fired_at[1:]))
     # Even the starting Shield can clear the beam's lane during the warning alone.
@@ -239,18 +240,23 @@ def test_patrol_pursues_the_player_and_can_schedule_a_dive(display):
     assert bird.state == "windup" and bird.target == (1000, 610)
 
 
-def test_last_wave_waits_for_remaining_projectiles(display):
+def test_encounter_waits_for_remaining_birds_deaths_and_projectiles(display):
     form = gd.GuardianFormation()
-    for b in form.enemies:
-        b.kill()
-    form.update(1.6, 640)
-    assert form.wave == 2 and len(form.get_alive_enemies()) == 3
-    form.bullets.append(gd.FireLaser(640, 200))
-    for b in form.enemies:
-        b.kill()
+    for guardian in form.guardians:
+        guardian.kill()
+    form.update(0.1, 640)
+    assert len(form.get_alive_enemies()) == 10
     assert not form.all_dead()
+    for bird in form.birds:
+        bird.kill()
+    assert not form.all_dead()  # ordinary death animations still visible
+    bolt = gd.FireLaser(640, 200)
+    form.bullets = [bolt]
+    form.update(0.5, 640)
+    assert not form.all_dead()  # no enemies, but the laser remains
     form.update(4, 640)
-    assert form.all_dead() and form.destroyed == 6
+    assert form.all_dead() and form.destroyed == 15
+
 
 
 def test_drawing_reuses_loaded_art(display, monkeypatch):
@@ -304,14 +310,11 @@ def test_game_launch_collision_and_return_to_arcade(tmp_path, monkeypatch):
     game.draw()
     game._bank_adventure(False)
     assert game.story.state == before
-    # Finish both waves and exercise the actual victory -> map transition.
+    # Finish the encounter and exercise the actual victory -> map transition.
     game._begin_adventure(spec)
     game.stage_transition = None
     for bird in game.formation.enemies:
-        bird.kill()
-    game.formation.update(1.6, 640)
-    for bird in game.formation.enemies:
-        bird.kill()
+        bird.kill(flash=False)
     game.formation.bullets.clear()
     game.update()
     assert game.stage_transition == "fly_up"
@@ -331,3 +334,140 @@ def test_game_launch_collision_and_return_to_arcade(tmp_path, monkeypatch):
     game._setup_stage(3)
     assert isinstance(game.formation, EnemyFormation)
     game.running = False
+
+def test_roster_has_five_guardians_and_five_birds_of_each_colour(display):
+    form = gd.GuardianFormation()
+    assert len(form.guardians) == 5
+    assert Counter(b.stage for b in form.birds) == {1: 5, 2: 5}
+    assert form.total == len(form.enemies) == 15
+    assert form.waves == 1
+    assert len({b.owner_id for b in form.enemies}) == 15
+    assert all(b.frames is form.birds[0].frames for b in form.birds[:5])
+
+
+@pytest.mark.parametrize("fps", [15, 30, 60, 120, 144])
+def test_laser_burns_both_colours_once_and_keeps_travelling(display, fps):
+    form = gd.GuardianFormation()
+    targets = [form.birds[0], form.birds[5]]
+    for enemy in form.enemies:
+        if enemy not in targets:
+            enemy.kill(flash=False)
+    for bird, y in zip(targets, (260, 345)):
+        bird.x = bird.start_x = 500
+        bird.y = bird.start_y = y
+        bird.attack_wait = bird.shot_wait = float("inf")
+    bolt = gd.FireLaser(500, 170, 0)
+    form.bullets = [bolt]
+    for _ in range(fps):
+        form.update(1 / fps, 640)
+    assert form.burned == 2
+    assert all(not bird.alive and not bird.dying for bird in targets)
+    assert not form.get_hittable_enemies()
+    assert len(form.effects) == 2
+    assert not form.all_dead()  # ash still visible
+    for _ in range(2 * fps):
+        form.update(1 / fps, 640)
+    assert form.burned == 2 and form.all_dead()
+
+
+def test_ordinary_shots_do_not_burn_birds_or_guardians(display):
+    from enemy import EnemyBullet
+    form = gd.GuardianFormation()
+    bird = form.birds[0]
+    bolt = EnemyBullet(bird.x, bird.y - 10)
+    bolt.update(0.05)
+    form.bullets = [bolt]
+    previous = {b: b.get_hitbox() for b in form.birds}
+    form._burn_birds(previous)
+    assert form.burned == 0 and bird.alive and not form.effects
+    guardian = form.guardians[0]
+    laser = gd.FireLaser(guardian.x, guardian.y - 60)
+    laser.update(0.1)
+    form.bullets = [laser]
+    form._burn_birds(previous)
+    assert guardian.alive
+
+
+def test_dead_and_dying_birds_cannot_be_ignited(display):
+    form = gd.GuardianFormation()
+    bird = form.birds[0]
+    bird.kill()
+    laser = gd.FireLaser(bird.x, bird.y - 60)
+    laser.update(0.1)
+    form.bullets = [laser]
+    form._burn_birds({})
+    assert form.burned == 0 and not form.effects
+
+
+def test_final_offscreen_laser_step_still_burns_a_bird(display):
+    form = gd.GuardianFormation()
+    bird = form.birds[0]
+    bird.x = bird.start_x = 500
+    bird.y = bird.start_y = 500
+    bird.attack_wait = bird.shot_wait = float("inf")
+    bolt = gd.FireLaser(500, 180, 0)
+    form.bullets = [bolt]
+    form.update(1.0, 640)
+    assert not bolt.alive and not bird.alive and form.burned >= 1
+
+
+def test_bird_wrapping_above_does_not_sweep_across_the_playfield(display):
+    form = gd.GuardianFormation()
+    bird = form.birds[0]
+    bird.x = bird.start_x = 500
+    bird.y = 775
+    bird.state = "diving"
+    bird.dive_lane = 500
+    laser = gd.FireLaser(500, 200, 0)
+    form.bullets = [laser]
+    form.update(1 / 60, 640)
+    assert bird.state == "returning" and bird.y == -40 and bird.alive
+
+
+@pytest.mark.parametrize("stage", [1, 2])
+def test_burning_frames_show_fire_then_ash_and_are_cached(display, stage, monkeypatch):
+    form = gd.GuardianFormation()
+    bird = next(b for b in form.birds if b.stage == stage)
+    frames = gd.burning_frames(stage, bird.frames[0])
+    assert len(frames) == gd.BURN_FRAME_COUNT
+    assert frames is gd.burning_frames(stage, bird.frames[0])
+    assert pygame.mask.from_surface(frames[0], 0).count() > 0
+    assert pygame.mask.from_surface(frames[-1], 0).count() == 0
+    fire = frames[5]
+    assert any(c.r > 200 and c.g > 50 and c.b < 60 and c.a
+               for y in range(fire.get_height()) for x in range(fire.get_width())
+               for c in [fire.get_at((x, y))])
+    ash = frames[19]
+    assert any(c.a and abs(c.r - c.g) < 10 and abs(c.g - c.b) < 10
+               for y in range(ash.get_height()) for x in range(ash.get_width())
+               for c in [ash.get_at((x, y))])
+    effect = gd.BurningBird(bird)
+    canvas = pygame.Surface((1280, 720), pygame.SRCALPHA)
+    monkeypatch.setattr(pygame.transform, "scale", lambda *a: pytest.fail("Scaled during burn draw"))
+    monkeypatch.setattr(pygame.image, "load", lambda *a: pytest.fail("Loaded during burn draw"))
+    for _ in range(100):
+        effect.update(1 / 60)
+        effect.draw(canvas)
+    assert not effect.alive
+
+
+def test_swept_bird_collision_requires_contact_at_the_same_time():
+    laser = gd.FireLaser(500, 100)
+    laser.update(0.5)  # tip moves from 100 to 490
+    assert laser.hits_moving_rect(pygame.Rect(490, 300, 20, 20),
+                                 pygame.Rect(490, 300, 20, 20))
+    assert not laser.hits_moving_rect(pygame.Rect(520, 300, 20, 20),
+                                     pygame.Rect(520, 300, 20, 20))
+    # Bird crosses the lane early, well before the tip reaches its height.
+    assert not laser.hits_moving_rect(pygame.Rect(490, 400, 20, 20),
+                                     pygame.Rect(800, 400, 20, 20))
+    # A growing tail never burns above its emission point.
+    assert not laser.hits_moving_rect(pygame.Rect(490, 50, 20, 20),
+                                     pygame.Rect(490, 50, 20, 20))
+
+
+def test_escort_creation_does_not_change_arcade_random_state(display):
+    import random
+    before = random.getstate()
+    gd.GuardianFormation()
+    assert random.getstate() == before
