@@ -672,6 +672,9 @@ class BigBird:
             self.body_img = self._build_body(stage)
             self.wing_up = self._build_wing(up=True, stage=stage)
             self.wing_down = self._build_wing(up=False, stage=stage)
+        # Immutable right-hand copies, reused while flying and after detachment.
+        self.wing_up_right = pygame.transform.flip(self.wing_up, True, False)
+        self.wing_down_right = pygame.transform.flip(self.wing_down, True, False)
         self.width = max(self.body_img.get_width() + self.wing_up.get_width(), 100)
         self.height = max(self.body_img.get_height(), self.wing_up.get_height(), 60)
         # Stage 4: slightly faster base roam
@@ -950,7 +953,7 @@ class BigBird:
                 "rot": 0.0,
                 "vr": 70.0,
                 "alive": True,
-                "img": pygame.transform.flip(wing_src, True, False),
+                "img": self.wing_up_right if wing_up else self.wing_down_right,
             })
 
     def hit_wing(self, side):
@@ -1049,10 +1052,11 @@ class BigBird:
                 wing_w = getattr(self, "_white_wing", None)
                 if wing_w is None:
                     self._white_wing = wing_w = _whiten_surf(wing_src)
+                    self._white_wing_right = pygame.transform.flip(wing_w, True, False)
                 if self.wing_left:
                     surface.blit(wing_w, (left_x, wing_y))
                 if self.wing_right:
-                    surface.blit(pygame.transform.flip(wing_w, True, False), (right_x, wing_y))
+                    surface.blit(self._white_wing_right, (right_x, wing_y))
                 surface.blit(body_w, (bx, by))
                 return
             for w in self.detach_wings:
@@ -1070,7 +1074,7 @@ class BigBird:
         if self.wing_left:
             surface.blit(wing_src, (left_x, wing_y))
         if self.wing_right:
-            surface.blit(pygame.transform.flip(wing_src, True, False), (right_x, wing_y))
+            surface.blit(self.wing_up_right if wing_up else self.wing_down_right, (right_x, wing_y))
 
         surface.blit(self.body_img, (bx, by))
 
@@ -1082,9 +1086,10 @@ class BigBird:
                 pygame.draw.ellipse(stub, (90, 95, 105, 220), (0, 2, 9, 9))
                 pygame.draw.polygon(stub, (130, 135, 145, 230), [(2, 4), (9, 1), (8, 10)])
                 self._wing_stub = stub
+                self._wing_stub_right = pygame.transform.flip(stub, True, False)
             sy = int(self.y - 4)
             if not self.wing_left:
                 surface.blit(stub, (int(self.x - bw // 2 - 4), sy))
             if not self.wing_right:
-                surface.blit(pygame.transform.flip(stub, True, False),
+                surface.blit(self._wing_stub_right,
                              (int(self.x + bw // 2 - 6), sy))
