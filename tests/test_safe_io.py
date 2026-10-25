@@ -46,12 +46,48 @@ def test_crash_during_write_keeps_old_file(tmp_path, monkeypatch):
     assert json.loads(p.read_text(encoding="utf-8")) == {"x": 1}
 
 
-def test_locked_target_falls_back_to_direct_write(tmp_path, monkeypatch):
+def test_locked_target_keeps_old_file(tmp_path, monkeypatch):
     p = tmp_path / "a.json"
+    p.write_text('{"x": 1}', encoding="utf-8")
     monkeypatch.setattr(safe_io.os, "replace", lambda s, d: (_ for _ in ()).throw(PermissionError("locked")))
     monkeypatch.setattr(safe_io.time, "sleep", lambda s: None)
-    safe_io.atomic_write_json(str(p), {"x": 3})
-    assert json.loads(p.read_text(encoding="utf-8")) == {"x": 3}
+    with pytest.raises(PermissionError):
+        safe_io.atomic_write_json(str(p), {"x": 3})
+    assert json.loads(p.read_text(encoding="utf-8")) == {"x": 1}
+    assert not (tmp_path / "a.json.tmp").exists()
+
+
+def test_fsync_failure_keeps_old_file(tmp_path, monkeypatch):
+    p = tmp_path / "a.json"
+    p.write_text('{"x": 1}', encoding="utf-8")
+    monkeypatch.setattr(safe_io.os, "fsync", lambda fd: (_ for _ in ()).throw(OSError("disk full")))
+    with pytest.raises(OSError):
+        safe_io.atomic_write_json(str(p), {"x": 2})
+    assert json.loads(p.read_text(encoding="utf-8")) == {"x": 1}
+    assert not (tmp_path / "a.json.tmp").exists()
+
+
+def test_partial_write_keeps_old_file(tmp_path, monkeypatch):
+    p = tmp_path / "a.json"
+    p.write_text('{"x": 1}', encoding="utf-8")
+    real_open = open
+
+    class FullDisk:
+        def __enter__(self):
+            self.file = real_open(str(p) + ".tmp", "w", encoding="utf-8")
+            return self
+
+        def write(self, text):
+            self.file.write(text[:3])
+            raise OSError("disk full")
+
+        def __exit__(self, *args):
+            self.file.close()
+
+    monkeypatch.setattr(safe_io, "open", lambda *a, **kw: FullDisk(), raising=False)
+    with pytest.raises(OSError):
+        safe_io.atomic_write_json(str(p), {"x": 2})
+    assert json.loads(p.read_text(encoding="utf-8")) == {"x": 1}
     assert not (tmp_path / "a.json.tmp").exists()
 
 
@@ -147,10 +183,53 @@ def test_write_behind_erreur_n_arrete_pas_le_fil(tmp_path, monkeypatch):
     good = str(tmp_path / "ok.json")
     monkeypatch.setattr(safe_io, "COALESCE_SEC", 0.01)
     safe_io.write_behind(bad, "{}")
-    safe_io.flush()
+    assert safe_io.flush() is False
+    assert safe_io.read_text_latest(bad) == "{}"
     safe_io.write_behind(good, '{"ok": true}')
-    assert safe_io.flush() is True
+    assert safe_io.flush() is False                 # the other file is still unsaved
     assert (tmp_path / "ok.json").read_text(encoding="utf-8") == '{"ok": true}'
+    (tmp_path / "no_such_dir").mkdir()
+    assert safe_io.flush() is True
+    assert json.loads((tmp_path / "no_such_dir" / "x.json").read_text(encoding="utf-8")) == {}
+
+
+def test_failed_write_is_retained_and_newer_save_supersedes_it(tmp_path, monkeypatch):
+    p = str(tmp_path / "wb.json")
+    real_write = safe_io.atomic_write_text
+    calls = []
+
+    def fail(path, text):
+        calls.append(text)
+        raise OSError("disk full")
+
+    monkeypatch.setattr(safe_io, "atomic_write_text", fail)
+    safe_io.write_behind(p, '{"n": 1}')
+    assert safe_io.flush() is False
+    assert len(calls) <= 6                         # bounded even if worker finished before flush
+    assert safe_io.read_text_latest(p) == '{"n": 1}'
+    assert safe_io.flush() is False                # an empty queue must not hide the failure
+    monkeypatch.setattr(safe_io, "atomic_write_text", real_write)
+    safe_io.write_behind(p, '{"n": 2}')
+    assert safe_io.flush() is True
+    assert json.loads((tmp_path / "wb.json").read_text(encoding="utf-8")) == {"n": 2}
+
+
+def test_transient_write_error_is_retried(tmp_path, monkeypatch):
+    p = str(tmp_path / "wb.json")
+    real_write = safe_io.atomic_write_text
+    calls = []
+
+    def transient(path, text):
+        calls.append(text)
+        if len(calls) < 3:
+            raise OSError("temporary failure")
+        real_write(path, text)
+
+    monkeypatch.setattr(safe_io, "atomic_write_text", transient)
+    safe_io.write_behind(p, "{}")
+    assert safe_io.flush() is True
+    assert len(calls) == 3
+    assert (tmp_path / "wb.json").read_text(encoding="utf-8") == "{}"
 
 
 def test_hauts_faits_relus_apres_chaque_sauvegarde(tmp_path, monkeypatch):
