@@ -1,5 +1,6 @@
 """Always-available simulation, deterministic warning and dodgeable laser bolts."""
 import copy
+from collections import Counter
 
 import pygame
 import pytest
@@ -71,44 +72,106 @@ def test_charge_and_bolt_speed_do_not_depend_on_framerate(display, fps):
 
 def test_charge_stops_aiming_and_killing_the_shooter_cancels_it(display):
     form = gd.GuardianFormation()
-    form.shot_wait = 0
+    shooter = form.enemies[0]
+    shooter.shot_wait = 0
     form.update(0.01, 640)
-    shooter = form.shooter
-    assert shooter is not None
+    assert shooter.charge > 0
     origin = shooter.x
     form.update(0.2, 50)
     assert shooter.x == origin
-    while form.shooter is not None:
+    while shooter.charge:
         form.update(1 / 120, 50)
     form.update(1 / 120, 50)
     assert abs(shooter.x - origin) < 1  # no teleport when movement resumes
     form.bullets.clear()
-    form.shot_wait = 0
+    shooter.shot_wait = 0
     form.update(0.01, 640)
-    shooter = form.shooter
     shooter.kill()
     form.update(1.0, 50)
-    assert not form.bullets and form.shooter is None
+    assert not any(b.owner_id == shooter.owner_id for b in form.bullets)
+    assert shooter.charge == 0
 
 
-def test_one_active_laser_at_a_time_and_safe_dodge_window(display):
+@pytest.mark.parametrize("fps", [30, 60, 120, 144])
+def test_one_laser_per_guardian_with_overlapping_but_staggered_shots(display, fps):
     form = gd.GuardianFormation()
-    for _ in range(1800):
-        form.update(1 / 60, 640)
-        assert len(form.bullets) <= 1
-        assert sum(b.charge > 0 for b in form.get_alive_enemies()) <= 1
+    max_active = 0
+    fired_at = []
+    for _ in range(30 * fps):
+        previous = {id(b) for b in form.bullets}
+        form.update(1 / fps, 640)
+        max_active = max(max_active, len(form.bullets))
+        assert all(count <= 1 for count in Counter(b.owner_id for b in form.bullets).values())
+        assert len(form.bullets) <= gd.PER_WAVE
+        for b in form.bullets:
+            if id(b) not in previous:
+                fired_at.append(form.clock)
+    assert max_active == 3
+    assert len(fired_at) >= 9
+    assert all(b - a >= gd.FIRE_STAGGER - 1e-8 for a, b in zip(fired_at, fired_at[1:]))
     # Even the starting Shield can clear the beam's lane during the warning alone.
     assert 480 * 0.4 * gd.CHARGE_SECONDS > gd.LASER_WIDTH + 48
 
 
 def test_laser_hitbox_covers_the_swept_path_and_tail():
     bolt = gd.FireLaser(500, 200)
-    bolt.update(1.5)
-    assert bolt.get_hitbox().collidepoint(500, 450)
     bolt.update(0.5)
+    assert bolt.get_hitbox().collidepoint(500, 450)
+    bolt.update(1 / 6)
     box = bolt.get_hitbox()
     assert box.top <= 590 - gd.LASER_LENGTH and box.bottom >= 720
     assert not box.collidepoint(530, 600)
+
+
+def test_wing_tips_have_transparent_margins_in_every_animation_cell(display):
+    for row in gd.art()[0]:
+        for frame in row:
+            bounds = pygame.mask.from_surface(frame, 0).get_bounding_rects()
+            combined = bounds[0].unionall(bounds[1:])
+            assert combined.left >= 6 and combined.top >= 6
+            assert combined.right <= 154 and combined.bottom <= 154
+
+
+@pytest.mark.parametrize("fps", [30, 60, 120, 144])
+def test_dive_locks_player_position_crosses_it_and_returns_without_teleport(display, fps):
+    bird = gd.Guardian(320, 150, 0)
+    target = (720, 560)
+    bird.start_dive(*target)
+    origin = (bird.x, bird.y)
+    dt = 1 / fps
+    for _ in range(int(gd.DIVE_WARNING * fps) - 1):
+        bird.update(dt, 100, 660)
+        assert (bird.x, bird.y) == origin
+        assert not bird.diving
+    passed_target = False
+    seen_dive = False
+    last = origin
+    for _ in range(10 * fps):
+        bird.update(dt, 100, 660)  # moving the player must not bend a locked dive
+        assert bird.target == target
+        distance = ((bird.x-last[0])**2 + (bird.y-last[1])**2)**0.5
+        assert distance <= max(gd.DIVE_SPEED, gd.RETURN_SPEED) * dt + 1e-6
+        if bird.diving:
+            seen_dive = True
+            # Swept contact with the original target, even at 30 FPS.
+            swept = pygame.Rect(round(last[0]-24), round(last[1]-19), 48, 58).union(bird.get_hitbox())
+            passed_target |= swept.collidepoint(*target)
+        last = (bird.x, bird.y)
+        if seen_dive and bird.state == "patrol":
+            break
+    assert seen_dive and passed_target and bird.state == "patrol"
+
+
+def test_patrol_pursues_the_player_and_can_schedule_a_dive(display):
+    form = gd.GuardianFormation()
+    bird = form.enemies[0]
+    original_x = bird.x
+    for _ in range(30):
+        form.update(1 / 60, 1100, 600)
+    assert bird.x > original_x
+    bird.dive_wait = 0
+    form.update(1 / 60, 1000, 610)
+    assert bird.state == "windup" and bird.target == (1000, 610)
 
 
 def test_last_wave_waits_for_remaining_projectiles(display):
@@ -130,7 +193,7 @@ def test_drawing_reuses_loaded_art(display, monkeypatch):
     canvas = pygame.Surface((1280, 720))
     form.draw(canvas)
     monkeypatch.setattr(pygame.image, "load", lambda *a: pytest.fail("Loaded sprites during draw"))
-    form.shot_wait = 0
+    form.enemies[0].shot_wait = 0
     for _ in range(240):
         form.update(1 / 60, 640)
         form.draw(canvas)
@@ -160,11 +223,18 @@ def test_game_launch_collision_and_return_to_arcade(tmp_path, monkeypatch):
     game.player.phenix_timer = 0
     game.player.morph_dir = 0
     bolt = gd.FireLaser(game.player.x, 200)
-    bolt.update(1.7)
+    bolt.update(1.7 / 3)
     game.formation.bullets = [bolt]
     lives = game.player.lives
     update_play.enemy_attacks_vs_players(game)
     assert game.player.lives == lives - 1 and not bolt.alive
+    game.player.invulnerable = 0
+    diver = game.formation.enemies[0]
+    diver.state = "dive"
+    diver.x, diver.y = game.player.x, game.player.y
+    lives = game.player.lives
+    update_play.enemy_attacks_vs_players(game)
+    assert game.player.lives == lives - 1 and not diver.alive
     game.dt = 1 / 60
     game.draw()
     game._bank_adventure(False)

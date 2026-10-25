@@ -4355,7 +4355,10 @@ class Game:
             update_play.tick_arrive(self)
             return
         
-        self.formation.update(self.dt, self.player.x)
+        if isinstance(self.formation, GuardianFormation):
+            self.formation.update(self.dt, self.player.x, self.player.y)
+        else:
+            self.formation.update(self.dt, self.player.x)
         escort.tick(self)                         # the VIP rescue: the cruise ship (nothing in any other mission)
         asteroids.tick(self)                      # the Asteroids mission: rocks, saucer, shots (nothing elsewhere)
         update_play.tick_loot(self)
