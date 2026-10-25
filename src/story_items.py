@@ -54,7 +54,7 @@ def _num(value, default):
         if isinstance(value, bool):
             return default
         return int(float(value))
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):
         return default
 
 
