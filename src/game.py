@@ -53,7 +53,7 @@ from guardian import GuardianFormation
 from galaga import GalagaFormation
 from boss import BossSaucer
 from explosion import Explosion, TeslaCoilFx
-from starfield import Starfield
+from starfield import Starfield, prepare_assets as prepare_background_assets
 from sounds import SoundManager
 from pheq import load_pheq, resolve_path as pheq_resolve, sample as pheq_sample, tick as pheq_tick, draw as pheq_draw, clock_y as pheq_clock_y, draw_seek as pheq_draw_seek
 import custom_music
@@ -226,6 +226,8 @@ class Game:
         game_init.init_input_menu(self)
         game_init.init_settings(self, soft)
         game_init.init_audio_and_layout(self, soft)
+        if not soft:
+            prepare_background_assets()  # decode optional scenery before any combat frames
 
     # --- Audio state machine (menu / game-over / in-game silence) ---
     def _apply_audio_mix(self):

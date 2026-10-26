@@ -348,6 +348,7 @@ class Nebula:
     """Hubble-inspired nebula / galaxy sprite — at most one on screen."""
 
     _cache = {}
+    _raw = {}  # decoded only: the random scale is still chosen at first spawn
 
     def __init__(self, filename=None, free=False):
         self.parallax = 0.05
@@ -357,8 +358,10 @@ class Nebula:
     @classmethod
     def _load_image(cls, filename):
         if filename not in cls._cache:
-            path = os.path.join(NEBULA_DIR, filename)
-            img = pygame.image.load(path).convert_alpha()
+            img = cls._raw.pop(filename, None)
+            if img is None:
+                path = os.path.join(NEBULA_DIR, filename)
+                img = pygame.image.load(path).convert_alpha()
             scale = random.uniform(0.75, 1.05) if "pleiades" in filename else random.uniform(0.55, 0.85)
             w = max(1, int(img.get_width() * scale))
             h = max(1, int(img.get_height() * scale))
@@ -481,6 +484,28 @@ class Comet:
             return
         img = self.frames[int(self.idx) % len(self.frames)]
         surface.blit(img, (int(self.x), int(self.y)))
+
+
+def prepare_assets():
+    """Decode background assets before combat, without consuming random numbers.
+
+    Nebula sizing stays in _load_image at the original first-spawn moment.
+    Raw nebulae are released as their scaled cache entries replace them.
+    """
+    for filename in PLANET_FILES:
+        try:
+            Planet._load_image(filename)
+            Planet._load_film(filename)
+        except (OSError, pygame.error):
+            pass  # keep the existing on-demand path for missing/optional assets
+    for filename in NEBULA_FILES:
+        if filename not in Nebula._cache and filename not in Nebula._raw:
+            try:
+                Nebula._raw[filename] = pygame.image.load(
+                    os.path.join(NEBULA_DIR, filename)).convert_alpha()
+            except (OSError, pygame.error):
+                pass
+    Comet._load()
 
 
 class Starfield:
