@@ -63,7 +63,8 @@ def test_the_pad_b_on_the_scene_opens_the_preflight_briefing_too(run):
     g.input_grace = 0.0
     pygame.event.post(pygame.event.Event(pygame.JOYBUTTONDOWN, button=1, joy=0, instance_id=0))
     run.frames(3)
-    assert g.started and g.adventure and g.adventure["id"] == "ch1_sortie"
+    assert not g.started and g.story.screen == "first_help"
+    assert g.story.first_help_spec["id"] == "ch1_sortie"
 
 
 def test_a_scene_replayed_from_the_journal_does_not_launch(run):

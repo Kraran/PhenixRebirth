@@ -77,6 +77,9 @@ def _answer_vn(hub):
     for _ in range(40):
         if hub.screen != "vn":
             break
+        if hub.vn_ready() and hub.vn_phase == "ask" and not hub.vn_review:
+            while hub.vn_choice_wait > 0:
+                hub.update(0.25)
         hub.confirm()
     assert hub.screen == "hub"
 

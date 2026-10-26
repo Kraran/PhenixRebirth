@@ -66,7 +66,8 @@ def test_the_score_of_a_new_record_clears_the_plate(run, lang, two_players):
     finally:
         g._txt = real
     score_txt = "%s : %s" % (i18n.t("score_label"), g.format_score(12345))
-    plate = [(s, p) for s, p in g.game_surface.blits if id(s) not in labels and s.get_height() > 80 and p[1] < 260]
+    plate = [(s, p) for s, p in g.game_surface.blits if id(s) not in labels and s.get_height() > 80 and p[1] < 260
+             and s.get_at((s.get_width() // 2, 0)).a > 0]
     score = [(s, p) for s, p in g.game_surface.blits if labels.get(id(s)) == score_txt]
     hint = [(s, p) for s, p in g.game_surface.blits if labels.get(id(s)) == i18n.t("enter_initials_hint")]
     letters = [(s, p) for s, p in g.game_surface.blits if labels.get(id(s)) in ("A",)]
