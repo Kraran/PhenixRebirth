@@ -35,7 +35,8 @@ def test_conditions():
     assert g._present_overwrites_screen(0, 0) is False          # bordures : chemin CPU
     g.bezel_active = False
     g._gpu_backend = ""
-    assert g._present_overwrites_screen(0, 0) is False          # pas SCALED
+    assert g._present_overwrites_screen(0, 0) is True           # opaque full-window CPU presentation
+    assert not g._direct_draw_ok()                            # direct draw remains SCALED-only
     g._gpu_backend = "scaled"
     g._present_size = None
     assert g._present_overwrites_screen(0, 0) is False          # layout not up to date
