@@ -45,9 +45,9 @@ COLORS = {
 # font: name of the Game font; plate: opacity of the dark plate (0-255); pad: margins around the text;
 # border: width of the thin frame in the colour of the announcement.
 LEVELS = {
-    "major": {"font": "big_font", "plate": 185, "pad": (32, 18), "border": 2},
-    "standard": {"font": "medium_font", "plate": 140, "pad": (24, 12), "border": 2},
-    "discreet": {"font": "font", "plate": 100, "pad": (16, 8), "border": 1},
+    "major": {"font": "big_font", "plate": 165, "pad": (32, 18), "border": 2},
+    "standard": {"font": "medium_font", "plate": 125, "pad": (24, 12), "border": 2},
+    "discreet": {"font": "font", "plate": 90, "pad": (16, 8), "border": 1},
 }
 FONT_ORDER = ("big_font", "medium_font", "font", "menu_font")      # what an announcement that is too wide steps down to
 MAX_WIDTH = BASE_WIDTH - 80
@@ -120,7 +120,7 @@ def plate(width, height, level, color):
         rect = surf.get_rect()
         pygame.draw.rect(surf, (0, 0, 0, spec["plate"]), rect, border_radius=8)
         if spec["border"]:
-            pygame.draw.rect(surf, tuple(color) + (130,), rect, spec["border"], border_radius=8)
+            pygame.draw.rect(surf, tuple(color) + (110,), rect, spec["border"], border_radius=8)
         if len(_plates) >= 48:
             _plates.clear()
         _plates[key] = surf
@@ -130,6 +130,7 @@ def plate(width, height, level, color):
 def draw(game, surface, text, ctype, level, center, color=None, glow=0.0, show_plate=True, alpha=255):
     """One announcement: the plate, then the text, centred on `center`. `color` overrides the colour of the text
     (a pulse or a blink of the colour of the type); `glow` (0..1) adds the soft halo of the banners."""
+    alpha = max(0, min(255, round(alpha * 0.92)))
     base = color_of(ctype)
     col = color if color is not None else base
     pad_x, pad_y = LEVELS[level]["pad"]

@@ -326,6 +326,9 @@ class StoryHub:
         self.vn_review = False         # the scene is answered already: shown again, nothing can change
         self.vn_return = "map"         # pane to go back to when it is over
         self.vn_phase = "ask"          # "ask": the text and the answers, then "react": what Lyra says to the answer given
+        self.vn_choice_wait = 0.0
+        self.first_help_spec = None
+        self.first_help_t = 0.0
         self.vn_page = 0               # the page of the text on screen (an empty line of the text cuts a new page)
         self.vn_order = [0, 1, 2, 3]   # the indexes of the answers in the order they are shown (random in some scenes)
         self._clip_name = None
@@ -568,6 +571,7 @@ class StoryHub:
 
     # --- the visual novel: a picture, a text and the answers to choose from (story_vn.VN_SCENES) ---
     VN_FADE = 0.8                  # seconds of black fading away when the scene appears
+    VN_CHOICE_DELAY = 0.6          # real time after the answer list becomes visible
     VN_TYPE_CPS = 52.0             # characters of the text shown per second
 
     def start_vn(self, scene_id, back_to="map"):
@@ -583,6 +587,7 @@ class StoryHub:
         self.vn_order = story_vn.order(scene_id, shuffled=not self.vn_review)   # (watched again: the order of the list)
         self.vn_index = pick if pick is not None else self.vn_order[0]
         self.vn_phase = "ask"
+        self.vn_choice_wait = self.VN_CHOICE_DELAY
         self.vn_page = 0
         self.vn_t = 0.0
         self.vn_return = back_to
@@ -640,6 +645,8 @@ class StoryHub:
             self._end_vn()
         elif self.vn_review:
             self._vn_react()
+        elif self.vn_choice_wait > 0:
+            return  # repeated confirms may reveal text, never immediately commit an answer
         elif self.cheat_vn:                              # VNOV: the answer is not kept, Lyra answers all the same
             self.vn_pick = self.vn_index
             self._vn_react()
@@ -710,11 +717,17 @@ class StoryHub:
     def update(self, dt, scroll=0):
         """Time passes. `scroll` is the speed control of the intro: +1 faster (Down), -1 back (Up)."""
         self.anim_t += max(0.0, min(0.25, float(dt)))
+        if self.screen == "first_help":
+            self.first_help_t += max(0.0, min(0.25, float(dt)))
+            return
         if self.screen == "film":
             self._tick_film(max(0.0, min(0.25, float(dt))))
             return
         if self.screen == "vn":
+            was_ready = self.vn_ready()
             self.vn_t += max(0.0, min(0.25, float(dt)))
+            if was_ready and self.vn_phase == "ask":
+                self.vn_choice_wait = max(0.0, self.vn_choice_wait - max(0.0, min(0.25, float(dt))))
             return
         if self.screen == "hub":
             self._maybe_vn()                       # a scene of the visual novel comes back with the map, after a mission
@@ -1112,6 +1125,12 @@ class StoryHub:
             else:
                 self.open_slot(self.sel + 1)
                 self._maybe_intro()
+        elif self.screen == "first_help":
+            if self.first_help_t >= 0.5 and self.first_help_spec is not None:
+                spec = self.first_help_spec
+                self.first_help_spec = None
+                self.screen = "hub"
+                return dict(spec, first_help_read=True)
         elif self.screen == "intro":
             return self._intro_next()
         elif self.screen == "choice":
@@ -1147,7 +1166,11 @@ class StoryHub:
     def back(self):
         """B / Esc. Always handled here: on the slot list it asks whether to leave the Adventure (the answer comes
         back from confirm() as {"leave": True}); B / Esc on that question cancels it."""
-        if self.screen == "slots":
+        if self.screen == "first_help":
+            self.first_help_spec = None
+            self.screen = "hub"
+            self.pane = "map"
+        elif self.screen == "slots":
             self.screen = "leave"
             self.del_yes = False                         # NO is lit: a second B / Esc does not leave by accident
             self.msg = ""
@@ -1324,6 +1347,23 @@ class StoryHub:
             self.sound_events.append("paint_fanfare")            # trumpets for the new colour
         self.paint_mode = False
 
+    def show_first_help(self, spec):
+        """A quiet briefing before the first flight; no combat or timers run."""
+        self.first_help_spec = dict(spec)
+        self.first_help_t = 0.0
+        self.screen = "first_help"
+
+    def _draw_first_help(self, surface, font, small):
+        import help_screen
+        surface.fill((8, 10, 24))
+        _text(surface, font, t("story_m_sortie"), menu_ui.TITLE, 150, centerx=BASE_WIDTH // 2)
+        y = 290
+        for line in help_screen.help_lines("story_first_help"):
+            for wrapped in _wrap_nb(small, line, BASE_WIDTH - 160):
+                _text(surface, small, wrapped, menu_ui.TEXT, y, centerx=BASE_WIDTH // 2)
+                y += small.get_linesize() + 14
+            y += 20
+
     def _launch_selected(self):
         mission = self._mission()
         if not self.mission_playable(mission):
@@ -1491,13 +1531,16 @@ class StoryHub:
     def covers_screen(self):
         """True when the current screen paints every pixel itself (the slide pictures), so the
         starfield underneath need not be drawn."""
-        return self.screen in ("intro", "film", "vn")
+        return self.screen in ("intro", "film", "vn", "first_help")
 
     # --- draw ---
     def draw(self, surface, font, medium, small, body=None):
         """`body`: the font of what is read at length (the story, the descriptions); `font` when not given."""
         self._ensure_art()
         self._body = body or small
+        if self.screen == "first_help":
+            self._draw_first_help(surface, medium, body or small)
+            return
         if self.screen == "intro":
             self._draw_intro(surface, body or font, small)
             return
@@ -1655,6 +1698,8 @@ class StoryHub:
     def help_items(self, pad=False):
         """(pairs, lit) of the help bar for the screen on display (see hint_bar). `lit`: the pair drawn gold."""
         back, choose = ("back", "hint_back"), ("ud", "hint_choose")
+        if self.screen == "first_help":
+            return ([("ok", "hint_takeoff"), back] if self.first_help_t >= 0.5 else [back]), None
         tab = ("lr", "hint_tab")
         if self.screen == "intro":
             last = self.intro_index + 1 >= len(self.intro_slides)
@@ -1678,7 +1723,8 @@ class StoryHub:
                 return [("ok", "hint_close")], None
             if self.vn_review:                           # watched again: the reaction (when there is one) comes, then it closes
                 return [("ok", "hint_next" if story_vn.reaction(self.vn_id, self.vn_index) else "hint_close")], None
-            return [("ud", "hint_choose"), ("ok", "hint_ok")], None
+            return ([("ud", "hint_choose")] if self.vn_choice_wait > 0 else
+                    [("ud", "hint_choose"), ("ok", "hint_ok")]), None
         if self.screen == "slots":
             if self.col == 1:
                 return [choose, ("ok", "hint_delete"), ("l", "hint_back"), back], None

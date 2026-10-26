@@ -1830,11 +1830,18 @@ class Game:
         self.sounds.play(name, volume=volume, x=x)
         self._boss_cry_quiet = 0.0
 
+    def _request_adventure(self, spec):
+        """UI launch path: read the first-sortie controls before starting combat."""
+        if (not spec.get("first_help_read") and getattr(self, "story", None)
+                and story_state.first_sortie(self.story.state, spec.get("id"))):
+            self.story.show_first_help(spec)
+            return
+        self._begin_adventure(spec)
+
     def _begin_adventure(self, spec):
         """Launch a story mission. Arcade ship select and high scores stay out."""
         self.adventure = dict(spec)
-        if getattr(self, "story", None) and story_state.first_sortie(self.story.state, spec.get("id")):
-            self.adventure["tip_t"] = story_state.FIRST_HELP_SECONDS      # the controls reminder (draw_frame.draw_first_help)
+        self.adventure.pop("first_help_read", None)
         self.hotseat = False
         self.player2 = None
         self.play_mode = "solo"
@@ -4128,7 +4135,7 @@ class Game:
             if getattr(self, "story", None) and self.story.back():
                 spec = self.story.take_launch_request()
                 if isinstance(spec, dict) and spec.get("launch"):
-                    self._begin_adventure(spec)      # a scene skipped before a launch: the mission flies at once
+                    self._request_adventure(spec)    # the first sortie gets its controls briefing before takeoff
                 return              # one step back inside the Adventure (hangar -> slot list ...)
             self.menu_screen = "main"
             self.menu_index = main_menu.main_index("story")
@@ -4523,7 +4530,7 @@ class Game:
             draw_frame.draw_quit_confirm(self)
 
         # FPS counter (top-right) — refresh text ~4 Hz to avoid constant render
-        if self.show_fps:
+        if self.show_fps and not (self.started and (not self.game_over or self.hs_phase == "card")):
             draw_frame.draw_fps_counter(self)
 
         fx = getattr(self, "anchor_fx", None)

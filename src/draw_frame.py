@@ -66,17 +66,10 @@ def scene_overlaid(game):
 
 
 def announce_layer(game):
-    """The announcement banner (1UP, achievement...), drawn as a layer of the scene: over the boss saucer and the
-    background, UNDER every alien and its shots, so the action stays readable in the middle of a fight.
-
-    Game._draw_canvas draws the banner last everywhere else (menus, high scores, and a run under an overlay), over
-    everything. In a plain run that last call is skipped (`game._announce_done`), or it would paint over the aliens
-    again. The banner has always been drawn twice in a run (once here, once last) and its plate is a little denser
-    for it: both copies stay."""
+    """One translucent banner beneath enemies during play; menus retain their overlay."""
     if scene_overlaid(game):
         game._draw_cheat_message()
         return
-    game._draw_cheat_message()
     game._draw_cheat_message()
     game._announce_done = True
 
@@ -92,47 +85,12 @@ def dome_offline(game):
     return getattr(game, "ship_id", None) != "phoenix"
 
 
-FIRST_HELP_Y = 470                                  # between the birds and the ship, centred
-
-
-def first_help_alpha(game):
-    """0..255 of the controls reminder of the first sortie (0 when it is not due): it fades in, stays, fades out."""
-    spec = getattr(game, "adventure", None)
-    if not isinstance(spec, dict) or game.stage_transition is not None:
-        return 0
-    left = float(spec.get("tip_t", 0) or 0)
-    if left <= 0:
-        return 0
-    shown = story_state.FIRST_HELP_SECONDS - left
-    return int(255 * max(0.0, min(1.0, left / 0.6, shown / 0.4)))
-
-
-def draw_first_help(game):
-    """The very first sortie shows, for a few seconds, how to move, shoot and pause (with the real keys and buttons)."""
-    alpha = first_help_alpha(game)
-    if alpha <= 0:
-        return
-    import help_screen
-    lines = help_screen.help_lines("story_first_help")
-    surfs = [game._txt(game.font, line, (235, 235, 245)) for line in lines]
-    w = max(s.get_width() for s in surfs) + 48
-    h = sum(s.get_height() for s in surfs) + 14 * (len(surfs) - 1) + 28
-    plate = pygame.Surface((w, h), pygame.SRCALPHA)
-    pygame.draw.rect(plate, (8, 10, 24, 170), plate.get_rect(), border_radius=12)
-    pygame.draw.rect(plate, (90, 120, 255, 200), plate.get_rect(), 2, border_radius=12)
-    y = 14
-    for s in surfs:
-        plate.blit(s, ((w - s.get_width()) // 2, y))
-        y += s.get_height() + 14
-    plate.set_alpha(alpha)
-    game.game_surface.blit(plate, ((BASE_WIDTH - w) // 2, FIRST_HELP_Y))
-
-
 def draw_play(game):
-    """In-run scene: boss saucer, banner, birds, explosions, ships, score, lives and HUD."""
+    """HUD and announcements under the complete enemy layer, drawn exactly once."""
+    draw_hud(game)
+    announce_layer(game)
     if game.boss_saucer:
         game.boss_saucer.draw(game.game_surface)
-    announce_layer(game)                            # over the saucer, under the aliens (and the rest of the action)
     escort.draw(game, game.game_surface)            # the VIP's cruise ship, under the birds (that mission only)
     game.formation.draw(game.game_surface)
     if getattr(game, "loot", None) is not None:
@@ -146,6 +104,9 @@ def draw_play(game):
     for ship in game._ships():
         ship.draw(game.game_surface)
 
+
+def draw_hud(game):
+    """Scores, gauges, mission counters, loot notices and lives under enemies."""
     # UI (cached text — re-render only when string/color changes)
     tc = game.text_cache
     if game.play_mode == "coop" and game.player2:
@@ -238,7 +199,6 @@ def draw_play(game):
         # a quiet reminder under the mission title (the Shield only: the Phenix never had a dome)
         off = tc.get(game.font, t("story_dome_broken"), announce.NEUTRAL)
         game.game_surface.blit(off, (16, DOME_HUD_Y))
-    draw_first_help(game)
     _draw_loot_hud(game)
     escort.banner(game, game.game_surface)
     if game.difficulty in ("novice", "veteran") and not game.attract_mode:
@@ -291,6 +251,8 @@ def draw_play(game):
                     game.game_surface.blit(game.life_icon, (lx, ly))
             else:
                 game.game_surface.blit(game.life_icon, (lx, ly))
+    if game.show_fps:
+        draw_fps_counter(game)
 
 
 def draw_menu_title(game):

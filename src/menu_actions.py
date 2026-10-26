@@ -195,7 +195,7 @@ def menu_confirm(game):
             for name in game.story.take_sounds():
                 game.sounds.play(name)
         if isinstance(spec, dict) and spec.get("launch"):
-            game._begin_adventure(spec)
+            game._request_adventure(spec)
         elif isinstance(spec, dict) and spec.get("leave"):
             game.menu_screen = "main"                    # the Adventure is left (confirmed): back to the normal game
             game.menu_index = 1

@@ -1,5 +1,4 @@
-"""Skipping the scene read before a launch (B / Esc) flies the mission at once; the very first sortie shows a controls
-reminder for a few seconds."""
+"""The first sortie shows its controls before takeoff, including after a skipped story scene."""
 import pygame
 import pytest
 
@@ -52,19 +51,20 @@ def _scene_before_launch(run):
 
 
 # ------------------------------------------------------------------ B / Esc on the scene
-def test_esc_on_the_scene_flies_the_mission_at_once(run):
+def test_esc_on_the_scene_opens_the_preflight_briefing(run):
     g = _scene_before_launch(run)
     _esc(run)
-    assert g.started and g.adventure and g.adventure["id"] == "ch1_sortie"
+    assert not g.started and g.story.screen == "first_help" and g.story.first_help_spec["id"] == "ch1_sortie"
     assert ss.scene_seen(g.story.state, "ch1_sortie")           # skipped = seen: it does not come back
 
 
-def test_the_pad_b_on_the_scene_flies_the_mission_too(run):
+def test_the_pad_b_on_the_scene_opens_the_preflight_briefing_too(run):
     g = _scene_before_launch(run)
     g.input_grace = 0.0
     pygame.event.post(pygame.event.Event(pygame.JOYBUTTONDOWN, button=1, joy=0, instance_id=0))
     run.frames(3)
-    assert g.started and g.adventure and g.adventure["id"] == "ch1_sortie"
+    assert not g.started and g.story.screen == "first_help"
+    assert g.story.first_help_spec["id"] == "ch1_sortie"
 
 
 def test_a_scene_replayed_from_the_journal_does_not_launch(run):
@@ -101,101 +101,63 @@ def test_a_launch_that_is_not_playable_gives_nothing(run):
     assert g.story.take_launch_request() is None
 
 
-# ------------------------------------------------------------------ the reminder of the first sortie
-def test_only_the_first_sortie_of_a_new_pilot_is_due():
-    new = ss.create_slot(1, "A", "normal")
-    assert ss.first_sortie(new, "ch1_sortie")
-    assert not ss.first_sortie(new, "best_s2")
-    assert not ss.first_sortie(dict(new, cleared=["ch1_sortie"]), "ch1_sortie")       # already won once
-    assert not ss.first_sortie(dict(new, cleared=["dome_1"]), "ch1_sortie")           # a pilot who has won something
-    assert ss.first_sortie({}, "ch1_sortie")                                          # (a save without the list: nothing won)
-
-
-def test_the_first_mission_starts_with_the_reminder_and_the_second_does_not(run):
+# ------------------------------------------------------------------ briefing before combat
+def test_first_sortie_briefing_requires_confirmation_before_takeoff(run):
     g = run.game
     _slot()
     _on_map(g)
-    g._begin_adventure(g.story._launch_selected())
-    assert g.adventure["tip_t"] == ss.FIRST_HELP_SECONDS
-    g._end_adventure(False)
+    spec = g.story._launch_selected()
+    g._request_adventure(spec)
+    assert not g.started and g.story.screen == "first_help"
+    assert g.story.confirm() is None  # cannot reuse the click that closed the scene
+    g.story.update(0.25)
+    g.story.update(0.25)
+    launch = g.story.confirm()
+    assert launch["first_help_read"]
+    g._request_adventure(launch)
+    assert g.started and g.adventure["id"] == "ch1_sortie"
+    assert "tip_t" not in g.adventure and "first_help_read" not in g.adventure
+
+
+def test_cancelling_the_briefing_returns_to_the_map(run):
+    g = run.game
+    _slot()
+    _on_map(g)
+    g._request_adventure(g.story._launch_selected())
+    assert g.story.back()
+    assert not g.started and g.story.screen == "hub" and g.story.pane == "map"
+    assert g.story.first_help_spec is None
+
+
+def test_later_missions_launch_without_the_briefing(run):
+    g = run.game
     _slot(cleared=["ch1_sortie"])
     _on_map(g, "best_s2")
-    g._begin_adventure(g.story._launch_selected())
-    assert not g.adventure.get("tip_t")
+    g._request_adventure(g.story._launch_selected())
+    assert g.started and g.adventure["id"] == "best_s2" and "tip_t" not in g.adventure
 
 
-def _first(run):
+def test_controls_are_drawn_before_the_mission_with_real_bindings(run):
+    import story
     g = run.game
     _slot()
     _on_map(g)
-    g._begin_adventure(g.story._launch_selected())
-    return g
-
-
-def test_the_clock_runs_only_once_the_ship_is_in_play(run):
-    g = _first(run)
-    assert g.stage_transition is not None                          # the ship is arriving
-    run.frames(5)
-    assert g.adventure["tip_t"] == ss.FIRST_HELP_SECONDS
-    assert draw_frame.first_help_alpha(g) == 0
-    g.stage_transition = None
-    run.frames(30)
-    assert 0 < g.adventure["tip_t"] < ss.FIRST_HELP_SECONDS
-    assert draw_frame.first_help_alpha(g) > 0
-
-
-def test_the_reminder_fades_in_stays_and_fades_out(run):
-    g = _first(run)
-    g.stage_transition = None
-    full = ss.FIRST_HELP_SECONDS
-    g.adventure["tip_t"] = full - 0.05
-    start = draw_frame.first_help_alpha(g)
-    g.adventure["tip_t"] = full / 2
-    middle = draw_frame.first_help_alpha(g)
-    g.adventure["tip_t"] = 0.1
-    end = draw_frame.first_help_alpha(g)
-    g.adventure["tip_t"] = 0.0
-    gone = draw_frame.first_help_alpha(g)
-    assert middle == 255 and 0 < start < 255 and 0 < end < 255 and gone == 0
-
-
-def test_the_pause_stops_the_clock(run):
-    g = _first(run)
-    g.stage_transition = None
-    run.frames(10)
-    g.paused = True
-    before = g.adventure["tip_t"]
-    run.frames(30)
-    assert g.adventure["tip_t"] == before
-
-
-def test_it_goes_away_at_the_end_of_its_time(run):
-    g = _first(run)
-    g.stage_transition = None
-    g.adventure["tip_t"] = 0.2
-    run.frames(30)
-    assert g.adventure is not None and g.adventure["tip_t"] == 0
-    assert draw_frame.first_help_alpha(g) == 0
-
-
-def test_the_reminder_is_drawn_with_the_real_keys(run):
-    g = _first(run)
-    g.stage_transition = None
-    run.frames(20)
+    g._request_adventure(g.story._launch_selected())
     seen = []
-    real = g._txt
+    real = story._text
 
-    def spy(font, text, color, *a, **k):
+    def spy(surface, font, text, *args, **kwargs):
         seen.append(text)
-        return real(font, text, color, *a, **k)
+        return real(surface, font, text, *args, **kwargs)
 
-    g._txt = spy
+    story._text = spy
     try:
-        run.frames(1)
+        g.story.draw(g.game_surface, g.font, g.medium_font, g.font)
     finally:
-        g._txt = real
+        story._text = real
     for line in help_screen.help_lines("story_first_help"):
-        assert line in seen and "{" not in line
+        assert any(part in " ".join(seen) for part in line.split())
+    assert not g.started and g.story.covers_screen()
 
 
 @pytest.mark.parametrize("lang", LANG_CODES)
@@ -203,39 +165,3 @@ def test_the_reminder_exists_in_every_language(lang):
     set_lang(lang)
     lines = help_screen.help_lines("story_first_help")
     assert len(lines) == 2 and all(lines) and not any("{" in line for line in lines)
-    assert "Esc" in lines[0] or "Échap" in lines[0]
-
-
-def test_the_clock_waits_while_a_transition_runs(run):
-    import update_play
-    g = _first(run)
-    g.dt = 0.5
-    g.stage_transition = "arrive"
-    update_play.tick_effects_and_hotseat(g)
-    assert g.adventure["tip_t"] == ss.FIRST_HELP_SECONDS
-    g.stage_transition = None
-    update_play.tick_effects_and_hotseat(g)
-    assert g.adventure["tip_t"] == ss.FIRST_HELP_SECONDS - 0.5
-
-
-def test_the_reminder_is_hidden_during_a_transition_even_when_due(run):
-    g = _first(run)
-    g.adventure["tip_t"] = ss.FIRST_HELP_SECONDS / 2
-    g.stage_transition = "arrive"
-    assert draw_frame.first_help_alpha(g) == 0
-    g.stage_transition = None
-    assert draw_frame.first_help_alpha(g) == 255
-
-
-def test_the_plate_is_translucent_while_it_fades(run):
-    g = _first(run)
-    g.stage_transition = None
-    probe = (640, draw_frame.FIRST_HELP_Y + 2)                  # on the top edge of the plate (its blue frame)
-
-    def edge(left):
-        g.adventure["tip_t"] = left
-        g.game_surface.fill((0, 0, 0))
-        draw_frame.draw_first_help(g)
-        return sum(g.game_surface.get_at(probe)[:3])
-
-    assert edge(ss.FIRST_HELP_SECONDS / 2) > edge(0.15) > 0

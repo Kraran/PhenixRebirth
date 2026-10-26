@@ -1,6 +1,6 @@
-"""The announcements are a layer of the scene: over the boss saucer, UNDER every alien and its shots.
+"""The announcements are beneath every enemy, including the boss, and its shots.
 
-In a plain run the banner is drawn once (twice over, as it has always been) before the formation; under an overlay
+In a plain run the banner is drawn once before the enemies; under an overlay
 (pause, game over, hot-seat hand-off) and in the menus it is still drawn last, over everything."""
 import pygame
 
@@ -45,17 +45,17 @@ def _spy(g, formation=True):
     return events
 
 
-def test_the_banner_is_over_the_saucer_and_under_the_aliens(run):
+def test_the_banner_is_under_the_saucer_and_the_aliens(run):
     g = _play(run)
     events = _spy(g)
     g._draw_canvas()
-    assert events.count("banner") == 2                      # both copies, none of them after the aliens
-    assert events[0] == "saucer"
+    assert events.count("banner") == 1                      # a single translucent copy, under every enemy
+    assert events[0] == "banner"
     assert events.index("aliens") > max(i for i, e in enumerate(events) if e == "banner")
-    assert events == ["saucer", "banner", "banner", "aliens"]
+    assert events == ["banner", "saucer", "aliens"]
 
 
-def test_an_alien_is_seen_in_front_of_the_banner_and_the_saucer_behind_it(run):
+def test_birds_and_saucer_are_seen_in_front_of_the_banner(run):
     g = _play(run)
     events = []
     g.boss_saucer = Painter(events, "saucer", BLUE)
@@ -70,7 +70,7 @@ def test_an_alien_is_seen_in_front_of_the_banner_and_the_saucer_behind_it(run):
     assert tuple(surf.get_at(CENTER))[:3] == RED
     without = [tuple(surf.get_at((CENTER[0] + dx, CENTER[1])))[:3] for dx in range(-60, 61, 6) if abs(dx) > 25]
     assert all(c == BLUE for c in without)                  # no banner: the saucer plate alone
-    assert with_banner != without                           # the banner is over the saucer
+    assert with_banner == without                           # the saucer is now above the banner too
 
 
 def test_under_an_overlay_the_banner_stays_on_top(run):
