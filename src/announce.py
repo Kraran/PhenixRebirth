@@ -20,6 +20,8 @@ The HUD of the ships (score, gauge, name) is NOT part of this table: its colours
 apart, so they stay as they are (see Game._palette_score_color and hud_gauge). The colours below are kept far
 from them (tests/test_announce.py measures it).
 """
+from collections import OrderedDict
+
 import pygame
 
 from settings import BASE_WIDTH
@@ -77,6 +79,33 @@ TOAST_COLOR = {
 TOAST_LEVEL = {"success": "standard", "danger": "standard"}
 
 _plates = {}
+_alpha_images = OrderedDict()
+_alpha_bytes = 0
+_ALPHA_MAX_BYTES = 4 * 1024 * 1024
+_ALPHA_MAX_ITEMS = 96
+
+
+def _with_alpha(source, alpha):
+    """Reuse opacity variants of immutable cached text/plates; keep memory bounded."""
+    global _alpha_bytes
+    key = (source, int(alpha))
+    image = _alpha_images.get(key)
+    if image is not None:
+        _alpha_images.move_to_end(key)
+        return image
+    image = source.copy()
+    image.set_alpha(key[1])
+    size = image.get_pitch() * image.get_height()
+    if size > _ALPHA_MAX_BYTES:
+        return image
+    while _alpha_images and (_alpha_bytes + size > _ALPHA_MAX_BYTES
+                             or len(_alpha_images) >= _ALPHA_MAX_ITEMS):
+        _, expired = _alpha_images.popitem(last=False)
+        _alpha_bytes -= expired.get_pitch() * expired.get_height()
+    _alpha_images[key] = image
+    _alpha_bytes += size
+    return image
+
 
 
 def style_of(kind):
@@ -140,17 +169,14 @@ def draw(game, surface, text, ctype, level, center, color=None, glow=0.0, show_p
     if show_plate:
         p = plate(img.get_width() + pad_x * 2, img.get_height() + pad_y * 2, level, base)
         if alpha < 255:                          # a fade: the plate fades with the text
-            p = p.copy()
-            p.set_alpha(int(alpha))
+            p = _with_alpha(p, alpha)
         surface.blit(p, (cx - p.get_width() // 2, cy - p.get_height() // 2))
     if glow > 0:
-        halo = img.copy()                        # the cached picture is shared: its opacity is never touched
-        halo.set_alpha(int((50 + 60 * glow) * alpha / 255))
+        halo = _with_alpha(img, int((50 + 60 * glow) * alpha / 255))
         for ox, oy in ((-2, 0), (2, 0), (0, -2), (0, 2), (-1, -1), (1, 1)):
             surface.blit(halo, (cx - img.get_width() // 2 + ox, cy - img.get_height() // 2 + oy))
     if alpha < 255:
-        img = img.copy()
-        img.set_alpha(int(alpha))
+        img = _with_alpha(img, alpha)
     else:
         img.set_alpha(255)
     surface.blit(img, (cx - img.get_width() // 2, cy - img.get_height() // 2))
