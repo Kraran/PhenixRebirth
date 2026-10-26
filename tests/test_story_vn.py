@@ -70,6 +70,8 @@ def _ready(hub):
     for _ in range(20):
         hub.vn_t = hub.VN_FADE + 999.0
         if hub.vn_ready():
+            while hub.vn_phase == "ask" and not hub.vn_review and hub.vn_choice_wait > 0:
+                hub.update(0.25)
             return
         hub.confirm()
     raise AssertionError("the text never ends")
