@@ -66,7 +66,8 @@ def scene_overlaid(game):
 
 
 def announce_layer(game):
-    """One translucent banner beneath enemies during play; menus retain their overlay."""
+    """One translucent banner beneath the enemies and shots (over the body of the boss saucer) during play; menus retain
+    their overlay."""
     if scene_overlaid(game):
         game._draw_cheat_message()
         return
@@ -86,11 +87,14 @@ def dome_offline(game):
 
 
 def draw_play(game):
-    """HUD and announcements under the complete enemy layer, drawn exactly once."""
+    """The body of the boss saucer, then the HUD and the announcements over it, then the enemies and their shots (the
+    shots of the saucer included), which stay over the announcements. Drawn exactly once."""
+    if game.boss_saucer:
+        game.boss_saucer.draw_body(game.game_surface)
     draw_hud(game)
     announce_layer(game)
     if game.boss_saucer:
-        game.boss_saucer.draw(game.game_surface)
+        game.boss_saucer.draw_shots(game.game_surface)
     escort.draw(game, game.game_surface)            # the VIP's cruise ship, under the birds (that mission only)
     game.formation.draw(game.game_surface)
     if getattr(game, "loot", None) is not None:

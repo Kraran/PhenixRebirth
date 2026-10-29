@@ -3,6 +3,9 @@ Current release: **v1.5.0**
 
 ## Unreleased (towards 1.5.1)
 
+- Notifications (banners, loot notices, mission counters, HUD) are now drawn over the body of the boss saucer. The enemies and every shot,
+  the shots of the saucer included, stay over them as before. (`BossSaucer.draw` is split into `draw_body` and `draw_shots`.) The small
+  saucers that cross the paint missions and the asteroid belts are enemies like the others and stay over the notifications.
 - Adventure: visual novel scene 5 (leaving for Eloncity, "Ce qu'on emporte avec soi"). In the transit terminal of Phobos, Lyra asks the
   pilot whether he would like to see her again: a staging in narration, six pages, four answers (hidden points 1, 2, 3, 4, random order)
   and a reaction to each (the last one in five pages). It comes after the next story mission won once scene 4 is answered. Lyra's face is

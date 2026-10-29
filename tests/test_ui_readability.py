@@ -53,7 +53,7 @@ def test_natural_typing_also_waits_after_the_answers_appear(monkeypatch):
     assert hub.vn_choice_wait == hub.VN_CHOICE_DELAY
 
 
-def test_combat_layers_put_enemies_and_shots_above_hud_and_announcements(monkeypatch):
+def test_combat_layers_put_enemies_and_shots_above_hud_and_announcements_and_the_saucer_body_under_them(monkeypatch):
     surface = pygame.Surface((1280, 720))
     events = []
     rect = pygame.Rect(15, 15, 40, 40)
@@ -70,12 +70,13 @@ def test_combat_layers_put_enemies_and_shots_above_hud_and_announcements(monkeyp
     game = SimpleNamespace(
         game_surface=surface, game_over=False, paused=False, hotseat_wait=False,
         _draw_cheat_message=lambda: paint("announcement", (20, 20, 20))(surface),
-        boss_saucer=SimpleNamespace(draw=paint("boss and shots", (90, 160, 50))),
+        boss_saucer=SimpleNamespace(draw_body=paint("boss body", (90, 160, 50)),
+                                    draw_shots=paint("boss shots", (200, 200, 30))),
         formation=SimpleNamespace(draw=paint("birds and shots", (240, 60, 20))),
         loot=None, explosions=[], tesla_fx=None, _ships=lambda: [],
     )
     draw_frame.draw_play(game)
-    assert events == ["hud", "announcement", "boss and shots", "birds and shots"]
+    assert events == ["boss body", "hud", "announcement", "boss shots", "birds and shots"]
     assert game._announce_done
     assert tuple(surface.get_at((25, 25)))[:3] == (240, 60, 20)
 
