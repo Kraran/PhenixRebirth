@@ -1073,6 +1073,11 @@ class BossSaucer:
         return sum(1 for c in self.cells if c.alive)
 
     def draw(self, surface):
+        self.draw_body(surface)
+        self.draw_shots(surface)
+
+    def draw_body(self, surface):
+        """The saucer itself (hull, armor cells, core): the banners of the run are laid over it (draw_frame.draw_play)."""
         if getattr(self, "use_art", False) and self.hull_surf is not None:
             self._draw_art(surface)
         else:
@@ -1081,6 +1086,9 @@ class BossSaucer:
             for d in self.decorations:
                 d.draw(surface)
         self.boss.draw(surface)
+
+    def draw_shots(self, surface):
+        """Its shots: they stay over the banners, like every enemy."""
         for b in self.bullets:
             b.draw(surface)
 

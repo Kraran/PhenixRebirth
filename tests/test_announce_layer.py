@@ -1,6 +1,7 @@
-"""The announcements are beneath every enemy, including the boss, and its shots.
+"""The announcements are beneath every enemy and every shot (the shots of the boss saucer too) but over the body of
+the boss saucer.
 
-In a plain run the banner is drawn once before the enemies; under an overlay
+In a plain run the banner is drawn once, after the body of the saucer and before the enemies; under an overlay
 (pause, game over, hot-seat hand-off) and in the menus it is still drawn last, over everything."""
 import pygame
 
@@ -9,7 +10,7 @@ from settings import BASE_HEIGHT, BASE_WIDTH
 from test_smoke import run  # noqa: F401  (fixture)
 
 CENTER = (BASE_WIDTH // 2, BASE_HEIGHT // 2)
-BLUE, RED = (20, 60, 220), (220, 20, 20)
+BLUE, RED, GREEN = (20, 60, 220), (220, 20, 20), (20, 220, 20)
 
 
 class Painter:
@@ -25,6 +26,25 @@ class Painter:
         surface.fill(self.colour, r)
 
 
+class SaucerPainter:
+    """Stands for the boss saucer: its body (a wide plate) and its shots (a small plate) are drawn apart."""
+
+    def __init__(self, events, size=(520, 140)):
+        self.events, self.size = events, size
+
+    def draw_body(self, surface):
+        self.events.append("saucer")
+        r = pygame.Rect((0, 0), self.size)
+        r.center = CENTER
+        surface.fill(BLUE, r)
+
+    def draw_shots(self, surface):
+        self.events.append("saucer shots")
+        r = pygame.Rect((0, 0), (30, 30))
+        r.center = (CENTER[0] + 100, CENTER[1])
+        surface.fill(GREEN, r)
+
+
 def _play(run):
     g = run.game
     g.play_mode = "solo"
@@ -38,39 +58,60 @@ def _play(run):
 def _spy(g, formation=True):
     """Replaces the saucer, the formation and the banner by recorders; returns the list of events."""
     events = []
-    g.boss_saucer = Painter(events, "saucer", BLUE)
+    g.boss_saucer = SaucerPainter(events)
     if formation:
         g.formation.draw = Painter(events, "aliens", RED, size=(40, 40)).draw
     g._draw_cheat_message = lambda: events.append("banner")
     return events
 
 
-def test_the_banner_is_under_the_saucer_and_the_aliens(run):
+def test_the_banner_is_over_the_body_of_the_saucer_and_under_its_shots_and_the_aliens(run):
     g = _play(run)
     events = _spy(g)
     g._draw_canvas()
-    assert events.count("banner") == 1                      # a single translucent copy, under every enemy
-    assert events[0] == "banner"
-    assert events.index("aliens") > max(i for i, e in enumerate(events) if e == "banner")
-    assert events == ["banner", "saucer", "aliens"]
+    assert events.count("banner") == 1                      # a single translucent copy
+    assert events == ["saucer", "banner", "saucer shots", "aliens"]
 
 
-def test_birds_and_saucer_are_seen_in_front_of_the_banner(run):
+def test_the_banner_is_seen_over_the_saucer_and_the_shots_and_the_aliens_over_the_banner(run):
     g = _play(run)
     events = []
-    g.boss_saucer = Painter(events, "saucer", BLUE)
+    g.boss_saucer = SaucerPainter(events)
     g.formation.draw = Painter(events, "aliens", RED, size=(40, 40)).draw
-    g._draw_canvas()
     surf = g.game_surface
+    plate = pygame.Rect((0, 0), (520, 140))
+    plate.center = CENTER
+    shot = (CENTER[0] + 100, CENTER[1])
+    g._draw_canvas()
     assert tuple(surf.get_at(CENTER))[:3] == RED            # the alien, in front of the text of the banner
-    with_banner = [tuple(surf.get_at((CENTER[0] + dx, CENTER[1])))[:3] for dx in range(-60, 61, 6)
-                   if abs(dx) > 25]
+    assert tuple(surf.get_at(shot))[:3] == GREEN            # a shot of the saucer too
+    with_banner = [tuple(surf.get_at((x, y)))[:3] for x in range(plate.left, plate.right, 3)
+                   for y in range(plate.top, plate.bottom, 3)]
     g.cheat_msg_timer = 0.0
     g._draw_canvas()
-    assert tuple(surf.get_at(CENTER))[:3] == RED
-    without = [tuple(surf.get_at((CENTER[0] + dx, CENTER[1])))[:3] for dx in range(-60, 61, 6) if abs(dx) > 25]
-    assert all(c == BLUE for c in without)                  # no banner: the saucer plate alone
-    assert with_banner == without                           # the saucer is now above the banner too
+    without = [tuple(surf.get_at((x, y)))[:3] for x in range(plate.left, plate.right, 3)
+               for y in range(plate.top, plate.bottom, 3)]
+    assert set(without) <= {BLUE, RED, GREEN}               # no banner: the plates alone
+    assert with_banner != without                           # the banner is drawn over the body of the saucer
+    assert sum(a != b for a, b in zip(with_banner, without)) > 20
+
+
+def test_the_body_of_the_boss_saucer_does_not_draw_its_shots(run):
+    from boss import BossSaucer
+    g = run.game
+    drawn = []
+    boss = BossSaucer()
+    boss.use_art = False
+    boss.cells, boss.decorations = [], []
+    boss.boss = type("Core", (), {"draw": lambda self, surface: drawn.append("core")})()
+    boss.bullets = [type("Shot", (), {"draw": lambda self, surface: drawn.append("shot")})()]
+    boss.draw_body(g.game_surface)
+    assert drawn == ["core"]
+    boss.draw_shots(g.game_surface)
+    assert drawn == ["core", "shot"]
+    drawn.clear()
+    boss.draw(g.game_surface)
+    assert drawn == ["core", "shot"]                        # draw() is still the whole saucer
 
 
 def test_under_an_overlay_the_banner_stays_on_top(run):
