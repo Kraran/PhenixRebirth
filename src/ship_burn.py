@@ -97,16 +97,17 @@ class ShipBurn:
     def update(self, dt):
         self.age += dt
 
-    def draw(self, surface, angle=None):
-        """`angle`: the degrees (counter-clockwise, as pygame.transform.rotate) the ship was turned by, or None."""
+    def draw(self, surface, angle=None, scale=1.0):
+        """`angle`: the degrees (counter-clockwise, as pygame.transform.rotate) the ship was turned by, or None; `scale`:
+        the size of the picture (the ship of the SpaceWar level is drawn at half its size)."""
         if not self.finished:
             frame = self.frames[min(FRAME_COUNT - 1, int(self.age / DURATION * FRAME_COUNT))]
-            if angle:
-                frame = pygame.transform.rotate(frame, angle)
-                rad = math.radians(angle)
+            if angle is not None or scale != 1.0:
+                frame = pygame.transform.rotozoom(frame, angle or 0.0, scale)
+                rad = math.radians(angle or 0.0)
                 # the hull is 8 px under the middle of the picture: that point stays on the ship
-                cx = self.x - 8 * math.sin(rad)
-                cy = self.y - 8 * math.cos(rad)
+                cx = self.x - 8 * scale * math.sin(rad)
+                cy = self.y - 8 * scale * math.cos(rad)
                 surface.blit(frame, frame.get_rect(center=(round(cx), round(cy))))
                 return
             surface.blit(frame, (round(self.x - self.offset[0]), round(self.y - self.offset[1])))

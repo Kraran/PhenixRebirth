@@ -153,7 +153,7 @@ def test_the_texts_exist_in_every_language():
                 "story_spacewar_level", "story_spacewar_next", "story_spacewar_empty", "story_spacewar_hint",
                 "story_spacewar_clear", "story_spacewar_retry"):
         assert set(i18n.T[key]) == set(i18n.LANG_CODES) and all(i18n.T[key][c] for c in i18n.LANG_CODES)
-    assert i18n.T["story_spacewar_hud"]["fr"].format(n=1, m=3, e=2, t=20)
+    assert i18n.T["story_spacewar_hud"]["fr"].format(n=1, m=3, t=20)
 
 
 # ------------------------------------------------------------------ the physics
@@ -270,16 +270,16 @@ def test_the_cbs_opening_gives_a_stable_orbit(seconds):
     b = _Body(x, y, vx, vy, angle)
     rmin, rmax = 1e9, 0.0
     for i in range(60 * 40):
-        assert not sw.fly(b, DT, 0, i * DT < seconds)
+        assert not sw.fly(b, DT, 0, i * DT < seconds, 1.0, sw.PLAYER_THRUST, sw.PLAYER_RADIUS)
         r = math.hypot(b.x - sw.CX, b.y - sw.CY)
         rmin, rmax = min(rmin, r), max(rmax, r)
-    assert rmin > sw.STAR_KILL + 30 and rmax < 520
+    assert rmin > sw.STAR_R + 30 and rmax < 520
 
 
 def test_without_the_opening_the_ship_falls_into_the_star():
     x, y, vx, vy, angle = sw.start_state()
     b = _Body(x, y, vx, vy, angle)
-    assert any(sw.fly(b, DT, 0, False) for _ in range(60 * 8))
+    assert any(sw.fly(b, DT, 0, False, 1.0, sw.PLAYER_THRUST, sw.PLAYER_RADIUS) for _ in range(60 * 8))
 
 
 def test_the_start_is_at_rest_perpendicular_to_the_axis_of_the_star():
@@ -346,7 +346,7 @@ def test_the_levels_have_the_birds_of_the_spec_and_go_faster():
         scales.append(form.birds[0].scale)
         for b in form.birds:                                  # in orbit already: they do not fall at once
             assert not sw.periapsis_danger(b.x, b.y, b.ast_vx, b.ast_vy, 3.0)
-            assert math.hypot(b.x - sw.CX, b.y - sw.CY) > sw.STAR_KILL + 100
+            assert math.hypot(b.x - sw.CX, b.y - sw.CY) > sw.STAR_R + 100
     assert scales == sorted(scales) and scales[0] < scales[-1]
 
 
@@ -397,7 +397,7 @@ def test_the_birds_keep_out_of_the_star_when_left_alone(level):
 
 
 def test_a_bird_that_falls_turns_and_pushes_away_from_the_star():
-    b = Bird(1, sw.CX - 300, sw.CY, 0.0, 0.0, 0.0, 1.0, random.Random(2))     # at rest, nose to the star: it falls
+    b = Bird(1, sw.CX - 420, sw.CY, 0.0, 0.0, 0.0, 1.0, random.Random(2))     # at rest, nose to the star: it falls
     survived = True
     for _ in range(60 * 30):
         turn, push, _ = b.think(DT, None)
@@ -460,6 +460,7 @@ def test_the_fire_key_makes_torpedoes_with_a_stock_a_delay_and_a_limit_in_the_ai
     mine = [t for t in form.torpedoes if t.owner == "player"]
     assert len(mine) == 1 and form.player_torpedoes == sw.PLAYER_TORPEDOES - 1
     assert mine[0].vx == pytest.approx(p.ast_vx + sw.TORPEDO_SPEED, abs=40) and mine[0].x > p.x
+    p.ast_angle = -math.pi / 2                                   # (up: a torpedo that goes to the star is stopped by it)
     most = 0
     for _ in range(12):                                          # held for two seconds: the limit in the air is reached
         _hold_fire(run, 10)
@@ -545,7 +546,7 @@ def test_the_star_destroys_a_bird(run):
 def test_two_birds_that_touch_are_both_destroyed(run):
     _launch(run)
     form = _alone(run)
-    a, c = _bird(form, 1, 900.0, 100.0), _bird(form, 2, 900.0 + sw.SHIP_RADIUS, 100.0)
+    a, c = _bird(form, 1, 900.0, 100.0), _bird(form, 2, 900.0 + sw.BIRD_RADIUS, 100.0)
     run.frames(1)
     assert not a.alive and not c.alive and form.destroyed == 2
 
@@ -553,7 +554,7 @@ def test_two_birds_that_touch_are_both_destroyed(run):
 def test_two_birds_apart_are_left_alone(run):
     _launch(run)
     form = _alone(run)
-    a, c = _bird(form, 1, 900.0, 100.0), _bird(form, 2, 900.0 + 3 * sw.SHIP_RADIUS, 100.0)
+    a, c = _bird(form, 1, 900.0, 100.0), _bird(form, 2, 900.0 + 3 * sw.BIRD_RADIUS, 100.0)
     run.frames(1)
     assert a.alive and c.alive
 
@@ -610,11 +611,11 @@ def test_the_ship_and_a_bird_touch_at_two_radii_and_not_beyond(run):
     _launch(run)
     form = _alone(run)
     p = g.player
-    far = _bird(form, x=p.x + 2.5 * sw.SHIP_RADIUS, y=p.y)
+    far = _bird(form, x=p.x + 2.5 * sw.BIRD_RADIUS, y=p.y)
     run.frames(1)
     assert far.alive and not p.dying
     far.alive = False
-    near = _bird(form, x=p.x + 1.5 * sw.SHIP_RADIUS, y=p.y)
+    near = _bird(form, x=p.x + 1.5 * sw.BIRD_RADIUS, y=p.y)
     run.frames(1)
     assert not near.alive and p.dying
 
@@ -927,7 +928,7 @@ def test_the_hud_gives_the_level_the_birds_and_the_torpedoes(run):
     rec = _Said(g.text_cache)
     g.text_cache = rec
     run.frames(1)
-    assert i18n.t("story_spacewar_hud").format(n=3, m=3, e=4, t=7) in rec.said
+    assert i18n.t("story_spacewar_hud").format(n=3, m=3, t=7) in rec.said
 
 
 def test_the_hud_is_drawn_on_the_screen(run):
@@ -966,3 +967,338 @@ def test_a_bird_that_is_hit_leaves_fire_and_sparks(run):
     assert any(s.kind == "fire" for s in form.sparks) and any(s.kind == "spark" for s in form.sparks)
     run.frames(120)
     assert not form.sparks
+
+
+# ------------------------------------------------------------------ the second round (Kraran, 30/10)
+def test_the_start_is_farther_from_the_star_than_it_was():
+    assert sw.START_RADIUS >= 330
+    x, y, _, _, _ = sw.start_state()
+    assert sw.CX - x == sw.START_RADIUS and x > 100                      # (and still well inside the screen)
+
+
+def test_the_ship_is_drawn_at_half_its_size(run):
+    g = run.game
+    _launch(run)
+    _alone(run)
+    p = g.player
+    p.invulnerable = 0.0
+    p.ast_angle = -math.pi / 2
+    surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT), pygame.SRCALPHA)
+    p.draw(surf)
+    small = pygame.mask.from_surface(surf).get_bounding_rects()
+    small = small[0].unionall(small[1:])
+    p.sw_physics = False                                                 # the same ship drawn as in the Asteroids level
+    surf.fill((0, 0, 0, 0))
+    p.draw(surf)
+    full = pygame.mask.from_surface(surf).get_bounding_rects()
+    full = full[0].unionall(full[1:])
+    assert 0.4 < small.h / full.h < 0.6 and 0.4 < small.w / full.w < 0.6
+
+
+def test_the_dust_of_the_ship_is_half_size_too(run):
+    from ship_burn import ShipBurn
+    g = run.game
+    _launch(run)
+    p = g.player
+    p.x, p.y = 600.0, 300.0
+    burn = ShipBurn(p)
+    burn.age = 0.5
+    a, b = (pygame.Surface((BASE_WIDTH, BASE_HEIGHT), pygame.SRCALPHA) for _ in range(2))
+    burn.draw(a, 0.0, 1.0)
+    burn.draw(b, 0.0, 0.5)
+    ra = pygame.mask.from_surface(a).get_bounding_rects()
+    rb = pygame.mask.from_surface(b).get_bounding_rects()
+    ra, rb = ra[0].unionall(ra[1:]), rb[0].unionall(rb[1:])
+    assert 0.4 < rb.h / ra.h < 0.6
+
+
+def test_the_hit_zone_of_the_star_is_the_disc_that_is_drawn():
+    img = sw.star_image()
+    cx = cy = img.get_width() // 2
+    assert img.get_at((cx + int(sw.STAR_R) - 4, cy))[3] > 200            # the disc is there inside the zone
+    assert 0 <= img.get_width() // 2 - sw.STAR_R <= 6                    # the zone reaches the edge of the picture
+    for radius in (sw.PLAYER_RADIUS, sw.BIRD_RADIUS):
+        edge = sw.STAR_R + sw.CRASH_SHARE * radius
+        inside = _Body(sw.CX - edge + 1.0, sw.CY, 0, 0, 0.0)
+        outside = _Body(sw.CX - edge - 2.0, sw.CY, 0, 0, 0.0)
+        assert sw.fly(inside, 0.0005, 0, False, 1.0, sw.THRUST, radius)
+        assert not sw.fly(outside, 0.0005, 0, False, 1.0, sw.THRUST, radius)
+
+
+def test_the_big_ship_touches_the_star_a_little_sooner_than_the_small_one():
+    big = sw.STAR_R + sw.CRASH_SHARE * sw.BIRD_RADIUS
+    small = sw.STAR_R + sw.CRASH_SHARE * sw.PLAYER_RADIUS
+    assert big > small > sw.STAR_R
+
+
+def test_the_star_stops_a_torpedo_that_reaches_its_disc(run):
+    _launch(run)
+    form = _alone(run)
+    form.torpedoes.append(Torpedo(sw.CX - sw.STAR_R - 6, sw.CY, 60.0, 0.0, "player"))
+    form.torpedoes.append(Torpedo(sw.CX - sw.STAR_R - 6, sw.CY + 200, 60.0, 0.0, "player"))     # (passes below it)
+    run.frames(1)
+    assert len(form.torpedoes) == 2
+    run.frames(10)
+    assert len(form.torpedoes) == 1 and form.torpedoes[0].y == pytest.approx(sw.CY + 200)
+
+
+def test_a_torpedo_of_a_bird_is_stopped_by_the_star_too(run):
+    _launch(run)
+    form = _alone(run)
+    form.torpedoes.append(Torpedo(sw.CX + sw.STAR_R + 3, sw.CY, -200.0, 0.0, _bird(form)))
+    run.frames(3)
+    assert not form.torpedoes and any(s.kind in ("spark", "fire") for s in form.sparks)
+
+
+def test_the_thrusters_of_the_player_are_stronger_than_those_of_a_bird(run):
+    assert sw.PLAYER_THRUST > sw.THRUST * 1.2
+    g = run.game
+    _launch(run)
+    _alone(run)
+    p = g.player
+    p.x, p.y, p.ast_vx, p.ast_vy, p.ast_angle = 60.0, 60.0, 0.0, 0.0, 0.0
+    ref = _Body(60.0, 60.0, 0, 0, 0.0)
+    for _ in range(30):
+        sw.fly(ref, DT, 0, False)
+    _fly(run, pygame.K_UP, frames=30)
+    assert p.ast_vx - ref.ast_vx == pytest.approx(sw.PLAYER_THRUST * 0.5, rel=0.1)
+
+
+def test_the_hud_does_not_tell_how_many_birds_are_left():
+    for code in i18n.LANG_CODES:
+        text = i18n.T["story_spacewar_hud"][code]
+        assert "{e}" not in text and "OISEAUX" not in text.upper() and "BIRDS" not in text.upper()
+    assert set(i18n.T["story_spacewar_hud"]["fr"].replace("{", " ").replace("}", " ").split()) >= {"n", "m", "t"}
+
+
+def _drawn_box(ux, uy, tip=(255, 0, 255)):
+    surf = pygame.Surface((200, 200), pygame.SRCALPHA)
+    sw.draw_torpedo(surf, 100.0, 100.0, ux, uy, tip)
+    return surf, pygame.mask.from_surface(surf, 20).get_bounding_rects()
+
+
+def test_a_torpedo_of_the_player_is_drawn_long_and_pointing_the_way_it_goes():
+    for ux, uy in ((1.0, 0.0), (0.0, 1.0), (-1.0, 0.0), (0.0, -1.0)):
+        surf, rects = _drawn_box(ux, uy)
+        box = rects[0].unionall(rects[1:])
+        along, across = (box.w, box.h) if ux else (box.h, box.w)
+        assert along > 1.8 * across and along >= 24
+        nose = (int(100 + ux * 9), int(100 + uy * 9))
+        assert surf.get_at(nose)[:3] == (255, 0, 255)                    # the nose is in the colour of the hull
+        tail = (int(100 - ux * 9), int(100 - uy * 9))
+        assert surf.get_at(tail)[:3] != (255, 0, 255) and surf.get_at(tail)[3] > 0
+
+
+def test_the_torpedoes_of_the_player_are_drawn_as_torpedoes(run):
+    _launch(run)
+    form = _alone(run)
+    form.tip = (255, 0, 255)
+    form.torpedoes.append(Torpedo(300.0, 600.0, 400.0, 0.0, "player"))
+    form.torpedoes.append(Torpedo(900.0, 600.0, 0.0, 400.0, _bird(form)))
+    surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT), pygame.SRCALPHA)
+    form.draw(surf)
+    assert surf.get_at((309, 600))[:3] == (255, 0, 255)                  # the nose of the first
+    assert surf.get_at((900, 609))[:3] != (255, 0, 255)                  # (the bird's is a plain light)
+
+
+# --- the small asteroid
+def test_a_small_asteroid_comes_in_from_outside_the_screen():
+    for seed in range(60):
+        rock = sw.launch_rock(random.Random(seed))
+        assert not (0 <= rock.x < BASE_WIDTH and 0 <= rock.y < BASE_HEIGHT)
+        assert math.hypot(rock.vx, rock.vy) >= sw.ROCK_SPEED[0] * 0.99
+        assert rock.radius == asteroids.ROCK_RADIUS[1]
+        assert not rock.inside
+
+
+def test_the_small_asteroid_does_not_wrap_it_goes_out_by_the_edge():
+    rock = sw.SpaceRock(sw.CX + 300, 100.0, 300.0, 0.0, random.Random(1))      # (heading for the right edge, far from the star)
+    rock.update(0.01)
+    assert rock.inside and not rock.gone()
+    for _ in range(300):
+        rock.update(DT)
+        if rock.gone():
+            break
+    assert rock.gone() and rock.x > BASE_WIDTH                           # it is out on the right: nothing on the left
+
+
+def test_a_rock_that_never_comes_in_is_forgotten_in_the_end():
+    rock = sw.SpaceRock(-40.0, -40.0, -50.0, -50.0, random.Random(1))
+    assert not rock.gone()
+    for _ in range(60 * 45):
+        rock.update(DT)
+    assert rock.gone()
+
+
+def test_the_small_asteroid_is_pulled_by_the_star():
+    rock = sw.SpaceRock(-40.0, 100.0, 300.0, 0.0, random.Random(1))
+    straight = sw.SpaceRock(-40.0, 100.0, 300.0, 0.0, random.Random(1))
+    for _ in range(60):
+        rock.update(DT)
+    straight.x += 300.0 * 1.0
+    assert rock.y > 100.0 + 5.0 and rock.vy > 0
+
+
+def test_a_small_asteroid_rarely_ends_on_the_star():
+    crashes = 0
+    n = 400
+    for seed in range(n):
+        r = sw.launch_rock(random.Random(seed))
+        crashes += sw.rock_crashes(r.x, r.y, r.vx, r.vy)
+    assert crashes <= n / 3
+    assert crashes < n * 0.2                                             # (in fact much less)
+
+
+def test_the_paths_that_end_on_the_star_are_the_exception_not_the_aim():
+    sample = []
+    for seed in range(300):
+        rng = random.Random(1000 + seed)
+        x, y = -40.0, rng.uniform(0, BASE_HEIGHT)
+        a = math.atan2(sw.CY - y, sw.CX - x)
+        sample.append(sw.rock_crashes(x, y, math.cos(a) * 300, math.sin(a) * 300))
+    assert any(sample)                                                   # aimed at the star's middle: it does fall in
+
+
+def test_a_rock_on_the_star_is_gone_with_dust(run):
+    _launch(run)
+    form = _alone(run)
+    form.rock = sw.SpaceRock(sw.CX - sw.STAR_R, sw.CY, 0.0, 0.0, random.Random(1))
+    form.rock.inside = True
+    run.frames(2)
+    assert form.rock is None and any(s.kind == "rock" for s in form.sparks)
+
+
+def test_the_small_asteroid_destroys_the_ship(run):
+    g = run.game
+    _launch(run)
+    form = _alone(run)
+    p = g.player
+    form.rock = sw.SpaceRock(p.x + 14.0, p.y, 0.0, 0.0, random.Random(1))
+    form.rock.inside = True
+    run.frames(1)
+    assert p.dying and p.guardian_burn is not None
+
+
+def test_the_small_asteroid_destroys_a_bird_and_goes_on(run):
+    _launch(run)
+    form = _alone(run)
+    b = _bird(form, x=900.0, y=100.0)
+    form.rock = sw.SpaceRock(900.0, 100.0 + 20.0, 0.0, 0.0, random.Random(1))
+    form.rock.inside = True
+    run.frames(1)
+    assert not b.alive and form.rock is not None and form.destroyed == 1
+
+
+def test_the_small_asteroid_misses_a_ship_that_is_not_on_its_path(run):
+    g = run.game
+    _launch(run)
+    form = _alone(run)
+    p = g.player
+    form.rock = sw.SpaceRock(p.x + 80.0, p.y, 0.0, 0.0, random.Random(1))
+    form.rock.inside = True
+    run.frames(1)
+    assert not p.dying
+
+
+def test_a_torpedo_breaks_the_small_asteroid(run):
+    _launch(run)
+    form = _alone(run)
+    form.rock = sw.SpaceRock(900.0, 500.0, 0.0, 0.0, random.Random(1))
+    form.rock.inside = True
+    form.torpedoes.append(Torpedo(900.0, 500.0 + 12.0, 0.0, 0.0, "player"))
+    run.frames(1)
+    assert form.rock is None and not form.torpedoes and any(s.kind == "rock" for s in form.sparks)
+
+
+def test_the_asteroid_comes_now_and_then_one_at_a_time(run):
+    g = run.game
+    _launch(run)
+    form = _alone(run)
+    _orbit(g.player)
+    form.rock_in = 0.05
+    run.frames(10)
+    first = form.rock
+    assert first is not None
+    form.rock_in = 0.0
+    run.frames(5)
+    assert form.rock is first or form.rock is None                       # (never a second one at the same time)
+    assert sw.ROCK_GAP[0] <= form.rock_in <= sw.ROCK_GAP[1] or form.rock_in <= 0.0 or form.rock is None
+
+
+def test_no_asteroid_comes_during_the_pause_or_after_the_win(run):
+    g = run.game
+    _launch(run)
+    form = _alone(run)
+    _orbit(g.player)
+    form.rock_in = 0.0
+    form.pause = 100.0
+    run.frames(10)
+    assert form.rock is None
+    form.pause = 0.0
+    form.won = True
+    run.frames(10)
+    assert form.rock is None
+
+
+def test_the_first_asteroid_waits_a_little_and_a_new_level_starts_without_one():
+    form = SpaceWarFormation(rng=random.Random(2))
+    assert sw.ROCK_FIRST[0] <= form.rock_in <= sw.ROCK_FIRST[1]
+    form.rock = sw.SpaceRock(0.0, 0.0, 1.0, 0.0, random.Random(1))
+    form.rock_in = 0.0
+    form.start_level(2)
+    assert form.rock is None and sw.ROCK_FIRST[0] <= form.rock_in <= sw.ROCK_FIRST[1]
+
+
+def test_the_small_asteroid_is_drawn(run):
+    _launch(run)
+    form = _alone(run)
+    form.rock = sw.SpaceRock(900.0, 600.0, 0.0, 0.0, random.Random(1))
+    surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT), pygame.SRCALPHA)
+    form.draw(surf)
+    area = pygame.Rect(900 - 20, 600 - 20, 40, 40)
+    assert sum(1 for x in range(area.left, area.right) for y in range(area.top, area.bottom)
+               if surf.get_at((x, y))[3] > 0) > 200
+
+
+def test_the_hint_and_the_banners_fit_on_the_screen(run):
+    g = run.game
+    for key in ("story_spacewar_hint", "story_spacewar_level", "story_spacewar_next", "story_spacewar_empty"):
+        for code in ("fr", "en"):
+            text = i18n.T[key][code].format(n=3, m=3)
+            assert g.text_cache.get(g.font, text, (255, 255, 255)).get_width() <= BASE_WIDTH - 40, (key, code)
+
+
+def test_the_dying_ship_in_the_game_is_drawn_at_half_size(run):
+    g = run.game
+    _launch(run)
+    _alone(run)
+    p = g.player
+    p.x, p.y, p.ast_angle = 600.0, 300.0, -math.pi / 2
+    p.burn_by_guardian()
+    p.guardian_burn.age = 0.5
+    boxes = []
+    for sw_on in (True, False):
+        p.sw_physics = sw_on
+        surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT), pygame.SRCALPHA)
+        p.draw(surf)
+        rects = pygame.mask.from_surface(surf).get_bounding_rects()
+        boxes.append(rects[0].unionall(rects[1:]))
+    assert 0.4 < boxes[0].h / boxes[1].h < 0.62
+
+
+def test_the_half_size_dust_stays_on_the_ship(run):
+    from ship_burn import ShipBurn
+    g = run.game
+    _launch(run)
+    p = g.player
+    p.x, p.y = 600.0, 300.0
+    burn = ShipBurn(p)
+    for angle in (0.0, 90.0, -90.0):
+        centres = []
+        for scale in (1.0, 0.5):
+            surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT), pygame.SRCALPHA)
+            burn.draw(surf, angle, scale)
+            c = pygame.mask.from_surface(surf).centroid()
+            centres.append((c[0] - p.x, c[1] - p.y))
+        # the half-size dust is the full one shrunk round the ship (not moved)
+        assert math.hypot(centres[1][0] - centres[0][0] / 2, centres[1][1] - centres[0][1] / 2) < 1.6

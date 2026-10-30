@@ -32,16 +32,19 @@ from errlog import log_exc
 from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
 
 CX, CY = BASE_WIDTH / 2.0, BASE_HEIGHT / 2.0            # the star
-GM = 5.0e6                                              # its pull: g = GM / r^2 (55 px/s^2 at 300 px)
+GM = 1.0e7                                              # its pull: g = GM / r^2 (111 px/s^2 at 300 px)
 MIN_R = 20.0                                            # (the pull stops growing inside this: never infinite)
 STAR_DRAW = 160                                         # the picture of the star (px)
-STAR_KILL = 56.0                                        # what touches the star is destroyed (centre of a ship)
-SHIP_RADIUS = 18.0
-THRUST = 58.0                                           # px/s^2: a little more than the pull at the start distance
+STAR_R = 76.0                                           # the disc of the star as it is seen: a ship that touches it is destroyed
+CRASH_SHARE = 0.5                                       # (the centre of a ship is lost this share of its radius inside the disc)
+PLAYER_RADIUS = 9.0                                     # the ship of the player is drawn at half its size
+BIRD_RADIUS = 17.0
+THRUST = 58.0                                           # px/s^2: the thrusters of a bird (before its level's scale)
+PLAYER_THRUST = 75.0                                    # ... and those of the player: stronger
 TURN_SPEED = 3.0                                        # rad/s, constant
 MAX_SPEED = 900.0                                       # (only so that nothing can jump over the star in one step)
 SUBSTEP = 1.0 / 120.0
-START_RADIUS = 275.0                                    # where the player starts: left of the star, at rest, nose up
+START_RADIUS = 340.0                                    # where the player starts: left of the star, at rest, nose up
 LEVELS = [(1, 0), (1, 1), (2, 2)]                       # (blue birds, green birds) of the three levels
 LEVEL_SCALE = [1.0, 1.15, 1.3]                          # the birds' thrust, turn and rate of fire, per level
 PLAYER_TORPEDOES = 20                                   # the stock of the player, filled again at each level
@@ -56,6 +59,12 @@ AIM_ERROR = 0.07                                        # rad: a bird is not a p
 BIRD_GAP = 2.0                                          # (per bird, divided by LEVEL_SCALE)
 BIRD_IN_AIR = 2
 SELF_SAFE = 0.3                                         # seconds a torpedo spares the ship that fired it
+PLAYER_SCALE = 0.5                                      # the ship of the player is drawn at half its size
+ROCK_FIRST = (7.0, 11.0)                                # seconds before the first small asteroid of a level
+ROCK_GAP = (10.0, 18.0)                                 # ... and between two
+ROCK_SPEED = (300.0, 480.0)
+ROCK_CRASH_KEEP = 0.15                                  # a path that ends in the star is kept this often (so well under 1 in 3)
+ROCK_MARGIN = 40.0                                      # how far outside the screen it comes in from
 LEVEL_PAUSE = 2.2                                       # seconds between two levels
 END_PAUSE = 1.6                                         # after the last bird of the last level
 EXHAUST_PAUSE = 2.4                                     # after the last torpedo
@@ -85,7 +94,7 @@ def circular_speed(r):
     return math.sqrt(GM / max(MIN_R, r))
 
 
-def fly(obj, dt, turn, push, scale=1.0):
+def fly(obj, dt, turn, push, scale=1.0, thrust=THRUST, radius=BIRD_RADIUS):
     """One frame of a ship (the player or a bird: anything with x, y, ast_vx, ast_vy, ast_angle): turn at a constant
     speed, push along the nose, be pulled by the star, keep the speed. True when the ship has touched the star."""
     obj.ast_angle = (obj.ast_angle + turn * TURN_SPEED * scale * dt + math.pi) % (2 * math.pi) - math.pi
@@ -97,8 +106,8 @@ def fly(obj, dt, turn, push, scale=1.0):
         gx, gy = gravity(obj.x, obj.y)
         ax, ay = gx, gy
         if push:
-            ax += ca * THRUST * scale
-            ay += sa * THRUST * scale
+            ax += ca * thrust * scale
+            ay += sa * thrust * scale
         obj.ast_vx += ax * h
         obj.ast_vy += ay * h
         speed = math.hypot(obj.ast_vx, obj.ast_vy)
@@ -107,7 +116,7 @@ def fly(obj, dt, turn, push, scale=1.0):
             obj.ast_vy *= MAX_SPEED / speed
         obj.x = (obj.x + obj.ast_vx * h) % BASE_WIDTH
         obj.y = (obj.y + obj.ast_vy * h) % BASE_HEIGHT
-        if math.hypot(obj.x - CX, obj.y - CY) < STAR_KILL:
+        if math.hypot(obj.x - CX, obj.y - CY) < STAR_R + CRASH_SHARE * radius:
             crashed = True
     return crashed
 
@@ -122,7 +131,7 @@ def periapsis_danger(x, y, vx, vy, horizon=LOOKAHEAD, margin=SAFE_MARGIN):
             vy += gy * LOOK_SUBSTEP
             x += vx * LOOK_SUBSTEP
             y += vy * LOOK_SUBSTEP
-        if math.hypot(x - CX, y - CY) < STAR_KILL + margin:
+        if math.hypot(x - CX, y - CY) < STAR_R + margin:
             return True
         t += LOOK_STEP
     return False
@@ -186,6 +195,85 @@ class Torpedo:
         self.y = (self.y + self.vy * dt) % BASE_HEIGHT
         self.life -= dt
         self.age += dt
+
+
+class SpaceRock:
+    """The small asteroid of the Asteroids level that crosses the screen now and then: it comes in from outside, is pulled
+    by the star like a ship, and goes out by an edge (the screen does not wrap for it). It destroys what it touches."""
+
+    def __init__(self, x, y, vx, vy, rng):
+        self.x, self.y, self.vx, self.vy = float(x), float(y), float(vx), float(vy)
+        self.radius = float(asteroids.ROCK_RADIUS[1])
+        self.variant = rng.randrange(asteroids.ROCK_VARIANTS)
+        self.phase = rng.uniform(0, asteroids.ROCK_FRAMES)
+        self.spin = rng.uniform(6.0, 14.0) * rng.choice((-1, 1))
+        self.rot = 0.0
+        self.rspin = rng.uniform(-90.0, 90.0)
+        self.inside = False                 # it has been on the screen
+        self.age = 0.0
+
+    def update(self, dt):
+        steps = max(1, int(math.ceil(dt / SUBSTEP)))
+        h = dt / steps
+        for _ in range(steps):
+            gx, gy = gravity(self.x, self.y)
+            self.vx += gx * h
+            self.vy += gy * h
+            self.x += self.vx * h
+            self.y += self.vy * h
+        self.phase = (self.phase + self.spin * dt) % asteroids.ROCK_FRAMES
+        self.rot = (self.rot + self.rspin * dt) % 360
+        self.age += dt
+        if 0 <= self.x < BASE_WIDTH and 0 <= self.y < BASE_HEIGHT:
+            self.inside = True
+
+    def on_star(self):
+        return math.hypot(self.x - CX, self.y - CY) < STAR_R + CRASH_SHARE * self.radius
+
+    def gone(self):
+        """Out by an edge after having been in (or lost far outside)."""
+        m = self.radius + 2
+        out = not (-m <= self.x < BASE_WIDTH + m and -m <= self.y < BASE_HEIGHT + m)
+        return (self.inside and out) or self.age > 40.0
+
+    def image(self):
+        cells = asteroids.rock_frames(1, self.variant)
+        img = cells[int(self.phase) % len(cells)]
+        return pygame.transform.rotate(img, self.rot)
+
+
+def rock_crashes(x, y, vx, vy):
+    """Does a rock that comes in at this point with this speed end on the star (and not out by an edge)?"""
+    rock = SpaceRock(x, y, vx, vy, random.Random(0))
+    while not rock.gone():
+        rock.update(1.0 / 30.0)
+        if rock.on_star():
+            return True
+    return False
+
+
+def launch_rock(rng):
+    """A small asteroid: where it comes in (just outside an edge), at what speed and which way. The path is chosen so that
+    it ends on the star rarely: one that does is only kept ROCK_CRASH_KEEP of the time (and never at the last try)."""
+    best = None
+    for attempt in range(30):
+        edge = rng.randrange(4)
+        if edge == 0:
+            x, y = -ROCK_MARGIN, rng.uniform(0, BASE_HEIGHT)
+        elif edge == 1:
+            x, y = BASE_WIDTH + ROCK_MARGIN, rng.uniform(0, BASE_HEIGHT)
+        elif edge == 2:
+            x, y = rng.uniform(0, BASE_WIDTH), -ROCK_MARGIN
+        else:
+            x, y = rng.uniform(0, BASE_WIDTH), BASE_HEIGHT + ROCK_MARGIN
+        tx, ty = CX + rng.uniform(-430, 430), CY + rng.uniform(-260, 260)
+        a = math.atan2(ty - y, tx - x)
+        sp = rng.uniform(*ROCK_SPEED)
+        vx, vy = math.cos(a) * sp, math.sin(a) * sp
+        best = (x, y, vx, vy)
+        if not rock_crashes(x, y, vx, vy) or (rng.random() < ROCK_CRASH_KEEP and attempt < 29):
+            break
+    return SpaceRock(best[0], best[1], best[2], best[3], rng)
 
 
 class Bird:
@@ -283,6 +371,8 @@ class SpaceWarFormation:
         self.birds = []
         self.torpedoes = []
         self.sparks = []
+        self.rock = None                    # the small asteroid that crosses the screen now and then
+        self.rock_in = self.rng.uniform(*ROCK_FIRST)
         self.player_torpedoes = PLAYER_TORPEDOES
         self.fire_cd = 0.0
         self.time = 0.0
@@ -335,6 +425,8 @@ class SpaceWarFormation:
             heading = math.atan2(vy, vx)
             self.birds.append(Bird(kind, x, y, vx, vy, heading, scale, self.rng))
         self.torpedoes = []
+        self.rock = None
+        self.rock_in = self.rng.uniform(*ROCK_FIRST)
         self.player_torpedoes = PLAYER_TORPEDOES
         self.fire_cd = 0.0
         self.level_time = 0.0
@@ -372,9 +464,15 @@ class SpaceWarFormation:
         for b in self.birds:
             if b.alive:
                 asteroids._blit_wrapped(surface, b.image(), b.x, b.y)
+        if self.rock is not None:
+            img = self.rock.image()
+            surface.blit(img, (int(self.rock.x - img.get_width() / 2), int(self.rock.y - img.get_height() / 2)))
         for p in self.sparks:
             a = max(0.0, p.life / p.max)
-            if p.kind == "fire":
+            if p.kind == "rock":
+                c = (int(150 * a + 40), int(135 * a + 35), int(120 * a + 30))
+                pygame.draw.circle(surface, c, (int(p.x), int(p.y)), max(1, int(p.size * (0.5 + 0.5 * a))))
+            elif p.kind == "fire":
                 asteroids._add_glow(surface, (255, 170, 60), (p.x, p.y), max(4, int(p.size * 7 * a + 4)))
             elif p.kind == "spark":
                 pygame.draw.line(surface, (255, int(220 * a), int(120 * a)), (p.x, p.y), (p.x - p.vx * 0.04, p.y - p.vy * 0.04), 2)
@@ -385,10 +483,7 @@ class SpaceWarFormation:
             sp = math.hypot(tp.vx, tp.vy) or 1.0
             ux, uy = tp.vx / sp, tp.vy / sp
             if tp.owner == "player":
-                mid = tuple(min(255, (c + 255) // 2) for c in self.tip)
-                for length, width, col in ((18, 5, self.tip), (12, 3, mid)):
-                    pygame.draw.line(surface, col, (tp.x - ux * length, tp.y - uy * length), (tp.x, tp.y), width)
-                asteroids._add_glow(surface, (255, 240, 200), (tp.x, tp.y), 20)
+                draw_torpedo(surface, tp.x, tp.y, ux, uy, self.tip)
             else:
                 asteroids._add_glow(surface, (255, 60, 40), (tp.x, tp.y), 24)
                 pygame.draw.circle(surface, (255, 200, 180), (int(tp.x), int(tp.y)), 3)
@@ -400,6 +495,22 @@ class SpaceWarFormation:
             self._say(surface, _label("story_spacewar_empty"), (255, 120, 100), 200)
         if self.level == 1 and self.time < HINT_SECONDS and self.started:
             self._say(surface, _label("story_spacewar_hint"), (170, 200, 255), BASE_HEIGHT - 40)
+
+
+def draw_torpedo(surface, x, y, ux, uy, tip):
+    """A torpedo of the player: a metal body with a pointed nose in the colour of the hull, two fins and a flame behind."""
+    vx, vy = -uy, ux                                       # (sideways)
+
+    def pt(a, b):
+        return (x + ux * a + vx * b, y + uy * a + vy * b)
+
+    asteroids._add_glow(surface, (255, 170, 80), pt(-13, 0), 18)                        # the engine
+    pygame.draw.polygon(surface, (255, 210, 120), [pt(-9, 2.5), pt(-9, -2.5), pt(-17, 0)])
+    for side in (1, -1):                                                                  # the fins
+        pygame.draw.polygon(surface, (150, 156, 170), [pt(-5, side * 3.5), pt(-11, side * 7), pt(-11, side * 3.5)])
+    pygame.draw.polygon(surface, (205, 210, 222), [pt(-9, 3.5), pt(4, 3.5), pt(4, -3.5), pt(-9, -3.5)])   # the body
+    pygame.draw.polygon(surface, tip, [pt(4, 3.5), pt(12, 0), pt(4, -3.5)])                               # the nose
+    pygame.draw.line(surface, (120, 126, 140), pt(-3, 3.5), pt(-3, -3.5), 1)                              # a seam
 
 
 def _label(key):
@@ -497,12 +608,17 @@ def tick(game):
                 game.sounds.play("enemy_shoot", x=b.x)
             except Exception:
                 log_exc("spacewar.tick")
-        if fly(b, dt, turn, push, b.scale):
+        if fly(b, dt, turn, push, b.scale, THRUST, BIRD_RADIUS):
             _kill_bird(game, form, b)
     # --- torpedoes and dust
     for tp in form.torpedoes:
         tp.update(dt)
     form.torpedoes = [tp for tp in form.torpedoes if tp.life > 0]
+    for tp in list(form.torpedoes):                      # the star stops a torpedo (it does not pull it)
+        if math.hypot(tp.x - CX, tp.y - CY) < STAR_R:
+            form.torpedoes.remove(tp)
+            form.debris(tp.x, tp.y, "spark", 6, 200, life=(0.2, 0.5), size=(2.0, 3.0))
+            form.debris(tp.x, tp.y, "fire", 3, 120, life=(0.2, 0.5), size=(2.0, 4.0))
     for sp in form.sparks:
         sp.x += sp.vx * dt
         sp.y += sp.vy * dt
@@ -519,14 +635,14 @@ def tick(game):
             if not b.alive or (tp.owner is b and tp.age < SELF_SAFE):
                 continue
             dx, dy = asteroids.wrapped_delta(tp.x, tp.y, b.x, b.y)
-            if dx * dx + dy * dy < (SHIP_RADIUS + TORPEDO_RADIUS) ** 2:
+            if dx * dx + dy * dy < (BIRD_RADIUS + TORPEDO_RADIUS) ** 2:
                 form.torpedoes.remove(tp)
                 _kill_bird(game, form, b)
                 break
         else:
             if player_up and not (tp.owner == "player" and tp.age < SELF_SAFE):
                 dx, dy = asteroids.wrapped_delta(tp.x, tp.y, p.x, p.y)
-                if dx * dx + dy * dy < (SHIP_RADIUS + TORPEDO_RADIUS) ** 2:
+                if dx * dx + dy * dy < (PLAYER_RADIUS + TORPEDO_RADIUS) ** 2:
                     form.torpedoes.remove(tp)
                     _kill_player(game, form)
                     player_up = False
@@ -535,7 +651,7 @@ def tick(game):
     if player_up:
         for b in crew:
             dx, dy = asteroids.wrapped_delta(p.x, p.y, b.x, b.y)
-            if dx * dx + dy * dy < (2 * SHIP_RADIUS) ** 2:
+            if dx * dx + dy * dy < (PLAYER_RADIUS + BIRD_RADIUS) ** 2:
                 _kill_bird(game, form, b)
                 _kill_player(game, form)
                 player_up = False
@@ -544,9 +660,43 @@ def tick(game):
     for i, a in enumerate(crew):
         for c in crew[i + 1:]:
             dx, dy = asteroids.wrapped_delta(a.x, a.y, c.x, c.y)
-            if a.alive and c.alive and dx * dx + dy * dy < (2 * SHIP_RADIUS) ** 2:
+            if a.alive and c.alive and dx * dx + dy * dy < (2 * BIRD_RADIUS) ** 2:
                 _kill_bird(game, form, a)
                 _kill_bird(game, form, c)
+    # --- the small asteroid: it comes in now and then, is pulled by the star, goes out by an edge; it destroys ships
+    if form.pause <= 0 and not form.won and form.rock is None:
+        form.rock_in -= dt
+        if form.rock_in <= 0:
+            form.rock = launch_rock(form.rng)
+            form.rock_in = form.rng.uniform(*ROCK_GAP)
+    rock = form.rock
+    if rock is not None:
+        rock.update(dt)
+        if rock.on_star():
+            form.debris(rock.x, rock.y, "rock", 12, 220, life=(0.5, 1.2), size=(2.0, 4.0))
+            form.debris(rock.x, rock.y, "fire", 6, 160, life=(0.3, 0.7), size=(3.0, 5.0))
+            form.rock = rock = None
+        elif rock.gone():
+            form.rock = rock = None
+    if rock is not None:
+        for tp in list(form.torpedoes):
+            if math.hypot(tp.x - rock.x, tp.y - rock.y) < rock.radius + TORPEDO_RADIUS:
+                form.torpedoes.remove(tp)
+                form.debris(rock.x, rock.y, "rock", 14, 240, life=(0.5, 1.2), size=(2.0, 4.0))
+                form.rock = rock = None
+                try:
+                    game.sounds.play("explosion", x=tp.x)
+                except Exception:
+                    log_exc("spacewar.tick")
+                break
+    if rock is not None:
+        hit = rock.radius * 0.8
+        for b in form.birds:
+            if b.alive and math.hypot(b.x - rock.x, b.y - rock.y) < hit + BIRD_RADIUS:
+                _kill_bird(game, form, b)
+        if player_up and math.hypot(p.x - rock.x, p.y - rock.y) < hit + PLAYER_RADIUS:
+            _kill_player(game, form)
+            player_up = False
     # --- the levels and the end
     if not player_up:
         return
