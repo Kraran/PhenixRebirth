@@ -273,7 +273,7 @@ def test_touching_the_star_is_reported_even_at_speed():
 
 # how long the thrusters push in the CBS opening, for each planet (the pull is halved since Jupiter's first version, and the
 # lighter planets pull less still: the push that makes an orbit is shorter or longer, see PLANETS)
-OPENING = {"jupiter": (1.2, 1.3, 1.4), "saturn": (1.9, 2.1, 2.3), "uranus": (1.2, 1.5, 1.7), "neptune": (1.2, 1.5, 1.7)}
+OPENING = {"jupiter": (0.8, 0.9, 1.0), "saturn": (1.2, 1.4, 1.55), "uranus": (0.8, 1.0, 1.2), "neptune": (0.8, 1.0, 1.2)}
 
 
 @pytest.mark.parametrize("planet", sw.PLANET_KEYS)
@@ -1575,3 +1575,152 @@ def test_a_bird_looks_ahead_with_the_thrust_its_planet_allows(monkeypatch, plane
     b.think(DT, None)
     ahead = [v for v in seen if v[2] == 2.0][0]                                         # (the look with one push on)
     assert ahead[0] == pytest.approx(sw.THRUST * sw.PLANETS[planet]["power"] * 0.7)
+
+
+# ------------------------------------------------------------------ the fourth round: stronger thrusters, fewer collisions
+# between the birds, no wraparound for their torpedoes
+def test_the_thrusters_of_the_player_are_stronger_and_the_pull_is_untouched():
+    assert sw.PLAYER_THRUST == 110.0 and sw.PLAYER_THRUST > 1.6 * sw.THRUST            # (it was 75)
+    assert sw.PLANETS["jupiter"]["gm"] == 5.0e6 and sw.PLANETS["saturn"]["gm"] == 2.7e6
+    assert sw.PLANETS["uranus"]["gm"] == 1.5e6 and sw.PLANETS["neptune"]["gm"] == 1.6e6
+    far, ref = _Body(60.0, 60.0, 0.0, 0.0, 0.0), _Body(60.0, 60.0, 0.0, 0.0, 0.0)
+    for _ in range(60):
+        sw.fly(far, DT, 0, True, 1.0, sw.PLAYER_THRUST, sw.PLAYER_RADIUS)
+        sw.fly(ref, DT, 0, False)
+    assert far.ast_vx - ref.ast_vx == pytest.approx(110.0, rel=0.02)
+
+
+def test_the_thrusters_of_the_player_in_the_game_push_with_that_power(run):
+    _launch(run)
+    p = run.game.player
+    _alone(run)
+    _orbit(p)
+    p.ast_angle = 0.0
+    ref = _Body(p.x, p.y, p.ast_vx, p.ast_vy, 0.0)
+    for _ in range(30):
+        sw.fly(ref, DT, 0, False, 1.0, sw.PLAYER_THRUST, sw.PLAYER_RADIUS)
+    _fly(run, pygame.K_UP, frames=30)
+    assert p.ast_vx - ref.ast_vx == pytest.approx(sw.PLAYER_THRUST * 0.5, rel=0.12)
+
+
+def test_a_torpedo_of_a_bird_does_not_come_round_the_screen():
+    t = Torpedo(BASE_WIDTH - 5.0, 300.0, 400.0, 0.0, Bird(1, 900, 100, 0, 0, 0, 1.0, random.Random(1)))
+    assert t.wrap is False
+    t.update(0.02)
+    assert t.x > BASE_WIDTH - 5.0 and t.life <= 0                  # out of the screen: it ends, it does not come back by the left
+    for vx, vy, x, y in ((-400.0, 0.0, 5.0, 300.0), (0.0, 400.0, 600.0, BASE_HEIGHT - 5.0), (0.0, -400.0, 600.0, 5.0)):
+        t = Torpedo(x, y, vx, vy, Bird(1, 900, 100, 0, 0, 0, 1.0, random.Random(1)))
+        t.update(0.02)
+        assert t.life <= 0
+    mid = Torpedo(600.0, 300.0, 400.0, 0.0, Bird(1, 900, 100, 0, 0, 0, 1.0, random.Random(1)))
+    mid.update(0.02)
+    assert mid.life > 0 and mid.x == pytest.approx(608.0)          # (a straight line in the screen as before)
+
+
+def test_a_torpedo_of_the_player_still_comes_round_the_screen():
+    t = Torpedo(BASE_WIDTH - 5.0, 300.0, 400.0, 0.0, "player")
+    assert t.wrap is True
+    t.update(0.02)
+    assert t.x < 20 and t.life > 0
+
+
+def test_in_the_game_a_torpedo_of_a_bird_ends_at_the_edge_and_does_not_hit_by_the_other_side(run):
+    _launch(run)
+    form = _alone(run)
+    p = run.game.player
+    _orbit(p, 260.0)
+    b = _bird(form)
+    form.torpedoes.append(Torpedo(BASE_WIDTH - 6.0, p.y, 600.0, 0.0, b))          # (it flies out at the right: p is at the left)
+    form.torpedoes.append(Torpedo(BASE_WIDTH - 6.0, 40.0, 600.0, 0.0, "player"))  # (the player's comes round)
+    run.frames(3)
+    assert [tp.owner for tp in form.torpedoes] == ["player"]
+    assert run.game.player.alive and not run.game.player.dying
+
+
+# --- the birds keep to their own orbits
+def test_the_birds_start_on_their_own_circular_orbits_all_going_round_the_same_way():
+    assert len(set(sw.LANES)) == 4 and all(b - a >= 44 for a, b in zip(sw.LANES, sw.LANES[1:]))
+    for planet in sw.PLANET_KEYS:
+        sw.set_planet(planet)
+        for seed in range(10):
+            form = SpaceWarFormation(rng=random.Random(seed))
+            form.start_level(3)
+            radii = sorted(round(math.hypot(b.x - sw.CX, b.y - sw.CY)) for b in form.birds)
+            assert all(r in {round(x) for x in sw.LANES} for r in radii) and len(set(radii)) == 4
+            turns = {math.copysign(1, (b.x - sw.CX) * b.ast_vy - (b.y - sw.CY) * b.ast_vx) for b in form.birds}
+            assert len(turns) == 1                                                   # none meets another head on
+            for b in form.birds:
+                lo, hi = sw.orbit_band(b.x, b.y, b.ast_vx, b.ast_vy)
+                assert hi - lo < 0.05 * hi and b.mates is form.birds
+
+
+def test_the_orbit_band_of_a_ship():
+    r = 250.0
+    lo, hi = sw.orbit_band(sw.CX + r, sw.CY, 0.0, sw.circular_speed(r))
+    assert lo == pytest.approx(r, abs=0.01) and hi == pytest.approx(r, abs=0.01)
+    lo, hi = sw.orbit_band(sw.CX + r, sw.CY, 0.0, sw.circular_speed(r) * 0.8)        # slower: it falls to a nearer point
+    assert hi == pytest.approx(r, abs=0.5) and lo < r - 40
+    lo2, hi2 = sw.orbit_band(sw.CX + r, sw.CY, 0.0, sw.circular_speed(r) * 1.2)      # faster: it goes farther
+    assert lo2 == pytest.approx(r, abs=0.5) and hi2 > r + 40
+    assert sw.orbit_band(sw.CX + r, sw.CY, 0.0, sw.circular_speed(r) * 1.5) is None   # it leaves for good
+
+
+def _lined(form, kind=1, r=250.0, angle=0.0):
+    sense = 1.0
+    x, y = sw.CX + math.cos(angle) * r, sw.CY + math.sin(angle) * r
+    v = sw.circular_speed(r)
+    b = Bird(kind, x, y, -math.sin(angle) * v * sense, math.cos(angle) * v * sense, math.atan2(math.cos(angle), -math.sin(angle)),
+             1.0, random.Random(3))
+    b.mates = form.birds
+    form.birds.append(b)
+    return b
+
+
+def test_a_bird_pushes_only_when_the_orbit_it_makes_keeps_clear_of_the_others():
+    form = SpaceWarFormation(rng=random.Random(1))
+    form.birds = []
+    a = _lined(form, r=190.0, angle=0.0)
+    a.ast_angle = math.atan2(a.ast_vy, a.ast_vx)                       # nose along its speed: the push raises the orbit
+    assert a._coast_is_safe() is True                                  # alone: it may
+    _lined(form, r=250.0, angle=math.pi)                               # another on a neighbouring orbit
+    assert a._coast_is_safe() is False
+    form.birds[1].alive = False
+    assert a._coast_is_safe() is True                                  # (a dead one does not count)
+    low = _lined(form, r=200.0, angle=math.pi / 2)
+    low.ast_angle = math.atan2(low.ast_vy, low.ast_vx) + math.pi        # nose back: the push slows it, down into the star
+    low.mates = [low]
+    assert low._coast_is_safe() is False
+
+
+def test_a_bird_that_would_leave_the_screen_orbit_does_not_push():
+    form = SpaceWarFormation(rng=random.Random(1))
+    form.birds = []
+    a = _lined(form, r=330.0, angle=0.0)
+    a.ast_angle = math.atan2(a.ast_vy, a.ast_vx)
+    assert a._coast_is_safe() is False                                 # a push there would take it past the edge of the screen
+
+
+def test_the_birds_collide_much_less():
+    hits = runs = 0
+    for planet in ("jupiter", "uranus"):
+        sw.set_planet(planet)
+        for seed in range(10):
+            form = SpaceWarFormation(rng=random.Random(100 + seed))
+            form.start_level(3)
+            me = _Body(sw.CX - 0.8 * sw.START_RADIUS, sw.CY, 0.0, -sw.circular_speed(0.8 * sw.START_RADIUS))
+            for _ in range(60 * 40):
+                sw.fly(me, DT, 0, False, 1.0, sw.PLAYER_THRUST, sw.PLAYER_RADIUS)
+                for b in form.birds:
+                    if b.alive:
+                        turn, push, _ = b.think(DT, me)
+                        if sw.fly(b, DT, turn, push, b.scale, sw.THRUST, sw.BIRD_RADIUS):
+                            b.alive = False
+                crew = [b for b in form.birds if b.alive]
+                for i, a in enumerate(crew):
+                    for c in crew[i + 1:]:
+                        dx, dy = asteroids.wrapped_delta(a.x, a.y, c.x, c.y)
+                        if a.alive and c.alive and dx * dx + dy * dy < (2 * sw.BIRD_RADIUS) ** 2:
+                            a.alive = c.alive = False
+                            hits += 1
+            runs += 1
+    assert hits <= 2 and runs == 20                                     # (it was more than one a run at level 3)

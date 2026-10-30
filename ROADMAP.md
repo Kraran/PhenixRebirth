@@ -116,6 +116,13 @@ Current release: **v1.5.0**
   are drawn but not in the hit zone), the pull (2.7e6, 1.5e6, 1.6e6) and the thrust of the ships (x0.6) follow the real order but are
   brought closer to Jupiter's so that it stays playable; pictures made by `tools/make_spacewar_planets.py`). Tests:
   `tests/test_spacewar.py`
+- SpaceWar, fourth round (Kraran's third tests): the thrusters of the player are stronger (110 px/s^2, it was 75; the pull is not
+  touched), the birds collide far less (they start each on its own circular orbit, `LANES`, all going round the same way, and a bird
+  only pushes when the orbit it makes stays out of the star and inside the screen and shares no distance from the star with
+  another bird's orbit, `Bird._coast_is_safe` / `orbit_band`; it holds its heading while it pushes: in a simulation of 60 s the
+  collisions went from about 0.7 (level 2) and 1.6 (level 3) a game to 0.03), and the torpedoes of the birds no longer come round the
+  screen (they end at the edge; the player's still do). The CBS opening is now a push of about 0.9 s on Jupiter (1.4 Saturn, 1.0
+  Uranus and Neptune). Tests: `tests/test_spacewar.py`
 
 ## Done in 1.5.0
 
