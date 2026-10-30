@@ -47,6 +47,7 @@ import announce
 import bindings
 import controls
 import asteroids
+import spacewar
 import escort
 import galaga
 from guardian import GuardianFormation
@@ -1392,6 +1393,14 @@ class Game:
 
     def _start_arrive_intro(self):
         """New run: fly in from below (same speed as stage transitions) and play stage VO."""
+        if (getattr(self, "adventure", None) or {}).get("spacewar"):
+            # SpaceWar (src/spacewar.py): no flight in either, the ship starts at rest by the star, nose up
+            self.player.x, self.player.y, self.player.ast_vx, self.player.ast_vy, self.player.ast_angle = \
+                spacewar.start_state()
+            self.stage_transition = None
+            self.input_grace = 0.5
+            self._play_level_vo(self._announced_level())
+            return
         if (getattr(self, "adventure", None) or {}).get("asteroids"):
             # the Asteroids mission: no flight in from below, the ship is in the middle of the field, nose up
             self.player.x, self.player.y = BASE_WIDTH / 2.0, BASE_HEIGHT / 2.0
@@ -1891,6 +1900,14 @@ class Game:
             self.player.vertical_range = None
             self._ast_px, self._ast_py = self.player.x, self.player.y
             self._ast_last_x = self._ast_last_y = None
+        if spec.get("spacewar"):
+            # SpaceWar (src/spacewar.py): the ship flies free by the pull of a star, with ONE life (pixel dust at its end)
+            from ship_burn import prepare as prepare_ship_burn
+            self.player.asteroid_mode = True
+            self.player.sw_physics = True
+            self.player.vertical_range = None
+            self.player.lives = 1
+            prepare_ship_burn(self.player)
         self.adventure["dome"] = dome
         # the loot items bought in the hangar for this mission (they are used up when it ends, see _end_adventure)
         items = [] if spec.get("training") else list(spec.get("items") or [])
@@ -2068,6 +2085,16 @@ class Game:
             self.formation.sounds = self.sounds
             self.boss_saucer = None
             return
+        elif adv and adv.get("spacewar"):
+            # SpaceWar (src/spacewar.py): a star in the middle, three levels of birds that fly like the ship
+            self.stage = 1
+            mult = float(adv.get("speed") or 1.0) * self.difficulty_speed_mult()
+            self.formation = spacewar.SpaceWarFormation(speed_mult=mult)
+            self.formation.sounds = self.sounds
+            self.formation.font = self.font
+            self.formation.text_cache = self.text_cache
+            self.boss_saucer = None
+            return
         elif adv and adv.get("asteroids"):
             # the Asteroids mission (src/asteroids.py): rocks that break, the miniature saucer, a ship that flies free
             self.stage = 1
@@ -2100,7 +2127,7 @@ class Game:
             content = stage_content(stage)
             mult = stage_speed_mult(stage) * self.difficulty_speed_mult()
         if isinstance(self.formation, (InvaderFormation, GalagaFormation, escort.EscortFormation,
-                                       asteroids.AsteroidFormation, GuardianFormation)):
+                                       asteroids.AsteroidFormation, spacewar.SpaceWarFormation, GuardianFormation)):
             self.formation = EnemyFormation()            # back to the ordinary grids
         self.formation.enemies = []
         self.formation.bullets = []
@@ -3503,11 +3530,14 @@ class Game:
     def _tick_stars(self, follow=False):
         """Starfield step with comet rules (cycle / menu)."""
         px = py = None
-        free = bool((getattr(self, "adventure", None) or {}).get("asteroids")) and bool(getattr(self, "started", False))
+        adv = getattr(self, "adventure", None) or {}
+        free = bool(adv.get("asteroids") or adv.get("spacewar")) and bool(getattr(self, "started", False))
         if follow and getattr(self, "player", None) is not None:
             px = self.player.x
             py = self.player.y if free else None
-            if free and getattr(self.player, "asteroid_mode", False):
+            if free and adv.get("spacewar"):
+                px, py = BASE_WIDTH / 2.0, BASE_HEIGHT / 2.0       # SpaceWar: the star stays, so does the sky
+            elif free and getattr(self.player, "asteroid_mode", False):
                 # the ship wraps around the screen: the background follows its real movement (x and y), not the jump
                 # of the wrap
                 lx = getattr(self, "_ast_last_x", None)
@@ -4370,6 +4400,7 @@ class Game:
             self.formation.update(self.dt, self.player.x)
         escort.tick(self)                         # the VIP rescue: the cruise ship (nothing in any other mission)
         asteroids.tick(self)                      # the Asteroids mission: rocks, saucer, shots (nothing elsewhere)
+        spacewar.tick(self)                       # the SpaceWar test: the birds, the torpedoes, the levels (nothing elsewhere)
         update_play.tick_loot(self)
         self._drain_detach_pops()
         self._check_extra_lives()

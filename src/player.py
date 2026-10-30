@@ -146,6 +146,8 @@ class Player:
         self.ast_vx = 0.0
         self.ast_vy = 0.0
         self.ast_fire = False            # a shot is asked for this frame (the mission makes it)
+        self.sw_physics = False          # the SpaceWar level (src/spacewar.py): the pull of a star, no friction
+        self.sw_crash = False            # ... and the ship has touched the star
         self._ast_held = False
         self._ast_canvas = None
         self.bullet_speed_mult = 1.0     # Adventure loot (Singularity Core): faster bullets, so the ship fires more often
@@ -593,20 +595,25 @@ class Player:
         self.vertical_range = None
         self.climbing = False
         turn, push, fire = self._read_asteroid_input(input_mode, joystick)
-        self.ast_angle = (self.ast_angle + turn * ast.TURN_SPEED * dt + math.pi) % (2 * math.pi) - math.pi
-        if push:
-            self.ast_vx += math.cos(self.ast_angle) * ast.THRUST * dt
-            self.ast_vy += math.sin(self.ast_angle) * ast.THRUST * dt
-        drag = math.exp(-ast.DRAG * dt)
-        self.ast_vx *= drag
-        self.ast_vy *= drag
-        speed = math.hypot(self.ast_vx, self.ast_vy)
-        limit = ast.MAX_SPEED * self.speed_scale_asteroid()
-        if speed > limit:
-            self.ast_vx *= limit / speed
-            self.ast_vy *= limit / speed
-        self.x = (self.x + self.ast_vx * dt) % BASE_WIDTH
-        self.y = (self.y + self.ast_vy * dt) % BASE_HEIGHT
+        if self.sw_physics:
+            import spacewar
+            if spacewar.fly(self, dt, turn, push):          # (the pull of the star, the inertia, no friction)
+                self.sw_crash = True
+        else:
+            self.ast_angle = (self.ast_angle + turn * ast.TURN_SPEED * dt + math.pi) % (2 * math.pi) - math.pi
+            if push:
+                self.ast_vx += math.cos(self.ast_angle) * ast.THRUST * dt
+                self.ast_vy += math.sin(self.ast_angle) * ast.THRUST * dt
+            drag = math.exp(-ast.DRAG * dt)
+            self.ast_vx *= drag
+            self.ast_vy *= drag
+            speed = math.hypot(self.ast_vx, self.ast_vy)
+            limit = ast.MAX_SPEED * self.speed_scale_asteroid()
+            if speed > limit:
+                self.ast_vx *= limit / speed
+                self.ast_vy *= limit / speed
+            self.x = (self.x + self.ast_vx * dt) % BASE_WIDTH
+            self.y = (self.y + self.ast_vy * dt) % BASE_HEIGHT
         self.rect.center = (int(self.x), int(self.y))
         self.moving = bool(push)
         self.engine_time += dt
@@ -1097,7 +1104,8 @@ class Player:
         if not self.alive:
             return
         if self.guardian_burn is not None:
-            self.guardian_burn.draw(surface)
+            # (the SpaceWar level: the dust turns with the nose of the ship)
+            self.guardian_burn.draw(surface, (-math.degrees(self.ast_angle) - 90.0) if self.sw_physics else None)
             return
         if self.asteroid_mode:
             self._draw_asteroid(surface)

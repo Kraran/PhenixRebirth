@@ -237,7 +237,8 @@ def tick_boss_saucer(game):
 def begin_stage_clear(game):
     """Non-boss stage cleared: start the fly-up transition."""
     game._clear_enemy_fire()
-    if (getattr(game, "adventure", None) or {}).get("asteroids"):
+    adv = getattr(game, "adventure", None) or {}
+    if adv.get("asteroids") or adv.get("spacewar"):
         game._end_adventure(True)           # the Asteroids mission just ends: no flight up, no change of level
         return
     game._on_stage_cleared()
