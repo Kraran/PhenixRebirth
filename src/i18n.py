@@ -6641,13 +6641,13 @@ _GUARDIAN_TEXTS = {
     "story_m_spacewar_b": (
         "Remake du Spacewar de 1977 : Jupiter attire les vaisseaux, l'inertie est totale, l'écran se referme sur lui-même. 3 niveaux d'oiseaux, 1 vie. Sans gain ni perte.",
         "Remake of the 1977 Spacewar: Jupiter pulls the ships, inertia is total, the screen wraps around. 3 levels of birds, 1 life. No gain or loss."),
-    "story_spacewar_hud": ("NIVEAU {n}/{m}   OISEAUX {e}   TORPILLES {t}", "LEVEL {n}/{m}   BIRDS {e}   TORPEDOES {t}"),
+    "story_spacewar_hud": ("NIVEAU {n}/{m}   TORPILLES {t}", "LEVEL {n}/{m}   TORPEDOES {t}"),
     "story_spacewar_level": ("NIVEAU {n} / {m}", "LEVEL {n} / {m}"),
     "story_spacewar_next": ("NIVEAU TERMINÉ", "LEVEL CLEAR"),
     "story_spacewar_empty": ("PLUS DE TORPILLES", "OUT OF TORPEDOES"),
     "story_spacewar_hint": (
-        "Ouverture CBS : tourne perpendiculairement à Jupiter et pousse 2 à 3 secondes pour entrer en orbite, puis tire.",
-        "CBS opening: turn sideways to Jupiter and thrust for 2-3 seconds to enter orbit, then shoot."),
+        "Ouverture CBS : perpendiculaire à Jupiter, pousse 2 à 3 s pour entrer en orbite.",
+        "CBS opening: sideways to Jupiter, thrust 2-3 s to enter orbit."),
     "story_spacewar_clear": ("Les trois niveaux sont gagnés ! Vous pouvez recommencer à volonté.",
                              "All three levels won! Replay whenever you like."),
     "story_spacewar_retry": ("Partie terminée. Aucun progrès perdu : vous pouvez réessayer.",

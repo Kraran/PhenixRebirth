@@ -597,7 +597,7 @@ class Player:
         turn, push, fire = self._read_asteroid_input(input_mode, joystick)
         if self.sw_physics:
             import spacewar
-            if spacewar.fly(self, dt, turn, push):          # (the pull of the star, the inertia, no friction)
+            if spacewar.fly(self, dt, turn, push, 1.0, spacewar.PLAYER_THRUST, spacewar.PLAYER_RADIUS):          # (the pull of the star, the inertia, no friction)
                 self.sw_crash = True
         else:
             self.ast_angle = (self.ast_angle + turn * ast.TURN_SPEED * dt + math.pi) % (2 * math.pi) - math.pi
@@ -652,7 +652,11 @@ class Player:
             self.draw(canvas)
         finally:
             self.x, self.y, self.asteroid_mode = saved
-        img = pygame.transform.rotate(canvas, -math.degrees(self.ast_angle) - 90.0)
+        if self.sw_physics:
+            import spacewar                      # (SpaceWar: the ship is drawn at half its size)
+            img = pygame.transform.rotozoom(canvas, -math.degrees(self.ast_angle) - 90.0, spacewar.PLAYER_SCALE)
+        else:
+            img = pygame.transform.rotate(canvas, -math.degrees(self.ast_angle) - 90.0)
         w, h = img.get_size()
         xs, ys = [0], [0]
         if self.x > BASE_WIDTH - w / 2:
@@ -1105,7 +1109,8 @@ class Player:
             return
         if self.guardian_burn is not None:
             # (the SpaceWar level: the dust turns with the nose of the ship)
-            self.guardian_burn.draw(surface, (-math.degrees(self.ast_angle) - 90.0) if self.sw_physics else None)
+            self.guardian_burn.draw(surface, (-math.degrees(self.ast_angle) - 90.0) if self.sw_physics else None,
+                                    0.5 if self.sw_physics else 1.0)
             return
         if self.asteroid_mode:
             self._draw_asteroid(surface)

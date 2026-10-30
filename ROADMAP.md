@@ -101,6 +101,13 @@ Current release: **v1.5.0**
   delay, a few in the air at once); the test ends when the ship is destroyed, when the three levels are won, or when nobody has a torpedo
   left. The constants are tuned so that the "CBS opening" (nose at right angles to the star, thrust for 2 to 3 s) gives a stable orbit.
   Tests: `tests/test_spacewar.py`
+- SpaceWar, second round (Kraran's first tests): the ship starts farther from Jupiter (340 px), the player's ship is drawn and hit at
+  half its size (its dust too), the hit zone of the star is the disc that is drawn, torpedoes (the birds' too) are stopped by the
+  star, stronger thrusters for the player (75 against 58 for a bird, gravity raised to 1e7 so that the CBS opening of 2 to 3 s still
+  gives an orbit), the torpedoes of the player are drawn as torpedoes (metal body, nose in the colour of the hull, fins, flame), the
+  HUD no longer counts the birds, and a small asteroid of the Asteroids level crosses the screen now and then (comes in from
+  outside, pulled by the star, no wrap, destroys the ship and the birds, a torpedo breaks it; its path ends on the star less than
+  one time in three).
 
 ## Done in 1.5.0
 

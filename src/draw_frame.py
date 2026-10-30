@@ -178,7 +178,7 @@ def draw_hud(game):
     elif adv and adv.get("spacewar"):
         form = game.formation
         label = t("story_spacewar_hud").format(n=int(getattr(form, "level", 1)), m=len(spacewar.LEVELS),
-                                               e=form.remaining(), t=int(getattr(form, "player_torpedoes", 0)))
+                                               t=int(getattr(form, "player_torpedoes", 0)))
         text = tc.get(game.font, label, announce.INFO)
         game.game_surface.blit(text, (BASE_WIDTH - 16 - text.get_width(), 52))
     elif adv and adv.get("escort") and game.play_mode != "coop" and hasattr(game.formation, "cruise"):
