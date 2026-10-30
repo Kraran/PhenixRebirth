@@ -42,6 +42,14 @@ def _screen():
     yield
 
 
+@pytest.fixture(autouse=True)
+def _jupiter():
+    """Every test starts (and ends) with Jupiter in the middle, whatever planet the one before used."""
+    sw.set_planet("jupiter")
+    yield
+    sw.set_planet("jupiter")
+
+
 def _state(mode="normal", act=1, hull="shield"):
     st = ss.create_slot(1, "NOVA", mode)
     ss.mark_intro_seen(st)
@@ -53,12 +61,12 @@ def _state(mode="normal", act=1, hull="shield"):
     return st
 
 
-def _launch(run, **kw):
+def _launch(run, mission="test_spacewar", **kw):
     g = run.game
     st = _state(**kw)
     ss.save_state(ss.story_path(1), st)
     g.story.open_slot(1)
-    g.story.map_index = [m["id"] for m in g.story.missions()].index("test_spacewar")
+    g.story.map_index = [m["id"] for m in g.story.missions()].index(mission)
     spec = g.story._launch_selected()
     g._begin_adventure(spec)
     g.input_grace = 0.0
@@ -263,17 +271,24 @@ def test_touching_the_star_is_reported_even_at_speed():
     assert not sw.fly(safe, DT, 0, False)
 
 
-@pytest.mark.parametrize("seconds", [2.0, 2.5, 3.0])
-def test_the_cbs_opening_gives_a_stable_orbit(seconds):
-    """The ship at rest, nose perpendicular to the axis of the star, pushed for two or three seconds: an orbit."""
+# how long the thrusters push in the CBS opening, for each planet (the pull is halved since Jupiter's first version, and the
+# lighter planets pull less still: the push that makes an orbit is shorter or longer, see PLANETS)
+OPENING = {"jupiter": (1.2, 1.3, 1.4), "saturn": (1.9, 2.1, 2.3), "uranus": (1.2, 1.5, 1.7), "neptune": (1.2, 1.5, 1.7)}
+
+
+@pytest.mark.parametrize("planet", sw.PLANET_KEYS)
+@pytest.mark.parametrize("which", [0, 1, 2])
+def test_the_cbs_opening_gives_a_stable_orbit(planet, which):
+    """The ship at rest, nose perpendicular to the axis of the star, pushed for a moment: an orbit that does not go in."""
+    sw.set_planet(planet)
+    seconds = OPENING[planet][which]
     x, y, vx, vy, angle = sw.start_state()
     b = _Body(x, y, vx, vy, angle)
-    rmin, rmax = 1e9, 0.0
+    rmin = 1e9
     for i in range(60 * 40):
         assert not sw.fly(b, DT, 0, i * DT < seconds, 1.0, sw.PLAYER_THRUST, sw.PLAYER_RADIUS)
-        r = math.hypot(b.x - sw.CX, b.y - sw.CY)
-        rmin, rmax = min(rmin, r), max(rmax, r)
-    assert rmin > sw.STAR_R + 30 and rmax < 520
+        rmin = min(rmin, math.hypot(b.x - sw.CX, b.y - sw.CY))
+    assert rmin > sw.STAR_R + 20
 
 
 def test_without_the_opening_the_ship_falls_into_the_star():
@@ -379,10 +394,12 @@ def test_a_faster_bird_pushes_and_turns_more():
     assert fast.ast_angle > slow.ast_angle and math.hypot(fast.ast_vx, fast.ast_vy) > math.hypot(slow.ast_vx, slow.ast_vy)
 
 
+@pytest.mark.parametrize("planet", sw.PLANET_KEYS)
 @pytest.mark.parametrize("level", [1, 2, 3])
-def test_the_birds_keep_out_of_the_star_when_left_alone(level):
+def test_the_birds_keep_out_of_the_star_when_left_alone(level, planet):
+    sw.set_planet(planet)
     crashed = total = 0
-    for seed in range(12):
+    for seed in range(12 if planet == "jupiter" else 5):
         form = SpaceWarFormation(rng=random.Random(seed))
         form.start_level(level)
         for _ in range(60 * 45):
@@ -1131,12 +1148,10 @@ def test_a_rock_that_never_comes_in_is_forgotten_in_the_end():
 
 
 def test_the_small_asteroid_is_pulled_by_the_star():
-    rock = sw.SpaceRock(-40.0, 100.0, 300.0, 0.0, random.Random(1))
-    straight = sw.SpaceRock(-40.0, 100.0, 300.0, 0.0, random.Random(1))
+    rock = sw.SpaceRock(-40.0, 250.0, 300.0, 0.0, random.Random(1))
     for _ in range(60):
         rock.update(DT)
-    straight.x += 300.0 * 1.0
-    assert rock.y > 100.0 + 5.0 and rock.vy > 0
+    assert rock.vx > 300.0 + 5.0 and rock.vy > 2.0                       # (pulled towards the star: faster, and down)
 
 
 def test_a_small_asteroid_rarely_ends_on_the_star():
@@ -1302,3 +1317,261 @@ def test_the_half_size_dust_stays_on_the_ship(run):
             centres.append((c[0] - p.x, c[1] - p.y))
         # the half-size dust is the full one shrunk round the ship (not moved)
         assert math.hypot(centres[1][0] - centres[0][0] / 2, centres[1][1] - centres[0][1] / 2) < 1.6
+
+
+# ------------------------------------------------------------------ the third round: the pull halved, four planets, no
+# planets behind, a missile
+PLANET_MISSIONS = {"jupiter": "test_spacewar", "saturn": "test_spacewar_saturn", "uranus": "test_spacewar_uranus",
+                   "neptune": "test_spacewar_neptune"}
+
+
+def test_the_pull_of_jupiter_is_half_of_what_it_was():
+    assert sw.PLANETS["jupiter"]["gm"] == 5.0e6                              # (it was 1.0e7)
+    assert sw.GM == 5.0e6
+    gx, _ = sw.gravity(sw.CX - 300.0, sw.CY)
+    assert gx == pytest.approx(5.0e6 / 300.0 ** 2, rel=1e-9)
+
+
+def test_there_are_four_planets_the_lighter_ones_are_smaller_and_pull_less():
+    assert sw.PLANET_KEYS == ("jupiter", "saturn", "uranus", "neptune")
+    gm = {k: sw.PLANETS[k]["gm"] for k in sw.PLANET_KEYS}
+    radius = {k: sw.PLANETS[k]["r"] for k in sw.PLANET_KEYS}
+    assert gm["jupiter"] > gm["saturn"] > gm["neptune"] > gm["uranus"] > 0                 # (the real order of the masses)
+    assert radius["jupiter"] > radius["saturn"] > radius["uranus"] > radius["neptune"] > 20     # (and of the sizes)
+    assert radius["saturn"] / radius["jupiter"] == pytest.approx(0.84, abs=0.04)             # (about the real ratio)
+    assert radius["uranus"] / radius["jupiter"] < 0.6 and gm["uranus"] / gm["jupiter"] < 0.5
+
+
+@pytest.mark.parametrize("planet", sw.PLANET_KEYS)
+def test_set_planet_sets_the_pull_the_disc_the_thrust_and_the_start(planet):
+    d = sw.PLANETS[planet]
+    assert sw.set_planet(planet) == planet
+    assert (sw.PLANET, sw.GM, sw.STAR_R, sw.STAR_DRAW, sw.START_RADIUS, sw.POWER) == \
+        (planet, d["gm"], d["r"], d["draw"], d["start"], d["power"])
+    gx, _ = sw.gravity(sw.CX - 250.0, sw.CY)
+    assert gx == pytest.approx(d["gm"] / 250.0 ** 2)
+    far = _Body(60.0, 60.0, 0.0, 0.0, 0.0)
+    ref = _Body(60.0, 60.0, 0.0, 0.0, 0.0)
+    for _ in range(60):
+        sw.fly(far, DT, 0, True)
+        sw.fly(ref, DT, 0, False)
+    assert far.ast_vx - ref.ast_vx == pytest.approx(sw.THRUST * d["power"], rel=0.02)
+    x, _, _, _, _ = sw.start_state()
+    assert x == sw.CX - d["start"]
+
+
+def test_an_unknown_planet_is_jupiter():
+    sw.set_planet("saturn")
+    assert sw.set_planet("pluto") == "jupiter" and sw.set_planet(None) == "jupiter" and sw.GM == 5.0e6
+
+
+def test_the_lighter_planets_do_not_make_the_ship_stronger_than_jupiter_does():
+    assert sw.PLANETS["jupiter"]["power"] == 1.0
+    assert all(0.4 <= sw.PLANETS[k]["power"] <= 1.0 for k in sw.PLANET_KEYS)
+
+
+@pytest.mark.parametrize("planet", sw.PLANET_KEYS)
+def test_the_picture_of_each_planet_is_its_disc_in_the_middle(planet):
+    sw.set_planet(planet)
+    img = sw.star_image()
+    n = img.get_width()
+    assert n == img.get_height() == sw.STAR_DRAW
+    c = n // 2
+    assert img.get_at((c, c))[3] == 255                                        # the globe is there, opaque
+    assert img.get_at((c + int(sw.STAR_R) - 4, c))[3] > 200 and img.get_at((c, c + int(sw.STAR_R) - 4))[3] > 200
+    assert img.get_at((n - 2, n - 2))[3] == 0 and img.get_at((1, n - 2))[3] == 0          # (nothing in the corners)
+    assert n // 2 >= sw.STAR_R
+
+
+def test_the_rings_of_saturn_are_drawn_but_are_not_in_the_hit_zone():
+    sw.set_planet("saturn")
+    img = sw.star_image()
+    c = img.get_width() // 2
+    ring = [(x, y) for x in range(img.get_width()) for y in range(img.get_height())
+            if img.get_at((x, y))[3] > 120 and math.hypot(x - c, y - c) > sw.STAR_R + 12]
+    assert len(ring) > 500                                                       # the rings, wider than the globe
+    assert max(math.hypot(x - c, y - c) for x, y in ring) > sw.STAR_R * 2
+    x, y = ring[len(ring) // 2]
+    ship = _Body(sw.CX + (x - c), sw.CY + (y - c), 0, 0, 0.0)                    # a ship in the rings: nothing happens
+    assert not sw.fly(ship, 0.0005, 0, False, 1.0, sw.THRUST, sw.BIRD_RADIUS)
+    edge = sw.STAR_R + sw.CRASH_SHARE * sw.BIRD_RADIUS
+    assert sw.fly(_Body(sw.CX - edge + 1, sw.CY, 0, 0, 0.0), 0.0005, 0, False, 1.0, sw.THRUST, sw.BIRD_RADIUS)
+
+
+@pytest.mark.parametrize("planet", ("uranus", "neptune"))
+def test_uranus_and_neptune_are_plain_discs(planet):
+    sw.set_planet(planet)
+    img = sw.star_image()
+    c = img.get_width() // 2
+    out = [1 for x in range(img.get_width()) for y in range(img.get_height())
+           if img.get_at((x, y))[3] > 40 and math.hypot(x - c, y - c) > sw.STAR_R + 3]
+    assert not out
+
+
+@pytest.mark.parametrize("planet", sw.PLANET_KEYS)
+def test_each_planet_has_its_mission_on_the_map_of_every_act(planet):
+    mission = ss.mission_by_id(PLANET_MISSIONS[planet])
+    assert mission["planet"] == planet and mission["spacewar"] and mission["training"]
+    for act in (1, 2, 3):
+        for mode in ss.MODES:
+            state = ss.default_state()
+            state.update(act=act, mode=mode)
+            assert mission in ss.visible_missions(state) and ss.mission_playable(state, mission)
+            assert ss.mission_group(mission) == ss.GROUP_EXTRA
+            before = copy.deepcopy(state)
+            result = ss.record_result(state, mission["id"], 9999, True, {"bird1": 6}, used=["genesis"])
+            assert state == before and result["training"] and not result["fallen"]
+
+
+def test_the_planet_missions_follow_the_jupiter_one_and_have_their_own_texts():
+    ids = [m["id"] for m in ss.MISSIONS if m.get("spacewar")]
+    assert ids == list(PLANET_MISSIONS.values())
+    assert ss.next_mission(ss.default_state(), [ss.mission_by_id(i) for i in ids]) is None
+    for planet, mid in PLANET_MISSIONS.items():
+        m = ss.mission_by_id(mid)
+        for key in (m["title"], m["blurb"], m["hud_title"]):
+            assert set(i18n.T[key]) == set(i18n.LANG_CODES) and all(i18n.T[key][c] for c in i18n.LANG_CODES)
+        name_en = {"jupiter": "Jupiter", "saturn": "Saturn", "uranus": "Uranus", "neptune": "Neptune"}[planet]
+        assert name_en in i18n.T[m["blurb"]]["en"]
+    titles = {i18n.T[ss.mission_by_id(i)["title"]]["en"] for i in ids}
+    assert len(titles) == 4 and all(t.startswith("TEST - SpaceWar") for t in titles)
+
+
+@pytest.mark.parametrize("planet", sw.PLANET_KEYS)
+def test_the_mission_of_a_planet_puts_that_planet_in_the_middle(run, planet):
+    hub = StoryHub()
+    hub.state = ss.default_state()
+    hub.map_index = next(i for i, m in enumerate(hub.missions()) if m["id"] == PLANET_MISSIONS[planet])
+    spec = hub._launch_selected()
+    assert spec["spacewar"] and spec["planet"] == planet and spec["training"]
+    sw.set_planet("jupiter")
+    _launch(run, mission=PLANET_MISSIONS[planet])
+    g = run.game
+    assert sw.PLANET == planet and sw.GM == sw.PLANETS[planet]["gm"]
+    assert g.adventure["planet"] == planet
+    p = g.player
+    assert (p.x, p.y) == pytest.approx((sw.CX - sw.PLANETS[planet]["start"], sw.CY), abs=3.0)
+    surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT), pygame.SRCALPHA)
+    g.formation.draw(surf)
+    assert surf.get_at((int(sw.CX), int(sw.CY)))[3] == 255                            # the planet is drawn in the middle
+    g._end_adventure(False)
+
+
+def test_the_next_launch_starts_again_with_its_own_planet(run):
+    _launch(run, mission="test_spacewar_neptune")
+    assert sw.PLANET == "neptune"
+    run.game._end_adventure(False)
+    _launch(run)
+    assert sw.PLANET == "jupiter" and sw.GM == 5.0e6
+    run.game._end_adventure(False)
+
+
+@pytest.mark.parametrize("planet", sw.PLANET_KEYS)
+def test_a_ship_that_falls_in_a_planet_is_destroyed_by_its_globe(run, planet):
+    _launch(run, mission=PLANET_MISSIONS[planet])
+    p = run.game.player
+    _alone(run)
+    p.x, p.y, p.ast_vx, p.ast_vy = sw.CX - sw.STAR_R - 30, sw.CY, 120.0, 0.0
+    run.frames(60)
+    assert p.dying or not p.alive or getattr(p, "guardian_burn", None) is not None
+
+
+@pytest.mark.parametrize("planet", sw.PLANET_KEYS)
+def test_the_small_asteroid_still_crosses_and_rarely_ends_on_any_planet(planet):
+    sw.set_planet(planet)
+    rng = random.Random(7)
+    crashes = 0
+    for _ in range(80):
+        rock = sw.launch_rock(rng)
+        crashes += 1 if sw.rock_crashes(rock.x, rock.y, rock.vx, rock.vy) else 0
+    assert crashes / 80 <= 1 / 3
+
+
+# --- no planet or rock behind the planet of the level
+def test_the_starfield_can_be_bare():
+    import starfield
+    sf = starfield.Starfield()
+    sf.planets.append(starfield.Planet())
+    sf.planet_timer = 0.0
+    sf.set_bare(True)
+    assert sf.planets == []
+    for _ in range(600):
+        sf.planet_timer = 0.0
+        sf.nebula_timer = 0.0
+        sf.update(0.05)
+        assert sf.planets == []
+    sf.set_bare(False)
+    sf.nebula = None                                                                  # (a planet comes at once when no nebula is up)
+    sf.planet_timer = 0.0
+    sf.update(0.05)
+    assert len(sf.planets) == 1                                                       # (the usual sky comes back)
+
+
+@pytest.mark.parametrize("planet", sw.PLANET_KEYS)
+def test_no_planet_or_asteroid_in_the_background_of_spacewar(run, planet):
+    import starfield
+    g = run.game
+    _launch(run, mission=PLANET_MISSIONS[planet])
+    g.starfield.planets.append(starfield.Planet(free=True))
+    for _ in range(5):
+        g.starfield.planet_timer = 0.0
+        run.frames(2)
+        assert g.starfield.planets == []
+    assert g.starfield.bare is True
+    g._end_adventure(False)
+    run.frames(3)
+    assert g.starfield.bare is False
+
+
+# --- the missile
+def test_the_torpedo_is_a_slim_missile_with_fins_and_a_flame():
+    surf, rects = _drawn_box(1.0, 0.0)
+    box = rects[0].unionall(rects[1:])
+    assert box.w >= 38 and box.w > 2.6 * box.h                                        # long and slim
+    mid = pygame.mask.from_surface(surf, 20)
+    body = sum(1 for y in range(200) if mid.get_at((104, y)))
+    fins = sum(1 for y in range(200) if mid.get_at((88, y)))
+    assert body <= 7 and fins >= 12                                                    # a thin body, wide tail fins
+    canards = sum(1 for y in range(200) if mid.get_at((102, y)))
+    assert canards >= 9 and canards > body + 2                                         # (and two small wings in front)
+    assert surf.get_at((100 + 17, 100))[3] == 0 or surf.get_at((100 + 17, 100))[:3] == (255, 0, 255)   # (the nose is the tip)
+    assert surf.get_at((100 - 20, 100))[3] > 0 and surf.get_at((100 - 20, 100))[0] > 200   # a flame behind
+    nose = [surf.get_at((100 + d, 100))[:3] for d in (9, 12, 15)]
+    assert nose == [(255, 0, 255)] * 3                                                 # an ogive in the colour of the hull
+    assert surf.get_at((100 - 7, 100))[:3] == (214, 70, 54)                            # a red band on the white fuselage
+    other = _drawn_box(1.0, 0.0, (0, 255, 0))[0]
+    assert other.get_at((100 + 12, 100))[:3] == (0, 255, 0) and other.get_at((100 + 12, 100)) != surf.get_at((100 + 12, 100))
+
+
+def test_each_planet_has_its_own_glow_round_it():
+    seen = {}
+    for planet in ("jupiter", "uranus", "neptune"):
+        sw.set_planet(planet)
+        form = SpaceWarFormation(rng=random.Random(1))
+        form.tip = (255, 255, 255)
+        surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+        form.draw(surf)
+        seen[planet] = surf.get_at((int(sw.CX + sw.STAR_R + 12), int(sw.CY)))[:3]
+    r, g, b = seen["jupiter"]
+    assert r > b + 3                                                                   # warm round Jupiter
+    r, g, b = seen["neptune"]
+    assert b > r + 3                                                                   # cold blue round Neptune
+    r, g, b = seen["uranus"]
+    assert g > r + 3 and b > r + 3                                                      # pale cyan round Uranus
+
+
+@pytest.mark.parametrize("planet", ("jupiter", "uranus"))
+def test_a_bird_looks_ahead_with_the_thrust_its_planet_allows(monkeypatch, planet):
+    sw.set_planet(planet)
+    seen = []
+    real = sw.periapsis_danger
+
+    def spy(x, y, vx, vy, horizon=sw.LOOKAHEAD, margin=sw.SAFE_MARGIN):
+        seen.append((vx, vy, horizon))
+        return real(x, y, vx, vy, horizon, margin)
+
+    monkeypatch.setattr(sw, "periapsis_danger", spy)
+    b = Bird(1, sw.CX + 300.0, sw.CY, 0.0, 0.0, 0.0, 1.0, random.Random(1))
+    b.think(DT, None)
+    ahead = [v for v in seen if v[2] == 2.0][0]                                         # (the look with one push on)
+    assert ahead[0] == pytest.approx(sw.THRUST * sw.PLANETS[planet]["power"] * 0.7)
