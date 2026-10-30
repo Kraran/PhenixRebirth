@@ -1724,3 +1724,42 @@ def test_the_birds_collide_much_less():
                             hits += 1
             runs += 1
     assert hits <= 2 and runs == 20                                     # (it was more than one a run at level 3)
+
+
+def test_a_bird_holds_its_heading_while_it_pushes_so_the_push_is_the_one_that_was_checked():
+    form = SpaceWarFormation(rng=random.Random(1))
+    form.birds = []
+    b = _lined(form, r=190.0, angle=0.0)
+    b.ast_angle = math.atan2(b.ast_vy, b.ast_vx)
+    me = _Body(b.x + 40.0, b.y + 250.0, 0.0, 0.0)
+    b.coast, b.coast_in, b.think_in = 0.3, 10 ** 6, 10 ** 6            # (it is pushing now; the target is a little off its nose)
+    b.clear_ahead = True
+    turn, push, fire = b.think(DT, me)
+    assert turn == 0.0 and push is True and fire is False
+    b.coast = 0.0
+    turn, push, _ = b.think(DT, me)
+    assert turn != 0.0 and push is False                              # (not pushing: it turns to the target as always)
+
+
+def test_a_bird_keeps_a_gap_between_its_new_orbit_and_the_orbit_of_another():
+    form = SpaceWarFormation(rng=random.Random(1))
+    form.birds = []
+    a = _lined(form, r=190.0, angle=0.0)
+    a.ast_angle = math.atan2(a.ast_vy, a.ast_vx)
+    kick = sw.THRUST * sw.POWER * a.scale * sw.COAST_MAX
+    lo, hi = sw.orbit_band(a.x, a.y, a.ast_vx + math.cos(a.ast_angle) * kick, a.ast_vy + math.sin(a.ast_angle) * kick)
+    mate = _lined(form, r=hi + sw.COAST_GAP * 0.5, angle=math.pi)             # clear of the orbit, but not by the gap
+    assert a._coast_is_safe() is False
+    form.birds.remove(mate)
+    mate = _lined(form, r=hi + sw.COAST_GAP * 1.5, angle=math.pi)             # clear by more than the gap
+    assert a._coast_is_safe() is True
+
+
+def test_the_birds_of_a_level_may_go_round_either_way():
+    senses = set()
+    for seed in range(20):
+        form = SpaceWarFormation(rng=random.Random(seed))
+        form.start_level(2)
+        b = form.birds[0]
+        senses.add(math.copysign(1, (b.x - sw.CX) * b.ast_vy - (b.y - sw.CY) * b.ast_vx))
+    assert senses == {1.0, -1.0}
