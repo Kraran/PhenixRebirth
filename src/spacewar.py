@@ -54,7 +54,7 @@ CRASH_SHARE = 0.5                                       # (the centre of a ship 
 PLAYER_RADIUS = 9.0                                     # the ship of the player is drawn at half its size
 BIRD_RADIUS = 17.0
 THRUST = 58.0                                           # px/s^2: the thrusters of a bird (before its level's scale)
-PLAYER_THRUST = 75.0                                    # ... and those of the player: stronger
+PLAYER_THRUST = 110.0                                   # ... and those of the player: stronger
 TURN_SPEED = 3.0                                        # rad/s, constant
 MAX_SPEED = 900.0                                       # (only so that nothing can jump over the star in one step)
 SUBSTEP = 1.0 / 120.0
@@ -86,6 +86,10 @@ ANNOUNCE = 2.0
 HINT_SECONDS = 9.0
 AIM_TOLERANCE = 0.10                                    # rad
 BIRD_RANGE = 650.0
+LANES = (192.0, 244.0, 296.0, 340.0)                    # the circular orbits the birds start on (one each: no two of them meet)
+COAST_MAX = 0.35                                        # seconds the longest push along the nose lasts
+COAST_GAP = 40.0                                        # ... and the orbit it makes must keep this far (in distance from the star) from theirs
+COAST_FAR = 345.0                                       # ... and stay inside the screen
 LOOKAHEAD = 4.0                                         # seconds the bird looks ahead for the star
 LOOK_STEP = 0.2
 LOOK_SUBSTEP = 1.0 / 60.0
@@ -115,6 +119,20 @@ def gravity(x, y):
     r = max(MIN_R, math.hypot(dx, dy))
     g = GM / (r * r)
     return g * dx / r, g * dy / r
+
+
+def orbit_band(x, y, vx, vy):
+    """The nearest and the farthest distance from the star of the orbit a ship follows from here with this speed and no
+    thrust (the Kepler ellipse), or None when it is not a closed orbit."""
+    dx, dy = x - CX, y - CY
+    r = math.hypot(dx, dy)
+    energy = 0.5 * (vx * vx + vy * vy) - GM / max(MIN_R, r)
+    if energy >= 0:
+        return None
+    ang = dx * vy - dy * vx
+    a = -GM / (2.0 * energy)
+    e = math.sqrt(max(0.0, 1.0 + 2.0 * energy * ang * ang / (GM * GM)))
+    return a * (1.0 - e), a * (1.0 + e)
 
 
 def circular_speed(r):
@@ -148,14 +166,21 @@ def fly(obj, dt, turn, push, scale=1.0, thrust=THRUST, radius=BIRD_RADIUS):
     return crashed
 
 
-def periapsis_danger(x, y, vx, vy, horizon=LOOKAHEAD, margin=SAFE_MARGIN):
-    """Does the free fall of a ship (no thrust) go inside the safety ring of the star within `horizon` seconds?"""
+def periapsis_danger(x, y, vx, vy, horizon=LOOKAHEAD, margin=SAFE_MARGIN, push=None):
+    """Does the free fall of a ship (no thrust) go inside the safety ring of the star within `horizon` seconds? `push` =
+    (ax, ay, seconds): the ship first pushes with that acceleration for that long, then falls free."""
     t = 0.0
+    ax = ay = 0.0
+    push_t = 0.0
+    if push is not None:
+        ax, ay, push_t = push
+    steps = int(round(LOOK_STEP / LOOK_SUBSTEP))
     while t < horizon:
-        for _ in range(int(round(LOOK_STEP / LOOK_SUBSTEP))):
+        for n in range(steps):
             gx, gy = gravity(x, y)
-            vx += gx * LOOK_SUBSTEP
-            vy += gy * LOOK_SUBSTEP
+            on = t + n * LOOK_SUBSTEP < push_t
+            vx += (gx + (ax if on else 0.0)) * LOOK_SUBSTEP
+            vy += (gy + (ay if on else 0.0)) * LOOK_SUBSTEP
             x += vx * LOOK_SUBSTEP
             y += vy * LOOK_SUBSTEP
         if math.hypot(x - CX, y - CY) < STAR_R + margin:
@@ -220,11 +245,18 @@ class Torpedo:
         self.owner = owner                  # "player" or the Bird that fired it
         self.life = TORPEDO_LIFE
         self.age = 0.0
+        self.wrap = owner == "player"       # the torpedoes of the birds do NOT come round the screen: they end at the edge
 
     def update(self, dt):
-        # (not pulled by the star: a straight line, round the joined screen)
-        self.x = (self.x + self.vx * dt) % BASE_WIDTH
-        self.y = (self.y + self.vy * dt) % BASE_HEIGHT
+        # (not pulled by the star: a straight line; the player's go round the joined screen)
+        if self.wrap:
+            self.x = (self.x + self.vx * dt) % BASE_WIDTH
+            self.y = (self.y + self.vy * dt) % BASE_HEIGHT
+        else:
+            self.x += self.vx * dt
+            self.y += self.vy * dt
+            if not (0.0 <= self.x < BASE_WIDTH and 0.0 <= self.y < BASE_HEIGHT):
+                self.life = 0.0
         self.life -= dt
         self.age += dt
 
@@ -325,6 +357,7 @@ class Bird:
         self.think_in = 0.0
         self.danger = False
         self.sense = 1.0 if rng.random() < 0.5 else -1.0      # which way it goes round when it has no side speed
+        self.mates = []                                       # the other birds of the level (it keeps away from them)
         self.clear_ahead = True
         self.coast_in = rng.uniform(1.5, 3.5)
         self.coast = 0.0
@@ -361,9 +394,31 @@ class Bird:
             self.coast = max(0.0, self.coast - dt)
         elif self.coast_in <= 0:
             self.coast_in = self.rng.uniform(3.0, 6.0)
-            self.coast = self.rng.uniform(0.3, 0.7)
+            if self._coast_is_safe():
+                self.coast = self.rng.uniform(0.15, COAST_MAX)
+            else:
+                self.coast_in = self.rng.uniform(0.5, 1.2)               # (not now: it tries again soon)
         self.push = self.coast > 0 and abs(diff) < 1.2 and self.clear_ahead
+        if self.coast > 0:                           # (it holds its heading while it pushes: that is the push that was checked)
+            self.turn, fire = 0.0, False
         return self.turn, self.push, fire
+
+    def _coast_is_safe(self):
+        """May the bird push along its nose for a moment now? Only if its orbit after the push (the longest one) stays out of
+        the star, inside the screen, and does not share any distance from the star with the orbit of another bird (plus a
+        gap): the pushes change the orbit, and orbits that crossed were the cause of the collisions between birds."""
+        kick = THRUST * POWER * self.scale * COAST_MAX
+        band = orbit_band(self.x, self.y, self.ast_vx + math.cos(self.ast_angle) * kick,
+                          self.ast_vy + math.sin(self.ast_angle) * kick)
+        if band is None or band[0] < STAR_R + SAFE_MARGIN + 40 or band[1] > COAST_FAR:
+            return False
+        for o in self.mates:
+            if o is self or not o.alive:
+                continue
+            other = orbit_band(o.x, o.y, o.ast_vx, o.ast_vy)
+            if other is None or (band[0] - COAST_GAP < other[1] and other[0] - COAST_GAP < band[1]):
+                return False
+        return True
 
     def _escape_angle(self):
         """The way to push to keep out of the star: sideways (the pull is too strong to push straight against it, so the
@@ -447,15 +502,18 @@ class SpaceWarFormation:
         kinds = [1] * blue + [2] * green
         self.rng.shuffle(kinds)
         angles = [0.0, math.pi / 2, -math.pi / 2, math.pi / 4][:len(kinds)]
+        sense = 1.0 if self.rng.random() < 0.5 else -1.0          # all the birds go round the same way (none meets another head on)
+        lanes = list(LANES)
+        self.rng.shuffle(lanes)
         self.birds = []
-        for kind, a in zip(kinds, angles):
-            r = self.rng.uniform(235.0, 300.0) if abs(math.sin(a)) < 0.5 else self.rng.uniform(215.0, 255.0)
+        for kind, a, r in zip(kinds, angles, lanes):
             x, y = CX + math.cos(a) * r, CY + math.sin(a) * r
-            sense = 1.0 if self.rng.random() < 0.5 else -1.0
-            v = circular_speed(r) * self.rng.uniform(0.95, 1.05)
+            v = circular_speed(r) * self.rng.uniform(0.99, 1.01)
             vx, vy = -math.sin(a) * v * sense, math.cos(a) * v * sense
             heading = math.atan2(vy, vx)
             self.birds.append(Bird(kind, x, y, vx, vy, heading, scale, self.rng))
+        for b in self.birds:
+            b.mates = self.birds
         self.torpedoes = []
         self.rock = None
         self.rock_in = self.rng.uniform(*ROCK_FIRST)
