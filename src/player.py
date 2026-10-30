@@ -932,13 +932,18 @@ class Player:
         if before < 10.0 and self.phenix_gauge >= 10.0 and not self.uses_shield:
             self.flag_gauge_max = True
 
-    def burn_by_guardian(self):
+    def burn_by_guardian(self, blast=False):
         """Destroy one life regardless of Shield, Phenix, blink or infinite-life cheats."""
         if not self.alive or self.dying or self.guardian_burn is not None:
             return False
         from ship_burn import ShipBurn
         # Capture the visible hull/form before cancelling every defensive state.
-        self.guardian_burn = ShipBurn(self)
+        if blast:                      # (the SpaceWar level: a big explosion, the hull in pieces)
+            from ship_blast import ShipBlast
+            self.guardian_burn = ShipBlast(self, (-math.degrees(self.ast_angle) - 90.0) if self.sw_physics else None,
+                                           0.5 if self.sw_physics else 1.0)
+        else:
+            self.guardian_burn = ShipBurn(self)
         self.lives = max(0, self.lives - 1)
         self.just_lost_life = True
         self.dying = True

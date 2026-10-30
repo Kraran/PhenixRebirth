@@ -59,12 +59,21 @@ TURN_SPEED = 3.0                                        # rad/s, constant
 MAX_SPEED = 900.0                                       # (only so that nothing can jump over the star in one step)
 SUBSTEP = 1.0 / 120.0
 START_RADIUS = PLANETS["jupiter"]["start"]              # where the player starts: left of the star, at rest, nose up
-LEVELS = [(1, 0), (1, 1), (2, 2)]                       # (blue birds, green birds) of the three levels
+LEVELS = [(1, 0, 0), (1, 1, 0), (2, 1, 1)]               # (blue birds, green birds, boss saucers) of the three levels; the last
+                                                        # level is won when its saucer is destroyed
 LEVEL_SCALE = [1.0, 1.15, 1.3]                          # the birds' thrust, turn and rate of fire, per level
 PLAYER_TORPEDOES = 20                                   # the stock of the player, filled again at each level
 BIRD_TORPEDOES = 8                                      # the stock of each bird
 TORPEDO_SPEED = 430.0                                   # px/s, on top of the speed of the ship that fires it
 TORPEDO_LIFE = 1.9                                      # seconds
+BIRD_TORPEDO_SPEED = 230.0                              # the torpedoes of the enemies are slow: they can be dodged
+BIRD_TORPEDO_LIFE = 3.4                                 # (so they last longer: about the same reach)
+SAUCER = 3                                              # the kind of the boss saucer
+SAUCER_RADIUS = 27.0
+SAUCER_HP = 3                                           # torpedoes that destroy it
+SAUCER_TORPEDOES = 14
+SAUCER_IN_AIR = 3
+HIT_FLASH = 0.25                                        # seconds a hit saucer stays lit
 TORPEDO_RADIUS = 5.0
 PLAYER_GAP = 0.4                                        # seconds between two torpedoes of the player (the reload)
 PLAYER_IN_AIR = 4                                       # his torpedoes in the air at once
@@ -243,7 +252,7 @@ class Torpedo:
     def __init__(self, x, y, vx, vy, owner):
         self.x, self.y, self.vx, self.vy = float(x), float(y), float(vx), float(vy)
         self.owner = owner                  # "player" or the Bird that fired it
-        self.life = TORPEDO_LIFE
+        self.life = TORPEDO_LIFE if owner == "player" else BIRD_TORPEDO_LIFE
         self.age = 0.0
         self.wrap = owner == "player"       # the torpedoes of the birds do NOT come round the screen: they end at the edge
 
@@ -349,7 +358,10 @@ class Bird:
         self.scale = float(scale)
         self.rng = rng
         self.alive = True
-        self.torpedoes = BIRD_TORPEDOES
+        self.radius = SAUCER_RADIUS if kind == SAUCER else BIRD_RADIUS
+        self.hp = SAUCER_HP if kind == SAUCER else 1
+        self.hit = 0.0                                        # seconds left of the flash of a hit
+        self.torpedoes = SAUCER_TORPEDOES if kind == SAUCER else BIRD_TORPEDOES
         self.fire_cd = rng.uniform(*FIRST_FIRE) / self.scale
         self.phase = rng.uniform(0, 4)
         self.push = False
@@ -382,7 +394,7 @@ class Bird:
             return self.turn, self.push, False
         dx, dy = asteroids.wrapped_delta(self.x, self.y, target.x, target.y)
         dist = math.hypot(dx, dy) or 1.0
-        t = dist / TORPEDO_SPEED
+        t = dist / BIRD_TORPEDO_SPEED
         goal = math.atan2(dy + (target.ast_vy - self.ast_vy) * t, dx + (target.ast_vx - self.ast_vx) * t)
         diff = angle_diff(self.ast_angle, goal)
         self.turn = max(-1.0, min(1.0, diff * 5.0))
@@ -436,6 +448,13 @@ class Bird:
         return math.atan2(gy * (1.0 - w) + uy * w, gx * (1.0 - w) + ux * w)
 
     def image(self):
+        if self.kind == SAUCER:                      # (the saucer does not turn: it only shows a red flash when it is hit)
+            img = asteroids.saucer_frame(self.phase)
+            if self.hit > 0:
+                img = img.copy()
+                k = int(150 * min(1.0, self.hit / HIT_FLASH))
+                img.fill((k, k, k, 0), special_flags=pygame.BLEND_RGB_ADD)
+            return img
         imgs = bird_images(self.kind)
         img = imgs[int(self.phase * 6) % len(imgs)]
         return pygame.transform.rotate(img, -math.degrees(self.ast_angle) - 90.0)
@@ -486,6 +505,14 @@ class SpaceWarFormation:
     def remaining(self):
         return sum(1 for b in self.birds if b.alive)
 
+    def level_done(self):
+        """Is the level won? The last one when its saucer is destroyed (the birds that are left do not matter), the others
+        when no bird is left."""
+        bosses = [b for b in self.birds if b.kind == SAUCER]
+        if bosses:
+            return not any(b.alive for b in bosses)
+        return self.remaining() == 0
+
     def swarm_remaining(self):
         return self.remaining()
 
@@ -497,9 +524,9 @@ class SpaceWarFormation:
     def start_level(self, number, player=None):
         """Put the birds of level `number` (1..3) in orbit and the player back at the start, with a full stock."""
         self.level = max(1, min(len(LEVELS), int(number)))
-        blue, green = LEVELS[self.level - 1]
+        blue, green, boss = LEVELS[self.level - 1]
         scale = LEVEL_SCALE[self.level - 1] * max(0.5, self.speed_mult)
-        kinds = [1] * blue + [2] * green
+        kinds = [1] * blue + [2] * green + [SAUCER] * boss
         self.rng.shuffle(kinds)
         angles = [0.0, math.pi / 2, -math.pi / 2, math.pi / 4][:len(kinds)]
         sense = 1.0 if self.rng.random() < 0.5 else -1.0          # all the birds go round the same way (none meets another head on)
@@ -547,6 +574,12 @@ class SpaceWarFormation:
             return
         surface.blit(img, (BASE_WIDTH // 2 - img.get_width() // 2, int(cy - img.get_height() / 2)))
 
+    def _life_bar(self, surface, b):
+        w = 56
+        x, y = int(b.x - w / 2), int(b.y - b.radius - 22)
+        pygame.draw.rect(surface, (30, 12, 12), (x - 1, y - 1, w + 2, 7))
+        pygame.draw.rect(surface, (230, 70, 50), (x, y, int(w * b.hp / SAUCER_HP), 5))
+
     def draw(self, surface):
         img = star_image()
         asteroids._add_glow(surface, PLANETS[PLANET]["glow"], (CX, CY), int(STAR_R * 2) + 70)
@@ -554,6 +587,8 @@ class SpaceWarFormation:
         for b in self.birds:
             if b.alive:
                 asteroids._blit_wrapped(surface, b.image(), b.x, b.y)
+                if b.kind == SAUCER:
+                    self._life_bar(surface, b)
         if self.rock is not None:
             img = self.rock.image()
             surface.blit(img, (int(self.rock.x - img.get_width() / 2), int(self.rock.y - img.get_height() / 2)))
@@ -579,6 +614,8 @@ class SpaceWarFormation:
                 pygame.draw.circle(surface, (255, 200, 180), (int(tp.x), int(tp.y)), 3)
         if self.level_time < ANNOUNCE and self.started:
             self._say(surface, _label("story_spacewar_level").format(n=self.level, m=len(LEVELS)), (255, 215, 120), 150)
+        if self.level_time < ANNOUNCE and self.started and any(b.kind == SAUCER for b in self.birds):
+            self._say(surface, _label("story_spacewar_boss"), (255, 120, 100), 182)
         if self.pause > 0 and self.level < len(LEVELS):
             self._say(surface, _label("story_spacewar_next"), (140, 255, 170), 200)
         if self.exhausted:
@@ -641,8 +678,8 @@ def _kill_player(game, form):
     p = game.player
     if not p.alive or p.dying:
         return
-    if p.burn_by_guardian():            # the pixel dust (ship_burn): one life, no dome, no Phenix form that saves
-        game.shake_amount = max(game.shake_amount, 22.0)
+    if p.burn_by_guardian(blast=True):  # the big blast (ship_blast): one life, no dome, no Phenix form that saves
+        game.shake_amount = max(game.shake_amount, 30.0)
         try:
             game.sounds.play("explosion_big", x=p.x)
         except Exception:
@@ -658,10 +695,26 @@ def _kill_bird(game, form, bird):
     _boom(game, form, bird.x, bird.y)
 
 
+def _hurt_bird(game, form, bird):
+    """A torpedo (or the rock) hits a bird: it is destroyed, or, for the boss saucer, it loses one of its hit points."""
+    bird.hp -= 1
+    if bird.hp > 0:
+        bird.hit = HIT_FLASH
+        form.debris(bird.x, bird.y, "spark", 10, 260, life=(0.2, 0.6), size=(2.0, 3.0))
+        try:
+            game.sounds.play("explosion", volume=0.6, x=bird.x)
+        except Exception:
+            log_exc("spacewar._hurt_bird")
+        return
+    _kill_bird(game, form, bird)
+
+
 def _fire(form, owner, ship, mult=1.0, error=0.0):
     ca, sa = math.cos(ship.ast_angle + error), math.sin(ship.ast_angle + error)
-    form.torpedoes.append(Torpedo(ship.x + ca * 26, ship.y + sa * 26, ship.ast_vx + ca * TORPEDO_SPEED * mult,
-                                  ship.ast_vy + sa * TORPEDO_SPEED * mult, owner))
+    speed = TORPEDO_SPEED * mult if owner == "player" else BIRD_TORPEDO_SPEED
+    reach = 26 if owner == "player" else ship.radius + 9
+    form.torpedoes.append(Torpedo(ship.x + ca * reach, ship.y + sa * reach, ship.ast_vx + ca * speed,
+                                  ship.ast_vy + sa * speed, owner))
 
 
 def tick(game):
@@ -700,8 +753,9 @@ def tick(game):
         if not b.alive:
             continue
         b.phase += dt
+        b.hit = max(0.0, b.hit - dt)
         turn, push, fire = b.think(dt, p if player_up else None)
-        if fire and sum(1 for tp in form.torpedoes if tp.owner is b) < BIRD_IN_AIR:
+        if fire and sum(1 for tp in form.torpedoes if tp.owner is b) < (SAUCER_IN_AIR if b.kind == SAUCER else BIRD_IN_AIR):
             b.fire_cd = BIRD_GAP / b.scale
             b.torpedoes -= 1
             _fire(form, b, b, 1.0, form.rng.uniform(-AIM_ERROR, AIM_ERROR))
@@ -709,7 +763,7 @@ def tick(game):
                 game.sounds.play("enemy_shoot", x=b.x)
             except Exception:
                 log_exc("spacewar.tick")
-        if fly(b, dt, turn, push, b.scale, THRUST, BIRD_RADIUS):
+        if fly(b, dt, turn, push, b.scale, THRUST, b.radius):
             _kill_bird(game, form, b)
     # --- torpedoes and dust
     for tp in form.torpedoes:
@@ -736,9 +790,9 @@ def tick(game):
             if not b.alive or (tp.owner is b and tp.age < SELF_SAFE):
                 continue
             dx, dy = asteroids.wrapped_delta(tp.x, tp.y, b.x, b.y)
-            if dx * dx + dy * dy < (BIRD_RADIUS + TORPEDO_RADIUS) ** 2:
+            if dx * dx + dy * dy < (b.radius + TORPEDO_RADIUS) ** 2:
                 form.torpedoes.remove(tp)
-                _kill_bird(game, form, b)
+                _hurt_bird(game, form, b)
                 break
         else:
             if player_up and not (tp.owner == "player" and tp.age < SELF_SAFE):
@@ -752,8 +806,9 @@ def tick(game):
     if player_up:
         for b in crew:
             dx, dy = asteroids.wrapped_delta(p.x, p.y, b.x, b.y)
-            if dx * dx + dy * dy < (PLAYER_RADIUS + BIRD_RADIUS) ** 2:
-                _kill_bird(game, form, b)
+            if dx * dx + dy * dy < (PLAYER_RADIUS + b.radius) ** 2:
+                if b.kind != SAUCER:                 # (the boss saucer is not hurt by the wreck of the ship)
+                    _kill_bird(game, form, b)
                 _kill_player(game, form)
                 player_up = False
                 break
@@ -761,9 +816,10 @@ def tick(game):
     for i, a in enumerate(crew):
         for c in crew[i + 1:]:
             dx, dy = asteroids.wrapped_delta(a.x, a.y, c.x, c.y)
-            if a.alive and c.alive and dx * dx + dy * dy < (2 * BIRD_RADIUS) ** 2:
-                _kill_bird(game, form, a)
-                _kill_bird(game, form, c)
+            if a.alive and c.alive and dx * dx + dy * dy < (a.radius + c.radius) ** 2:
+                for x in (a, c):
+                    if x.kind != SAUCER:             # (the boss saucer shrugs off a bird that crashes into it)
+                        _kill_bird(game, form, x)
     # --- the small asteroid: it comes in now and then, is pulled by the star, goes out by an edge; it destroys ships
     if form.pause <= 0 and not form.won and form.rock is None:
         form.rock_in -= dt
@@ -793,8 +849,8 @@ def tick(game):
     if rock is not None:
         hit = rock.radius * 0.8
         for b in form.birds:
-            if b.alive and math.hypot(b.x - rock.x, b.y - rock.y) < hit + BIRD_RADIUS:
-                _kill_bird(game, form, b)
+            if b.alive and math.hypot(b.x - rock.x, b.y - rock.y) < hit + b.radius:
+                _hurt_bird(game, form, b)
         if player_up and math.hypot(p.x - rock.x, p.y - rock.y) < hit + PLAYER_RADIUS:
             _kill_player(game, form)
             player_up = False
@@ -809,7 +865,7 @@ def tick(game):
     if form.won:
         form.end_timer += dt
         return
-    if form.remaining() == 0 and form.level_time > 0.5:
+    if form.level_done() and form.level_time > 0.5:
         if form.level >= len(LEVELS):
             form.won = True
             form.end_timer = 0.0
