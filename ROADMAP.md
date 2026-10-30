@@ -108,6 +108,14 @@ Current release: **v1.5.0**
   HUD no longer counts the birds, and a small asteroid of the Asteroids level crosses the screen now and then (comes in from
   outside, pulled by the star, no wrap, destroys the ship and the birds, a torpedo breaks it; its path ends on the star less than
   one time in three).
+- SpaceWar, third round (Kraran's second tests): the pull of Jupiter is halved (GM 5e6, it was 1e7: far too hard), so the push of
+  the CBS opening is now about 1.3 s (the ship also has more time to correct), no planet or asteroid behind the level (the
+  starfield has `set_bare`), the torpedo of the player is drawn as an air-to-air missile (slim fuselage, ogive nose in the colour of
+  the hull, canards, swept tail fins, red band, plume), and three more levels, TEST - SpaceWar with Saturn, Uranus or Neptune in the
+  middle (same rules, same map of every act, `spacewar.PLANETS`: the disc (Saturn 64 px, Uranus 40, Neptune 38, rings of Saturn
+  are drawn but not in the hit zone), the pull (2.7e6, 1.5e6, 1.6e6) and the thrust of the ships (x0.6) follow the real order but are
+  brought closer to Jupiter's so that it stays playable; pictures made by `tools/make_spacewar_planets.py`). Tests:
+  `tests/test_spacewar.py`
 
 ## Done in 1.5.0
 

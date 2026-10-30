@@ -1395,6 +1395,7 @@ class Game:
         """New run: fly in from below (same speed as stage transitions) and play stage VO."""
         if (getattr(self, "adventure", None) or {}).get("spacewar"):
             # SpaceWar (src/spacewar.py): no flight in either, the ship starts at rest by the star, nose up
+            spacewar.set_planet(self.adventure.get("planet"))
             self.player.x, self.player.y, self.player.ast_vx, self.player.ast_vy, self.player.ast_angle = \
                 spacewar.start_state()
             self.stage_transition = None
@@ -1902,6 +1903,7 @@ class Game:
             self._ast_last_x = self._ast_last_y = None
         if spec.get("spacewar"):
             # SpaceWar (src/spacewar.py): the ship flies free by the pull of a star, with ONE life (pixel dust at its end)
+            spacewar.set_planet(spec.get("planet"))                 # (Jupiter, Saturn, Uranus or Neptune: its pull and its disc)
             from ship_burn import prepare as prepare_ship_burn
             self.player.asteroid_mode = True
             self.player.sw_physics = True
@@ -2087,6 +2089,7 @@ class Game:
             return
         elif adv and adv.get("spacewar"):
             # SpaceWar (src/spacewar.py): a star in the middle, three levels of birds that fly like the ship
+            spacewar.set_planet(adv.get("planet"))
             self.stage = 1
             mult = float(adv.get("speed") or 1.0) * self.difficulty_speed_mult()
             self.formation = spacewar.SpaceWarFormation(speed_mult=mult)
@@ -3550,6 +3553,7 @@ class Game:
                 self._ast_last_x, self._ast_last_y = px, py
                 px, py = self._ast_px, self._ast_py
         self.starfield.set_free(free)             # the Asteroids mission: the background only follows the ship
+        self.starfield.set_bare(bool(adv.get("spacewar")))     # SpaceWar: no planet or rock behind the planet of the level
         menu = not bool(getattr(self, "started", False))
         stage = int(getattr(self, "stage", 1) or 1) if not menu else 0
         self.starfield.update(self.dt, px, stage=stage, menu=menu, player_y=py)

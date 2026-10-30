@@ -32,10 +32,24 @@ from errlog import log_exc
 from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
 
 CX, CY = BASE_WIDTH / 2.0, BASE_HEIGHT / 2.0            # the star
-GM = 1.0e7                                              # its pull: g = GM / r^2 (111 px/s^2 at 300 px)
+# The central planet (PLANETS; set_planet() chooses it for the level, Jupiter by default): its pull g = GM / r^2, the disc
+# as it is seen (a ship that touches it is destroyed; the rings of Saturn are NOT in the zone), the thrust of the ships
+# (POWER: a lighter planet makes for slower ships) and where the player starts. The sizes and the pulls follow the real
+# planets (Saturn 0.84 of Jupiter's radius, Uranus and Neptune about 0.36) but are brought closer to Jupiter's, so that
+# the discs stay pretty and the game playable.
+PLANETS = {
+    "jupiter": {"gm": 5.0e6, "r": 76.0, "draw": 160, "power": 1.0, "start": 340.0, "glow": (255, 190, 120)},
+    "saturn": {"gm": 2.7e6, "r": 64.0, "draw": 320, "power": 0.6, "start": 260.0, "glow": (240, 215, 150)},
+    "uranus": {"gm": 1.5e6, "r": 40.0, "draw": 100, "power": 0.6, "start": 260.0, "glow": (150, 225, 235)},
+    "neptune": {"gm": 1.6e6, "r": 38.0, "draw": 100, "power": 0.6, "start": 260.0, "glow": (80, 130, 255)},
+}
+PLANET_KEYS = tuple(PLANETS)
+PLANET = "jupiter"
+GM = PLANETS["jupiter"]["gm"]                           # its pull: g = GM / r^2
 MIN_R = 20.0                                            # (the pull stops growing inside this: never infinite)
-STAR_DRAW = 160                                         # the picture of the star (px)
-STAR_R = 76.0                                           # the disc of the star as it is seen: a ship that touches it is destroyed
+STAR_DRAW = PLANETS["jupiter"]["draw"]                  # the picture of the star (px)
+STAR_R = PLANETS["jupiter"]["r"]                        # the disc as it is seen: a ship that touches it is destroyed
+POWER = 1.0                                             # the thrust of every ship is multiplied by this
 CRASH_SHARE = 0.5                                       # (the centre of a ship is lost this share of its radius inside the disc)
 PLAYER_RADIUS = 9.0                                     # the ship of the player is drawn at half its size
 BIRD_RADIUS = 17.0
@@ -44,7 +58,7 @@ PLAYER_THRUST = 75.0                                    # ... and those of the p
 TURN_SPEED = 3.0                                        # rad/s, constant
 MAX_SPEED = 900.0                                       # (only so that nothing can jump over the star in one step)
 SUBSTEP = 1.0 / 120.0
-START_RADIUS = 340.0                                    # where the player starts: left of the star, at rest, nose up
+START_RADIUS = PLANETS["jupiter"]["start"]              # where the player starts: left of the star, at rest, nose up
 LEVELS = [(1, 0), (1, 1), (2, 2)]                       # (blue birds, green birds) of the three levels
 LEVEL_SCALE = [1.0, 1.15, 1.3]                          # the birds' thrust, turn and rate of fire, per level
 PLAYER_TORPEDOES = 20                                   # the stock of the player, filled again at each level
@@ -81,6 +95,19 @@ SAFE_MARGIN = 52.0
 _frames = {}
 
 
+# ------------------------------------------------------------------ the planet
+def set_planet(key):
+    """Choose the central planet of the level (a key of PLANETS; Jupiter when unknown). The module keeps it in GM, STAR_R,
+    STAR_DRAW, START_RADIUS and POWER, which the physics (and the player's `fly` calls) read."""
+    global PLANET, GM, STAR_R, STAR_DRAW, START_RADIUS, POWER
+    if key not in PLANETS:
+        key = "jupiter"
+    d = PLANETS[key]
+    PLANET = key
+    GM, STAR_R, STAR_DRAW, START_RADIUS, POWER = d["gm"], d["r"], d["draw"], d["start"], d["power"]
+    return key
+
+
 # ------------------------------------------------------------------ physics
 def gravity(x, y):
     """The pull of the star on (x, y): (ax, ay), towards the middle of the screen."""
@@ -106,8 +133,8 @@ def fly(obj, dt, turn, push, scale=1.0, thrust=THRUST, radius=BIRD_RADIUS):
         gx, gy = gravity(obj.x, obj.y)
         ax, ay = gx, gy
         if push:
-            ax += ca * thrust * scale
-            ay += sa * thrust * scale
+            ax += ca * thrust * scale * POWER
+            ay += sa * thrust * scale * POWER
         obj.ast_vx += ax * h
         obj.ast_vy += ay * h
         speed = math.hypot(obj.ast_vx, obj.ast_vy)
@@ -149,16 +176,21 @@ def angle_diff(a, b):
 
 # ------------------------------------------------------------------ pictures
 def star_image():
-    img = _frames.get("star")
+    """The picture of the planet of the level (centred on the star; Saturn's is wider: its rings are not in the zone)."""
+    key = ("star", PLANET)
+    img = _frames.get(key)
     if img is None:
+        d = PLANETS[PLANET]
         try:
-            img = pygame.image.load(asset_path("sprites", "spacewar", "jupiter.png")).convert_alpha()
-            img = pygame.transform.smoothscale(img, (STAR_DRAW, STAR_DRAW))
+            img = pygame.image.load(asset_path("sprites", "spacewar", PLANET + ".png")).convert_alpha()
+            if img.get_width() != d["draw"]:
+                img = pygame.transform.smoothscale(img, (d["draw"], d["draw"]))
         except Exception:
             log_exc("spacewar.star_image")
-            img = pygame.Surface((STAR_DRAW, STAR_DRAW), pygame.SRCALPHA)
-            pygame.draw.circle(img, (200, 160, 110), (STAR_DRAW // 2, STAR_DRAW // 2), STAR_DRAW // 2 - 4)
-        _frames["star"] = img
+            n = int(d["draw"])
+            img = pygame.Surface((n, n), pygame.SRCALPHA)
+            pygame.draw.circle(img, d["glow"], (n // 2, n // 2), int(d["r"]))
+        _frames[key] = img
     return img
 
 
@@ -305,8 +337,8 @@ class Bird:
             self.think_in = THINK_GAP
             self.danger = periapsis_danger(self.x, self.y, self.ast_vx, self.ast_vy)
             self.clear_ahead = not periapsis_danger(
-                self.x, self.y, self.ast_vx + math.cos(self.ast_angle) * THRUST * self.scale * 0.7,
-                self.ast_vy + math.sin(self.ast_angle) * THRUST * self.scale * 0.7, 2.0, SAFE_MARGIN + 25)
+                self.x, self.y, self.ast_vx + math.cos(self.ast_angle) * THRUST * POWER * self.scale * 0.7,
+                self.ast_vy + math.sin(self.ast_angle) * THRUST * POWER * self.scale * 0.7, 2.0, SAFE_MARGIN + 25)
         if self.danger:
             diff = angle_diff(self.ast_angle, self._escape_angle())
             self.turn = max(-1.0, min(1.0, diff * 4.0))
@@ -459,7 +491,7 @@ class SpaceWarFormation:
 
     def draw(self, surface):
         img = star_image()
-        asteroids._add_glow(surface, (255, 190, 120), (CX, CY), STAR_DRAW + 60)
+        asteroids._add_glow(surface, PLANETS[PLANET]["glow"], (CX, CY), int(STAR_R * 2) + 70)
         surface.blit(img, (int(CX - img.get_width() / 2), int(CY - img.get_height() / 2)))
         for b in self.birds:
             if b.alive:
@@ -498,19 +530,30 @@ class SpaceWarFormation:
 
 
 def draw_torpedo(surface, x, y, ux, uy, tip):
-    """A torpedo of the player: a metal body with a pointed nose in the colour of the hull, two fins and a flame behind."""
+    """A torpedo of the player, drawn as an air-to-air missile: a slim white fuselage with an ogive nose in the colour of the
+    hull, a seeker band, two small canards in front, four swept tail fins behind (two seen from the side) and a flame that
+    ends in a thin plume. (ux, uy) is the way it flies; (x, y) the middle of the body."""
     vx, vy = -uy, ux                                       # (sideways)
 
     def pt(a, b):
         return (x + ux * a + vx * b, y + uy * a + vy * b)
 
-    asteroids._add_glow(surface, (255, 170, 80), pt(-13, 0), 18)                        # the engine
-    pygame.draw.polygon(surface, (255, 210, 120), [pt(-9, 2.5), pt(-9, -2.5), pt(-17, 0)])
-    for side in (1, -1):                                                                  # the fins
-        pygame.draw.polygon(surface, (150, 156, 170), [pt(-5, side * 3.5), pt(-11, side * 7), pt(-11, side * 3.5)])
-    pygame.draw.polygon(surface, (205, 210, 222), [pt(-9, 3.5), pt(4, 3.5), pt(4, -3.5), pt(-9, -3.5)])   # the body
-    pygame.draw.polygon(surface, tip, [pt(4, 3.5), pt(12, 0), pt(4, -3.5)])                               # the nose
-    pygame.draw.line(surface, (120, 126, 140), pt(-3, 3.5), pt(-3, -3.5), 1)                              # a seam
+    asteroids._add_glow(surface, (255, 170, 80), pt(-15, 0), 17)                         # the engine
+    pygame.draw.polygon(surface, (255, 150, 60), [pt(-13, 1.9), pt(-13, -1.9), pt(-25, 0)])                    # the plume
+    pygame.draw.polygon(surface, (255, 235, 150), [pt(-13, 1.1), pt(-13, -1.1), pt(-20, 0)])
+    for side in (1, -1):                                                                                          # the tail fins
+        pygame.draw.polygon(surface, (118, 126, 146), [pt(-5, side * 2.2), pt(-11, side * 6.8), pt(-13.5, side * 6.8),
+                                                       pt(-13, side * 2.2)])
+        pygame.draw.line(surface, (190, 198, 214), pt(-5, side * 2.4), pt(-11, side * 6.6), 1)
+    pygame.draw.polygon(surface, (224, 228, 238), [pt(-13, 2.4), pt(7, 2.4), pt(7, -2.4), pt(-13, -2.4)])     # the fuselage
+    pygame.draw.polygon(surface, (168, 175, 192), [pt(-13, -0.3), pt(7, -0.3), pt(7, -2.4), pt(-13, -2.4)])   # (its shaded side)
+    pygame.draw.polygon(surface, (214, 70, 54), [pt(-9, 2.4), pt(-6.5, 2.4), pt(-6.5, -2.4), pt(-9, -2.4)])   # a red band
+    pygame.draw.polygon(surface, (60, 66, 82), [pt(-13, 2.4), pt(-12, 2.4), pt(-12, -2.4), pt(-13, -2.4)])    # the nozzle
+    pygame.draw.polygon(surface, tip, [pt(7, 2.4), pt(10.5, 1.9), pt(13.5, 1.0), pt(16.5, 0), pt(13.5, -1.0),
+                                       pt(10.5, -1.9), pt(7, -2.4)])                                           # the ogive nose
+    for side in (1, -1):                                                                                          # the canards
+        pygame.draw.polygon(surface, (150, 158, 176), [pt(4, side * 2.4), pt(2.5, side * 5.0), pt(0.5, side * 5.0),
+                                                       pt(1, side * 2.4)])
 
 
 def _label(key):

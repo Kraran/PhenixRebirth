@@ -550,6 +550,14 @@ class Starfield:
         self.last_player_y = BASE_HEIGHT / 2
         self.free = False
         self._free_fresh = True
+        self.bare = False                 # SpaceWar: no planet or rock in the background (see set_bare)
+
+    def set_bare(self, on):
+        """No planets and no asteroids in the background (the SpaceWar levels, whose star is a planet of their own): the
+        ones in the sky leave at once and none comes back. The stars, the galaxies and the nebulae stay. Idempotent."""
+        self.bare = bool(on)
+        if self.bare:
+            self.planets = []
 
     def set_free(self, on):
         """The free mode (the Asteroids mission): the background no longer scrolls from top to bottom, it moves only
@@ -615,7 +623,7 @@ class Starfield:
         if self.planet_timer <= 0:
             # Prefer exclusive; when the other is already up, ~40% dual.
             # Also ~12% chance to invite a nebula right after a lone planet.
-            if len(self.planets) == 0:
+            if len(self.planets) == 0 and not self.bare:
                 if self.nebula is None or random.random() < 0.40:
                     self.planets.append(Planet(free=self.free))
                     if self.nebula is None and random.random() < 0.12:
@@ -633,7 +641,7 @@ class Starfield:
             if self.nebula is None:
                 if len(self.planets) == 0 or random.random() < 0.40:
                     self.nebula = Nebula(free=self.free)
-                    if len(self.planets) == 0 and random.random() < 0.12:
+                    if len(self.planets) == 0 and not self.bare and random.random() < 0.12:
                         self.planets.append(Planet(free=self.free))
                         self.planet_timer = random.uniform(14.0, 28.0)
             self.nebula_timer = random.uniform(22.0, 38.0)

@@ -6641,13 +6641,25 @@ _GUARDIAN_TEXTS = {
     "story_m_spacewar_b": (
         "Remake du Spacewar de 1977 : Jupiter attire les vaisseaux, l'inertie est totale, l'écran se referme sur lui-même. 3 niveaux d'oiseaux, 1 vie. Sans gain ni perte.",
         "Remake of the 1977 Spacewar: Jupiter pulls the ships, inertia is total, the screen wraps around. 3 levels of birds, 1 life. No gain or loss."),
+    "story_m_spacewar_saturn": ("TEST - SpaceWar : Saturne", "TEST - SpaceWar: Saturn"),
+    "story_m_spacewar_saturn_b": (
+        "SpaceWar avec Saturne au centre : un peu moins lourde que Jupiter, et ses anneaux sont sans danger (seul le globe détruit). 3 niveaux, 1 vie. Sans gain ni perte.",
+        "SpaceWar with Saturn in the middle: lighter than Jupiter, and its rings are harmless (only the globe destroys). 3 levels, 1 life. No gain or loss."),
+    "story_m_spacewar_uranus": ("TEST - SpaceWar : Uranus", "TEST - SpaceWar: Uranus"),
+    "story_m_spacewar_uranus_b": (
+        "SpaceWar avec Uranus au centre : une petite planète, une attraction faible, des vaisseaux plus lents. 3 niveaux, 1 vie. Sans gain ni perte.",
+        "SpaceWar with Uranus in the middle: a small planet, a weak pull, slower ships. 3 levels, 1 life. No gain or loss."),
+    "story_m_spacewar_neptune": ("TEST - SpaceWar : Neptune", "TEST - SpaceWar: Neptune"),
+    "story_m_spacewar_neptune_b": (
+        "SpaceWar avec Neptune au centre : une petite planète, une attraction faible, des vaisseaux plus lents. 3 niveaux, 1 vie. Sans gain ni perte.",
+        "SpaceWar with Neptune in the middle: a small planet, a weak pull, slower ships. 3 levels, 1 life. No gain or loss."),
     "story_spacewar_hud": ("NIVEAU {n}/{m}   TORPILLES {t}", "LEVEL {n}/{m}   TORPEDOES {t}"),
     "story_spacewar_level": ("NIVEAU {n} / {m}", "LEVEL {n} / {m}"),
     "story_spacewar_next": ("NIVEAU TERMINÉ", "LEVEL CLEAR"),
     "story_spacewar_empty": ("PLUS DE TORPILLES", "OUT OF TORPEDOES"),
     "story_spacewar_hint": (
-        "Ouverture CBS : perpendiculaire à Jupiter, pousse 2 à 3 s pour entrer en orbite.",
-        "CBS opening: sideways to Jupiter, thrust 2-3 s to enter orbit."),
+        "Ouverture CBS : de profil à la planète, pousse un instant pour entrer en orbite.",
+        "CBS opening: sideways to the planet, thrust briefly to enter orbit."),
     "story_spacewar_clear": ("Les trois niveaux sont gagnés ! Vous pouvez recommencer à volonté.",
                              "All three levels won! Replay whenever you like."),
     "story_spacewar_retry": ("Partie terminée. Aucun progrès perdu : vous pouvez réessayer.",
