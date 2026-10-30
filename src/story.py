@@ -1382,6 +1382,8 @@ class StoryHub:
         }
         if mission.get("guardians"):
             spec.update(guardians=True, training=True, items=[])
+        if mission.get("spacewar"):
+            spec.update(spacewar=True, training=True, items=[])     # (src/spacewar.py: a test, nothing won, nothing lost)
         if ship:
             spec["ship"] = ship                       # a mission that imposes its hull
         waves = ss.mission_waves(mission)
@@ -1422,7 +1424,10 @@ class StoryHub:
         during the mission, `used` the items that were installed for it; `flawless`: no life was lost."""
         res = ss.record_result(self.state, mission_id, score, cleared, kills, loot=loot, used=used)
         if res.get("training"):
-            self.toast = t("story_guardians_clear") if cleared else t("story_guardians_retry")
+            if (ss.mission_by_id(mission_id) or {}).get("spacewar"):
+                self.toast = t("story_spacewar_clear") if cleared else t("story_spacewar_retry")
+            else:
+                self.toast = t("story_guardians_clear") if cleared else t("story_guardians_retry")
             self.toast_kind = "success" if cleared else "info"
             self.pane = "map"
             return

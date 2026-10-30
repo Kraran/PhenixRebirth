@@ -18,6 +18,7 @@ import hint_bar
 import keybind_screen
 import menu_ui
 import main_menu
+import spacewar
 import story_state
 import loot
 from i18n import t, t_help
@@ -174,6 +175,12 @@ def draw_hud(game):
         game.game_surface.blit(text, (BASE_WIDTH - 16 - text.get_width(), 52))
         hint = tc.get(game.font, t("story_guardians_hint"), (255, 190, 110))
         game.game_surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 34))
+    elif adv and adv.get("spacewar"):
+        form = game.formation
+        label = t("story_spacewar_hud").format(n=int(getattr(form, "level", 1)), m=len(spacewar.LEVELS),
+                                               e=form.remaining(), t=int(getattr(form, "player_torpedoes", 0)))
+        text = tc.get(game.font, label, announce.INFO)
+        game.game_surface.blit(text, (BASE_WIDTH - 16 - text.get_width(), 52))
     elif adv and adv.get("escort") and game.play_mode != "coop" and hasattr(game.formation, "cruise"):
         pct = int(game.formation.cruise.progress() * 100)
         left = tc.get(game.font, t("story_vip_hud").format(p=pct), announce.INFO)

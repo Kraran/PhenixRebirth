@@ -548,6 +548,13 @@ MISSIONS = [
         "title": "story_m_guardians_test", "blurb": "story_m_guardians_test_b",
         "need": None, "content": 3, "speed": 1.0,
     },
+    # TEST: SpaceWar (src/spacewar.py), a remake of the 1977 arcade game. On the map of every act, always playable, as
+    # often as one likes; a training mission (see record_result): nothing won, nothing lost, nobody falls.
+    {
+        "id": "test_spacewar", "acts": (1, 2, 3), "training": True, "test": True, "spacewar": True,
+        "title": "story_m_spacewar", "hud_title": "story_m_spacewar_hud", "blurb": "story_m_spacewar_b",
+        "need": None, "content": 1, "speed": 1.0,
+    },
 ]
 
 

@@ -14,7 +14,7 @@ BELT2 = ["ast_2"]                 # the prelude of the Phenix series (Act 2)
 DOME = ["dome_1", "dome_2", "dome_3", "dome_4", "dome_5", "act2_gate"]
 PHENIX = ["phenix_1", "phenix_2", "phenix_3", "phenix_4", "phenix_5"]
 PAINT = ["paint_1", "paint_2", "paint_3"]
-TRAINING = ["test_guardians"]
+TRAINING = ["test_guardians", "test_spacewar"]
 GATE3 = ["act3_gate"]           # the last mission of Act 2 (it opens Act 3)
 
 
@@ -289,7 +289,7 @@ def test_the_map_cursor_walks_the_act_2_list_only():
     hub.pane = "map"
     for _ in range(30):
         hub.nav_v(1)
-    assert hub._mission()["id"] == "test_guardians" and hub.map_index == len(BELT2 + PHENIX + GATE3 + HUNTS + BOSS + BONUS + PAINT + TRAINING) - 1
+    assert hub._mission()["id"] == "test_spacewar" and hub.map_index == len(BELT2 + PHENIX + GATE3 + HUNTS + BOSS + BONUS + PAINT + TRAINING) - 1
 
 
 def test_winning_the_gate_puts_the_cursor_on_the_new_map():

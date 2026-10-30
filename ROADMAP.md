@@ -92,6 +92,15 @@ Current release: **v1.5.0**
   scene before the first launch (the picture will come later, a dark sky until then, journal line, French and English). The
   cheats 2222 and NIX2 count the belts of their act as crossed, and an old save whose series is already started skips the
   belt. Tests: `tests/test_story_asteroids_series.py`
+- TEST mission "SpaceWar" (`src/spacewar.py`): a remake of the 1977 arcade Spacewar, on the map of every act, replayable, a training mission
+  (nothing won, nothing lost, nobody falls). A star (Jupiter) in the middle pulls the ships with a Newtonian gravity (g = GM / r^2; the
+  torpedoes are not pulled), inertia with no friction (a constant turn does not change the way the ship travels), the screen joined on
+  its four sides, the ship of the hangar (Shield or Phenix) with one life: destroyed by a torpedo, by the star or by touching another
+  ship, it ends in pixel dust (`ship_burn`, turned to the nose). Three levels of birds with the same physics and a small pilot
+  (1 blue / 1 blue and 1 green / 2 blue and 2 green, faster at each level), a stock of torpedoes (20 for the player, 8 per bird, a reload
+  delay, a few in the air at once); the test ends when the ship is destroyed, when the three levels are won, or when nobody has a torpedo
+  left. The constants are tuned so that the "CBS opening" (nose at right angles to the star, thrust for 2 to 3 s) gives a stable orbit.
+  Tests: `tests/test_spacewar.py`
 
 ## Done in 1.5.0
 
