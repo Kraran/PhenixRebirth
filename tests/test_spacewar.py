@@ -1033,27 +1033,27 @@ def test_the_star_is_drawn_in_the_middle():
     assert surf.get_at((20, 20))[3] == 0
 
 
-def test_the_dust_of_a_turned_ship_is_drawn_turned(run):
+def _hull_box(blast):
+    """The box of the pieces of the hull of a blast at the moment it breaks up."""
+    xs = [(s.x - s.imgs[0].get_width() / 2, s.x + s.imgs[0].get_width() / 2) for s in blast.shards]
+    ys = [(s.y - s.imgs[0].get_height() / 2, s.y + s.imgs[0].get_height() / 2) for s in blast.shards]
+    return max(x[1] for x in xs) - min(x[0] for x in xs), max(y[1] for y in ys) - min(y[0] for y in ys)
+
+
+def test_the_blast_of_a_turned_ship_is_made_turned(run):
     g = run.game
     _launch(run)
     _alone(run)
     p = g.player
     p.x, p.y = 600.0, 200.0
-    p.ast_angle = 0.0
-    p.burn_by_guardian()
-    surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT), pygame.SRCALPHA)
-    p.guardian_burn.age = 0.1
-    p.draw(surf)
-    assert pygame.mask.from_surface(surf).count() > 0
-    right = pygame.mask.from_surface(surf).get_bounding_rects()
-    box_right = right[0].unionall(right[1:])
-    surf.fill((0, 0, 0, 0))
-    p.ast_angle = -math.pi / 2                                  # nose up: the dust is not turned
-    p.draw(surf)
-    up = pygame.mask.from_surface(surf).get_bounding_rects()
-    box_up = up[0].unionall(up[1:])
-    assert (box_up.w, box_up.h) != (box_right.w, box_right.h)
-    assert abs(box_up.h - box_right.w) < 0.35 * box_up.h and abs(box_up.w - box_right.h) < 0.35 * box_up.w
+    boxes = []
+    for angle in (0.0, -math.pi / 2):                           # nose right, then nose up
+        p.ast_angle = angle
+        import ship_blast
+        boxes.append(_hull_box(ship_blast.ShipBlast(p, *p.blast_pose(), rng=random.Random(2))))
+    (wr, hr), (wu, hu) = boxes
+    assert (wr, hr) != (wu, hu)
+    assert abs(wu - hr) < 0.35 * wu and abs(hu - wr) < 0.35 * hu       # (turned a quarter: width and height swap)
 
 
 def test_the_turned_dust_stays_on_the_ship(run):
@@ -1505,22 +1505,18 @@ def test_the_hint_and_the_banners_fit_on_the_screen(run):
             assert g.text_cache.get(g.font, text, (255, 255, 255)).get_width() <= BASE_WIDTH - 40, (key, code)
 
 
-def test_the_dying_ship_in_the_game_is_drawn_at_half_size(run):
+def test_the_dying_ship_in_the_game_is_made_at_half_size(run):
+    import ship_blast
     g = run.game
     _launch(run)
     _alone(run)
     p = g.player
     p.x, p.y, p.ast_angle = 600.0, 300.0, -math.pi / 2
-    p.burn_by_guardian()
-    p.guardian_burn.age = 0.5
     boxes = []
     for sw_on in (True, False):
         p.sw_physics = sw_on
-        surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT), pygame.SRCALPHA)
-        p.draw(surf)
-        rects = pygame.mask.from_surface(surf).get_bounding_rects()
-        boxes.append(rects[0].unionall(rects[1:]))
-    assert 0.4 < boxes[0].h / boxes[1].h < 0.62
+        boxes.append(_hull_box(ship_blast.ShipBlast(p, *p.blast_pose(), rng=random.Random(2))))
+    assert 0.4 < boxes[0][1] / boxes[1][1] < 0.62
 
 
 def test_the_half_size_dust_stays_on_the_ship(run):
