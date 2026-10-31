@@ -350,19 +350,239 @@ def test_the_starfield_stays_where_it_is(run):
 
 
 def test_the_levels_have_the_birds_of_the_spec_and_go_faster():
-    assert sw.LEVELS == [(1, 0), (1, 1), (2, 2)]
+    assert sw.LEVELS == [(1, 0, 0), (1, 1, 0), (2, 1, 1)]
     assert sw.LEVEL_SCALE == sorted(sw.LEVEL_SCALE) and len(set(sw.LEVEL_SCALE)) == 3
     scales = []
-    for level, (blue, green) in enumerate(sw.LEVELS, 1):
+    for level, (blue, green, boss) in enumerate(sw.LEVELS, 1):
         form = SpaceWarFormation(rng=random.Random(level))
         form.start_level(level)
-        assert sorted(b.kind for b in form.birds) == [1] * blue + [2] * green
-        assert all(b.torpedoes == sw.BIRD_TORPEDOES for b in form.birds)
+        assert sorted(b.kind for b in form.birds) == [1] * blue + [2] * green + [sw.SAUCER] * boss
+        assert all(b.torpedoes == (sw.SAUCER_TORPEDOES if b.kind == sw.SAUCER else sw.BIRD_TORPEDOES) for b in form.birds)
         scales.append(form.birds[0].scale)
         for b in form.birds:                                  # in orbit already: they do not fall at once
             assert not sw.periapsis_danger(b.x, b.y, b.ast_vx, b.ast_vy, 3.0)
             assert math.hypot(b.x - sw.CX, b.y - sw.CY) > sw.STAR_R + 100
     assert scales == sorted(scales) and scales[0] < scales[-1]
+
+
+def test_the_enemy_torpedoes_are_slow_and_the_players_are_not():
+    assert sw.BIRD_TORPEDO_SPEED < 0.6 * sw.TORPEDO_SPEED
+    assert sw.BIRD_TORPEDO_LIFE > sw.TORPEDO_LIFE
+    form = SpaceWarFormation(rng=random.Random(1))
+    b = Bird(1, 400.0, 300.0, 10.0, 20.0, 0.0, 1.0, random.Random(1))
+    sw._fire(form, b, b)
+    t = form.torpedoes[-1]
+    assert t.vx == pytest.approx(10.0 + sw.BIRD_TORPEDO_SPEED) and t.vy == pytest.approx(20.0)
+    assert t.life == sw.BIRD_TORPEDO_LIFE
+    sw._fire(form, "player", b)
+    t = form.torpedoes[-1]
+    assert t.vx == pytest.approx(10.0 + sw.TORPEDO_SPEED) and t.life == sw.TORPEDO_LIFE
+
+
+def test_a_bird_leads_its_aim_with_the_slow_torpedo():
+    b = Bird(1, 300.0, 300.0, 0.0, 0.0, 0.0, 1.0, random.Random(1))
+    b.danger = False
+    b.think_in = 10.0
+
+    class T:
+        x, y, ast_vx, ast_vy = 300.0 + 230.0, 300.0, 0.0, 20.0
+
+    b.think(0.01, T)
+    # (the target is 230 px away and goes down at 20 px/s: the torpedo takes dist / its speed, and the aim is that far below)
+    t = math.hypot(230.0, 0.0) / sw.BIRD_TORPEDO_SPEED
+    assert b.turn == pytest.approx(5.0 * math.atan2(20.0 * t, 230.0), rel=1e-6)
+
+
+def test_the_saucer_fires_from_its_own_nose():
+    form = SpaceWarFormation(rng=random.Random(1))
+    boss = Bird(sw.SAUCER, 400.0, 300.0, 0.0, 0.0, 0.0, 1.0, random.Random(1))
+    sw._fire(form, boss, boss)
+    assert form.torpedoes[-1].x - boss.x == pytest.approx(sw.SAUCER_RADIUS + 9)
+
+
+def test_the_saucer_is_bigger_for_every_collision(run):
+    g = run.game
+    _launch(run)
+    form = _alone(run)
+    gap = (sw.BIRD_RADIUS + sw.SAUCER_RADIUS) / 2.0                 # (inside the saucer, outside a bird)
+    boss = _bird(form, sw.SAUCER, 900.0, 100.0)
+    form.torpedoes.append(Torpedo(boss.x + gap, boss.y, 0.0, 0.0, "player"))
+    run.frames(1)
+    assert boss.hp == sw.SAUCER_HP - 1                              # (a torpedo)
+    small = _bird(form, 1, 900.0, 100.0 + sw.BIRD_RADIUS + sw.SAUCER_RADIUS - 4.0)
+    run.frames(1)
+    assert not small.alive and boss.alive                           # (another bird)
+    p = g.player
+    p.x, p.y = boss.x, boss.y + sw.PLAYER_RADIUS + gap
+    p.rect.center = (int(p.x), int(p.y))
+    run.frames(1)
+    assert p.dying                                                  # (the ship)
+
+
+def test_the_saucer_touches_the_star_before_a_bird_does():
+    class O:
+        ast_vx = ast_vy = 0.0
+        ast_angle = 0.0
+
+    def crash(radius):
+        o = O()
+        o.x, o.y = sw.CX + sw.STAR_R + sw.CRASH_SHARE * (sw.BIRD_RADIUS + sw.SAUCER_RADIUS) / 2.0, sw.CY
+        return sw.fly(o, 1e-4, 0.0, False, 1.0, sw.THRUST, radius)
+
+    assert crash(sw.SAUCER_RADIUS) and not crash(sw.BIRD_RADIUS)
+
+
+def test_in_the_level_the_saucer_crashes_into_the_star_with_its_own_size(run):
+    _launch(run)
+    form = _alone(run)
+    spot = sw.STAR_R + sw.CRASH_SHARE * (sw.BIRD_RADIUS + sw.SAUCER_RADIUS) / 2.0
+    boss = _bird(form, sw.SAUCER, sw.CX + spot, sw.CY)
+    small = _bird(form, 1, sw.CX, sw.CY - spot)
+    run.frames(1)
+    assert not boss.alive and small.alive
+
+
+def test_the_third_level_is_two_blue_a_green_and_the_boss_saucer():
+    form = SpaceWarFormation(rng=random.Random(4))
+    form.start_level(3)
+    kinds = sorted(b.kind for b in form.birds)
+    assert kinds == [1, 1, 2, sw.SAUCER]
+    boss = [b for b in form.birds if b.kind == sw.SAUCER][0]
+    assert boss.radius == sw.SAUCER_RADIUS > sw.BIRD_RADIUS and boss.hp == sw.SAUCER_HP
+    assert all(b.radius == sw.BIRD_RADIUS and b.hp == 1 for b in form.birds if b is not boss)
+    pic = boss.image()
+    assert pic.get_width() > 2 * sw.BIRD_RADIUS
+
+
+def test_the_saucer_takes_several_torpedoes_and_flashes(run):
+    g = run.game
+    _launch(run)
+    form = _alone(run)
+    boss = _bird(form, sw.SAUCER)
+    plain = boss.image().copy()
+    for n in range(sw.SAUCER_HP - 1):
+        form.torpedoes.append(Torpedo(boss.x, boss.y, 0.0, 0.0, "player"))
+        run.frames(1)
+        assert boss.alive and boss.hp == sw.SAUCER_HP - 1 - n and not form.torpedoes
+        assert boss.hit > 0
+    lit = boss.image()
+    assert pygame.image.tobytes(lit, "RGBA") != pygame.image.tobytes(plain, "RGBA")
+    run.frames(int(60 * (sw.HIT_FLASH + 0.2)))
+    assert boss.hit == 0.0
+    form.torpedoes.append(Torpedo(boss.x, boss.y, 0.0, 0.0, "player"))
+    run.frames(1)
+    assert not boss.alive and form.destroyed == 1 and g.explosions
+
+
+def test_the_saucer_life_bar_is_drawn_and_shrinks(run):
+    _launch(run)
+    form = _alone(run)
+    boss = _bird(form, sw.SAUCER, 900.0, 100.0)
+
+    def red(hp):
+        boss.hp = hp
+        surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+        form.draw(surf)
+        return sum(1 for x in range(840, 960) if surf.get_at((x, int(boss.y - boss.radius - 20)))[:3] == (230, 70, 50))
+
+    assert red(3) > red(2) > red(1) > 0
+
+
+def test_the_third_level_is_won_when_the_saucer_is_destroyed_even_with_birds_left(run):
+    g = run.game
+    _launch(run)
+    form = g.formation
+    form.start_level(3, g.player)
+    form.level_time = 1.0
+    boss = [b for b in form.birds if b.kind == sw.SAUCER][0]
+    for b in form.birds:
+        _pin(b)
+    _orbit(g.player)
+    run.frames(3)
+    assert not form.won and not form.level_done()
+    for b in form.birds:
+        if b is not boss:
+            b.alive = False
+    run.frames(3)
+    assert not form.won                                        # (the birds alone do not end it)
+    boss.hp = 1
+    others = [_bird(form, 1, 200.0, 650.0)]
+    sw._hurt_bird(g, form, boss)
+    assert form.level_done() and others[0].alive
+    run.frames(3)
+    assert form.won
+
+
+def test_the_other_levels_are_won_when_no_bird_is_left():
+    form = SpaceWarFormation(rng=random.Random(2))
+    form.start_level(2)
+    assert not form.level_done()
+    for b in form.birds:
+        b.alive = False
+    assert form.level_done()
+
+
+def test_the_saucer_is_not_hurt_by_a_ram_or_a_crashing_bird_but_kills_the_ship(run):
+    g = run.game
+    _launch(run)
+    form = _alone(run)
+    boss = _bird(form, sw.SAUCER, 900.0, 100.0)
+    small = _bird(form, 1, 930.0, 100.0)
+    run.frames(1)
+    assert boss.alive and boss.hp == sw.SAUCER_HP and not small.alive
+    p = g.player
+    p.x, p.y = boss.x + 20, boss.y
+    p.rect.center = (int(p.x), int(p.y))
+    run.frames(1)
+    assert p.dying and boss.alive and boss.hp == sw.SAUCER_HP
+
+
+def test_the_saucer_is_hit_by_the_rock_for_one_point(run):
+    g = run.game
+    _launch(run)
+    form = _alone(run)
+    boss = _bird(form, sw.SAUCER, 900.0, 100.0)
+    form.rock = sw.SpaceRock(boss.x, boss.y, 0.0, 0.0, random.Random(1))
+    run.frames(1)
+    assert boss.alive and boss.hp == sw.SAUCER_HP - 1
+
+
+def test_the_saucer_fires_up_to_three_slow_torpedoes_at_once(run):
+    g = run.game
+    _launch(run)
+    form = _alone(run)
+    boss = _bird(form, sw.SAUCER, 900.0, 100.0)
+
+    def think(dt, target):
+        boss.x, boss.y, boss.ast_vx, boss.ast_vy = 900.0, 100.0, 0.0, 0.0
+        return 0.0, False, True
+    boss.think = think
+    _orbit(g.player)
+    most = 0
+    for _ in range(240):
+        boss.fire_cd = 0.0
+        run.frames(1)
+        _orbit(g.player)
+        most = max(most, sum(1 for tp in form.torpedoes if tp.owner is boss))
+    assert most == sw.SAUCER_IN_AIR
+    assert boss.torpedoes < sw.SAUCER_TORPEDOES
+
+
+def test_the_boss_message_is_shown_on_the_last_level(run):
+    _launch(run)
+    form = run.game.formation
+    form.start_level(3, run.game.player)
+    form.level_time = 0.1
+    form.started = True
+    asked = []
+    form._say = lambda surface, text, color, cy: asked.append(text)
+    form.draw(pygame.Surface((BASE_WIDTH, BASE_HEIGHT)))
+    assert i18n.t("story_spacewar_boss") in asked
+    asked.clear()
+    form.start_level(1, run.game.player)
+    form.level_time = 0.1
+    form.draw(pygame.Surface((BASE_WIDTH, BASE_HEIGHT)))
+    assert i18n.t("story_spacewar_boss") not in asked
 
 
 def test_a_bird_starts_far_from_the_player_and_from_the_others():
@@ -783,8 +1003,10 @@ def test_it_goes_on_while_a_bird_still_has_torpedoes_or_one_is_in_the_air(run):
 def test_the_torpedoes_left_count_both_sides():
     form = SpaceWarFormation(rng=random.Random(1))
     form.start_level(3)
-    assert form.torpedoes_left() == sw.PLAYER_TORPEDOES + 4 * sw.BIRD_TORPEDOES
-    form.birds[0].alive = False
+    assert form.torpedoes_left() == sw.PLAYER_TORPEDOES + 3 * sw.BIRD_TORPEDOES + 14
+    for b in form.birds:
+        if b.kind == sw.SAUCER:
+            b.alive = False
     assert form.torpedoes_left() == sw.PLAYER_TORPEDOES + 3 * sw.BIRD_TORPEDOES
 
 

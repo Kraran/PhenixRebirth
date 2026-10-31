@@ -6639,8 +6639,8 @@ _GUARDIAN_TEXTS = {
     "story_m_spacewar": ("TEST - SpaceWar", "TEST - SpaceWar"),
     "story_m_spacewar_hud": ("SpaceWar", "SpaceWar"),
     "story_m_spacewar_b": (
-        "Remake du Spacewar de 1977 : Jupiter attire les vaisseaux, l'inertie est totale, l'écran se referme sur lui-même. 3 niveaux d'oiseaux, 1 vie. Sans gain ni perte.",
-        "Remake of the 1977 Spacewar: Jupiter pulls the ships, inertia is total, the screen wraps around. 3 levels of birds, 1 life. No gain or loss."),
+        "Remake du Spacewar de 1977 : Jupiter attire les vaisseaux, l'inertie est totale, l'écran se referme sur lui-même. 3 niveaux (le dernier avec une soucoupe de boss), 1 vie. Sans gain ni perte.",
+        "Remake of the 1977 Spacewar: Jupiter pulls the ships, inertia is total, the screen wraps around. 3 levels (the last one with a boss saucer), 1 life. No gain or loss."),
     "story_m_spacewar_saturn": ("TEST - SpaceWar : Saturne", "TEST - SpaceWar: Saturn"),
     "story_m_spacewar_saturn_b": (
         "SpaceWar avec Saturne au centre : un peu moins lourde que Jupiter, et ses anneaux sont sans danger (seul le globe détruit). 3 niveaux, 1 vie. Sans gain ni perte.",
@@ -6655,6 +6655,7 @@ _GUARDIAN_TEXTS = {
         "SpaceWar with Neptune in the middle: a small planet, a weak pull, slower ships. 3 levels, 1 life. No gain or loss."),
     "story_spacewar_hud": ("NIVEAU {n}/{m}   TORPILLES {t}", "LEVEL {n}/{m}   TORPEDOES {t}"),
     "story_spacewar_level": ("NIVEAU {n} / {m}", "LEVEL {n} / {m}"),
+    "story_spacewar_boss": ("DÉTRUISEZ LA SOUCOUPE", "DESTROY THE SAUCER"),
     "story_spacewar_next": ("NIVEAU TERMINÉ", "LEVEL CLEAR"),
     "story_spacewar_empty": ("PLUS DE TORPILLES", "OUT OF TORPEDOES"),
     "story_spacewar_hint": (
