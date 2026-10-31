@@ -19,6 +19,7 @@ from errlog import log_exc
 import announce
 import story_feats
 import story_items
+import bindings
 import story_state as ss
 import story_vn
 import loot
@@ -1389,6 +1390,8 @@ class StoryHub:
                 spec["training"] = True                             # a test: nothing won, nothing lost
             if mission.get("sw_levels"):
                 spec["sw_levels"] = [list(lv) for lv in mission["sw_levels"]]   # the Sentinelle missions: their own levels
+        if ss.has_antimatter(self.state) and not mission.get("training"):
+            spec["antimatter"] = True                 # the missile of Silent Sentinels IV: one in every Adventure mission
         if ship:
             spec["ship"] = ship                       # a mission that imposes its hull
         waves = ss.mission_waves(mission)
@@ -1427,6 +1430,7 @@ class StoryHub:
     def apply_result(self, mission_id, score, cleared, kills=None, loot=None, used=None, flawless=False):
         """End of a mission: credits, penalty or fall (see story_state.record_result). `loot` is the item caught
         during the mission, `used` the items that were installed for it; `flawless`: no life was lost."""
+        had_missile = ss.has_antimatter(self.state)
         res = ss.record_result(self.state, mission_id, score, cleared, kills, loot=loot, used=used)
         if res.get("training"):
             if (ss.mission_by_id(mission_id) or {}).get("spacewar"):
@@ -1463,6 +1467,10 @@ class StoryHub:
             if res.get("reward"):
                 self.toast = t("story_reward").format(pts=res["reward"])     # the parts salvaged from the wreck
                 self.toast_kind = "gain"
+            if ss.has_antimatter(self.state) and not had_missile:
+                keys = bindings.current.keys(bindings.KB2, "missile")       # Silent Sentinels IV: the antimatter missile
+                self.toast = t("story_missile_unlocked").format(key=bindings.key_label(keys[0], t) if keys else "—")
+                self.toast_kind = "reward"
         elif res.get("no_item"):
             self.toast = t("story_item_missed").format(name=t("item_%s_name" % res["no_item"]))
             self.toast_kind = "info"                 # the BONUS item was not caught: no gain, no loss
@@ -2457,6 +2465,7 @@ class StoryHub:
         dome = bool(sl.get("dome"))
         dur = float(sl.get("dome_dur") or 0)
         cd = float(sl.get("dome_cd") or 5.0)
+        missile = ss.has_antimatter(self.state)
         dome_val = t("story_locked")
         if dome:
             dome_val = f"{dur:.1f}s / {cd:.0f}s"
@@ -2468,14 +2477,15 @@ class StoryHub:
             (t("story_stat_speed"), f"{sl.get('speed', ss.SPEED_START)}%"),
             (t("story_stat_phenix") if phenix else t("story_stat_dome"), dome_val),
             (t("story_stat_wall"), t("story_wall_" + str(sl.get("wall", "instant")))),
+            (t("story_stat_missile"), t("story_missile_ready") if missile else t("story_locked")),   # Silent Sentinels IV
         ]
-        w = 220
-        x = (BASE_WIDTH - (w * 4 + 16 * 3)) // 2
+        w, gap = 196, 12
+        x = (BASE_WIDTH - (w * len(cells) + gap * (len(cells) - 1))) // 2
         for i, (lab, val) in enumerate(cells):
-            r = pygame.Rect(x + i * (w + 16), y, w, 64)
+            r = pygame.Rect(x + i * (w + gap), y, w, 64)
             _fill(surface, menu_ui.PANEL_FILL, r, 8)
             pygame.draw.rect(surface, menu_ui.PANEL_EDGE, r, 1, border_radius=8)
-            col = (110, 115, 135) if (i == 2 and not dome and not phenix) else (220, 220, 235)
+            col = (110, 115, 135) if ((i == 2 and not dome and not phenix) or (i == 4 and not missile)) else (220, 220, 235)
             if not owned:
                 val = "—"
             _text(surface, small, lab, (150, 155, 175), r.y + 18, centerx=r.centerx)

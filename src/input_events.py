@@ -7,6 +7,7 @@ loop `continue` meant "done with this event": here it is `return`.
 """
 import pygame
 
+import antimatter
 import bindings
 import controls
 import keybind_screen
@@ -55,6 +56,9 @@ def on_keydown(game, event):
     # buttons): the left-hand keyboard's key goes to the coop ship on it, the arrows keyboard's to the one on the arrows
     # (or to the only ship of a solo / hot-seat game).
     if game.started and not game.paused and not game.game_over:
+        if event.key in bindings.current.keys(bindings.KB2, "missile"):
+            antimatter.fire(game, game.player)              # the antimatter missile (Adventure, once Sentinels IV is won)
+            return
         profiles = [p for p in bindings.KEY_PROFILES if event.key in bindings.current.keys(p, "phenix")]
         if profiles:
             held = getattr(game, "_special_keys", None)
@@ -368,6 +372,9 @@ def on_joy_button(game, event):
                     target = s
                     break
         game._activate_phenix_from_input(target)
+    if (event.button in bindings.current.pad_buttons(slot, "missile") and game.started and not game.paused
+            and not game.game_over and not game.quit_confirm):
+        antimatter.fire(game, game.player)                  # the antimatter missile
     # Start button (7 Xbox / 9 some pads) — pause or quit confirm. In a game the pause button is the player's own; in the
     # menus it stays Start.
     if event.button in (bindings.current.pad_buttons(slot, "pause") if in_game else (7, 9, 6)):

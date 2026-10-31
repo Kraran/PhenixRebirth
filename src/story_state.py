@@ -54,6 +54,7 @@ DOME_CD_MIN = 3.0
 _EPS = 1e-6
 
 ACT3_PENDING = "act3_pending"          # Act 2 is won: the scene of the attack and the choice of the hull wait
+ANTIMATTER_FLAG = "antimatter_missile"   # the antimatter missile is unlocked (Silent Sentinels IV won): one per Adventure mission
 SENTINELLE_DONE = "sentinelles_done"   # the last Sentinelle mission is won: all four can be flown again
 GAME_WON = "game_won"                  # the last mission of Act 3 is won: the Adventure is over (it can still be played)
 HULLS = ("shield", "phoenix")
@@ -603,7 +604,7 @@ MISSIONS = [
         "id": "sentinelle_4", "acts": (3,), "once": True, "spacewar": True, "planet": "neptune", "replay": SENTINELLE_DONE,
         "sw_levels": [(1, 0, 0), (1, 1, 0), (0, 2, 1)],
         "title": "story_m_sent4", "hud_title": "story_m_sent_hud", "blurb": "story_m_sent4_b",
-        "need": "sentinelle_3", "content": 1, "speed": 1.0, "unlock": ["sentinelle_4", SENTINELLE_DONE],
+        "need": "sentinelle_3", "content": 1, "speed": 1.0, "unlock": ["sentinelle_4", SENTINELLE_DONE, ANTIMATTER_FLAG],
     },
 ]
 
@@ -1201,6 +1202,11 @@ class NameEntry:
 # ------------------------------------------------------------------ queries
 def flag(state, name):
     return bool((state.get("flags") or {}).get(name))
+
+
+def has_antimatter(state):
+    """The antimatter missile is unlocked (the last Silent Sentinels mission is won)."""
+    return flag(state, ANTIMATTER_FLAG)
 
 
 # ------------------------------------------------------------------- intro

@@ -15,7 +15,7 @@ import menu_ui
 from i18n import t
 
 ACTIONS = bindings.PAD_ACTIONS
-ROWS_ALL = ("fire", "phenix", "pause", "shared", "copy", "defaults", "back")
+ROWS_ALL = ("fire", "phenix", "missile", "pause", "shared", "copy", "defaults", "back")
 PAD_WAIT_SEC = 6.0                       # silence after which the capture ends by itself
 ORANGE = (255, 170, 80)
 HEAD = (255, 210, 140)
@@ -30,6 +30,7 @@ BTN_POS = {0: (330, 132), 1: (352, 110), 2: (308, 110), 3: (330, 88), 4: (140, 3
            7: (265, 105), 8: (150, 110), 9: (290, 175)}
 FACE = {0: (70, 175, 95), 1: (205, 75, 75), 2: (74, 127, 208), 3: (217, 180, 65)}
 CARDS = {"fire": pygame.Rect(890, 232, 300, 100), "phenix": pygame.Rect(890, 470, 300, 100),
+         "missile": pygame.Rect(890, 351, 300, 100),
          "pause": pygame.Rect(490, 218, 300, 48)}
 MOVE_CARD = pygame.Rect(90, 232, 300, 100)
 MENUS_CARD = pygame.Rect(90, 470, 300, 100)
@@ -347,7 +348,7 @@ def _fixed_card(game, surf, rect, title, kind):
 def _lines(game, surf, focus):
     b = bindings.current
     slot = 0 if b.pad_shared else game.keybind.place
-    anchors = {"fire": (890, 282), "phenix": (890, 520), "pause": (640, 266)}
+    anchors = {"fire": (890, 282), "phenix": (890, 520), "missile": (890, 401), "pause": (640, 266)}
     for name in ACTIONS:
         sel = name == focus
         col = menu_ui.SEL_EDGE if sel else LINE
