@@ -678,7 +678,7 @@ def _kill_player(game, form):
     p = game.player
     if not p.alive or p.dying:
         return
-    if p.burn_by_guardian(blast=True):  # the big blast (ship_blast): one life, no dome, no Phenix form that saves
+    if p.burn_by_guardian():  # the big blast (ship_blast): one life, no dome, no Phenix form that saves
         game.shake_amount = max(game.shake_amount, 30.0)
         try:
             game.sounds.play("explosion_big", x=p.x)

@@ -23,6 +23,7 @@ RING_TIME = 0.75
 FLASH_TIME = 0.22
 SCALE_UP = 1.5                                        # the shards are this much bigger than the (half sized) ship
 EFFECT_SIZE = 2.2                                     # the size of the lights, rings and sparks (the blast is big)
+FULL_SHIP_GROW = 1.35                                 # ... times this for a ship drawn at full size (the game outside SpaceWar)
 SHARD_DRAG = 1.4
 
 
@@ -55,8 +56,10 @@ class ShipBlast:
         self.x, self.y = float(ship.x), float(ship.y)
         self.vx = float(getattr(ship, "ast_vx", 0.0) or 0.0) * 0.4          # (the wreck keeps some of the speed)
         self.vy = float(getattr(ship, "ast_vy", 0.0) or 0.0) * 0.4
-        self.size = EFFECT_SIZE
+        self.size = EFFECT_SIZE if scale <= 0.5 else EFFECT_SIZE * FULL_SHIP_GROW      # (a ship at full size: a bigger blast)
         self.shard_k = SCALE_UP
+        self.active_form = bool(ship.is_phenix)
+        self.pose = (angle, scale)                  # (the turn and size of the hull when it blew up)
         self.age = 0.0
         img = _source(ship, ship.is_phenix)
         if angle is not None or scale != 1.0:
@@ -126,6 +129,10 @@ class ShipBlast:
     @property
     def finished(self):
         return self.age >= DURATION
+
+    def is_finished(self):
+        """(The interface of the explosions of the game: the blast can be put in game.explosions.)"""
+        return self.finished
 
     def update(self, dt):
         self.age += dt

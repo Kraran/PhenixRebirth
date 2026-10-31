@@ -48,6 +48,8 @@ PLANET_FILES = [
 # scrolls from the top to the bottom: it only moves with the ship (see Starfield.set_free). The two rocks of the
 # planet list are never put there: they would be taken for the rocks of the mission.
 FREE_EXCLUDED = ("asteroid_dinkinesh.png", "asteroid_pallas.png")
+# The missions of the Adventure never show this planet in the background (the arcade game still does, see Starfield.set_adventure).
+ADVENTURE_EXCLUDED = ("fantasy_rings.png",)
 FREE_PARALLAX = {"star0": 0.05, "star1": 0.14, "star2": 0.30, "planet": 0.12, "galaxy": 0.06, "nebula": 0.08}
 
 
@@ -190,6 +192,7 @@ class Planet:
     """Solar-system planet sprites — spawn above the top edge, scroll down."""
 
     _cache = {}
+    no_rings = False                                     # set by Starfield.set_adventure
 
     def __init__(self, free=False):
         self.parallax = 0.08
@@ -224,6 +227,8 @@ class Planet:
 
     def reset(self, free=False):
         names = [n for n in PLANET_FILES if n not in FREE_EXCLUDED] if free else PLANET_FILES
+        if Planet.no_rings:                              # the missions of the Adventure: not the fantasy ringed planet
+            names = [n for n in names if n not in ADVENTURE_EXCLUDED]
         filename = random.choice(names)
         self.filename = filename
         base = self._load_image(filename)
@@ -551,6 +556,14 @@ class Starfield:
         self.free = False
         self._free_fresh = True
         self.bare = False                 # SpaceWar: no planet or rock in the background (see set_bare)
+
+    def set_adventure(self, on):
+        """A mission of the Adventure is on: the fantasy ringed planet leaves the sky at once and does not come back (the
+        arcade game keeps it). Idempotent: the game says it every frame."""
+        on = bool(on)
+        Planet.no_rings = on
+        if on:
+            self.planets = [p for p in self.planets if getattr(p, "filename", "") not in ADVENTURE_EXCLUDED]
 
     def set_bare(self, on):
         """No planets and no asteroids in the background (the SpaceWar levels, whose star is a planet of their own): the

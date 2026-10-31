@@ -203,6 +203,7 @@ def _ffmpeg_exe():
 
 
 CHEAT_MIN_STAGE, CHEAT_MAX_STAGE = 2, 99      # the stages the cheat code LVxx (typed on the high-score screen) can start at
+BLAST_HIDE = 0.55                  # seconds the hull of a ship that was hit but is not lost stays hidden while it breaks up (Game._ship_boom)
 LAST_ANNOUNCED_LEVEL = 31          # the announcer has recorded the stages 1 to 31 (assets/sounds/level<n>.wav); past it, silence
 
 
@@ -942,6 +943,18 @@ class Game:
             return Explosion(x, y, kind=kind, delay_frames=delay_frames)
         except TypeError:
             return Explosion(x, y, kind=kind)
+
+    def _ship_boom(self, ship, kind="bullet"):
+        """The ship of a player is hit or destroyed: the big blast of the SpaceWar level (src/ship_blast.py) at its place, in
+        every mode of the game, whatever `kind` of hit it was. The hull is hidden while it breaks up: for the time of its
+        death if it is dying, else a short moment (it comes back, blinking, as it always did)."""
+        try:
+            from ship_blast import ShipBlast
+            self.explosions.append(ShipBlast(ship, *ship.blast_pose()))
+            ship.blast_hide = ship.DEATH_DURATION + 0.05 if ship.dying else BLAST_HIDE
+        except Exception:
+            log_exc("game._ship_boom")
+            self.explosions.append(self._boom(ship.x, ship.y, kind=kind))
 
     def _drain_detach_pops(self):
         """Wing-pop explosions after a gargoyle body kill."""
@@ -3553,6 +3566,7 @@ class Game:
                 self._ast_last_x, self._ast_last_y = px, py
                 px, py = self._ast_px, self._ast_py
         self.starfield.set_free(free)             # the Asteroids mission: the background only follows the ship
+        self.starfield.set_adventure(bool(adv) and bool(getattr(self, "started", False)))     # (no fantasy ringed planet in a mission)
         self.starfield.set_bare(bool(adv.get("spacewar")))     # SpaceWar: no planet or rock behind the planet of the level
         menu = not bool(getattr(self, "started", False))
         stage = int(getattr(self, "stage", 1) or 1) if not menu else 0

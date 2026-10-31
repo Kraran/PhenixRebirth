@@ -299,7 +299,7 @@ def test_game_launch_collision_and_return_to_arcade(tmp_path, monkeypatch):
     lives = game.player.lives
     update_play.enemy_attacks_vs_players(game)
     assert game.player.lives == lives - 1 and bolt.alive and game.player.dying
-    from ship_burn import DURATION
+    from ship_blast import DURATION
     game.player.update(DURATION + 0.01, {})
     assert game.player.alive and not game.player.dying
     game.formation.bullets.clear()  # manual ship-only animation step above

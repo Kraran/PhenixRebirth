@@ -61,7 +61,7 @@ def tick_ships(game):
             if edge_killed:
                 game._note_scalable("razor")
                 kind = "gameover" if ship.dying else "edge"
-                game.explosions.append(game._boom(ship.x, ship.y, kind=kind))
+                game._ship_boom(ship, kind)
                 game.shake_amount = 22.0 if ship.dying else 14.0
                 game.sounds.play("explosion_big" if ship.dying else "explosion", x=ship.x)
                 side = getattr(ship, "last_edge_side", 0) or getattr(ship, "edge_side", -1)
@@ -461,7 +461,7 @@ def boss_floor_check(game):
             ship.phenix_gauge = float(getattr(ship, "phenix_min_gauge", 0))
             ship.combo_streak = 0
             ship.phenix_timer = 0.0
-            game.explosions.append(game._boom(ship.x, ship.y, kind="gameover"))
+            game._ship_boom(ship, "gameover")
         game.shake_amount = 24.0
         game.sounds.play("explosion_big", x=BASE_WIDTH // 2)
 
@@ -477,7 +477,7 @@ def enemy_attacks_vs_players(game):
             if hull.width > 0 and player_hitbox.colliderect(hull):
                 if ship.infinite_lives:
                     ship.hit()
-                    game.explosions.append(game._boom(ship.x, ship.y, kind="bullet"))
+                    game._ship_boom(ship, "bullet")
                     game.shake_amount = 14.0
                     game.sounds.play("explosion", x=ship.x)
                     ship.y = min(BASE_HEIGHT - 80, ship.y + 40)
@@ -494,7 +494,7 @@ def enemy_attacks_vs_players(game):
                     ship.phenix_gauge = float(getattr(ship, "phenix_min_gauge", 0))
                     ship.combo_streak = 0
                     ship.phenix_timer = 0.0
-                    game.explosions.append(game._boom(ship.x, ship.y, kind="gameover"))
+                    game._ship_boom(ship, "gameover")
                     game.shake_amount = 24.0
                     game.sounds.play("explosion_big", x=ship.x)
             for b in game.boss_saucer.bullets[:]:
@@ -509,7 +509,7 @@ def enemy_attacks_vs_players(game):
                         if game.play_mode == "coop":
                             game._on_coop_life_lost(ship)
                         kind = "gameover" if ship.dying else "bullet"
-                        game.explosions.append(game._boom(ship.x, ship.y, kind=kind))
+                        game._ship_boom(ship, kind)
                         game.shake_amount = 22.0 if ship.dying else 12.0
                         game.sounds.play("explosion_big" if ship.dying else "explosion", x=ship.x)
                     break
@@ -535,7 +535,7 @@ def enemy_attacks_vs_players(game):
                     if game.play_mode == "coop":
                         game._on_coop_life_lost(ship)
                     kind = "gameover" if ship.dying else "bullet"
-                    game.explosions.append(game._boom(ship.x, ship.y, kind=kind))
+                    game._ship_boom(ship, kind)
                     game.shake_amount = 22.0 if ship.dying else 12.0
                     game.sounds.play("explosion_big" if ship.dying else "explosion", x=ship.x)
                 break
@@ -562,7 +562,7 @@ def enemy_attacks_vs_players(game):
                     if game.play_mode == "coop":
                         game._on_coop_life_lost(ship)
                     pkind = "gameover" if ship.dying else "collision"
-                    game.explosions.append(game._boom(ship.x, ship.y, kind=pkind))
+                    game._ship_boom(ship, pkind)
                     game.shake_amount = 26.0 if ship.dying else 18.0
                     game.sounds.play("explosion_big", x=ship.x)
                 break
