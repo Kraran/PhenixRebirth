@@ -54,6 +54,7 @@ DOME_CD_MIN = 3.0
 _EPS = 1e-6
 
 ACT3_PENDING = "act3_pending"          # Act 2 is won: the scene of the attack and the choice of the hull wait
+SENTINELLE_DONE = "sentinelles_done"   # the last Sentinelle mission is won: all four can be flown again
 GAME_WON = "game_won"                  # the last mission of Act 3 is won: the Adventure is over (it can still be played)
 HULLS = ("shield", "phoenix")
 
@@ -574,6 +575,35 @@ MISSIONS = [
         "planet": "neptune",
         "title": "story_m_spacewar_neptune", "hud_title": "story_m_spacewar_hud", "blurb": "story_m_spacewar_neptune_b",
         "need": None, "content": 1, "speed": 1.0,
+    },
+    # EDF - Opération Sentinelles silencieuses (I-IV): a stealth spy satellite to put in orbit round each gas giant, built on the
+    # SpaceWar level (src/spacewar.py) but for real: the birds and the saucers pay their normal points and a failure costs what
+    # it always costs. Flown in order (I from the start of Act 1, II and III in Act 2, IV in Act 3), once each, until the
+    # last one is won (flag SENTINELLE_DONE): then they can all be flown again, for the same points and the same penalties.
+    # `sw_levels`: (blue birds, green birds, boss saucers) of each level; a level with a saucer is won when it is destroyed.
+    {
+        "id": "sentinelle_1", "acts": (1, 2, 3), "once": True, "spacewar": True, "planet": "jupiter", "replay": SENTINELLE_DONE,
+        "sw_levels": [(1, 0, 0), (0, 0, 1)],
+        "title": "story_m_sent1", "hud_title": "story_m_sent_hud", "blurb": "story_m_sent1_b",
+        "need": None, "content": 1, "speed": 1.0, "unlock": ["sentinelle_1"],
+    },
+    {
+        "id": "sentinelle_2", "acts": (2, 3), "once": True, "spacewar": True, "planet": "saturn", "replay": SENTINELLE_DONE,
+        "sw_levels": [(1, 0, 0), (0, 1, 0), (0, 0, 1)],
+        "title": "story_m_sent2", "hud_title": "story_m_sent_hud", "blurb": "story_m_sent2_b",
+        "need": "sentinelle_1", "content": 1, "speed": 1.0, "unlock": ["sentinelle_2"],
+    },
+    {
+        "id": "sentinelle_3", "acts": (2, 3), "once": True, "spacewar": True, "planet": "uranus", "replay": SENTINELLE_DONE,
+        "sw_levels": [(1, 0, 0), (1, 1, 0), (0, 1, 1)],
+        "title": "story_m_sent3", "hud_title": "story_m_sent_hud", "blurb": "story_m_sent3_b",
+        "need": "sentinelle_2", "content": 1, "speed": 1.0, "unlock": ["sentinelle_3"],
+    },
+    {
+        "id": "sentinelle_4", "acts": (3,), "once": True, "spacewar": True, "planet": "neptune", "replay": SENTINELLE_DONE,
+        "sw_levels": [(1, 0, 0), (1, 1, 0), (0, 2, 1)],
+        "title": "story_m_sent4", "hud_title": "story_m_sent_hud", "blurb": "story_m_sent4_b",
+        "need": "sentinelle_3", "content": 1, "speed": 1.0, "unlock": ["sentinelle_4", SENTINELLE_DONE],
     },
 ]
 
@@ -1268,6 +1298,11 @@ SCENES = {
     "bonus_wreck_shield": {"title": "story_scene_wrecks_t", "slides": [("epave_nx01", "story_scene_wrecks")]},
     "ast_3": {"title": "story_scene_ast3_t", "slides": [("ceinture_asteroides", "story_scene_ast3")]},
     "final_1": {"title": "story_scene_fin_t", "slides": [("riposte", "story_scene_fin")]},
+    # EDF - Opération Sentinelles silencieuses (the SpaceWar missions of the Adventure): the briefing, over the planet
+    "sentinelle_1": {"title": "story_scene_sent1_t", "slides": [("sentinelle1_jupiter", "story_scene_sent1")]},
+    "sentinelle_2": {"title": "story_scene_sent2_t", "slides": [("sentinelle2_saturne", "story_scene_sent2")]},
+    "sentinelle_3": {"title": "story_scene_sent3_t", "slides": [("sentinelle3_uranus", "story_scene_sent3")]},
+    "sentinelle_4": {"title": "story_scene_sent4_t", "slides": [("sentinelle4_neptune", "story_scene_sent4")]},
 }
 
 # The VIP rescue (Act 2 BONUS): its victory tells who was on board, and the concert of Lyra Voss in the Phobos bar opens.
@@ -1292,9 +1327,10 @@ STORY_SCENES = {
 }
 # The order of the journal (the order of the story): the mission scenes of Acts 1 and 2, the attack, the loss, the
 # Act 3 scenes, the end; the Phobos bar (Add-On) last.
-SCENE_ORDER = (["ch1_sortie", "best_s2", "best_s3", "best_s4", "ast_1", "dome_1", "best_boss", "ast_2", "paint_1",
+SCENE_ORDER = (["ch1_sortie", "best_s2", "best_s3", "best_s4", "ast_1", "dome_1", "sentinelle_1", "best_boss", "ast_2", "paint_1",
                 VIP_SCENE, ACT3_ATTACK, "act3_kept_shield", "act3_kept_phoenix", "up_shield_1", "up_phenix_1",
-                "bonus_wreck_phenix", "bonus_wreck_shield", "ast_3", "final_1", EPILOGUE])
+                "bonus_wreck_phenix", "bonus_wreck_shield", "sentinelle_2", "sentinelle_3", "ast_3", "sentinelle_4", "final_1",
+                EPILOGUE])
 
 
 # The films: videos watched full screen with their sound (assets/video/<video>.mp4, silent, and <video>.ogg, its
@@ -1729,8 +1765,9 @@ def mission_playable(state, mission, cheat=False):
         return False
     if mission.get("drop") and mission_done(state, mission):
         return False                       # the item it drops is caught: a drop mission is offered until then
-    if mission.get("once") and mission.get("id") in (state.get("cleared") or []):
-        return False                       # a story mission is flown once; hunts stay replayable
+    if mission.get("once") and mission.get("id") in (state.get("cleared") or []) \
+            and not (mission.get("replay") and flag(state, mission["replay"])):
+        return False                       # a story mission is flown once (a Sentinelle one until the series is done); hunts stay replayable
     if mission.get("reactor") and mission_done(state, mission):
         return False                       # the reactor is caught: a BONUS mission is offered until then
     if is_paint(mission) and paint_state(state)["step"] != int(mission["paint"]) - 1:

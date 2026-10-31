@@ -102,7 +102,7 @@ def test_every_clip_is_h264_without_sound_at_the_pace_of_the_player():
         assert w <= 1280, name
         dur = re.search(r"Duration: (\d+):(\d+):([\d.]+)", info)
         seconds = int(dur.group(1)) * 3600 + int(dur.group(2)) * 60 + float(dur.group(3))
-        assert 5.0 <= seconds <= 12.0, name                                           # the 6 to 10 second videos
+        assert 5.0 <= seconds <= 17.0, name                                           # the 6 to 10 second videos (the slowed Sentinel ones: 16 s)
 
 
 @needs_ffmpeg

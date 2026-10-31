@@ -1936,7 +1936,7 @@ class Game:
         # never carry one, and do not count in the gap between two drops; the items bought still work in them.
         story = getattr(self, "story", None)
         can_loot = (story is not None and not spec.get("invaders") and not spec.get("asteroids")
-                    and not spec.get("training"))
+                    and not spec.get("training") and not spec.get("spacewar"))
         if can_loot and spec.get("reactor"):
             # a BONUS mission: the reactor of its hull falls once, whenever in the waves (the random loot is off)
             self.adventure["loot_plan"] = story_items.reactor_plan(story.state, spec["reactor"], random)
@@ -2105,7 +2105,8 @@ class Game:
             spacewar.set_planet(adv.get("planet"))
             self.stage = 1
             mult = float(adv.get("speed") or 1.0) * self.difficulty_speed_mult()
-            self.formation = spacewar.SpaceWarFormation(speed_mult=mult)
+            self.formation = spacewar.SpaceWarFormation(speed_mult=mult, levels=adv.get("sw_levels"),
+                                                        points=not adv.get("training"))
             self.formation.sounds = self.sounds
             self.formation.font = self.font
             self.formation.text_cache = self.text_cache

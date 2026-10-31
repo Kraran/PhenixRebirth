@@ -6669,6 +6669,127 @@ _GUARDIAN_TEXTS = {
 for _key, (_fr, _en) in _GUARDIAN_TEXTS.items():
     T[_key] = {code: _fr if code == "fr" else _en for code in LANG_CODES}
 
+# EDF - Opération Sentinelles silencieuses I-IV (the SpaceWar missions of the Adventure; French and English, the other
+# languages show the English text). {name} is the pilot's name.
+_SENT_TEXTS = {
+    "story_m_sent_hud": ("Sentinelle", "Sentinel"),
+    "story_m_sent1": ("EDF - Sentinelles silencieuses I : Jupiter", "EDF - Silent Sentinels I: Jupiter"),
+    "story_m_sent1_b": (
+        "Placer un satellite espion furtif en orbite autour de Jupiter. Plasma inutile : 20 torpilles à antimatière, 1 vie, 2 niveaux.",
+        "Place a stealth spy satellite in orbit around Jupiter. Plasma is useless: 20 antimatter torpedoes, 1 life, 2 levels."),
+    "story_m_sent2": ("EDF - Sentinelles silencieuses II : Saturne", "EDF - Silent Sentinels II: Saturn"),
+    "story_m_sent2_b": (
+        "Deuxième sentinelle, en orbite de Saturne. Ses anneaux sont inoffensifs. 20 torpilles à antimatière, 1 vie, 3 niveaux.",
+        "Second sentinel, in orbit of Saturn. Its rings are harmless. 20 antimatter torpedoes, 1 life, 3 levels."),
+    "story_m_sent3": ("EDF - Sentinelles silencieuses III : Uranus", "EDF - Silent Sentinels III: Uranus"),
+    "story_m_sent3_b": (
+        "Troisième sentinelle, autour d'Uranus : un signal inconnu est à localiser. 20 torpilles à antimatière, 1 vie, 3 niveaux.",
+        "Third sentinel, around Uranus: an unknown signal must be located. 20 antimatter torpedoes, 1 life, 3 levels."),
+    "story_m_sent4": ("EDF - Sentinelles silencieuses IV : Neptune", "EDF - Silent Sentinels IV: Neptune"),
+    "story_m_sent4_b": (
+        "La dernière sentinelle, au bout du système. Réussir cette mission débloque le missile antimatière. 20 torpilles, 1 vie, 3 niveaux.",
+        "The last sentinel, at the edge of the system. Winning it unlocks the antimatter missile. 20 torpedoes, 1 life, 3 levels."),
+    "story_scene_sent1_t": ("Sentinelles silencieuses I : Jupiter", "Silent Sentinels I: Jupiter"),
+    "story_scene_sent1": (
+        "Commandement EDF, transmission prioritaire depuis la Terre.\n\n"
+        "Les Avioïdes ne viennent pas de nulle part. Pour savoir d’où ils surgissent, il nous faut des yeux là où il n’y a "
+        "plus aucune construction humaine qui a survécu à la guerre. Ta mission consiste à placer un satellite espion furtif "
+        "en orbite autour de Jupiter.\n\n"
+        "Un problème nous attend là-bas. Le champ magnétique des géantes gazeuses est bien trop puissant pour nos armes. À "
+        "cette distance, la force de Lorentz dévie les ions de nos canons à plasma et brise la cohérence des tirs : ils se "
+        "dispersent avant d’atteindre leur cible. Tes canons ne serviront à rien.\n\n"
+        "Ton vaisseau a donc été modifié pour embarquer 20 torpilles à antimatière. Elles ne portent aucune charge "
+        "électrique et le champ ne peut pas les dévier. Chacune compte : une fois le stock vidé, tu n’auras plus rien pour "
+        "te défendre.\n\n"
+        "Méfie-toi aussi de l’extraordinaire puissance de la gravité des géantes gazeuses, qui attire ton vaisseau sans "
+        "relâche, et des nombreux astéroïdes de passage. Les Avioïdes sont déjà sur place, et eux savent voler dans ce chaos.\n\n"
+        "Dépose le satellite, survis, et rentre.\n"
+        "Bonne chance, {name}.",
+        "EDF Command, priority transmission from Earth.\n\n"
+        "The Avioids do not come from nowhere. To learn where they emerge from, we need eyes where no human construction "
+        "has survived the war. Your mission is to place a stealth spy satellite in orbit around Jupiter.\n\n"
+        "A problem awaits you there. The magnetic field of the gas giants is far too strong for our weapons. At that "
+        "distance the Lorentz force deflects the ions of our plasma cannons and breaks the coherence of the shots: they "
+        "scatter before reaching their target. Your cannons will be useless.\n\n"
+        "Your ship has therefore been modified to carry 20 antimatter torpedoes. They carry no electric charge and the "
+        "field cannot deflect them. Every one counts: once the stock is empty, you will have nothing left to defend "
+        "yourself.\n\n"
+        "Beware also of the extraordinary gravity of the gas giants, which pulls your ship relentlessly, and of the "
+        "many asteroids passing by. The Avioids are already there, and they know how to fly in this chaos.\n\n"
+        "Drop the satellite, survive, and come home.\n"
+        "Good luck, {name}."),
+    "story_scene_sent2_t": ("Sentinelles silencieuses II : Saturne", "Silent Sentinels II: Saturn"),
+    "story_scene_sent2": (
+        "Commandement EDF, transmission prioritaire depuis la Terre.\n\n"
+        "Le satellite de Jupiter fonctionne. Ses premières images confirment ce que nous craignions : les Avioïdes vont et "
+        "viennent plus loin, vers l’extérieur du système. Ta prochaine cible est Saturne.\n\n"
+        "Le champ magnétique y est plus faible que celui de Jupiter, mais il suffit encore à disperser nos tirs de plasma. "
+        "Tes canons resteront muets. Tu repars avec tes 20 torpilles à antimatière, pas une de plus.\n\n"
+        "Saturne a ses propres pièges. Sa gravité est moins forte que celle de Jupiter, mais elle reste implacable. Ses "
+        "anneaux sont spectaculaires mais inoffensifs, alors ne te laisse pas distraire par eux. Les astéroïdes, eux, ne "
+        "pardonnent pas. Nos capteurs signalent aussi des Avioïdes plus nombreux et mieux organisés.\n\n"
+        "Dépose le satellite, survis, et rentre.\n"
+        "Bonne chance, {name}.",
+        "EDF Command, priority transmission from Earth.\n\n"
+        "The Jupiter satellite works. Its first images confirm what we feared: the Avioids come and go farther out, "
+        "toward the edge of the system. Your next target is Saturn.\n\n"
+        "The magnetic field there is weaker than Jupiter’s, but it is still enough to scatter our plasma shots. Your "
+        "cannons will stay silent. You leave with your 20 antimatter torpedoes, not one more.\n\n"
+        "Saturn has its own traps. Its gravity is weaker than Jupiter’s, but it remains relentless. Its rings are "
+        "spectacular but harmless, so do not let them distract you. The asteroids, on the other hand, do not forgive. "
+        "Our sensors also report more numerous and better organised Avioids.\n\n"
+        "Drop the satellite, survive, and come home.\n"
+        "Good luck, {name}."),
+    "story_scene_sent3_t": ("Sentinelles silencieuses III : Uranus", "Silent Sentinels III: Uranus"),
+    "story_scene_sent3": (
+        "Commandement EDF, transmission prioritaire depuis la Terre.\n\n"
+        "Les deux premières sentinelles écoutent. Elles ont capté un signal inconnu qui provient des confins du système. "
+        "Pour le localiser, il nous faut un troisième point d’écoute, en orbite autour d’Uranus.\n\n"
+        "Uranus est une planète couchée sur le côté, et son champ magnétique est penché et décentré, comme s’il était "
+        "tordu. Nos ingénieurs le jugent encore plus imprévisible que celui de Jupiter. N’espère rien de tes canons à "
+        "plasma. Tes 20 torpilles à antimatière restent ta seule défense.\n\n"
+        "Le trajet est long et ta radio mettra des heures à nous parvenir. Personne ne pourra t’aider en temps réel. Les "
+        "Avioïdes semblent défendre ce secteur avec acharnement.\n\n"
+        "Dépose le satellite, survis, et rentre.\n"
+        "Bonne chance, {name}.",
+        "EDF Command, priority transmission from Earth.\n\n"
+        "The first two sentinels are listening. They have picked up an unknown signal coming from the edge of the system. "
+        "To locate it, we need a third listening point, in orbit around Uranus.\n\n"
+        "Uranus is a planet lying on its side, and its magnetic field is tilted and off-centre, as if it were twisted. "
+        "Our engineers consider it even more unpredictable than Jupiter’s. Expect nothing from your plasma cannons. Your "
+        "20 antimatter torpedoes remain your only defence.\n\n"
+        "The trip is long and your radio will take hours to reach us. Nobody will be able to help you in real time. The "
+        "Avioids seem to defend this sector fiercely.\n\n"
+        "Drop the satellite, survive, and come home.\n"
+        "Good luck, {name}."),
+    "story_scene_sent4_t": ("Sentinelles silencieuses IV : Neptune", "Silent Sentinels IV: Neptune"),
+    "story_scene_sent4": (
+        "Commandement EDF, transmission prioritaire depuis la Terre.\n\n"
+        "Le signal est triangulé : il vient de Neptune. C’est le dernier monde du système, et peut-être le cœur de tout. "
+        "La dernière sentinelle doit y être placée coûte que coûte. Avec elle, nous saurons enfin d’où viennent les "
+        "Avioïdes.\n\n"
+        "Là-bas, le champ magnétique est aussi chaotique que celui d’Uranus, et les vents sont les plus violents du "
+        "système solaire. Le plasma y est inutile. Une fois encore, tu n’emportes que 20 torpilles à antimatière.\n\n"
+        "Tu seras plus loin de la Terre que n’importe quel humain avant toi depuis la guerre. Nous ne savons pas ce qui "
+        "t’attend, mais tout indique que l’ennemi y est plus nombreux que jamais. Il ne te laissera pas approcher sans "
+        "combattre.\n\n"
+        "Dépose le satellite. Survis. Et rentre, nous comptons tous sur toi.\n"
+        "Bonne chance, {name}.",
+        "EDF Command, priority transmission from Earth.\n\n"
+        "The signal is triangulated: it comes from Neptune. It is the last world of the system, and perhaps the heart of "
+        "it all. The last sentinel must be placed there at all costs. With it, we will finally know where the Avioids "
+        "come from.\n\n"
+        "There, the magnetic field is as chaotic as Uranus’s, and the winds are the most violent in the solar system. "
+        "Plasma is useless. Once again, you carry only 20 antimatter torpedoes.\n\n"
+        "You will be farther from Earth than any human since the war. We do not know what awaits you, but everything "
+        "indicates that the enemy is more numerous there than ever. It will not let you approach without a fight.\n\n"
+        "Drop the satellite. Survive. And come home, we are all counting on you.\n"
+        "Good luck, {name}."),
+}
+for _k, (_fr, _en) in _SENT_TEXTS.items():
+    T[_k] = {_code: _en for _code in LANG_CODES}
+    T[_k]["fr"] = _fr
+
 _lang = "fr"
 
 def set_lang(code):

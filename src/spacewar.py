@@ -23,6 +23,7 @@ when the player is destroyed, when the three levels are won (`all_dead()`), or w
 `SpaceWarFormation` looks like a formation without enemies to the rest of the game; `tick(game)` runs it every frame.
 """
 import math
+import types
 import random
 
 import pygame
@@ -464,7 +465,9 @@ class SpaceWarFormation:
     """The field of the level: the star, the birds, the torpedoes, the dust. Looks like a formation without enemies to
     the rest of the game."""
 
-    def __init__(self, speed_mult=1.0, rng=None):
+    def __init__(self, speed_mult=1.0, rng=None, levels=None, points=False):
+        self.levels = [tuple(int(n) for n in lv) for lv in (levels or LEVELS)]    # (blue, green, saucers) of each level
+        self.points = bool(points)          # the birds pay their points (the Sentinelle missions); the test pays nothing
         self.enemies = []
         self.bullets = []
         self.swarm = None
@@ -523,9 +526,9 @@ class SpaceWarFormation:
     # --- the levels ---
     def start_level(self, number, player=None):
         """Put the birds of level `number` (1..3) in orbit and the player back at the start, with a full stock."""
-        self.level = max(1, min(len(LEVELS), int(number)))
-        blue, green, boss = LEVELS[self.level - 1]
-        scale = LEVEL_SCALE[self.level - 1] * max(0.5, self.speed_mult)
+        self.level = max(1, min(len(self.levels), int(number)))
+        blue, green, boss = self.levels[self.level - 1]
+        scale = LEVEL_SCALE[min(self.level, len(LEVEL_SCALE)) - 1] * max(0.5, self.speed_mult)
         kinds = [1] * blue + [2] * green + [SAUCER] * boss
         self.rng.shuffle(kinds)
         angles = [0.0, math.pi / 2, -math.pi / 2, math.pi / 4][:len(kinds)]
@@ -613,10 +616,10 @@ class SpaceWarFormation:
                 asteroids._add_glow(surface, (255, 60, 40), (tp.x, tp.y), 24)
                 pygame.draw.circle(surface, (255, 200, 180), (int(tp.x), int(tp.y)), 3)
         if self.level_time < ANNOUNCE and self.started:
-            self._say(surface, _label("story_spacewar_level").format(n=self.level, m=len(LEVELS)), (255, 215, 120), 150)
+            self._say(surface, _label("story_spacewar_level").format(n=self.level, m=len(self.levels)), (255, 215, 120), 150)
         if self.level_time < ANNOUNCE and self.started and any(b.kind == SAUCER for b in self.birds):
             self._say(surface, _label("story_spacewar_boss"), (255, 120, 100), 182)
-        if self.pause > 0 and self.level < len(LEVELS):
+        if self.pause > 0 and self.level < len(self.levels):
             self._say(surface, _label("story_spacewar_next"), (140, 255, 170), 200)
         if self.exhausted:
             self._say(surface, _label("story_spacewar_empty"), (255, 120, 100), 200)
@@ -692,6 +695,10 @@ def _kill_bird(game, form, bird):
         return
     bird.alive = False
     form.destroyed += 1
+    if form.points:
+        # a Sentinelle mission: the normal points of the bird (blue 10, green 20) or of the boss saucer
+        pts = game._boss_kill_points() if bird.kind == SAUCER else game._enemy_kill_points(types.SimpleNamespace(stage=bird.kind))
+        game._add_score(game.player, pts)
     _boom(game, form, bird.x, bird.y)
 
 
@@ -866,7 +873,7 @@ def tick(game):
         form.end_timer += dt
         return
     if form.level_done() and form.level_time > 0.5:
-        if form.level >= len(LEVELS):
+        if form.level >= len(form.levels):
             form.won = True
             form.end_timer = 0.0
         else:
