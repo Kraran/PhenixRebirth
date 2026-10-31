@@ -361,3 +361,10 @@ def test_the_banner_of_a_level_counts_the_levels_of_the_mission():
         form.level_time = 0.1
         form.draw(pygame.Surface((1280, 720)))
         assert any("1 / %d" % total in x for x in said), said
+
+
+def test_the_sentinel_scenes_have_their_place_in_the_journal_order():
+    order = ss.SCENE_ORDER
+    for mid in ("sentinelle_1", "sentinelle_2", "sentinelle_3", "sentinelle_4"):
+        assert mid in order and order.count(mid) == 1
+    assert order.index("sentinelle_1") < order.index("sentinelle_2") < order.index("sentinelle_3") < order.index("sentinelle_4")

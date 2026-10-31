@@ -1327,9 +1327,10 @@ STORY_SCENES = {
 }
 # The order of the journal (the order of the story): the mission scenes of Acts 1 and 2, the attack, the loss, the
 # Act 3 scenes, the end; the Phobos bar (Add-On) last.
-SCENE_ORDER = (["ch1_sortie", "best_s2", "best_s3", "best_s4", "ast_1", "dome_1", "best_boss", "ast_2", "paint_1",
+SCENE_ORDER = (["ch1_sortie", "best_s2", "best_s3", "best_s4", "ast_1", "dome_1", "sentinelle_1", "best_boss", "ast_2", "paint_1",
                 VIP_SCENE, ACT3_ATTACK, "act3_kept_shield", "act3_kept_phoenix", "up_shield_1", "up_phenix_1",
-                "bonus_wreck_phenix", "bonus_wreck_shield", "ast_3", "final_1", EPILOGUE])
+                "bonus_wreck_phenix", "bonus_wreck_shield", "sentinelle_2", "sentinelle_3", "ast_3", "sentinelle_4", "final_1",
+                EPILOGUE])
 
 
 # The films: videos watched full screen with their sound (assets/video/<video>.mp4, silent, and <video>.ogg, its
