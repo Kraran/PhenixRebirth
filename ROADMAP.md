@@ -124,6 +124,7 @@ Current release: **v1.5.0**
   screen (they end at the edge; the player's still do). The CBS opening is now a push of about 0.9 s on Jupiter (1.4 Saturn, 1.0
   Uranus and Neptune). Tests: `tests/test_spacewar.py`
 - SpaceWar, fifth round (Kraran's fourth tests): the torpedoes of the enemies are slow (230 px/s, they last 3.4 s) so that they can be dodged, the birds lead their aim with that speed; the third level is now 2 blue birds, 1 green bird and the small boss saucer (3 hits, a red flash and a life bar, 14 torpedoes, radius 27; a ram or a crashing bird does not hurt it, the ship dies) and is won when the saucer is destroyed; the ship ends in a big blast (`src/ship_blast.py`: the hull in glowing shards, flash, fireball, two shock rings, sparks, embers, smoke; the guardians keep the pixel dust). Tests: `tests/test_spacewar.py`, `tests/test_ship_blast.py`
+- Every explosion of the ship of the player is now the big blast of the SpaceWar level (`Game._ship_boom` → `src/ship_blast.py`): in the arcade game and in the Adventure (bullets, divers, boss hull, edge lightning, the invaders' floor, the Asteroids mission, the guardian lasers, hot-seat and co-op); a ship that is hit but not lost hides its hull for 0.55 s while it breaks up and comes back blinking. The fantasy ringed planet (`fantasy_rings.png`) no longer appears in the background of any mission of the Adventure (`Starfield.set_adventure`); the arcade game keeps it. Tests: `tests/test_ship_boom.py`, `tests/test_ship_blast.py`
 
 ## Done in 1.5.0
 

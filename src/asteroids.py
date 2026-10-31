@@ -455,7 +455,7 @@ def _ship_hit(game, form):
     old = (p.x, p.y)
     p.hit()
     kind = "gameover" if p.dying else "bullet"
-    game.explosions.append(game._boom(old[0], old[1], kind=kind))
+    game._ship_boom(p, kind)                              # (the big blast of the ship, at the place it was hit)
     game.shake_amount = 22.0 if p.dying else 12.0
     game.sounds.play("explosion_big" if p.dying else "explosion", x=old[0])
     form.debris(old[0], old[1], "fire", 36, 330, life=(0.5, 1.3), size=(3.0, 8.0))

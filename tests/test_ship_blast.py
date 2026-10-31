@@ -204,18 +204,26 @@ def test_two_blasts_with_the_same_seed_are_the_same_and_with_others_differ(displ
     assert [round(s.vx, 3) for s in a.shards] != [round(s.vx, 3) for s in c.shards]
 
 
-def test_burn_by_guardian_with_blast_makes_a_blast_and_without_the_dust(display):
+def test_burn_by_guardian_makes_the_blast_for_every_hull(display):
+    for hull in ("shield", "phoenix"):
+        p = _ship(hull)
+        assert p.burn_by_guardian()
+        assert isinstance(p.guardian_burn, sbl.ShipBlast) and p.dying and p.lives == 0
+
+
+def test_the_pose_of_the_blast_follows_the_mode_of_the_ship(display):
     p = _ship()
-    assert p.burn_by_guardian(blast=True)
-    assert isinstance(p.guardian_burn, sbl.ShipBlast) and p.dying and p.lives == 0
-    q = _ship()
-    assert q.burn_by_guardian()
-    assert isinstance(q.guardian_burn, sb.ShipBurn)
+    assert p.blast_pose() == (None, 1.0)                        # (the usual game: the hull as it is)
+    p.asteroid_mode = True
+    p.ast_angle = 0.0
+    assert p.blast_pose() == (-90.0, 1.0)                       # (a free mission: turned to the nose)
+    p.sw_physics = True
+    assert p.blast_pose() == (-90.0, 0.5)                       # (SpaceWar: at half size)
 
 
 def test_the_player_draws_and_updates_the_blast_and_drops_it_at_the_end(display):
     p = _ship()
-    p.burn_by_guardian(blast=True)
+    p.burn_by_guardian()
     surf = pygame.Surface((1280, 720))
     p.draw(surf)
     burn = p.guardian_burn

@@ -195,6 +195,7 @@ class Player:
         self.dying = False
         self.death_timer = 0.0
         self.guardian_burn = None
+        self.blast_hide = 0.0                  # seconds the hull stays hidden while the blast of game._ship_boom plays
         self.DEATH_DURATION = 0.70
         self.death_flash = False
         self._white_image = None
@@ -301,6 +302,7 @@ class Player:
     def update(self, dt, keys, input_mode="keyboard", joystick=None, allow_shoot=True, ai_move=None, ai_shoot=None):
         if not self.alive:
             return False
+        self.blast_hide = max(0.0, self.blast_hide - dt)
         if self.guardian_burn is not None:
             self.guardian_burn.update(dt)
             if self.guardian_burn.finished:
@@ -932,18 +934,20 @@ class Player:
         if before < 10.0 and self.phenix_gauge >= 10.0 and not self.uses_shield:
             self.flag_gauge_max = True
 
-    def burn_by_guardian(self, blast=False):
+    def blast_pose(self):
+        """(angle, scale) of the hull as it is drawn: turned to the nose in the free missions (Asteroids, SpaceWar), and at half
+        its size in SpaceWar; (None, 1.0) in the usual game."""
+        angle = (-math.degrees(self.ast_angle) - 90.0) if getattr(self, "asteroid_mode", False) else None
+        return angle, (0.5 if getattr(self, "sw_physics", False) else 1.0)
+
+    def burn_by_guardian(self):
         """Destroy one life regardless of Shield, Phenix, blink or infinite-life cheats."""
         if not self.alive or self.dying or self.guardian_burn is not None:
             return False
-        from ship_burn import ShipBurn
-        # Capture the visible hull/form before cancelling every defensive state.
-        if blast:                      # (the SpaceWar level: a big explosion, the hull in pieces)
-            from ship_blast import ShipBlast
-            self.guardian_burn = ShipBlast(self, (-math.degrees(self.ast_angle) - 90.0) if self.sw_physics else None,
-                                           0.5 if self.sw_physics else 1.0)
-        else:
-            self.guardian_burn = ShipBurn(self)
+        from ship_blast import ShipBlast
+        # Capture the visible hull/form before cancelling every defensive state; the hull ends in the big blast of the
+        # SpaceWar level (the same for every death of the ship), turned to the nose and at the size of that level.
+        self.guardian_burn = ShipBlast(self, *self.blast_pose())
         self.lives = max(0, self.lives - 1)
         self.just_lost_life = True
         self.dying = True
@@ -1114,8 +1118,9 @@ class Player:
             return
         if self.guardian_burn is not None:
             # (the SpaceWar level: the dust turns with the nose of the ship)
-            self.guardian_burn.draw(surface, (-math.degrees(self.ast_angle) - 90.0) if self.sw_physics else None,
-                                    0.5 if self.sw_physics else 1.0)
+            self.guardian_burn.draw(surface, *self.blast_pose())
+            return
+        if self.blast_hide > 0:                  # (the hull is in the blast of game._ship_boom: the ship is not drawn)
             return
         if self.asteroid_mode:
             self._draw_asteroid(surface)
