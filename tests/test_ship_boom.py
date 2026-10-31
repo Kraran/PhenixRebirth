@@ -212,7 +212,6 @@ def screen():
     pygame.display.init()
     pygame.display.set_mode((1280, 720))
     yield
-    sf.Planet.no_rings = False
 
 
 def test_the_ringed_fantasy_planet_never_comes_in_a_mission_but_still_in_the_arcade(screen):
@@ -223,17 +222,40 @@ def test_the_ringed_fantasy_planet_never_comes_in_a_mission_but_still_in_the_arc
     assert "fantasy_rings.png" in names                              # (the arcade game keeps it)
     s = sf.Starfield()
     s.set_adventure(True)
+    assert s.no_rings
     names = set()
     for seed in range(300):
         random.seed(seed)
-        names.add(sf.Planet().filename)
+        names.add(sf.Planet(no_rings=s.no_rings).filename)
     assert "fantasy_rings.png" not in names and "saturn.png" in names
     s.set_adventure(False)
+    assert not s.no_rings
     names = set()
     for seed in range(300):
         random.seed(seed)
-        names.add(sf.Planet().filename)
+        names.add(sf.Planet(no_rings=s.no_rings).filename)
     assert "fantasy_rings.png" in names
+
+
+def test_the_sky_that_spawns_planets_in_a_mission_has_no_ringed_planet(screen):
+    s = sf.Starfield()
+    s.set_adventure(True)
+    spawned = set()
+    for seed in range(400):
+        random.seed(seed)
+        s.planets, s.nebula = [], None
+        s.planet_timer = 0.0
+        s.update(1 / 60, 640.0, stage=1, menu=False)
+        spawned.update(p.filename for p in s.planets)
+    assert spawned and "fantasy_rings.png" not in spawned
+    assert len(spawned) > 3
+
+
+def test_a_new_sky_has_the_ringed_planet_again_and_nothing_leaks_between_skies(screen):
+    mission = sf.Starfield()
+    mission.set_adventure(True)
+    arcade = sf.Starfield()
+    assert mission.no_rings and not arcade.no_rings                     # (a flag of the sky, not of the class)
 
 
 def test_a_ringed_planet_already_in_the_sky_leaves_when_a_mission_starts(screen):
@@ -256,8 +278,7 @@ def test_the_game_tells_the_sky_about_the_adventure_every_frame(run):
     ring.filename = "fantasy_rings.png"
     g.starfield.planets = [ring]
     g._tick_stars()
-    assert sf.Planet.no_rings and ring not in g.starfield.planets
+    assert g.starfield.no_rings and ring not in g.starfield.planets
     g.adventure = None
     g._tick_stars()
-    assert not sf.Planet.no_rings
-    sf.Planet.no_rings = False
+    assert not g.starfield.no_rings

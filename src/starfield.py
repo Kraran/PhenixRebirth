@@ -192,12 +192,11 @@ class Planet:
     """Solar-system planet sprites — spawn above the top edge, scroll down."""
 
     _cache = {}
-    no_rings = False                                     # set by Starfield.set_adventure
 
-    def __init__(self, free=False):
+    def __init__(self, free=False, no_rings=False):
         self.parallax = 0.08
         self.alive = True
-        self.reset(free)
+        self.reset(free, no_rings)
 
     @classmethod
     def _load_image(cls, filename):
@@ -225,9 +224,9 @@ class Planet:
                 cls._cache[key] = None
         return cls._cache[key]
 
-    def reset(self, free=False):
+    def reset(self, free=False, no_rings=False):
         names = [n for n in PLANET_FILES if n not in FREE_EXCLUDED] if free else PLANET_FILES
-        if Planet.no_rings:                              # the missions of the Adventure: not the fantasy ringed planet
+        if no_rings:                              # the missions of the Adventure: not the fantasy ringed planet
             names = [n for n in names if n not in ADVENTURE_EXCLUDED]
         filename = random.choice(names)
         self.filename = filename
@@ -555,13 +554,14 @@ class Starfield:
         self.last_player_y = BASE_HEIGHT / 2
         self.free = False
         self._free_fresh = True
+        self.no_rings = False             # a mission of the Adventure: no fantasy ringed planet (see set_adventure)
         self.bare = False                 # SpaceWar: no planet or rock in the background (see set_bare)
 
     def set_adventure(self, on):
         """A mission of the Adventure is on: the fantasy ringed planet leaves the sky at once and does not come back (the
         arcade game keeps it). Idempotent: the game says it every frame."""
         on = bool(on)
-        Planet.no_rings = on
+        self.no_rings = on
         if on:
             self.planets = [p for p in self.planets if getattr(p, "filename", "") not in ADVENTURE_EXCLUDED]
 
@@ -638,7 +638,7 @@ class Starfield:
             # Also ~12% chance to invite a nebula right after a lone planet.
             if len(self.planets) == 0 and not self.bare:
                 if self.nebula is None or random.random() < 0.40:
-                    self.planets.append(Planet(free=self.free))
+                    self.planets.append(Planet(free=self.free, no_rings=self.no_rings))
                     if self.nebula is None and random.random() < 0.12:
                         self.nebula = Nebula(free=self.free)
                         self.nebula_timer = random.uniform(18.0, 32.0)
@@ -655,7 +655,7 @@ class Starfield:
                 if len(self.planets) == 0 or random.random() < 0.40:
                     self.nebula = Nebula(free=self.free)
                     if len(self.planets) == 0 and not self.bare and random.random() < 0.12:
-                        self.planets.append(Planet(free=self.free))
+                        self.planets.append(Planet(free=self.free, no_rings=self.no_rings))
                         self.planet_timer = random.uniform(14.0, 28.0)
             self.nebula_timer = random.uniform(22.0, 38.0)
 
