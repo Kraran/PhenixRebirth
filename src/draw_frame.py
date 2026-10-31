@@ -177,7 +177,7 @@ def draw_hud(game):
         game.game_surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 34))
     elif adv and adv.get("spacewar"):
         form = game.formation
-        label = t("story_spacewar_hud").format(n=int(getattr(form, "level", 1)), m=len(spacewar.LEVELS),
+        label = t("story_spacewar_hud").format(n=int(getattr(form, "level", 1)), m=len(getattr(form, "levels", spacewar.LEVELS)),
                                                t=int(getattr(form, "player_torpedoes", 0)))
         text = tc.get(game.font, label, announce.INFO)
         game.game_surface.blit(text, (BASE_WIDTH - 16 - text.get_width(), 52))

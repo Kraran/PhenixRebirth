@@ -1,10 +1,14 @@
 """Turn a video into a game clip: no sound, H.264 tuned for size, and a loop without a visible seam.
 
     python tools/encode_clip.py SOURCE.mp4 NAME [--fade 0.5] [--crf 27] [--no-loop] [--max-width 1280]
-                                [--no-poster] [--out-dir assets/video]
+                                [--no-poster] [--slow 0.6] [--out-dir assets/video]
 
 Writes assets/story/NAME.mp4 (and the poster assets/story/NAME.jpg when there is none yet). The game plays
 the clip behind the text of the scene whose picture is NAME (see videoclip.py and story_state.clip_path).
+
+--slow K (0 < K <= 1) plays the source at K times its speed (0.6: a clip a little less than twice as long,
+the movement slower, e.g. a planet that turns more realistically). The missing frames are blended in, then the loop
+is made on the slowed clip.
 
 The loop: the last `--fade` seconds are dissolved into the first ones, and the clip starts after them,
 so when the file starts over there is no cut. Cost: the clip is `--fade` seconds shorter than the source.
@@ -58,6 +62,19 @@ def loop_graph(frames, fade_frames, scale):
         "[mid][mix]concat=n=2:v=1:a=0[v]" % (scale, f, n - f, n - f, n, f, f, f))
 
 
+def slowed(exe, path, slow, out_dir, name):
+    """A temporary, almost lossless copy of `path` at `slow` times its speed, at the pace of the game player (the
+    frames in between are blended: smooth for a slow, regular movement)."""
+    os.makedirs(out_dir, exist_ok=True)
+    tmp = os.path.join(out_dir, "_slow_" + name + ".mkv")
+    vf = "setpts=PTS/%g,minterpolate=fps=%g:mi_mode=blend" % (slow, CLIP_FPS)
+    res = run([exe, "-hide_banner", "-loglevel", "error", "-i", path, "-map", "0:v:0", "-an", "-vf", vf,
+               "-c:v", "libx264", "-crf", "8", "-preset", "fast", "-pix_fmt", "yuv420p", "-y", tmp])
+    if res.returncode:
+        raise SystemExit("ffmpeg failed (slow):\n" + res.stderr)
+    return tmp
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("source")
@@ -66,6 +83,7 @@ def main():
     ap.add_argument("--crf", type=int, default=27, help="quality, higher is smaller (default 27)")
     ap.add_argument("--max-width", type=int, default=1280)
     ap.add_argument("--no-loop", action="store_true", help="plain re-encode, no dissolve at the loop point")
+    ap.add_argument("--slow", type=float, default=1.0, help="speed of the movement, 0.6 = slower (default 1.0)")
     ap.add_argument("--no-poster", action="store_true", help="do not make the NAME.jpg poster")
     ap.add_argument("--out-dir", default=STORY)
     args = ap.parse_args()
@@ -74,7 +92,12 @@ def main():
     exe = find_ffmpeg()
     if not exe:
         raise SystemExit("ffmpeg not found: pip install imageio-ffmpeg")
-    frames, fps, w, h = probe(exe, args.source)
+    if not 0.0 < args.slow <= 1.0:
+        raise SystemExit("--slow must be in ]0, 1]")
+    source = args.source
+    if args.slow < 1.0:
+        source = slowed(exe, args.source, args.slow, args.out_dir, args.name)
+    frames, fps, w, h = probe(exe, source)
     fade = 0 if args.no_loop else int(round(args.fade * CLIP_FPS))
     if fade and frames < 6 * fade:
         raise SystemExit("clip too short for a %.1f s dissolve (%d frames)" % (args.fade, frames))
@@ -86,15 +109,17 @@ def main():
     enc = ["-an", "-sn", "-c:v", "libx264", "-preset", "veryslow", "-crf", str(args.crf), "-profile:v", "high",
            "-pix_fmt", "yuv420p", "-r", "%g" % CLIP_FPS, "-movflags", "+faststart", "-map_metadata", "-1", "-y", dest]
     if fade:
-        cmd = [exe, "-hide_banner", "-loglevel", "error", "-i", args.source, "-filter_complex",
+        cmd = [exe, "-hide_banner", "-loglevel", "error", "-i", source, "-filter_complex",
                loop_graph(frames, fade, scale), "-map", "[v]"] + enc
     else:
-        cmd = [exe, "-hide_banner", "-loglevel", "error", "-i", args.source, "-map", "0:v:0"]
+        cmd = [exe, "-hide_banner", "-loglevel", "error", "-i", source, "-map", "0:v:0"]
         cmd += ["-vf", scale.rstrip(",")]
         cmd += enc
     res = run(cmd)
     if res.returncode:
         raise SystemExit("ffmpeg failed:\n" + res.stderr)
+    if source != args.source:
+        os.remove(source)
     out_frames, _fps, ow, oh = probe(exe, dest)
     print("%s: %d frames %dx%d (source at %g fps) -> %d frames at %g fps, %.2f MB" %
           (dest, frames, w, h, fps, out_frames, CLIP_FPS, os.path.getsize(dest) / 1048576.0))

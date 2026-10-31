@@ -1642,7 +1642,7 @@ def test_each_planet_has_its_mission_on_the_map_of_every_act(planet):
 
 
 def test_the_planet_missions_follow_the_jupiter_one_and_have_their_own_texts():
-    ids = [m["id"] for m in ss.MISSIONS if m.get("spacewar")]
+    ids = [m["id"] for m in ss.MISSIONS if m.get("spacewar") and m.get("training")]
     assert ids == list(PLANET_MISSIONS.values())
     assert ss.next_mission(ss.default_state(), [ss.mission_by_id(i) for i in ids]) is None
     for planet, mid in PLANET_MISSIONS.items():

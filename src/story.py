@@ -1383,8 +1383,12 @@ class StoryHub:
         if mission.get("guardians"):
             spec.update(guardians=True, training=True, items=[])
         if mission.get("spacewar"):
-            spec.update(spacewar=True, training=True, items=[],     # (src/spacewar.py: a test, nothing won, nothing lost)
+            spec.update(spacewar=True, items=[],                    # (src/spacewar.py: the plasma is useless, only the torpedoes)
                         planet=mission.get("planet") or "jupiter")  # (the planet in the middle: Jupiter, Saturn, Uranus, Neptune)
+            if mission.get("training"):
+                spec["training"] = True                             # a test: nothing won, nothing lost
+            if mission.get("sw_levels"):
+                spec["sw_levels"] = [list(lv) for lv in mission["sw_levels"]]   # the Sentinelle missions: their own levels
         if ship:
             spec["ship"] = ship                       # a mission that imposes its hull
         waves = ss.mission_waves(mission)
