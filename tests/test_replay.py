@@ -45,13 +45,14 @@ if CHECK_PIXELS:
 @pytest.mark.parametrize("name", sorted(replay.SCENARIOS))
 def test_replay_matches_golden(name):
     pixels = [] if CHECK_PIXELS else None
+    replay.PARTS_LOG.clear()
     got = replay.run_scenario(name, pixels_out=pixels, **replay.SCENARIOS[name])
     want = _GOLDEN[name]
     assert len(got) == len(want), f"{name}: {len(got)} samples, expected {len(want)}"
     for i, (a, b) in enumerate(zip(got, want)):
         assert a == b, (
             f"{name}: gameplay differs from frame {i * replay.SAMPLE_EVERY} "
-            f"(got {a}, expected {b})"
+            f"(got {a}, expected {b})\nreadable state there: {replay.PARTS_LOG[i]!r}"
         )
     if not CHECK_PIXELS:
         return

@@ -158,6 +158,9 @@ def _ship_state(s):
     )
 
 
+PARTS_LOG = []        # the readable parts of every fingerprint of the scenario that ran last (to show what differs)
+
+
 def fingerprint(g):
     parts = [
         int(g.score), int(g.stage), bool(g.game_over), bool(g.started),
@@ -196,6 +199,7 @@ def fingerprint(g):
         cells = getattr(b, "cells", []) or []
         parts.append((bool(b.alive), len(cells), sum(1 for c in cells if getattr(c, "alive", True))))
     parts.append(zlib.crc32(repr(random.getstate()).encode()))
+    PARTS_LOG.append(parts)
     return "%08x" % (zlib.crc32(repr(parts).encode()) & 0xFFFFFFFF)
 
 
