@@ -19,6 +19,7 @@ import keybind_screen
 import menu_ui
 import main_menu
 import spacewar
+import antimatter
 import story_state
 import loot
 from i18n import t, t_help
@@ -98,6 +99,7 @@ def draw_play(game):
         game.boss_saucer.draw_shots(game.game_surface)
     escort.draw(game, game.game_surface)            # the VIP's cruise ship, under the birds (that mission only)
     game.formation.draw(game.game_surface)
+    antimatter.draw(game, game.game_surface)        # the missile in flight, over the enemies
     if getattr(game, "loot", None) is not None:
         game.loot.draw(game.game_surface)
 
@@ -206,6 +208,7 @@ def draw_hud(game):
         wave = tc.get(game.font, t("story_wave_n").format(n=int(adv.get("wave_i", 0)) + 1, m=len(adv["waves"])),
                       announce.INFO)
         game.game_surface.blit(wave, (BASE_WIDTH - 16 - wave.get_width(), 44))
+    antimatter.draw_hud(game)
     if dome_offline(game):
         # a quiet reminder under the mission title (the Shield only: the Phenix never had a dome)
         off = tc.get(game.font, t("story_dome_broken"), announce.NEUTRAL)

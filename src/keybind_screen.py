@@ -387,7 +387,7 @@ def help_items(game):
 # ------------------------------------------------------------------------------------------------ drawing
 LEFT = pygame.Rect(60, 168, 700, 476)
 RIGHT = pygame.Rect(790, 168, 430, 476)
-ROW_H, ROW_STEP = 46, 50
+ROW_H, ROW_STEP = 40, 44
 SLOT_W, SLOT_GAP = 128, 12
 
 

@@ -627,16 +627,17 @@ class SpaceWarFormation:
             self._say(surface, _label("story_spacewar_hint"), (170, 200, 255), BASE_HEIGHT - 40)
 
 
-def draw_torpedo(surface, x, y, ux, uy, tip):
+def draw_torpedo(surface, x, y, ux, uy, tip, k=1.0):
     """A torpedo of the player, drawn as an air-to-air missile: a slim white fuselage with an ogive nose in the colour of the
     hull, a seeker band, two small canards in front, four swept tail fins behind (two seen from the side) and a flame that
-    ends in a thin plume. (ux, uy) is the way it flies; (x, y) the middle of the body."""
+    ends in a thin plume. (ux, uy) is the way it flies; (x, y) the middle of the body; `k` its size (the antimatter missile
+    is the same drawing, a little bigger)."""
     vx, vy = -uy, ux                                       # (sideways)
 
     def pt(a, b):
-        return (x + ux * a + vx * b, y + uy * a + vy * b)
+        return (x + (ux * a + vx * b) * k, y + (uy * a + vy * b) * k)
 
-    asteroids._add_glow(surface, (255, 170, 80), pt(-15, 0), 17)                         # the engine
+    asteroids._add_glow(surface, (255, 170, 80), pt(-15, 0), int(17 * k))                         # the engine
     pygame.draw.polygon(surface, (255, 150, 60), [pt(-13, 1.9), pt(-13, -1.9), pt(-25, 0)])                    # the plume
     pygame.draw.polygon(surface, (255, 235, 150), [pt(-13, 1.1), pt(-13, -1.1), pt(-20, 0)])
     for side in (1, -1):                                                                                          # the tail fins

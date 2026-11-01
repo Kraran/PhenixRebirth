@@ -6790,6 +6790,26 @@ for _k, (_fr, _en) in _SENT_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}
     T[_k]["fr"] = _fr
 
+
+# The antimatter missile (src/antimatter.py): unlocked by Silent Sentinels IV (French and English; the other languages show
+# the English text).
+_MISSILE_TEXTS = {
+    "act_missile": ("Missile antimatière", "Antimatter missile"),
+    "kb_help_missile": (
+        "Lance le missile à antimatière, droit devant (débloqué par Sentinelles silencieuses IV). Un seul par mission : il "
+        "détruit tout ce qui se trouve près de l'impact. S'il ne touche rien, il est perdu.",
+        "Fires the antimatter missile straight ahead (unlocked by Silent Sentinels IV). Only one per mission: it destroys "
+        "everything near the impact. If it hits nothing, it is lost."),
+    "story_stat_missile": ("Missile antimatière", "Antimatter missile"),
+    "story_missile_ready": ("1 par mission", "1 per mission"),
+    "story_missile_unlocked": ("Missile à antimatière débloqué : une fois par mission, touche {key}.",
+                               "Antimatter missile unlocked: once per mission, key {key}."),
+    "antimatter_hud": ("MISSILE  {key}", "MISSILE  {key}"),
+}
+for _k, (_fr, _en) in _MISSILE_TEXTS.items():
+    T[_k] = {_code: _en for _code in LANG_CODES}
+    T[_k]["fr"] = _fr
+
 _lang = "fr"
 
 def set_lang(code):

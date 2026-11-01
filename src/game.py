@@ -48,6 +48,7 @@ import bindings
 import controls
 import asteroids
 import spacewar
+import antimatter
 import escort
 import galaga
 from guardian import GuardianFormation
@@ -1867,6 +1868,7 @@ class Game:
         """Launch a story mission. Arcade ship select and high scores stay out."""
         self.adventure = dict(spec)
         self.adventure.pop("first_help_read", None)
+        antimatter.begin(self, self.adventure)        # the missile of Silent Sentinels IV, one per mission
         self.hotseat = False
         self.player2 = None
         self.play_mode = "solo"
@@ -4404,6 +4406,8 @@ class Game:
             elif not both:
                 self._duo_latched = False
         
+        antimatter.tick(self)                     # the antimatter missile in flight (nothing in a mission without one)
+
         # Stage transition: ship flies off top
         if self.stage_transition == "fly_up":
             update_play.tick_fly_up(self)

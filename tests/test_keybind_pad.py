@@ -53,9 +53,9 @@ def begin(run, st, action, bench_ready=True):
 def test_the_third_tab_is_the_gamepad_and_the_rows_follow_the_switch(run):
     st = open_pad_tab(run)
     assert ks.TABS[2] == bindings.PAD and st.is_pad
-    assert kp.rows() == ("fire", "phenix", "pause", "shared", "defaults", "back")       # no copy while they share
+    assert kp.rows() == ("fire", "phenix", "missile", "pause", "shared", "defaults", "back")       # no copy while they share
     bindings.current.set_shared(False)
-    assert kp.rows() == ("fire", "phenix", "pause", "shared", "copy", "defaults", "back")
+    assert kp.rows() == ("fire", "phenix", "missile", "pause", "shared", "copy", "defaults", "back")
 
 
 def test_entering_and_leaving_the_gamepad_tab_starts_on_its_first_row(run):
@@ -95,10 +95,10 @@ def test_the_switch_is_turned_with_enter_and_the_side_keys_and_is_saved(run):
 
 def test_turning_the_switch_off_gives_the_second_pad_a_copy_and_on_shows_the_first_place(run):
     st = open_pad_tab(run)
-    bindings.current.set_pad_buttons(0, "fire", [0, 4])
+    bindings.current.set_pad_buttons(0, "fire", [0, 8])
     to_row(run, st, "shared")
     run.key(pygame.K_RETURN, frames=1)
-    assert bindings.current.pad_buttons(1, "fire") == (0, 4)
+    assert bindings.current.pad_buttons(1, "fire") == (0, 8)
     st.place = 1
     settled(run)
     run.key(pygame.K_RETURN, frames=1)
@@ -146,12 +146,12 @@ def test_the_buttons_pressed_are_added_and_removed(run, bench):               # 
     bindings.current.set_pad_buttons(0, "fire", [0, 2])
     begin(run, st, "fire")
     assert st.mode == "wait" and st.wait == (bindings.PAD, "fire", 0)
-    run.button(4, frames=1)
-    assert bindings.current.pad_buttons(0, "fire") == (0, 2, 4)
+    run.button(8, frames=1)
+    assert bindings.current.pad_buttons(0, "fire") == (0, 2, 8)
     run.button(2, frames=1)
-    assert bindings.current.pad_buttons(0, "fire") == (0, 4)
+    assert bindings.current.pad_buttons(0, "fire") == (0, 8)
     assert st.mode == "wait"                                                   # it goes on until it is ended
-    assert json.load(open(user_settings.SETTINGS_FILE))["bindings"]["pad"][0]["fire"] == [0, 4]
+    assert json.load(open(user_settings.SETTINGS_FILE))["bindings"]["pad"][0]["fire"] == [0, 8]
 
 
 def test_every_button_is_for_the_action_even_a_b_and_start(run, bench):       # noqa: F811
@@ -182,7 +182,7 @@ def test_what_would_empty_an_action_or_overfill_it_is_refused(run, bench):    # 
     run.button(1, frames=1)                                                    # B is the only Phénix button
     assert bindings.current.pad_buttons(0, "phenix") == (1,) and 1 not in bindings.current.pad_buttons(0, "fire")
     assert st.flash and st.flash[0] == t("kb_flash_pad_refused")
-    run.button(4, frames=1)                                                    # fire already has four
+    run.button(8, frames=1)                                                    # fire already has four
     assert bindings.current.pad_buttons(0, "fire") == (0, 2, 3, 5)
 
 
@@ -204,11 +204,11 @@ def test_the_capture_goes_to_the_pad_that_is_shown(run, bench):               # 
     st.place = 1
     begin(run, st, "fire")
     assert st.wait == (bindings.PAD, "fire", 1)
-    run.button(4, frames=1, joy=1, instance_id=b)
+    run.button(8, frames=1, joy=1, instance_id=b)
     assert bindings.current.pad_buttons(1, "fire") == (0, 2, 3, 5)             # four already: refused
     bindings.current.set_pad_buttons(1, "fire", [0])
-    run.button(4, frames=1, joy=1, instance_id=b)
-    assert bindings.current.pad_buttons(1, "fire") == (0, 4) and bindings.current.pad_buttons(0, "fire") == (0, 2, 3, 5)
+    run.button(8, frames=1, joy=1, instance_id=b)
+    assert bindings.current.pad_buttons(1, "fire") == (0, 8) and bindings.current.pad_buttons(0, "fire") == (0, 2, 3, 5)
 
 
 def test_the_capture_ends_with_the_dpad_the_stick_enter_or_escape_and_keeps_the_buttons(run, bench):   # noqa: F811
@@ -218,7 +218,7 @@ def test_the_capture_ends_with_the_dpad_the_stick_enter_or_escape_and_keeps_the_
     for how in ("hat", "axis", "enter", "escape", "arrow"):
         begin(run, st, "fire")
         assert st.mode == "wait", how
-        run.button(4, frames=1) if 4 not in bindings.current.pad_buttons(0, "fire") else None
+        run.button(8, frames=1) if 8 not in bindings.current.pad_buttons(0, "fire") else None
         if how == "hat":
             pygame.event.post(pygame.event.Event(pygame.JOYHATMOTION, joy=0, instance_id=0, hat=0, value=(0, 1)))
             run.frames(1)
@@ -236,7 +236,7 @@ def test_the_capture_ends_with_the_dpad_the_stick_enter_or_escape_and_keeps_the_
         else:
             run.key(pygame.K_LEFT, frames=1)
         assert st.mode == "list" and ks.is_open(run.game), how
-        assert 4 in bindings.current.pad_buttons(0, "fire"), how
+        assert 8 in bindings.current.pad_buttons(0, "fire"), how
         settled(run)
 
 
@@ -264,12 +264,12 @@ def test_the_capture_gives_up_after_a_silence_and_every_press_restarts_the_clock
     bindings.current.set_pad_buttons(0, "fire", [0, 2])
     begin(run, st, "fire")
     ks.tick(run.game, kp.PAD_WAIT_SEC - 1)
-    run.button(4, frames=1)
+    run.button(8, frames=1)
     assert st.wait_left > kp.PAD_WAIT_SEC - 0.5                                # (the press started the clock again)
     ks.tick(run.game, kp.PAD_WAIT_SEC - 1)
     assert st.mode == "wait"
     ks.tick(run.game, 2)
-    assert st.mode == "list" and 4 in bindings.current.pad_buttons(0, "fire")
+    assert st.mode == "list" and 8 in bindings.current.pad_buttons(0, "fire")
 
 
 def test_a_pad_does_not_pause_nor_start_phenix_while_the_screen_is_open(run, bench, monkeypatch):   # noqa: F811
@@ -333,7 +333,7 @@ def test_the_defaults_of_a_shared_pad_table_restore_it_for_all(run):
 def test_the_copy_button_replaces_the_shown_pad_by_the_other_one(run):
     st = open_pad_tab(run)
     bindings.current.set_shared(False)
-    bindings.current.set_pad_buttons(0, "fire", [0, 4])
+    bindings.current.set_pad_buttons(0, "fire", [0, 8])
     bindings.current.set_pad_buttons(1, "fire", [2])
     st.place = 1
     to_row(run, st, "copy")
@@ -348,7 +348,7 @@ def test_the_copy_button_replaces_the_shown_pad_by_the_other_one(run):
     run.key(pygame.K_UP, frames=1)
     settled(run)
     run.key(pygame.K_RETURN, frames=1)
-    assert bindings.current.pad_buttons(1, "fire") == (0, 4) and bindings.current.pad_buttons(0, "fire") == (0, 4)
+    assert bindings.current.pad_buttons(1, "fire") == (0, 8) and bindings.current.pad_buttons(0, "fire") == (0, 8)
     st.place = 0
     bindings.current.set_pad_buttons(1, "fire", [3])
     settled(run)
@@ -390,10 +390,10 @@ def test_the_game_reads_what_the_screen_set(run, bench):                       #
     pads(run, bench)
     st = open_pad_tab(run)
     begin(run, st, "phenix")
-    run.button(4, frames=1)                                                    # LB joins B
-    assert bindings.current.pad_buttons(0, "phenix") == (1, 4)
+    run.button(8, frames=1)                                                    # L3 joins B
+    assert bindings.current.pad_buttons(0, "phenix") == (1, 8)
     bindings.load(json.load(open(user_settings.SETTINGS_FILE))["bindings"])    # read back from the file
-    assert bindings.current.pad_buttons(0, "phenix") == (1, 4)
+    assert bindings.current.pad_buttons(0, "phenix") == (1, 8)
 
 
 # ------------------------------------------------------------------------------------------------ drawing

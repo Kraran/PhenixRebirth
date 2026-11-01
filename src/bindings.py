@@ -23,19 +23,21 @@ import pygame
 
 KB1, KB2, PAD = "kb1", "kb2", "pad"
 KEY_PROFILES = (KB1, KB2)
-KEY_ACTIONS = ("left", "right", "up", "down", "fire", "phenix")
-PAD_ACTIONS = ("fire", "phenix", "pause")
+KEY_ACTIONS = ("left", "right", "up", "down", "fire", "phenix", "missile")
+PAD_ACTIONS = ("fire", "phenix", "missile", "pause")
 SLOTS = 2                    # keys per keyboard action
 PAD_MAX = 4                  # buttons per pad action
 PAD_TABLES = 2               # the first pad, the second one (the others use the second table)
 
 DEFAULT_KEYS = {
     KB1: {"left": [pygame.K_q, pygame.K_a], "right": [pygame.K_d, None], "up": [pygame.K_z, pygame.K_w],
-          "down": [pygame.K_s, None], "fire": [pygame.K_LCTRL, None], "phenix": [pygame.K_LSHIFT, None]},
+          "down": [pygame.K_s, None], "fire": [pygame.K_LCTRL, None], "phenix": [pygame.K_LSHIFT, None],
+          "missile": [pygame.K_e, None]},
     KB2: {"left": [pygame.K_LEFT, None], "right": [pygame.K_RIGHT, None], "up": [pygame.K_UP, None],
-          "down": [pygame.K_DOWN, None], "fire": [pygame.K_SPACE, pygame.K_RCTRL], "phenix": [pygame.K_RSHIFT, None]},
+          "down": [pygame.K_DOWN, None], "fire": [pygame.K_SPACE, pygame.K_RCTRL], "phenix": [pygame.K_RSHIFT, None],
+          "missile": [pygame.K_m, None]},
 }
-DEFAULT_PAD = {"fire": [0, 2, 3, 5], "phenix": [1], "pause": [7, 9, 6]}   # 7 / 9 / 6: where "Start" is, by pad model
+DEFAULT_PAD = {"fire": [0, 2, 3, 5], "phenix": [1], "missile": [4], "pause": [7, 9, 6]}   # 7 / 9 / 6: where "Start" is, by pad model
 PAUSE_FORBIDDEN = (0, 1, 4, 5)       # A, B, LB, RB run the pause menu and the options: they cannot be "pause" too
 
 # keys that cannot be given to the ship: they keep their job in the menus and for the game itself
@@ -332,9 +334,11 @@ def help_values(t, bindings=None):
         "kb_move": " ".join(first_key(a) for a in ("left", "right", "up", "down")),
         "kb_fire": keys("fire"),
         "kb_phenix": keys("phenix"),
+        "kb_missile": keys("missile"),
         "pad_fire": buttons("fire", True),
         "pad_pause": buttons("pause", True),
         "pad_phenix": buttons("phenix"),
+        "pad_missile": buttons("missile"),
     }
 
 

@@ -55,10 +55,10 @@ def test_a_changed_key_or_button_is_what_the_help_tells():
 
 def test_several_buttons_and_an_empty_slot_are_told_properly():
     b = bindings.current
-    b.set_pad_buttons(0, "phenix", [1, 4])
-    assert help_screen.help_lines("phenix")[2] == "À partir de 3 : Maj droite ou bouton B / LB active le mode."
+    assert b.set_pad_buttons(0, "phenix", [1, 8])                    # (LB is the missile's)
+    assert help_screen.help_lines("phenix")[2] == "À partir de 3 : Maj droite ou bouton B / L3 active le mode."
     values = bindings.help_values(t)
-    assert values["pad_phenix"] == "B / LB" and values["pad_fire"] == "A"
+    assert values["pad_phenix"] == "B / L3" and values["pad_fire"] == "A"
 
 
 def test_the_help_reads_the_table_of_the_first_pad_when_the_pads_have_their_own():

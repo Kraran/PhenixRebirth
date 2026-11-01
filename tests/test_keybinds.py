@@ -171,8 +171,8 @@ def test_an_action_always_keeps_one_key():
     assert b.keys(KB1, "right") == (pygame.K_d,)
     assert b.set_key(KB1, "left", 1, None) and b.keys(KB1, "left") == (pygame.K_q,)
     assert not b.set_key(KB1, "left", 0, None)
-    assert b.set_key(KB1, "right", 1, pygame.K_e)
-    assert b.set_key(KB1, "right", 0, None) and b.keys(KB1, "right") == (pygame.K_e,)
+    assert b.set_key(KB1, "right", 1, pygame.K_t)
+    assert b.set_key(KB1, "right", 0, None) and b.keys(KB1, "right") == (pygame.K_t,)
 
 
 def test_the_reserved_keys_cannot_be_given_to_the_ship():
@@ -208,7 +208,7 @@ def test_only_the_differences_are_written_and_they_come_back():
     b = Bindings()
     b.set_key(KB2, "fire", 0, pygame.K_x)
     b.set_key(KB1, "left", 1, None)
-    b.set_pad_buttons(0, "fire", [0, 4])
+    b.set_pad_buttons(0, "fire", [0, 8])
     b.set_shared(False)
     d = b.to_dict()
     json.dumps(d)                                                             # (it is plain data)
@@ -255,10 +255,10 @@ def test_a_key_bound_twice_in_one_file_is_read_without_a_double_in_one_action():
 def test_the_pad_buttons_are_toggled_added_removed_or_taken():
     b = Bindings()
     b.set_pad_buttons(0, "fire", [0, 2])
-    assert b.toggle_button(0, "fire", 4) == "added" and b.pad_buttons(0, "fire") == (0, 2, 4)
-    assert b.toggle_button(0, "fire", 2) == "removed" and b.pad_buttons(0, "fire") == (0, 4)
+    assert b.toggle_button(0, "fire", 8) == "added" and b.pad_buttons(0, "fire") == (0, 2, 8)
+    assert b.toggle_button(0, "fire", 2) == "removed" and b.pad_buttons(0, "fire") == (0, 8)
     assert b.toggle_button(0, "fire", 9) == "taken"                           # R3 was one of the three pause buttons
-    assert b.pad_buttons(0, "fire") == (0, 4, 9) and b.pad_buttons(0, "pause") == (7, 6)
+    assert b.pad_buttons(0, "fire") == (0, 8, 9) and b.pad_buttons(0, "pause") == (7, 6)
     assert b.find_button(0, 9) == "fire" and b.find_button(0, 9, skip="fire") is None
 
 
@@ -274,9 +274,9 @@ def test_a_pad_action_never_ends_up_without_a_button():
 
 def test_at_most_four_buttons_per_action():
     b = Bindings()
-    assert b.toggle_button(0, "fire", 4) == "refused"                         # already four
+    assert b.toggle_button(0, "fire", 8) == "refused"                         # already four
     assert len(b.pad_buttons(0, "fire")) == 4
-    assert b.set_pad_buttons(0, "fire", [0, 2, 3, 5, 4, 8])
+    assert b.set_pad_buttons(0, "fire", [0, 2, 3, 5, 8, 7])
     assert b.pad_buttons(0, "fire") == (0, 2, 3, 5)
 
 
@@ -291,8 +291,8 @@ def test_the_pause_button_cannot_be_one_that_runs_the_menus():
 def test_one_table_serves_every_pad_while_they_are_shared():
     b = Bindings()
     assert b.pad_shared and b.pad_table(0) == b.pad_table(1) == b.pad_table(3) == 0
-    b.set_pad_buttons(1, "fire", [4])
-    assert b.pad_buttons(0, "fire") == (4,)
+    b.set_pad_buttons(1, "fire", [8])
+    assert b.pad_buttons(0, "fire") == (8,)
 
 
 def test_with_a_table_by_place_the_second_pad_starts_from_a_copy_and_goes_its_own_way():
@@ -393,10 +393,10 @@ def test_the_second_key_of_an_action_works_too(run):
 
 def test_each_keyboard_has_its_own_keys(run):
     ship = ship_on(run, "kb1")
-    bindings.current.set_key(KB1, "right", 1, pygame.K_e)
-    assert move(ship, pygame.K_e)[0] > 0
+    bindings.current.set_key(KB1, "right", 1, pygame.K_t)
+    assert move(ship, pygame.K_t)[0] > 0
     ship.input_scheme = "kb2"
-    assert move(ship, pygame.K_e) == (0.0, 0.0)                               # that was the left keyboard's
+    assert move(ship, pygame.K_t) == (0.0, 0.0)                               # that was the left keyboard's
     ship.input_scheme = "solo"
     assert move(ship, pygame.K_RIGHT)[0] > 0                                  # solo uses the arrows keyboard
     bindings.current.set_key(KB2, "right", 0, pygame.K_l)
@@ -489,8 +489,8 @@ def test_the_fire_buttons_of_the_pad_are_the_ones_chosen(run):
     ship.autofire = False
     joy = FakeJoy(10)
     assert [pad_fires(ship, joy, 0, b) for b in range(8)] == [True, False, True, True, False, True, False, False]
-    bindings.current.set_pad_buttons(0, "fire", [4])
-    assert [pad_fires(ship, joy, 0, b) for b in range(8)] == [False, False, False, False, True, False, False, False]
+    bindings.current.set_pad_buttons(0, "fire", [6])
+    assert [pad_fires(ship, joy, 0, b) for b in range(8)] == [False, False, False, False, False, False, True, False]
 
 
 def test_each_place_has_its_own_fire_buttons_when_they_are_not_shared(run):
@@ -499,11 +499,11 @@ def test_each_place_has_its_own_fire_buttons_when_they_are_not_shared(run):
     ship.autofire = False
     joy = FakeJoy(10)
     bindings.current.set_shared(False)
-    bindings.current.set_pad_buttons(1, "fire", [4])
-    assert pad_fires(ship, joy, 0, 0) and not pad_fires(ship, joy, 0, 4)
-    assert pad_fires(ship, joy, 1, 4) and not pad_fires(ship, joy, 1, 0)
+    bindings.current.set_pad_buttons(1, "fire", [6])
+    assert pad_fires(ship, joy, 0, 0) and not pad_fires(ship, joy, 0, 6)
+    assert pad_fires(ship, joy, 1, 6) and not pad_fires(ship, joy, 1, 0)
     bindings.current.set_shared(True)
-    assert pad_fires(ship, joy, 1, 0) and not pad_fires(ship, joy, 1, 4)
+    assert pad_fires(ship, joy, 1, 0) and not pad_fires(ship, joy, 1, 6)
 
 
 def test_the_ship_is_told_the_place_of_its_pad(run, bench):                  # noqa: F811
@@ -560,10 +560,10 @@ def test_a_pad_button_that_is_not_phenix_does_not_start_it(run, monkeypatch):
     g = pause_menu_setup(run)
     g.paused = False
     hit = _phenix_calls(run, monkeypatch)
-    bindings.current.set_pad_buttons(0, "phenix", [4])
+    bindings.current.set_pad_buttons(0, "phenix", [8])
     run.button(1, frames=1)
     assert hit == []
-    run.button(4, frames=1)
+    run.button(8, frames=1)
     assert hit == [g.player]
 
 
