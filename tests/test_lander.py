@@ -590,3 +590,58 @@ def test_the_labels_never_touch_the_values_and_the_tank_is_under_the_readings(ru
     bright = [(x, y) for x in range(0, 1280, 2) for y in range(0, 720, 2) if sum(surf.get_at((x, y))[:3]) > 60]
     assert bright and min(x for x, _ in bright) > 600                                   # nothing in the left half: no overlap with the gauge of the hull
     assert max(y for _, y in bright) > top + 4 * lv.ROW_GAP                              # the tank is under the four readings
+
+
+@pytest.mark.parametrize("zoom", [0.25, 0.2517, 0.3, 0.3333, 0.4999, 0.5, 0.77, 0.9871, 1.0])
+def test_the_textures_are_scaled_and_placed_like_the_ground(zoom):
+    """The tiles of the texture have the size of their world square at the zoom drawn, and each one starts where the world
+    puts it: the texture slides at the very speed of the ground, whatever the zoom (it used to swim at every change of size)."""
+    z = lv.snap_zoom(zoom)
+    assert abs(z - zoom) <= 1 / lv.ZQ / 2 + 1e-9
+    view = lv.View("ice")
+    for k, (_, world) in enumerate(lv.TILES):
+        tw = view._tile(k, z).get_width()
+        assert tw == pytest.approx(world * z) and tw * lv.ZQ == world * round(z * lv.ZQ)
+        for cam_x, cam_y in ((1234.5, -77.7), (1235.0, -77.7), (4000.37, 12.0)):
+            x0, y0 = lv.tile_origin(tw, z, cam_x, cam_y)
+            assert -tw <= x0 < 0 and -tw <= y0 < 0
+            n = math.floor((cam_x - lv.CX / z) / world)
+            exact = lv.CX + (n * world - cam_x) * z                       # where the world puts the tile n
+            assert (x0 - exact) % tw == pytest.approx(0.0, abs=0.51) or (x0 - exact) % tw == pytest.approx(tw, abs=0.51)
+            m = math.floor((cam_y - lv.CY / z) / world)
+            exact_y = lv.CY + (m * world - cam_y) * z
+            assert (y0 - exact_y) % tw == pytest.approx(0.0, abs=0.51) or (y0 - exact_y) % tw == pytest.approx(tw, abs=0.51)
+
+
+def test_the_texture_does_not_jump_while_the_view_zooms():
+    """Zooming in 1/256 steps with the camera still, the picture of the inside of the ground never changes by more than a
+    thin slide of the texture: no phase jump when the size of a tile changes."""
+    pygame.display.set_mode((1280, 720))
+    surf = pygame.Surface((1280, 720))
+    f = _form("rock")
+    f.x = 1500.0
+    f.y = f.terrain.ground(f.x) + 400.0                  # the camera deep in the ground: only the texture is seen
+    view = lv.View("rock")
+    last = None
+    worst = 0.0
+    for q in range(64, 129, 2):                           # zoom 0.25 -> 0.5
+        f.zoom = q / 256.0
+        view.draw(surf, f)
+        pic = pygame.surfarray.array3d(surf)[300:900:3, 100:600:3].astype(int)
+        if last is not None:
+            worst = max(worst, abs(pic - last).mean())
+        last = pic
+    assert worst < 12.0, worst
+
+
+def test_there_is_no_ring_round_the_ship(run):
+    _launch(run, "test_lander")
+    g = run.game
+    run.frames(5)
+    assert g.formation.zoom == ld.ZOOMS[0]                            # (the small ship: the ring used to be drawn)
+    surf = g.game_surface
+    cx, cy = surf.get_width() // 2, surf.get_height() // 2
+    ring = [(round(cx + r * math.cos(a / 24 * math.tau)), round(cy + r * math.sin(a / 24 * math.tau)))
+            for r in range(12, 23) for a in range(24)]
+    assert not [p for p in ring if tuple(surf.get_at(p))[:3] == lv.HUD_COLOR]
+    assert not hasattr(lv.View, "draw_marker")

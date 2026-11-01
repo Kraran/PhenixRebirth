@@ -117,8 +117,6 @@ def draw_play(game):
 
     for ship in game._ships():
         ship.draw(game.game_surface)
-    if lander_form is not None and lander_form.view is not None:
-        lander_form.view.draw_marker(game.game_surface, lander_form)     # a ring while the ship is small
 
 
 def draw_hud(game):
