@@ -553,3 +553,40 @@ def test_a_landing_on_the_edge_of_a_zone_with_both_feet_in_is_good_and_with_one_
     _prepare_landing(f, s, dx=pad["w"] / 2 - 27.0)          # the right foot (at +26) is just inside
     _run_flight(f, s)
     assert f.result == "perfect"
+
+
+# ------------------------------------------------------------------ the picture: a steady relief, a readable HUD
+@pytest.mark.parametrize("z", ld.ZOOMS)
+def test_the_points_of_the_relief_are_fixed_in_the_world_and_only_slide_with_the_camera(z):
+    t = ld.Terrain("rock", 4)
+    sxs0, wx0, gy0, sy0 = lv.relief(t, z, 1500.0, -40.0)
+    assert all(w % lv.COLUMN == 0 for w in wx0)
+    assert sxs0[0] <= 0 and sxs0[-1] >= 1280                          # the outline covers the whole width
+    for d in (0.3, 1.0, 7.0, lv.COLUMN * 3, lv.COLUMN * 3 + 0.5):
+        sxs1, wx1, gy1, sy1 = lv.relief(t, z, 1500.0 + d, -40.0)
+        common = sorted(set(wx0) & set(wx1))
+        assert len(common) > len(wx0) - 8
+        for w in common[::7]:
+            i0, i1 = list(wx0).index(w), list(wx1).index(w)
+            assert gy0[i0] == gy1[i1] and sy0[i0] == pytest.approx(sy1[i1])      # the same height at the same place of the world
+            assert sxs1[i1] == pytest.approx(sxs0[i0] - d * z)                  # it only slides by what the camera moved
+
+
+def test_the_labels_never_touch_the_values_and_the_tank_is_under_the_readings(run):
+    g, form, _ = _land_in_game(run)
+    font = g.font
+    rows = [("ALTITUDE", "%4d" % 123, 0), ("VIT. HORIZ.", "%+5.1f" % -88.8, 0), ("VIT. VERT.", "%+5.1f" % 88.8, 0),
+            ("INCLINAISON", "%+4d°" % -180, 0)]
+    left_x, right_x, top = lv.hud_layout(g, font, rows)
+    widest_label = max(g._txt(font, r[0], lv.HUD_COLOR).get_width() for r in rows)
+    widest_value = max(g._txt(font, r[1], lv.HUD_COLOR).get_width() for r in rows)
+    assert left_x + widest_label + lv.HUD_GAP <= right_x - widest_value                 # a clear gap
+    assert right_x == 1280 - 16 and left_x > 640                                         # in the right half
+    run.frames(2)
+    form.fuel = 80.0
+    g.game_surface.fill((0, 0, 0))
+    lv.draw_hud(g, form)
+    surf = g.game_surface
+    bright = [(x, y) for x in range(0, 1280, 2) for y in range(0, 720, 2) if sum(surf.get_at((x, y))[:3]) > 60]
+    assert bright and min(x for x, _ in bright) > 600                                   # nothing in the left half: no overlap with the gauge of the hull
+    assert max(y for _, y in bright) > top + 4 * lv.ROW_GAP                              # the tank is under the four readings

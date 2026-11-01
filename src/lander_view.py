@@ -15,7 +15,7 @@ from settings import BASE_HEIGHT, BASE_WIDTH
 
 W, H = BASE_WIDTH, BASE_HEIGHT
 CX, CY = W / 2.0, H / 2.0
-COLUMN = 8                                  # one point of the relief every COLUMN screen px
+COLUMN = 8.0                                # one point of the relief every COLUMN px OF THE WORLD (the points follow the ground, not the screen: a peak never blinks)
 TILES = ((1024, 1024), (768, 768))          # (texture size in px, size of the tile in the world in px)
 HUD_COLOR = (120, 235, 255)
 _CACHE = {}                                 # per body: sky, textures
@@ -107,6 +107,17 @@ def assets(style):
     return got
 
 
+def relief(terrain, z, cam_x, cam_y):
+    """The points of the outline of the ground: (screen x, world x, height, screen y). They are fixed in the WORLD (every
+    COLUMN px) and slide with the camera: sampled on a grid of the screen, a narrow peak slid between two samples and blinked
+    as the ground scrolled."""
+    k0 = int(math.floor((cam_x - CX / z) / COLUMN)) - 1
+    k1 = int(math.ceil((cam_x + (W - CX) / z) / COLUMN)) + 1
+    wx = np.arange(k0, k1 + 1, dtype=float) * COLUMN
+    gy = terrain.ground(wx)
+    return CX + (wx - cam_x) * z, wx, gy, CY + (gy - cam_y) * z
+
+
 class View:
     """The picture of the level, kept from one frame to the next (the surfaces are reused)."""
 
@@ -150,10 +161,7 @@ class View:
         else:
             self._haze(surface, cam_x, cam_y, z)
         terrain = form.terrain
-        sxs = np.arange(0, W + COLUMN, COLUMN, dtype=float)
-        wx = cam_x + (sxs - CX) / z
-        gy = terrain.ground(wx)
-        sy = CY + (gy - cam_y) * z
+        sxs, wx, gy, sy = relief(terrain, z, cam_x, cam_y)
         if float(sy.min()) < H + 10:
             self._ground(surface, form, sxs, sy, gy, z, cam_x, cam_y)
         self._boulders(surface, terrain, z, cam_x, cam_y)
@@ -205,7 +213,7 @@ class View:
         # light from the upper left: the slopes that face it are lit, the others fall in the dark
         light.fill((0, 0, 0, 0))
         band = max(3.0, min(46.0, 34.0 * z))
-        slope = np.diff(gy) / (COLUMN / z)
+        slope = np.diff(gy) / COLUMN
         facing = np.clip(0.5 - slope * 1.15, 0.0, 1.0)
         for i in range(len(sxs) - 1):
             f = float(facing[i])
@@ -219,7 +227,7 @@ class View:
         layer.blit(light, (0, 0))
         # cut the ground out
         mask.fill((0, 0, 0, 0))
-        pts = [(float(x), float(y)) for x, y in zip(sxs, sy)] + [(W + COLUMN, H + 4), (-COLUMN, H + 4)]
+        pts = [(float(x), float(y)) for x, y in zip(sxs, sy)] + [(float(sxs[-1]), H + 4), (float(sxs[0]), H + 4)]
         pygame.draw.polygon(mask, (255, 255, 255, 255), pts)
         layer.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
         lip = [(float(x), float(y)) for x, y in zip(sxs, sy)]
@@ -291,6 +299,20 @@ def _tone(value, perfect, rough):
     return (90, 255, 120) if v <= perfect else (255, 190, 70) if v <= rough else (255, 80, 60)
 
 
+ROW_GAP = 30
+HUD_TOP = 84
+HUD_GAP = 24                                # between the longest label and the longest value
+
+
+def hud_layout(game, font, rows):
+    """(x of the labels, x where the values end, y of the first row) of the readings at the top right: the labels start far
+    enough to the left for the longest one (INCLINAISON, VIT. HORIZ.) never to touch a value."""
+    right_x = BASE_WIDTH - 16
+    label_w = max(game._txt(font, label, HUD_COLOR).get_width() for label, _, _ in rows)
+    value_w = max(game._txt(font, "+000.0", HUD_COLOR).get_width(), max(game._txt(font, v, HUD_COLOR).get_width() for _, v, _ in rows))
+    return right_x - value_w - HUD_GAP - label_w, right_x, HUD_TOP
+
+
 def draw_hud(game, form):
     """Fuel, altitude and speeds (green = a perfect landing, orange = a rough one, red = a crash), the end message."""
     from i18n import t
@@ -305,19 +327,19 @@ def draw_hud(game, form):
         (t("lander_vs"), "%+5.1f" % (form.vy / 10.0), _tone(form.vy if form.vy > 0 else lander.ROUGH[0] * 9, lander.PERFECT[0], lander.ROUGH[0])),
         (t("lander_tilt"), "%+4d°" % round(tilt), _tone(math.radians(abs(tilt)), lander.PERFECT[2], lander.ROUGH[2])),
     ]
-    y = 84
+    left_x, right_x, y = hud_layout(game, font, rows)
     for label, value, colour in rows:
-        left = game._txt(font, label, HUD_COLOR)
+        surface.blit(game._txt(font, label, HUD_COLOR), (left_x, y))
         right = game._txt(font, value, colour)
-        surface.blit(left, (BASE_WIDTH - 16 - 250, y))
-        surface.blit(right, (BASE_WIDTH - 16 - right.get_width(), y))
-        y += 30
-    # the tank
+        surface.blit(right, (right_x - right.get_width(), y))
+        y += ROW_GAP
+    # the tank, under the last row (the top left is the gauge of the hull)
     low = form.fuel <= lander.FUEL_LOW
     blink = (not low) or form.fuel <= 0 or int(form.time * 4) % 2 == 0
     label = game._txt(font, "%s %3d" % (t("lander_fuel"), int(form.fuel)), (255, 80, 60) if low and blink else HUD_COLOR)
-    surface.blit(label, (16, 52))
-    bar = pygame.Rect(16, 52 + label.get_height() + 4, 220, 10)
+    y += 8
+    surface.blit(label, (left_x, y))
+    bar = pygame.Rect(left_x, y + label.get_height() + 4, right_x - left_x, 10)
     pygame.draw.rect(surface, (30, 40, 60), bar)
     fill = bar.copy()
     fill.width = int(bar.width * max(0.0, min(1.0, form.fuel / lander.FUEL_START)))
