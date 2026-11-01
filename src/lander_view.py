@@ -17,6 +17,7 @@ W, H = BASE_WIDTH, BASE_HEIGHT
 CX, CY = W / 2.0, H / 2.0
 COLUMN = 8.0                                # one point of the relief every COLUMN px OF THE WORLD (the points follow the ground, not the screen: a peak never blinks)
 TILES = ((1024, 1024), (768, 768))          # (texture size in px, size of the tile in the world in px)
+ZQ = 256                                    # the zoom drawn is a multiple of 1/ZQ: the tiles (1024 and 768 world px) then have a whole size
 HUD_COLOR = (120, 235, 255)
 _CACHE = {}                                 # per body: sky, textures
 
@@ -107,6 +108,17 @@ def assets(style):
     return got
 
 
+def snap_zoom(zoom):
+    """The zoom as it is drawn: the nearest multiple of 1/ZQ (never 0)."""
+    return max(1, int(round(zoom * ZQ))) / ZQ
+
+
+def tile_origin(tw, z, cam_x, cam_y):
+    """The screen (x, y) of the first tile that begins left of / above the screen, for tiles of `tw` px (their world square
+    scaled by z): the tile n starts at CX + (n * world - cam_x) * z, so the texture slides at the very speed of the ground."""
+    return int(round((CX - cam_x * z) % tw)) - tw, int(round((CY - cam_y * z) % tw)) - tw
+
+
 def relief(terrain, z, cam_x, cam_y):
     """The points of the outline of the ground: (screen x, world x, height, screen y). They are fixed in the WORLD (every
     COLUMN px) and slide with the camera: sampled on a grid of the screen, a narrow peak slid between two samples and blinked
@@ -132,13 +144,15 @@ class View:
 
     # --- helpers
     def _tile(self, k, zoom):
-        q = max(1, int(round(zoom * 64)))
+        """The tile k at the zoom `zoom` (a value of snap_zoom): its size in px is EXACTLY the size of its world square at that
+        zoom, so that the texture slides at the very speed of the ground."""
+        q = max(1, int(round(zoom * ZQ)))
         key = (k, q)
         pic = self.scaled.get(key)
         if pic is None:
-            if len(self.scaled) > 40:
+            if len(self.scaled) > 12:
                 self.scaled.clear()
-            size = max(8, int(round(TILES[k][1] * q / 64.0)))
+            size = TILES[k][1] * q // ZQ
             pic = pygame.transform.smoothscale(self.assets["tiles"][k], (size, size))
             self.scaled[key] = pic
         return pic
@@ -151,7 +165,7 @@ class View:
 
     # --- the picture
     def draw(self, surface, form):
-        z, cam_x, cam_y = form.zoom, form.x, form.y
+        z, cam_x, cam_y = snap_zoom(form.zoom), form.x, form.y
         surface.blit(self.assets["sky"], (0, 0))
         if self.style == "rock":
             ox, oy = int(-cam_x * 0.03) % W, int(-cam_y * 0.03) % H
@@ -188,8 +202,7 @@ class View:
         for k, (_, world) in enumerate(TILES):
             tile = self._tile(k, z)
             tw = tile.get_width()
-            x0 = -((cam_x - CX / z) * z) % tw - tw
-            y0 = -((cam_y - CY / z) * z) % tw - tw
+            x0, y0 = tile_origin(tw, z, cam_x, cam_y)
             if k == 1:
                 tile.set_alpha(110)
             y = y0
@@ -197,7 +210,7 @@ class View:
                 x = x0
                 while x < W:
                     if y + tw > top:
-                        layer.blit(tile, (int(x), int(y)))
+                        layer.blit(tile, (x, y))
                     x += tw
                 y += tw
         # darker with the depth (world y): strips of a growing shade
@@ -284,13 +297,6 @@ class View:
                 pygame.draw.circle(surface, glow, (int(bx), int(gy - 36 * z)), max(2, int(5 * z)))
             lab = self._font(max(10, int(34 * z))).render(p["kind"].upper().replace("X", "×"), True, (255, 235, 140))
             surface.blit(lab, lab.get_rect(midbottom=(int(px), int(gy - 42 * z))))
-
-    def draw_marker(self, surface, form):
-        """A ring round the ship while it is small, so that it can be found."""
-        if form.zoom >= 0.75:
-            return
-        r = int(22 - 14 * form.zoom / 0.5)
-        pygame.draw.circle(surface, HUD_COLOR, (int(CX), int(CY)), max(12, r), 1)
 
 
 # ------------------------------------------------------------------ the HUD
