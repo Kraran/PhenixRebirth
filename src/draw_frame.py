@@ -19,6 +19,8 @@ import keybind_screen
 import menu_ui
 import main_menu
 import spacewar
+import lander
+import lander_view
 import antimatter
 import story_state
 import loot
@@ -91,6 +93,11 @@ def dome_offline(game):
 def draw_play(game):
     """The body of the boss saucer, then the HUD and the announcements over it, then the enemies and their shots (the
     shots of the saucer included), which stay over the announcements. Drawn exactly once."""
+    lander_form = lander.active(game)
+    if lander_form is not None:                     # the Lunar Lander: the sky and the ground, under everything
+        if lander_form.view is None:
+            lander_form.view = lander_view.View(lander_form.style)
+        lander_form.view.draw(game.game_surface, lander_form)
     if game.boss_saucer:
         game.boss_saucer.draw_body(game.game_surface)
     draw_hud(game)
@@ -110,6 +117,8 @@ def draw_play(game):
 
     for ship in game._ships():
         ship.draw(game.game_surface)
+    if lander_form is not None and lander_form.view is not None:
+        lander_form.view.draw_marker(game.game_surface, lander_form)     # a ring while the ship is small
 
 
 def draw_hud(game):
@@ -177,6 +186,8 @@ def draw_hud(game):
         game.game_surface.blit(text, (BASE_WIDTH - 16 - text.get_width(), 52))
         hint = tc.get(game.font, t("story_guardians_hint"), (255, 190, 110))
         game.game_surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 34))
+    elif adv and adv.get("lander"):
+        lander_view.draw_hud(game, game.formation)
     elif adv and adv.get("spacewar"):
         form = game.formation
         label = t("story_spacewar_hud").format(n=int(getattr(form, "level", 1)), m=len(getattr(form, "levels", spacewar.LEVELS)),

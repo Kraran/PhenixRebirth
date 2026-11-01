@@ -140,6 +140,10 @@ class SoundManager:
                 ("menu_confirm", 0.45),           # menus: a choice is validated
                 ("menu_back", 0.40),              # menus: back / cancel
                 ("menu_deny", 0.45),              # menus: refused (a greyed entry)
+                ("lander_thrust", 0.50),          # the Lunar Lander test: the engine (tools/make_lander_sounds.py)
+                ("lander_beep", 0.60),            # ... the fuel runs low
+                ("lander_land", 0.80),            # ... a gentle landing
+                ("lander_rough", 0.80),           # ... a hard landing
             ]:
                 self._load(name, f"{name}.wav", vol)
             self.enabled = len(self.sounds) > 0

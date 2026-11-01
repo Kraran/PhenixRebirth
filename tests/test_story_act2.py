@@ -16,7 +16,7 @@ PHENIX = ["phenix_1", "phenix_2", "phenix_3", "phenix_4", "phenix_5"]
 PAINT = ["paint_1", "paint_2", "paint_3"]
 SENT1 = ["sentinelle_1"]                # the Silent Sentinels on the map of Act 1
 SENT2 = ["sentinelle_1", "sentinelle_2", "sentinelle_3"]      # ... of Act 2
-TRAINING = ["test_guardians", "test_spacewar", "test_spacewar_saturn", "test_spacewar_uranus", "test_spacewar_neptune"]
+TRAINING = ["test_guardians", "test_spacewar", "test_spacewar_saturn", "test_spacewar_uranus", "test_spacewar_neptune", "test_lander"]
 GATE3 = ["act3_gate"]           # the last mission of Act 2 (it opens Act 3)
 
 
@@ -293,7 +293,7 @@ def test_the_map_cursor_walks_the_act_2_list_only():
     hub.pane = "map"
     for _ in range(40):
         hub.nav_v(1)
-    assert hub._mission()["id"] == "test_spacewar_neptune" and hub.map_index == len(BELT2 + PHENIX + GATE3 + SENT2 + HUNTS + BOSS + BONUS + PAINT + TRAINING) - 1
+    assert hub._mission()["id"] == "test_lander" and hub.map_index == len(BELT2 + PHENIX + GATE3 + SENT2 + HUNTS + BOSS + BONUS + PAINT + TRAINING) - 1
 
 
 def test_winning_the_gate_puts_the_cursor_on_the_new_map():

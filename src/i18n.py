@@ -6810,6 +6810,34 @@ for _k, (_fr, _en) in _MISSILE_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}
     T[_k]["fr"] = _fr
 
+# The Lunar Lander test level (src/lander.py, src/lander_view.py): French and English; the other languages show the English text.
+_LANDER_TEXTS = {
+    "story_m_lander": ("TEST - Lunar Lander", "TEST - Lunar Lander"),
+    "story_m_lander_hud": ("Lunar Lander", "Lunar Lander"),
+    "story_m_lander_b": (
+        "Remake du Lunar Lander d'Atari (1979) : pose le vaisseau en douceur sur une zone plane de Titan ou d'un astéroïde, "
+        "avec un carburant limité. La vue zoome quand tu descends. Sans gain ni perte.",
+        "Remake of Atari's Lunar Lander (1979): set the ship down gently on a flat zone of Titan or of an asteroid, with a "
+        "limited fuel. The view zooms in as you come down. No gain or loss."),
+    "lander_alt": ("ALTITUDE", "ALTITUDE"),
+    "lander_hs": ("VIT. HORIZ.", "H. SPEED"),
+    "lander_vs": ("VIT. VERT.", "V. SPEED"),
+    "lander_tilt": ("INCLINAISON", "TILT"),
+    "lander_fuel": ("CARBURANT", "FUEL"),
+    "lander_empty": ("RÉSERVOIR VIDE", "OUT OF FUEL"),
+    "lander_perfect": ("ATTERRISSAGE PARFAIT !", "PERFECT LANDING!"),
+    "lander_rough": ("Atterrissage réussi, mais rude", "Landed, but hard"),
+    "lander_crash": ("CRASH !", "CRASH!"),
+    "lander_points": ("{p} points  +  carburant {b}   (zone \u00d7{z})", "{p} points  +  fuel {b}   (zone \u00d7{z})"),
+    "story_lander_clear": ("Atterrissage réussi ! Vous pouvez recommencer à volonté.",
+                           "Landing made! Replay whenever you like."),
+    "story_lander_retry": ("Le vaisseau s'est écrasé. Aucun progrès perdu : vous pouvez réessayer.",
+                           "The ship crashed. No progress lost: you can try again."),
+}
+for _k, (_fr, _en) in _LANDER_TEXTS.items():
+    T[_k] = {_code: _en for _code in LANG_CODES}
+    T[_k]["fr"] = _fr
+
 _lang = "fr"
 
 def set_lang(code):

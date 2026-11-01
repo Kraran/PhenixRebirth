@@ -238,7 +238,7 @@ def begin_stage_clear(game):
     """Non-boss stage cleared: start the fly-up transition."""
     game._clear_enemy_fire()
     adv = getattr(game, "adventure", None) or {}
-    if adv.get("asteroids") or adv.get("spacewar"):
+    if adv.get("asteroids") or adv.get("spacewar") or adv.get("lander"):
         game._end_adventure(True)           # the Asteroids mission just ends: no flight up, no change of level
         return
     game._on_stage_cleared()
