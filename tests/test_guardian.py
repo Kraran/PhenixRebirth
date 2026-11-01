@@ -479,3 +479,59 @@ def test_escort_creation_does_not_change_arcade_random_state(display):
     before = random.getstate()
     gd.GuardianFormation()
     assert random.getstate() == before
+
+
+def test_fire_bolt_is_ten_percent_longer_than_the_old_one():
+    assert gd.LASER_LENGTH == 158  # 144 + 10 %
+
+
+def test_fire_bolt_art_matches_its_length_and_has_distinct_animation_frames(display):
+    frames = gd.art()[1]
+    assert len(frames) == gd.LASER_FRAMES == 3
+    assert all(f.get_height() == gd.LASER_LENGTH for f in frames)
+    raw = [pygame.image.tostring(f, "RGBA") for f in frames]
+    assert len(set(raw)) == 3
+    for f in frames:  # the glowing head sits at the bottom, wider than the hitbox
+        bounds = pygame.mask.from_surface(f, 8).get_bounding_rects()
+        box = bounds[0].unionall(bounds[1:])
+        assert box.bottom >= gd.LASER_LENGTH - 6 and box.width >= gd.LASER_WIDTH
+
+
+def test_fire_bolt_draws_animated_frames_cropped_to_its_visible_length(display):
+    def render(age, travelled):
+        bolt = gd.FireLaser(100, 50)
+        bolt.y = 50 + travelled
+        bolt.age = age
+        surface = pygame.Surface((200, 400), pygame.SRCALPHA)
+        bolt.draw(surface)
+        return surface, pygame.mask.from_surface(surface, 8).get_bounding_rects()
+
+    a, _ = render(0.0, 100)
+    b, _ = render(1.0 / gd.LASER_FPS, 100)
+    assert pygame.image.tostring(a, "RGBA") != pygame.image.tostring(b, "RGBA")
+    assert pygame.image.tostring(a, "RGBA") == pygame.image.tostring(
+        render(gd.LASER_FRAMES / gd.LASER_FPS, 100)[0], "RGBA")  # the cycle loops
+    _, short = render(0.0, 40)
+    _, full = render(0.0, 300)
+    top_short = min(r.top for r in short)
+    assert top_short >= 50 and max(r.bottom for r in short) <= 90 + 1
+    assert max(r.bottom for r in full) - min(r.top for r in full) >= gd.LASER_LENGTH - 8
+
+
+def test_fire_bolt_age_advances_with_updates():
+    bolt = gd.FireLaser(0, 0)
+    bolt.update(0.25)
+    bolt.update(0.25)
+    assert bolt.age == pytest.approx(0.5)
+
+
+def test_fire_bolt_shows_its_head_first_when_only_part_is_visible(display):
+    frame = gd.art()[1][0]
+    bolt = gd.FireLaser(100, 50)
+    bolt.y = 50 + 40
+    surface = pygame.Surface((200, 400), pygame.SRCALPHA)
+    bolt.draw(surface)
+    x0 = round(100 - frame.get_width() / 2)
+    drawn = surface.subsurface((x0, 50, frame.get_width(), 40))
+    head = frame.subsurface((0, gd.LASER_LENGTH - 40, frame.get_width(), 40))
+    assert pygame.image.tostring(drawn, "RGBA") == pygame.image.tostring(head, "RGBA")

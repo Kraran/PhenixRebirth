@@ -14,7 +14,9 @@ from settings import BASE_HEIGHT, BASE_WIDTH, ENEMY_DIVE_SPEED, asset_path
 
 CHARGE_SECONDS = 0.95
 LASER_SPEED = 780.0
-LASER_LENGTH = 144
+LASER_LENGTH = 158
+LASER_FRAMES = 3                 # fire animation: frames side by side in laser.png
+LASER_FPS = 14.0
 LASER_WIDTH = 10
 SHOT_GAP = 1.1
 CHARGE_STAGGER = 0.32
@@ -34,7 +36,9 @@ def art():
         sheet = pygame.image.load(asset_path("sprites", "guardian", "sentinelle.png")).convert_alpha()
         frames = [[sheet.subsurface((i * 160, row * 160, 160, 160)).copy() for i in range(4)]
                   for row in range(2)]
-        laser = pygame.image.load(asset_path("sprites", "guardian", "laser.png")).convert_alpha()
+        strip = pygame.image.load(asset_path("sprites", "guardian", "laser.png")).convert_alpha()
+        fw = strip.get_width() // LASER_FRAMES
+        laser = [strip.subsurface((i * fw, 0, fw, strip.get_height())).copy() for i in range(LASER_FRAMES)]
         _ART = frames, laser
     return _ART
 
@@ -47,8 +51,10 @@ class FireLaser:
         self.prev_y = self.y
         self.alive = True
         self.owner_id = owner_id
+        self.age = 0.0
 
     def update(self, dt):
+        self.age += dt
         self.prev_y = self.y
         self.y += LASER_SPEED * dt
         if self.y - LASER_LENGTH > BASE_HEIGHT:
@@ -88,7 +94,7 @@ class FireLaser:
     def draw(self, surface):
         if not self.alive:
             return
-        pic = art()[1]
+        pic = art()[1][int(self.age * LASER_FPS) % LASER_FRAMES]
         visible = min(LASER_LENGTH, max(0, int(self.y - self.origin_y)))
         if visible:
             surface.blit(pic, (round(self.x - pic.get_width() / 2), round(self.y - visible)),
