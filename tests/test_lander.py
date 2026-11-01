@@ -489,14 +489,14 @@ def test_a_sound_that_fails_does_not_stop_the_game():
     ld.tick(g)
 
 
-def _land_in_game(run, seed_pad=0, vy=5.0):
+def _land_in_game(run, seed_pad=0, vy=3.0):
     _launch(run, "test_lander")
     g = run.game
     form = g.formation
     p = g.player
     pad = form.terrain.pads[seed_pad]
     p.ast_angle = -math.pi / 2
-    form.x, form.y, form.vx, form.vy = pad["x"], pad["y"] - ld.FOOT_Y - 5.0, 0.0, vy
+    form.x, form.y, form.vx, form.vy = pad["x"], pad["y"] - ld.FOOT_Y - 2.0, 0.0, vy      # (soft on Titan too, where the pull is strong)
     return g, form, pad
 
 
