@@ -1919,12 +1919,10 @@ class Game:
         if spec.get("spacewar"):
             # SpaceWar (src/spacewar.py): the ship flies free by the pull of a star, with ONE life (pixel dust at its end)
             spacewar.set_planet(spec.get("planet"))                 # (Jupiter, Saturn, Uranus or Neptune: its pull and its disc)
-            from ship_burn import prepare as prepare_ship_burn
             self.player.asteroid_mode = True
             self.player.sw_physics = True
             self.player.vertical_range = None
             self.player.lives = 1
-            prepare_ship_burn(self.player)
         self.adventure["dome"] = dome
         # the loot items bought in the hangar for this mission (they are used up when it ends, see _end_adventure)
         items = [] if spec.get("training") else list(spec.get("items") or [])

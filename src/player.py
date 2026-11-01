@@ -940,14 +940,19 @@ class Player:
         angle = (-math.degrees(self.ast_angle) - 90.0) if getattr(self, "asteroid_mode", False) else None
         return angle, (0.5 if getattr(self, "sw_physics", False) else 1.0)
 
-    def burn_by_guardian(self):
-        """Destroy one life regardless of Shield, Phenix, blink or infinite-life cheats."""
+    def burn_by_guardian(self, blaze=False):
+        """Destroy one life regardless of Shield, Phenix, blink or infinite-life cheats. `blaze`: the ship is hit by the fire
+        bolt of a Guardian and dies in the flames (it burns, chars and falls apart in scattered ash, src/fire_death.py);
+        otherwise the hull ends in the big blast of the SpaceWar level."""
         if not self.alive or self.dying or self.guardian_burn is not None:
             return False
-        from ship_blast import ShipBlast
-        # Capture the visible hull/form before cancelling every defensive state; the hull ends in the big blast of the
-        # SpaceWar level (the same for every death of the ship), turned to the nose and at the size of that level.
-        self.guardian_burn = ShipBlast(self, *self.blast_pose())
+        # Capture the visible hull/form before cancelling every defensive state.
+        if blaze:
+            from ship_burn import ShipBurn
+            self.guardian_burn = ShipBurn(self)
+        else:
+            from ship_blast import ShipBlast
+            self.guardian_burn = ShipBlast(self, *self.blast_pose())
         self.lives = max(0, self.lives - 1)
         self.just_lost_life = True
         self.dying = True

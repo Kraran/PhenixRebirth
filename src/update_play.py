@@ -518,7 +518,7 @@ def enemy_attacks_vs_players(game):
                 if (isinstance(game.formation, GuardianFormation)
                         and (getattr(game, "adventure", None) or {}).get("guardians")
                         and isinstance(bullet, FireLaser)):
-                    if ship.burn_by_guardian():
+                    if ship.burn_by_guardian(blaze=True):
                         _life_lost(game)
                         game.shake_amount = max(game.shake_amount, 22.0)
                         game.sounds.play("explosion_big", x=ship.x)

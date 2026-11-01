@@ -8,6 +8,7 @@ import random
 
 import pygame
 
+import fire_death
 from enemy import Enemy, EnemyBullet
 
 from settings import BASE_HEIGHT, BASE_WIDTH, ENEMY_DIVE_SPEED, asset_path
@@ -214,54 +215,18 @@ class Guardian:
 
 # Burning frames are prepared once per colour, never transformed during draw.
 BURN_SECONDS = 1.35
-BURN_FRAME_COUNT = 24
+BURN_FRAME_COUNT = 28
 _BIRD_ART = {}
 _BURN_ART = {}
 
 
 def burning_frames(stage, source):
-    """Ignition, charred silhouette, then rising ash from the original pixels."""
+    """Ignition, flames, charred silhouette, then the ash scattered by the wind (src/fire_death.py)."""
     if stage in _BURN_ART:
         return _BURN_ART[stage]
     size = max(128, source.get_width() + 64, source.get_height() + 64)
-    ox, oy = (size - source.get_width()) // 2, (size - source.get_height()) // 2
-    pixels = [(x, y, source.get_at((x, y))) for y in range(source.get_height())
-              for x in range(source.get_width()) if source.get_at((x, y)).a > 32]
-    frames = []
-    for frame in range(BURN_FRAME_COUNT):
-        t = frame / (BURN_FRAME_COUNT - 1)
-        pic = pygame.Surface((size, size), pygame.SRCALPHA)
-        for x, y, colour in pixels:
-            # A stable spatial threshold eats away the silhouette.
-            noise = ((x * 73 + y * 151) % 101) / 100
-            dissolve = max(0.0, (t - 0.36) / 0.36)
-            if t < 0.72 and noise >= dissolve:
-                heat = min(1.0, t / 0.2)
-                char = max(0.0, (t - 0.2) / 0.38)
-                rgb = [int((colour[i] * (1 - heat) + (255, 100, 15)[i] * heat)
-                           * (1 - 0.9 * min(1, char))) for i in range(3)]
-                pic.set_at((x + ox, y + oy), (*rgb, colour.a))
-        if t < 0.62:
-            strength = math.sin(math.pi * t / 0.62)
-            for j in range(9):
-                px = size // 2 + (j - 4) * 5
-                py = size // 2 + 6 - (j % 3) * 4
-                height = max(1, int((14 + (j * 7 + frame * 3) % 15) * strength))
-                pygame.draw.polygon(pic, (255, 75 + j * 9, 12, 230),
-                                    [(px - 5, py), (px + 5, py), (px + (frame + j) % 5 - 2, py - height)])
-                pygame.draw.line(pic, (255, 235, 100, 240), (px, py), (px, py - height // 2), 2)
-        if pixels and 0.32 <= t < 1:
-            drift = (t - 0.32) / 0.68
-            for j in range(min(48, len(pixels))):
-                x, y, _ = pixels[j * len(pixels) // min(48, len(pixels))]
-                px = ox + x + math.sin(j * 2.4) * drift * 30 + drift * 8
-                py = oy + y - drift * (12 + j % 7 * 5)
-                alpha = int(255 * (1 - drift))
-                ember = t < 0.58 and j % 3 == 0
-                colour = (255, 120, 25, alpha) if ember else (135, 130, 125, alpha)
-                pygame.draw.circle(pic, colour, (round(px), round(py)), 1 + (j % 4 == 0))
-        frames.append(pic)
-    _BURN_ART[stage] = tuple(frames)
+    origin = ((size - source.get_width()) // 2, (size - source.get_height()) // 2)
+    _BURN_ART[stage] = fire_death.frames(source, BURN_FRAME_COUNT, fire_death.BIRD, (size, size), origin)
     return _BURN_ART[stage]
 
 
