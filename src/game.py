@@ -48,6 +48,7 @@ import bindings
 import controls
 import asteroids
 import spacewar
+import lander
 import antimatter
 import escort
 import galaga
@@ -1416,6 +1417,13 @@ class Game:
             self.input_grace = 0.5
             self._play_level_vo(self._announced_level())
             return
+        if (getattr(self, "adventure", None) or {}).get("lander"):
+            # the Lunar Lander (src/lander.py): the ship falls from the top of the screen, in the middle, nose up
+            self.player.x, self.player.y = BASE_WIDTH / 2.0, BASE_HEIGHT / 2.0
+            self.player.ast_angle = -math.pi / 2
+            self.stage_transition = None
+            self.input_grace = 0.5
+            return
         if (getattr(self, "adventure", None) or {}).get("asteroids"):
             # the Asteroids mission: no flight in from below, the ship is in the middle of the field, nose up
             self.player.x, self.player.y = BASE_WIDTH / 2.0, BASE_HEIGHT / 2.0
@@ -1916,6 +1924,11 @@ class Game:
             self.player.vertical_range = None
             self._ast_px, self._ast_py = self.player.x, self.player.y
             self._ast_last_x = self._ast_last_y = None
+        if spec.get("lander"):
+            # Lunar Lander (src/lander.py): the ship falls to a ground, in the middle of the screen, with ONE life
+            self.player.asteroid_mode = True
+            self.player.vertical_range = None
+            self.player.lives = 1
         if spec.get("spacewar"):
             # SpaceWar (src/spacewar.py): the ship flies free by the pull of a star, with ONE life (pixel dust at its end)
             spacewar.set_planet(spec.get("planet"))                 # (Jupiter, Saturn, Uranus or Neptune: its pull and its disc)
@@ -1936,7 +1949,7 @@ class Game:
         # never carry one, and do not count in the gap between two drops; the items bought still work in them.
         story = getattr(self, "story", None)
         can_loot = (story is not None and not spec.get("invaders") and not spec.get("asteroids")
-                    and not spec.get("training") and not spec.get("spacewar"))
+                    and not spec.get("training") and not spec.get("spacewar") and not spec.get("lander"))
         if can_loot and spec.get("reactor"):
             # a BONUS mission: the reactor of its hull falls once, whenever in the waves (the random loot is off)
             self.adventure["loot_plan"] = story_items.reactor_plan(story.state, spec["reactor"], random)
@@ -2098,6 +2111,16 @@ class Game:
             mult = float(adv.get("speed") or 1.0) * stage_speed_mult(number) * self.difficulty_speed_mult()
             self.formation = GalagaFormation(speed_mult=mult, fire_mult=float(adv.get("fire_mult") or 1.0))
             self.formation.sounds = self.sounds
+            self.boss_saucer = None
+            return
+        elif adv and adv.get("lander"):
+            # Lunar Lander (src/lander.py): a ground to land on, the ship (always in the middle) falls to it
+            self.stage = 1
+            self.formation = lander.LanderFormation(style=adv.get("body"), seed=adv.get("seed"))
+            self.formation.sounds = self.sounds
+            self.formation.font = self.font
+            self.formation.text_cache = self.text_cache
+            self.player.lander = self.formation
             self.boss_saucer = None
             return
         elif adv and adv.get("spacewar"):
@@ -4422,6 +4445,7 @@ class Game:
         escort.tick(self)                         # the VIP rescue: the cruise ship (nothing in any other mission)
         asteroids.tick(self)                      # the Asteroids mission: rocks, saucer, shots (nothing elsewhere)
         spacewar.tick(self)                       # the SpaceWar test: the birds, the torpedoes, the levels (nothing elsewhere)
+        lander.tick(self)                         # the Lunar Lander test: the beeps, the touch, the end (nothing elsewhere)
         update_play.tick_loot(self)
         self._drain_detach_pops()
         self._check_extra_lives()

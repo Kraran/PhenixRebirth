@@ -577,6 +577,13 @@ MISSIONS = [
         "title": "story_m_spacewar_neptune", "hud_title": "story_m_spacewar_hud", "blurb": "story_m_spacewar_neptune_b",
         "need": None, "content": 1, "speed": 1.0,
     },
+    # TEST: Lunar Lander (src/lander.py), a remake of Atari's 1979 arcade game: the ship lands by its thruster on the ice of
+    # Titan or the rock of an asteroid (drawn at random). A training mission: the score is shown, nothing won, nothing lost.
+    {
+        "id": "test_lander", "acts": (1, 2, 3), "training": True, "test": True, "lander": True,
+        "title": "story_m_lander", "hud_title": "story_m_lander_hud", "blurb": "story_m_lander_b",
+        "need": None, "content": 1, "speed": 1.0,
+    },
     # EDF - Opération Sentinelles silencieuses (I-IV): a stealth spy satellite to put in orbit round each gas giant, built on the
     # SpaceWar level (src/spacewar.py) but for real: the birds and the saucers pay their normal points and a failure costs what
     # it always costs. Flown in order (I from the start of Act 1, II and III in Act 2, IV in Act 3), once each, until the

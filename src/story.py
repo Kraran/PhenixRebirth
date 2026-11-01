@@ -1390,6 +1390,8 @@ class StoryHub:
                 spec["training"] = True                             # a test: nothing won, nothing lost
             if mission.get("sw_levels"):
                 spec["sw_levels"] = [list(lv) for lv in mission["sw_levels"]]   # the Sentinelle missions: their own levels
+        if mission.get("lander"):
+            spec.update(lander=True, items=[], training=True)        # (src/lander.py: a test, nothing won, nothing lost)
         if ss.has_antimatter(self.state) and not mission.get("training"):
             spec["antimatter"] = True                 # the missile of Silent Sentinels IV: one in every Adventure mission
         if ship:
@@ -1433,7 +1435,9 @@ class StoryHub:
         had_missile = ss.has_antimatter(self.state)
         res = ss.record_result(self.state, mission_id, score, cleared, kills, loot=loot, used=used)
         if res.get("training"):
-            if (ss.mission_by_id(mission_id) or {}).get("spacewar"):
+            if (ss.mission_by_id(mission_id) or {}).get("lander"):
+                self.toast = t("story_lander_clear") if cleared else t("story_lander_retry")
+            elif (ss.mission_by_id(mission_id) or {}).get("spacewar"):
                 self.toast = t("story_spacewar_clear") if cleared else t("story_spacewar_retry")
             else:
                 self.toast = t("story_guardians_clear") if cleared else t("story_guardians_retry")

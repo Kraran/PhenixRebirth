@@ -147,6 +147,7 @@ class Player:
         self.ast_vy = 0.0
         self.ast_fire = False            # a shot is asked for this frame (the mission makes it)
         self.sw_physics = False          # the SpaceWar level (src/spacewar.py): the pull of a star, no friction
+        self.lander = None               # the Lunar Lander level (src/lander.py): its formation, which flies the ship
         self.sw_crash = False            # ... and the ship has touched the star
         self._ast_held = False
         self._ast_canvas = None
@@ -597,7 +598,11 @@ class Player:
         self.vertical_range = None
         self.climbing = False
         turn, push, fire = self._read_asteroid_input(input_mode, joystick)
-        if self.sw_physics:
+        if self.lander is not None:
+            push = self.lander.fly(self, dt, turn, push)             # (the gravity, the fuel, the ground: the ship stays in the middle)
+            self.x, self.y = BASE_WIDTH / 2.0, BASE_HEIGHT / 2.0
+            self.ast_vx, self.ast_vy = self.lander.vx, self.lander.vy
+        elif self.sw_physics:
             import spacewar
             if spacewar.fly(self, dt, turn, push, 1.0, spacewar.PLAYER_THRUST, spacewar.PLAYER_RADIUS):          # (the pull of the star, the inertia, no friction)
                 self.sw_crash = True
@@ -654,7 +659,9 @@ class Player:
             self.draw(canvas)
         finally:
             self.x, self.y, self.asteroid_mode = saved
-        if self.sw_physics:
+        if self.lander is not None:              # (Lunar Lander: the ship is drawn at the size of the zoom)
+            img = pygame.transform.rotozoom(canvas, -math.degrees(self.ast_angle) - 90.0, self.lander.ship_scale())
+        elif self.sw_physics:
             import spacewar                      # (SpaceWar: the ship is drawn at half its size)
             img = pygame.transform.rotozoom(canvas, -math.degrees(self.ast_angle) - 90.0, spacewar.PLAYER_SCALE)
         else:
@@ -938,6 +945,8 @@ class Player:
         """(angle, scale) of the hull as it is drawn: turned to the nose in the free missions (Asteroids, SpaceWar), and at half
         its size in SpaceWar; (None, 1.0) in the usual game."""
         angle = (-math.degrees(self.ast_angle) - 90.0) if getattr(self, "asteroid_mode", False) else None
+        if getattr(self, "lander", None) is not None:
+            return angle, self.lander.ship_scale()
         return angle, (0.5 if getattr(self, "sw_physics", False) else 1.0)
 
     def burn_by_guardian(self, blaze=False):
