@@ -1,10 +1,14 @@
-"""Guardian laser destruction: cached hull/form-specific fire and disintegration."""
+"""Guardian laser destruction of the ship: cached hull/form-specific blaze, charring and scattered ash (src/fire_death.py)."""
 import math
 
 import pygame
 
-DURATION = 1.4
+import fire_death
+
+DURATION = 2.4
 FRAME_COUNT = 32
+SIZE = (360, 380)                  # the size of every picture
+HULL = (130, 240)                  # where the middle of the hull is in it
 _CACHE = {}
 
 
@@ -29,48 +33,9 @@ def frames(ship, active):
         return _CACHE[key]
     source = _source(ship, active)
     w, h = source.get_size()
-    # Full form silhouette plus room for flames, debris and rising ash.
-    width, height = w + 112, h + 144
-    ox, oy = 56, 80
-    pixels = [(x, y, source.get_at((x, y))) for y in range(h) for x in range(w)
-              if source.get_at((x, y)).a > 24]
-    result = []
-    for index in range(FRAME_COUNT):
-        t = index / (FRAME_COUNT - 1)
-        pic = pygame.Surface((width, height), pygame.SRCALPHA)
-        dissolve = max(0.0, (t - 0.22) / 0.48)
-        heat = min(1.0, t / 0.16)
-        char = min(0.94, max(0.0, (t - 0.22) / 0.4))
-        for x, y, colour in pixels:
-            noise = ((x * 73 + y * 151) % 127) / 126
-            if t < 0.70 and noise >= dissolve:
-                rgb = [int((colour[i] * (1 - heat) + (255, 115, 20)[i] * heat)
-                           * (1 - char)) for i in range(3)]
-                pic.set_at((ox + x, oy + y), (*rgb, colour.a))
-        if 0 < t < 0.65:
-            strength = math.sin(math.pi * t / 0.65)
-            for j in range(15):
-                px = ox + round(w * (j + 1) / 16)
-                py = oy + round(h * (0.45 + (j % 3) * 0.13))
-                length = max(1, int((25 + (j * 11 + index * 7) % 32) * strength))
-                pygame.draw.polygon(pic, (255, 65 + j % 6 * 17, 10, 235),
-                                    [(px - 7, py + 6), (px + 7, py + 6),
-                                     (px + (j + index) % 7 - 3, py - length)])
-                pygame.draw.line(pic, (255, 240, 130, 240),
-                                 (px, py), (px, py - length // 2), 3)
-        if pixels and 0.22 <= t < 1:
-            drift = (t - 0.22) / 0.78
-            count = min(96, len(pixels))
-            for j in range(count):
-                x, y, _ = pixels[j * len(pixels) // count]
-                px = ox + x + math.sin(j * 2.4) * drift * 46
-                py = oy + y - drift * (18 + j % 9 * 6)
-                alpha = int(255 * (1 - drift))
-                ember = t < 0.62 and j % 3 == 0
-                colour = (255, 145, 30, alpha) if ember else (145, 140, 135, alpha)
-                pygame.draw.circle(pic, colour, (round(px), round(py)), 1 + (j % 5 == 0))
-        result.append(pic)
-    _CACHE[key] = tuple(result)
+    # The hull sits at HULL inside the picture: room above for the flames, to the right for the wind that scatters the ash.
+    origin = (HULL[0] - w // 2, HULL[1] - h // 2)
+    _CACHE[key] = fire_death.frames(source, FRAME_COUNT, fire_death.SHIP, SIZE, origin)
     return _CACHE[key]
 
 
@@ -85,9 +50,7 @@ class ShipBurn:
         self.active_form = ship.is_phenix
         self.frames = frames(ship, self.active_form)
         self.x, self.y = ship.x, ship.y
-        # Hull centre within the padded image (padding is deliberately asymmetric).
-        width, height = self.frames[0].get_size()
-        self.offset = (width // 2, height // 2 + 8)
+        self.offset = HULL                 # (the middle of the hull in the picture)
         self.age = 0.0
 
     @property
@@ -105,9 +68,11 @@ class ShipBurn:
             if angle is not None or scale != 1.0:
                 frame = pygame.transform.rotozoom(frame, angle or 0.0, scale)
                 rad = math.radians(angle or 0.0)
-                # the hull is 8 px under the middle of the picture: that point stays on the ship
-                cx = self.x - 8 * scale * math.sin(rad)
-                cy = self.y - 8 * scale * math.cos(rad)
+                # the hull is off the middle of the picture: that point stays on the ship
+                dx = self.offset[0] - SIZE[0] / 2
+                dy = self.offset[1] - SIZE[1] / 2
+                cx = self.x - scale * (dx * math.cos(rad) + dy * math.sin(rad))
+                cy = self.y - scale * (-dx * math.sin(rad) + dy * math.cos(rad))
                 surface.blit(frame, frame.get_rect(center=(round(cx), round(cy))))
                 return
             surface.blit(frame, (round(self.x - self.offset[0]), round(self.y - self.offset[1])))

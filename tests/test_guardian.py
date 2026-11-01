@@ -299,7 +299,7 @@ def test_game_launch_collision_and_return_to_arcade(tmp_path, monkeypatch):
     lives = game.player.lives
     update_play.enemy_attacks_vs_players(game)
     assert game.player.lives == lives - 1 and bolt.alive and game.player.dying
-    from ship_blast import DURATION
+    from ship_burn import DURATION
     game.player.update(DURATION + 0.01, {})
     assert game.player.alive and not game.player.dying
     game.formation.bullets.clear()  # manual ship-only animation step above
@@ -331,7 +331,7 @@ def test_game_launch_collision_and_return_to_arcade(tmp_path, monkeypatch):
     game.stage_transition = None
     game.player.lives = 1
     game.player.phenix_timer = 2.0
-    assert game.player.burn_by_guardian()
+    assert game.player.burn_by_guardian(blaze=True)
     game.dt = 1 / 60
     game.update()
     assert game.started and game.player.dying  # final-life flames finish first
