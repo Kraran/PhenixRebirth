@@ -353,6 +353,13 @@ class Enemy:
         )
 
 
+def happens(rate, dt):
+    """Does something that happens `rate` times per second on average (a Poisson event) happen during this frame of `dt`
+    seconds? The chance is 1 - exp(-rate * dt): the same count per second at 30, 60, 120 or 144 images/s, and it never
+    goes over 1 whatever the rate or the length of the frame."""
+    return random.random() < -math.expm1(-rate * dt)
+
+
 class EnemyFormation:
     REFILL_DELAY = SWARM_REFILL_DELAY   # swarm: seconds between two arrivals of the same kind
 
@@ -559,31 +566,31 @@ class EnemyFormation:
             
             # Dive — rare for BigBird
             if isinstance(enemy, BigBird):
-                if enemy.state == "roam" and random.random() < ENEMY_DIVE_CHANCE * 0.55:
+                if enemy.state == "roam" and happens(ENEMY_DIVE_RATE * 0.55, dt):
                     enemy.start_dive(player_x)
             elif enemy.state == "formation":
-                if random.random() < ENEMY_DIVE_CHANCE:
+                if happens(ENEMY_DIVE_RATE, dt):
                     enemy.start_dive(player_x)
             
             kind = enemy.stage if self.swarm else self.stage      # a swarm mixes kinds
             if isinstance(enemy, BigBird):
                 max_shots = 5 if kind >= 4 else 4
-                chance = ENEMY_SHOOT_CHANCE * (4.5 if kind >= 4 else 4.0)
+                rate = ENEMY_SHOOT_RATE * (4.5 if kind >= 4 else 4.0)
             elif kind >= 2:
                 max_shots = 2
-                chance = ENEMY_SHOOT_CHANCE * 1.5
+                rate = ENEMY_SHOOT_RATE * 1.5
             else:
                 max_shots = 1
-                chance = ENEMY_SHOOT_CHANCE
+                rate = ENEMY_SHOOT_RATE
             
             if enemy.can_shoot() and enemy.state not in ("returning", "enter"):
                 owned = sum(1 for b in self.bullets if b.alive and getattr(b, "owner_id", None) == id(enemy))
                 if owned >= max_shots:
                     continue
                 if enemy.state == "diving":
-                    chance *= 1.8
+                    rate *= 1.8
                 
-                if random.random() < chance:
+                if happens(rate, dt):
                     by = enemy.y + (20 if isinstance(enemy, BigBird) else 14)
                     bullet = EnemyBullet(enemy.x, by, stage=kind)
                     bullet.owner_id = id(enemy)

@@ -67,6 +67,11 @@ ENEMY_VETERAN_BONUS = 10
 ENEMY_BULLET_SPEED = 320.0
 ENEMY_SHOOT_CHANCE = 0.0035
 ENEMY_DIVE_CHANCE = 0.0018
+# The same two chances per SECOND (they were tuned as a chance per image at 60 images/s): the AI must not get more
+# aggressive at 120 or 144 Hz. Use `happens(rate, dt)` (enemy.py), never a chance per image.
+AI_TUNED_FPS = 60.0
+ENEMY_SHOOT_RATE = ENEMY_SHOOT_CHANCE * AI_TUNED_FPS
+ENEMY_DIVE_RATE = ENEMY_DIVE_CHANCE * AI_TUNED_FPS
 
 # Game feel
 SCREEN_SHAKE_DECAY = 14.0
