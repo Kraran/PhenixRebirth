@@ -3,6 +3,10 @@ Current release: **v1.5.0**
 
 ## Unreleased (towards 1.5.1)
 
+- Adventure: the antimatter missile is now bought in the workshop list (the fifth stat box, which overflowed, is gone). Once Silent
+  Sentinels IV is won, the list offers the **launcher** (5000 PTS, permanent) and the **missile** (500 PTS, consumable, up to 9 held; it needs
+  the launcher). A mission carries a missile only with the launcher and at least one missile held; a missile that is not fired stays for the
+  next mission, a fired one is used up at once (written to the save).
 - Fix: the Singularity Core now falls in the BONUS mission "le convoi de la Singularité" (the launch did not pass the item of the mission
   to the game, so no plan to drop it was made).
 - Fix: the black hole (`galaxy_blackhole.png`) never shows behind a mission of the Adventure (the arcade game keeps it).

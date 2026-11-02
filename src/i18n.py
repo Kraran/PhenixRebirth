@@ -6831,14 +6831,21 @@ for _k, (_fr, _en) in _SENT_TEXTS.items():
 _MISSILE_TEXTS = {
     "act_missile": ("Missile antimatière", "Antimatter missile"),
     "kb_help_missile": (
-        "Lance le missile à antimatière, droit devant (débloqué par Sentinelles silencieuses IV). Un seul par mission : il "
+        "Lance le missile à antimatière, droit devant (lance-missiles et missile à l'atelier). Un seul par mission : il "
         "détruit tout ce qui se trouve près de l'impact. S'il ne touche rien, il est perdu.",
         "Fires the antimatter missile straight ahead (unlocked by Silent Sentinels IV). Only one per mission: it destroys "
         "everything near the impact. If it hits nothing, it is lost."),
-    "story_stat_missile": ("Missile antimatière", "Antimatter missile"),
-    "story_missile_ready": ("1 par mission", "1 per mission"),
-    "story_missile_unlocked": ("Missile à antimatière débloqué : une fois par mission, touche {key}.",
-                               "Antimatter missile unlocked: once per mission, key {key}."),
+    "story_missile_unlocked": ("Missile à antimatière débloqué : achète le lance-missiles à l'atelier (touche {key} en mission).",
+                               "Antimatter missile unlocked: buy the launcher in the workshop (key {key} in a mission)."),
+    "story_shop_launcher": ("Lance-missiles antimatière", "Antimatter missile launcher"),
+    "story_shop_missile": ("Missile antimatière", "Antimatter missile"),
+    "story_item_consumable": ("CONSOMMABLE", "CONSUMABLE"),
+    "story_need_launcher": ("Lance-missiles requis", "Launcher needed"),
+    "story_missile_full": ("Stock plein", "Stock full"),
+    "story_desc_missile_launcher": ("Permet d'emporter un missile par mission, touche missile. Achat définitif.",
+                                    "Lets you carry one missile per mission, on the missile key. Bought for good."),
+    "story_desc_missile_ammo": ("Un missile pour la prochaine mission. Tiré, il est consommé ; sinon il reste pour la suivante.",
+                                "One missile for the next mission. Fired, it is used up; otherwise it stays for the next one."),
     "antimatter_hud": ("MISSILE  {key}", "MISSILE  {key}"),
 }
 for _k, (_fr, _en) in _MISSILE_TEXTS.items():

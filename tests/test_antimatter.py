@@ -43,6 +43,8 @@ def _launch(run, mission="ch1_sortie", antimatter=True, act=1):
     st["act"] = max(act, st["act"])
     if antimatter:
         st["flags"][ss.ANTIMATTER_FLAG] = True
+        st["flags"][ss.LAUNCHER_FLAG] = True                 # (the launcher is bought and three missiles are held)
+        st["missiles"] = 3
     for m in ss.MISSIONS:
         if m["id"].startswith("sentinelle_"):
             st["flags"][m["id"]] = True
@@ -112,7 +114,7 @@ def test_the_help_values_name_the_missile_keys():
 
 
 def test_the_texts_exist_in_every_language():
-    for key in ("act_missile", "kb_help_missile", "story_stat_missile", "story_missile_ready", "antimatter_hud"):
+    for key in ("act_missile", "kb_help_missile", "story_shop_launcher", "story_shop_missile", "antimatter_hud"):
         assert all(i18n.T[key][c] for c in i18n.LANG_CODES)
     assert "{key}" in i18n.T["antimatter_hud"]["fr"] and "{key}" in i18n.T["story_missile_unlocked"]["en"]
 
@@ -406,6 +408,8 @@ def _sentinelle(run, mid="sentinelle_2"):
         if before == mid:
             break
     st["flags"][ss.ANTIMATTER_FLAG] = True
+    st["flags"][ss.LAUNCHER_FLAG] = True
+    st["missiles"] = 3
     ss.save_state(ss.story_path(1), st)
     g.story.open_slot(1)
     g.story.map_index = [m["id"] for m in g.story.missions()].index(mid)
@@ -618,7 +622,7 @@ def test_the_hud_shows_the_key_while_the_missile_is_ready(run):
     g._end_adventure(False)
 
 
-def test_the_workshop_says_whether_the_missile_is_there(run, monkeypatch):
+def test_the_workshop_sells_the_launcher_once_the_missile_is_unlocked(run, monkeypatch):
     import story
     for unlocked in (False, True):
         g = run.game
@@ -637,8 +641,8 @@ def test_the_workshop_says_whether_the_missile_is_there(run, monkeypatch):
         monkeypatch.setattr(story, "_text", spy)
         g.story.draw(g.game_surface, g.font, g.medium_font, g.font)
         monkeypatch.setattr(story, "_text", real)
-        assert i18n.t("story_stat_missile") in seen
-        assert (i18n.t("story_missile_ready") in seen) is unlocked
+        assert (i18n.t("story_shop_launcher") in seen) is unlocked
+        assert i18n.t("story_stat_missile") not in seen if "story_stat_missile" in i18n.T else True
 
 
 # ------------------------------------------------------------------ what the mutation checks asked for
