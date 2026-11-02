@@ -8,6 +8,7 @@ Play modes: solo, hot-seat (alternating), coop (simultaneous). Options cover
 controls, autofire, volumes, session audio mix, rumble, display, GPU present,
 VSync, refresh cap, bezels, FPS counter, CRT scanlines and language.
 Cheats on the high-score menu: LV02–LV99, LIVE, PHEN, VNOV.
+v1.6.0 — Adventure: visual novel, open ending (Act IV), SpaceWar / Lander / Guardians, missile launcher, AZERTY codes.
 v1.5.0 — Adventure (beta): Acts 1-3, rebindable controls, music, announcer to level 31.
 v1.4.5 — 144 Hz option, smoother fullscreen, safer saves, errors.log.
 v1.4.4 — Adventure chapter 1 (Shield, broken dome, bestiary, hangar credits).
@@ -3618,7 +3619,10 @@ class Game:
                 self._ast_last_x, self._ast_last_y = px, py
                 px, py = self._ast_px, self._ast_py
         self.starfield.set_free(free)             # the Asteroids mission: the background only follows the ship
-        self.starfield.set_adventure(bool(adv) and bool(getattr(self, "started", False)))     # (no fantasy ringed planet in a mission)
+        started = bool(getattr(self, "started", False))
+        story_menu = not started and (getattr(self, "menu_screen", "") == "story_hub" or bool(getattr(self, "story_door", None)))
+        # no fantasy ringed planet and no black hole in a mission, nor in the menus of the Adventure
+        self.starfield.set_adventure((bool(adv) and started) or story_menu)
         self.starfield.set_bare(bool(adv.get("spacewar")))     # SpaceWar: no planet or rock behind the planet of the level
         menu = not bool(getattr(self, "started", False))
         stage = int(getattr(self, "stage", 1) or 1) if not menu else 0
