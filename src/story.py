@@ -45,6 +45,7 @@ GREY_MULT = (80, 80, 90, 160)    # the dimming of the ship select screen for the
 CHEAT_NIX = "NIX2"             # typed in the hangar: all the Phenix missions won, the Phenix is yours, nothing saved
 CHEAT_ACT2 = "2222"            # typed on the mission map: go straight to Act 2, save nothing
 CHEAT_ACT3 = "3333"            # typed on the mission map: Acts 1 and 2 won, the attack on Phobos and the choice, save nothing
+CHEAT_FINE = "FINE"            # typed on the mission map: the open ending (Act IV) from its first scene, save nothing
 LOG_REPLAY_ROWS = 4            # journal: scenes to watch again, shown at once (the cursor moves in them)
 LOG_STORY_ROWS = 6             # journal: lines of what happened, shown at once (they scroll)
 MODE_COLORS = {"novice": (120, 200, 255), "normal": (140, 220, 160), "veteran": (255, 110, 100)}   # title of each mode card
@@ -311,6 +312,12 @@ class StoryHub:
         self.cheat_unlock = False      # UNLK: every mission can be played, nothing is saved any more
         self.cheat_act2 = False        # ACT2: the save jumped to Act 2, nothing is saved any more
         self.cheat_vn = False          # VNOV (typed on the high scores): every scene of the visual novel, nothing saved
+        self.cheat_end = False         # FINE: the ending was started by the code, nothing is saved any more
+        self.ending = False            # the open ending is under way: scene, film, credits (its music plays on throughout)
+        self.ending_credits = False    # ... and its credits are on screen (the game opened them)
+        self.film_wait = False         # a film that `hold`s has shown its last picture and waits for a key / button
+        self.film_wait_t = 0.0
+        self.film_closing = False      # ... and it was pressed: the game fades out to the credits
         self.vn_pick = None            # the answer given in the scene on screen (the reaction of Lyra follows it)
         self.best_index = 0            # cursor in the Bestiary list
         self.extras_index = 0          # which paragraph of the Extras tab is chosen
@@ -469,10 +476,68 @@ class StoryHub:
         self.pane = self.intro_return
         self.zone = "slots"
         self.intro_return = "hangar"
-        if choose:
+        if self.ending and not self.start_film(ss.ENDING_FILM, back_to="hangar"):
+            self._ending_to_credits()              # (no picture to show: the credits come at once)
+        elif self.ending:
+            pass
+        elif choose:
             self.open_choice()
         elif film:
             self.start_film(film, back_to=self.pane)    # the concert right after the scene of the VIP rescue
+
+    # --- the open ending (Act IV - No Mercy Left): scene -> film "theend" (waits for a key) -> credits -> the hangar ---
+    def start_ending(self):
+        """The scene of Alcyone, then the film and the credits; the music of Lyra Voss plays throughout (see game.py)."""
+        self.ending = True
+        self.ending_credits = False
+        self.film_closing = False
+        self.start_scene(ss.ENDING_MISSION, back_to="hangar")
+
+    def _ending_to_credits(self):
+        """The film is over (a key was pressed) or skipped: fade out, the game opens the credits (take_door_request)."""
+        if self.film_closing:
+            return
+        self.film_closing = True
+        self._door_request = {"door": "credits", "scene": True}
+
+    def film_waiting(self):
+        """The last picture of a film that waits for a key or a button is on screen and may be pressed."""
+        return (self.screen == "film" and self.film_wait and not self.film_closing
+                and self.film_wait_t >= self.FILM_PRESS_LOCK)
+
+    def press(self):
+        """Any key or button while the film waits: it is over."""
+        if self.film_waiting():
+            self._end_film()
+            return True
+        return False
+
+    def finish_ending_scene(self):
+        """The fade to black is done: the film is closed and the credits open (the game does it). The ending counts as
+        told (once): all the acts are on the map and every mission can be flown again."""
+        if self._film is not None:
+            ss.mark_film_seen(self.state, self.film_id or ss.ENDING_FILM)
+        self._stop_film()
+        self.film_id = None
+        self.film_wait = False
+        self.film_closing = False
+        self.ending_credits = True
+        self.screen = "hub"
+        self.pane = "hangar"
+        self.zone = "slots"
+        if not self.cheating:
+            ss.complete_ending(self.state)
+            self.save()
+
+    def finish_ending(self):
+        """The credits have been left: back to the workshop, and the music of the menus comes back."""
+        self.ending = False
+        self.ending_credits = False
+        self.screen = "hub"
+        self.pane = "hangar"
+        self.zone = "slots"
+        self.map_index = 0
+        self.focus_next()
 
     # --- films: a video with its sound, full screen (story_state.FILMS) ---
     def start_film(self, film_id, back_to="map"):
@@ -500,8 +565,11 @@ class StoryHub:
         self.film_id = film_id
         self.film_return = back_to
         self._film = clip
-        self._film_sound = files[1]                # it starts with the first picture (see _tick_film)
+        self._film_sound = None if (ss.FILMS.get(film_id) or {}).get("silent") else files[1]   # (it starts with the first picture, see _tick_film)
         self.film_t = 0.0
+        self.film_wait = False
+        self.film_wait_t = 0.0
+        self.film_closing = False
         self.screen = "film"
         return True
 
@@ -511,8 +579,13 @@ class StoryHub:
 
     def _tick_film(self, dt):
         clip = self._film
+        if self.film_closing:
+            return                                 # (the fade to the credits: the last picture stays)
         if clip is None or clip.failed:
             self._end_film()
+            return
+        if self.film_wait:
+            self.film_wait_t += dt                 # waiting for a key or a button
             return
         if self._film_sound is not None:
             if not clip.ready:
@@ -522,7 +595,11 @@ class StoryHub:
         self.film_t += dt
         clip.pump()
         if clip.ended:
-            self._end_film()
+            if (ss.FILMS.get(self.film_id) or {}).get("hold"):
+                self.film_wait = True              # no loop: the last picture stays until a key / button is pressed
+                self.film_wait_t = 0.0
+            else:
+                self._end_film()
 
     def _start_film_sound(self, path):
         snd = self.sounds
@@ -547,6 +624,9 @@ class StoryHub:
         """The film is over, or skipped: it counts as seen, the journal keeps it, the music of the menus comes back. The
         first time, the film that follows it comes next (the songs of the concert); B / Esc skips one song."""
         film = self.film_id
+        if self.ending and film == ss.ENDING_FILM:
+            self._ending_to_credits()              # the music goes on, the last picture stays under the fade
+            return
         self._stop_film()
         try:
             if pygame.mixer.get_init():
@@ -711,6 +791,9 @@ class StoryHub:
 
     def finish_scene(self, door=None):
         """The fade to black is done: the scene is over and the Adventure is back on its Extras paragraph."""
+        if self.ending and door == "credits":
+            self.finish_ending_scene()                   # the end of the film: the credits, not the Extras tab
+            return
         self._end_intro()
         self.pane = "extras"
         if door in self.doors():
@@ -940,7 +1023,7 @@ class StoryHub:
     @property
     def cheating(self):
         """A cheat code is on: nothing is written to the save until it is loaded again."""
-        return bool(self.cheat_unlock or self.cheat_act2 or self.cheat_vn)
+        return bool(self.cheat_unlock or self.cheat_act2 or self.cheat_vn or self.cheat_end)
 
     def missions(self):
         """The missions of the map: those of the current act (every one under the UNLK cheat)."""
@@ -1004,7 +1087,15 @@ class StoryHub:
 
     def feed_cheat(self, ch):
         """Secret code typed on the mission map. Returns True when UNLK was just completed."""
-        self.cheat_buf = (self.cheat_buf + str(ch).upper())[-max(len(CHEAT_UNLOCK), len(CHEAT_ACT2), len(CHEAT_NIX)):]
+        self.cheat_buf = (self.cheat_buf + str(ch).upper())[-max(len(CHEAT_UNLOCK), len(CHEAT_ACT2), len(CHEAT_NIX),
+                                                                    len(CHEAT_FINE)):]
+        if self.cheat_buf == CHEAT_FINE and self.pane == "map" and self.screen == "hub":
+            self.cheat_buf = ""
+            self.cheat_end = True                 # nothing is saved any more
+            self.toast = t("story_cheat_fine")
+            self.toast_kind = "special"
+            self.start_ending()
+            return True
         if self.cheat_buf == CHEAT_ACT3 and self.pane == "map":
             self.cheat_buf = ""
             if int(ss._num(self.state.get("act"), 1)) < 3:
@@ -1139,6 +1230,8 @@ class StoryHub:
             self._choice_confirm()
         elif self.screen == "vn":
             self._vn_confirm()
+        elif self.screen == "film":
+            self.press()                                 # (a film that waits for a key; A does nothing in the others)
         elif self.screen == "delete":
             if self.del_yes:
                 ss.delete_slot(self.sel + 1)
@@ -1308,6 +1401,9 @@ class StoryHub:
         """Shop buy, or a launch spec dict when a map node is confirmed."""
         if self.pane == "map":
             mission = self._mission()
+            if mission and mission.get("ending") and self.mission_playable(mission):
+                self.start_ending()                   # no sortie: the scene, the film "theend", the credits
+                return None
             if (self.mission_playable(mission) and ss.scene_of(mission["id"])
                     and not ss.scene_seen(self.state, mission["id"])):
                 self.start_scene(mission["id"], back_to="map", launch=True)       # the story comes first
@@ -1701,6 +1797,7 @@ class StoryHub:
             self._intro_black.set_alpha(int(255 * fade))
             surface.blit(self._intro_black, (0, 0))
 
+    FILM_PRESS_LOCK = 0.6          # seconds a film that waits for a key ignores the press (no accident)
     FILM_TITLE_SEC = 5.0           # the title of a film shows over its first seconds
 
     def _draw_film(self, surface, medium):
@@ -1710,6 +1807,9 @@ class StoryHub:
         if img is not None:
             surface.blit(img, ((BASE_WIDTH - img.get_width()) // 2, (BASE_HEIGHT - img.get_height()) // 2))
         film = ss.FILMS.get(self.film_id) or {}
+        if self.film_wait and not self.film_closing and (pygame.time.get_ticks() // 600) % 2 == 0:
+            prompt = _render(medium, t("story_film_press"), (255, 225, 140))
+            surface.blit(prompt, (BASE_WIDTH // 2 - prompt.get_width() // 2, BASE_HEIGHT - 64))
         if film.get("title") and not film.get("quiet") and self.film_t < self.FILM_TITLE_SEC:
             fade = min(1.0, self.film_t / 0.6, (self.FILM_TITLE_SEC - self.film_t) / 0.8)
             title = _render(medium, t(film["title"]), (255, 225, 140)).copy()      # (the cached one stays opaque)
@@ -2327,7 +2427,9 @@ class StoryHub:
         pygame.draw.rect(surface, menu_ui.PANEL_EDGE, box, 2, border_radius=10)
         act = int(self.state.get("act") or 1)
         chapter = "story_ch1" if self.cheat_unlock or act < 2 else ("story_ch2" if act == 2 else "story_ch3")
-        _text(surface, small, t(chapter), (255, 170, 80), box.y + 28, left=box.x + 16)
+        acts = [] if self.cheat_unlock else ss.shown_acts(self.state)
+        if len(acts) < 2:
+            _text(surface, small, t(chapter), (255, 170, 80), box.y + 28, left=box.x + 16)
         y = box.y + 52
         # the list scrolls: entries from `first` on, so that the focused row (taller) always fits. The entries are
         # the missions and, between two groups (story, hunts, BONUS), a small heading
@@ -2335,14 +2437,18 @@ class StoryHub:
         room = low - y
         missions = self.missions()
         focus_i = max(0, min(len(missions) - 1, self.map_index))
-        entries, last = [], None
+        entries, last, last_act = [], None, None
         for i, mission in enumerate(missions):
             group = None if self.cheat_unlock else ss.mission_group(mission)
+            at = ss.map_act(self.state, mission) if len(acts) > 1 else None
+            if at is not None and at != last_act:
+                entries.append(("act", at))               # the acts listed together: a heading for each
+                last_act, last = at, None
             if group is not None and group != last:
                 entries.append(("head", group))
                 last = group
             entries.append(("row", i))
-        height = lambda e: MAP_HEAD_H if e[0] == "head" else 40
+        height = lambda e: MAP_HEAD_H if e[0] in ("head", "act") else 40
         focus_e = entries.index(("row", focus_i)) if missions else 0
         first = 0
         while first < focus_e and sum(height(e) + 4 for e in entries[first:focus_e]) + 76 + 4 > room:
@@ -2352,12 +2458,16 @@ class StoryHub:
         nxt = ss.next_mission(self.state, missions)
         self.map_page = 0                                  # rows shown at once: what Page up / Page down (LB / RB) jump by
         for kind, ref in entries[first:]:
-            if kind == "head":
+            if kind in ("head", "act"):
                 if y + MAP_HEAD_H > low:
                     _text(surface, small, "v", (180, 180, 200), low - 12, right=box.right - 20)
                     break
-                _text_fit(surface, small, t("story_grp_" + ref), (120, 160, 210), y + MAP_HEAD_H // 2 + 2, box.x + 16,
-                          400, scale=0.8)
+                if kind == "act":
+                    _text_fit(surface, small, t("story_ch" + str(ref)), (255, 170, 80), y + MAP_HEAD_H // 2 + 2,
+                              box.x + 16, 700, scale=0.9)
+                else:
+                    _text_fit(surface, small, t("story_grp_" + ref), (120, 160, 210), y + MAP_HEAD_H // 2 + 2,
+                              box.x + 16, 400, scale=0.8)
                 y += MAP_HEAD_H + 4
                 continue
             i, mission = ref, missions[ref]

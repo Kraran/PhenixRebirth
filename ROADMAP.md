@@ -3,6 +3,12 @@ Current release: **v1.5.0**
 
 ## Unreleased (towards 1.5.1)
 
+- Adventure: the open ending, "Acte IV - No Mercy Left" (a pseudo act with one mission, "Alcyone - Le Grand Saut"). It appears on the map
+  next to Act 3 once Triton (Riposte V) is won. It has no sortie: the scene (picture `assets/story/fin.jpg`, the text of the jump to the
+  Pleiades), then the film `assets/video/theend.mp4` (no loop: its last picture waits for a key or a button), then the credits, then the
+  workshop. "No Mercy Left" by Lyra Voss plays in a loop from the scene to the credits. Once told, the three acts and Act IV are on the map
+  together and every story mission can be flown again; the scene and the film stay in the journal. Cheat code `FINE` (typed on the mission
+  map, nothing saved): the ending from its first scene.
 - Notifications (banners, loot notices, mission counters, HUD) are now drawn over the body of the boss saucer. The enemies and every shot,
   the shots of the saucer included, stay over them as before. (`BossSaucer.draw` is split into `draw_body` and `draw_shots`.) The small
   saucers that cross the paint missions and the asteroid belts are enemies like the others and stay over the notifications.

@@ -280,6 +280,12 @@ class Game:
         if getattr(self, "menu_screen", "") == "jukebox":
             return
         story = getattr(self, "story", None)
+        if self._ending_music_on():
+            # the open ending (Act IV): Lyra Voss's "No Mercy Left" in a loop from the scene to the workshop, over the
+            # film and the credits
+            self.sounds.play_music(story_state.ENDING_MUSIC, fade_ms=600, fade_in_ms=1500)
+            self.sounds.set_music_level(1.0, 1.0)
+            return
         if (getattr(self, "menu_screen", "") == "story_hub" and not self.started and story is not None
                 and story.film_playing()):
             return                                       # a film of the Adventure plays its own sound
@@ -311,6 +317,12 @@ class Game:
                 self.sounds.play_music("menu")
             else:
                 self.sounds.stop_music()
+
+    def _ending_music_on(self):
+        """The ending of the Adventure is under way (scene, film, credits): its music is the one to play."""
+        story = getattr(self, "story", None)
+        return (story is not None and getattr(story, "ending", False) and not getattr(self, "started", False)
+                and getattr(self, "menu_screen", "") in ("story_hub", "credits"))
 
     def _story_scene_music(self):
         """(theme, level) of the music of the story scene on screen, or None."""
@@ -452,9 +464,12 @@ class Game:
         self.story_door = None
         if getattr(self, "menu_screen", "") == "jukebox":
             self._leave_jukebox_audio()
-        story.pane = "extras"
-        doors = story.doors()
-        story.extras_index = doors.index(door) if door in doors else 0
+        if getattr(story, "ending_credits", False):
+            story.finish_ending()                    # the credits of the ending: back to the workshop
+        else:
+            story.pane = "extras"
+            doors = story.doors()
+            story.extras_index = doors.index(door) if door in doors else 0
         story.screen = "hub"
         self.menu_screen = "story_hub"
         self.menu_index = 1
