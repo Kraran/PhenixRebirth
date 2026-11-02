@@ -196,6 +196,9 @@ def on_keydown(game, event):
         story = getattr(game, "story", None)
         if game.menu_screen == "story_hub" and story is not None:
             # Adventure name entry: typed letters must not act as menu keys (W A S D Z Q ...)
+            if story.film_waiting():
+                story.press()                         # the film of the ending waits for any key
+                return
             if story.type_key(event):
                 game._reset_menu_idle()
                 return
@@ -457,6 +460,9 @@ def on_joy_button(game, event):
     elif not game.started and not game.game_over and not game.quit_confirm and getattr(game, "input_grace", 0) <= 0:
         if game.menu_screen == "help":
             game._reset_menu_idle()
+        elif (game.menu_screen == "story_hub" and getattr(game, "story", None) is not None
+              and game.story.film_waiting()):
+            game.story.press()                        # the film of the ending waits for any button
         elif event.button in (4, 5) and game.menu_screen == "options":
             game._options_tab_step(-1 if event.button == 4 else 1)      # LB / RB: the tabs of the options
         elif event.button in (4, 5) and game.menu_screen == "story_hub":

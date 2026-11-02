@@ -6648,6 +6648,61 @@ _GUARDIAN_TEXTS = {
 for _key, (_fr, _en) in _GUARDIAN_TEXTS.items():
     T[_key] = {code: _fr if code == "fr" else _en for code in LANG_CODES}
 
+# Act IV - No Mercy Left: the open ending of the Adventure (French and English, the other languages show the English
+# text). {name} is the pilot's name.
+_ACT4_TEXTS = {
+    "story_ch4": ("ACTE 4 — NO MERCY LEFT", "ACT 4 — NO MERCY LEFT"),
+    "story_m_act4": ("Alcyone - Le Grand Saut", "Alcyone - The Great Leap"),
+    "story_m_act4_b": ("Le vaisseau est prêt. Cap sur les Pléiades : la fin ouverte de l'Aventure.",
+                       "The ship is ready. Course for the Pleiades: the open ending of the Adventure."),
+    "story_log_act4": ("Le Grand Saut : la route d'Alcyone est ouverte. Toutes les missions peuvent être rejouées.",
+                       "The Great Leap: the road to Alcyone is open. Every mission can be flown again."),
+    "story_scene_act4_t": ("Acte IV - No Mercy Left : Alcyone, le Grand Saut",
+                           "Act IV - No Mercy Left: Alcyone, the Great Leap"),
+    "story_film_theend_t": ("Fin", "The End"),
+    "story_film_press": ("Appuie sur une touche ou un bouton", "Press any key or button"),
+    "story_cheat_fine": ("Code FINE : la fin de l'Aventure. Plus aucune sauvegarde.",
+                         "Code FINE: the ending of the Adventure. Nothing is saved any more."),
+    "story_scene_act4": (
+        "Le nid de Triton s'est effondré dans un silence de glace. Quand la poussière d'azote est retombée, les équipes "
+        "de récupération ont trouvé dans les ruines ce que personne n'espérait plus : leurs archives. Des semaines de "
+        "déchiffrage plus tard, une carte du ciel est apparue sur les écrans du Commandement. Elle ne désignait qu'un "
+        "seul point, Alcyone, l'étoile la plus brillante des Pléiades, à 409 années-lumière de la Terre. C'est de là "
+        "que les Avioïdes étaient venus.\n\n"
+        "Pendant toute la guerre, nous avions ramassé leurs épaves, démonté leurs réacteurs, disséqué les corps "
+        "hybrides de leurs Gardiens. Pièce après pièce, leur technologie était devenue la nôtre. Dans un hangar "
+        "spatial en orbite de la Terre, un énorme vaisseau porte aéronefs qu'aucun humain n'aurait su concevoir seul "
+        "prenait forme. Le jour où ses moteurs ont plié l'espace pour la première fois, il n'y a eu ni applaudissements "
+        "ni discours. Seulement un long silence, puis une décision.\n\n"
+        "Nous n'attendrions pas qu'ils reviennent. Nous irions à eux.\n\n"
+        "Les pilotes survivants ont été réunis une dernière fois. Ils savaient tous qu'il n'y aurait pas de retour "
+        "garanti, ni de renfort, ni de seconde chance. Ils pensaient aux villes brûlées, aux cendres de nos bases, aux "
+        "camarades disparus. Les Avioïdes n'avaient jamais montré la moindre pitié, et ils n'en trouveraient aucune au "
+        "bout du voyage.\n\n"
+        "{name} est monté à bord le premier. Derrière la verrière, la Terre n'était plus qu'un point bleu. Devant, les "
+        "Pléiades scintillaient, froides et lointaines, comme si elles attendaient.\n\n"
+        "Le saut a commencé…",
+        "The nest on Triton collapsed in a silence of ice. When the nitrogen dust settled, the recovery teams found in "
+        "the ruins what nobody had hoped for any more: their archives. Weeks of decoding later, a map of the sky "
+        "appeared on the screens of Command. It pointed to a single spot, Alcyone, the brightest star of the Pleiades, "
+        "409 light-years from Earth. That is where the Avioids had come from.\n\n"
+        "All through the war we had picked up their wrecks, taken apart their reactors, dissected the hybrid bodies of "
+        "their Guardians. Piece by piece, their technology had become ours. In a space hangar in orbit around the "
+        "Earth, a huge aircraft carrier that no human could have designed alone was taking shape. The day its engines "
+        "folded space for the first time, there were no cheers and no speeches. Only a long silence, then a "
+        "decision.\n\n"
+        "We would not wait for them to come back. We would go to them.\n\n"
+        "The surviving pilots were gathered one last time. They all knew there would be no guaranteed return, no "
+        "reinforcements, no second chance. They thought of the burnt cities, the ashes of our bases, the missing "
+        "comrades. The Avioids had never shown the slightest mercy, and they would find none at the end of the "
+        "journey.\n\n"
+        "{name} was the first to board. Behind the canopy, the Earth was no more than a blue dot. Ahead, the Pleiades "
+        "glittered, cold and distant, as if they were waiting.\n\n"
+        "The jump has begun…"),
+}
+for _key, (_fr, _en) in _ACT4_TEXTS.items():
+    T[_key] = {code: _fr if code == "fr" else _en for code in LANG_CODES}
+
 # EDF - Opération Sentinelles silencieuses I-IV (the SpaceWar missions of the Adventure; French and English, the other
 # languages show the English text). {name} is the pilot's name.
 _SENT_TEXTS = {

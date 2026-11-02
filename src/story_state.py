@@ -57,6 +57,11 @@ ACT3_PENDING = "act3_pending"          # Act 2 is won: the scene of the attack a
 ANTIMATTER_FLAG = "antimatter_missile"   # the antimatter missile is unlocked (Silent Sentinels IV won): one per Adventure mission
 SENTINELLE_DONE = "sentinelles_done"   # the last Sentinelle mission is won: all four can be flown again
 GAME_WON = "game_won"                  # the last mission of Act 3 is won: the Adventure is over (it can still be played)
+ENDING_DONE = "ending_done"            # the open ending (Act IV) has been told: every mission can be flown again, all acts are listed
+ENDING_MISSION = "act4_alcyone"        # the only mission of the pseudo Act IV: no sortie, just the ending
+ENDING_FILM = "theend"
+ENDING_MUSIC = "lyra_no_mercy_left"    # Lyra Voss, played in a loop from the scene to the workshop
+ENDING_ACT = 4
 HULLS = ("shield", "phoenix")
 
 GALAGA_STAGE = 6                       # arcade stage the BONUS mission plays at: level 2 (x1.1 speed, +10 points a bird)
@@ -544,6 +549,12 @@ MISSIONS = [
         "id": "final_5", "acts": (3,), "title": "story_m_fin5", "blurb": "story_m_fin5_b", "need": "final_s4",
         "content": 1, "waves": [26, 27, 28, 29, 30], "speed": 1.0, "once": True,
         "unlock": ["final_s5", GAME_WON], "epilogue": True, "log": "story_log_fin5",
+    },
+    # Act IV - No Mercy Left (a pseudo act): one mission with no sortie, the open ending. It is on the map next to Act 3
+    # once Triton is won (GAME_WON). Flying it tells the scene, the film "theend" and the credits (story.py, start_ending).
+    {
+        "id": ENDING_MISSION, "acts": (ENDING_ACT,), "ending": True, "title": "story_m_act4", "blurb": "story_m_act4_b",
+        "need": GAME_WON, "content": 1, "speed": 1.0, "once": True, "log": "story_log_act4",
     },
     {
         "id": "test_guardians", "training": True, "test": True, "guardians": True,
@@ -1301,6 +1312,7 @@ LYRA_FLAG = "lyra_concert"
 ACT3_ATTACK = "act3_attack"
 EPILOGUE = "epilogue"
 STORY_SCENES = {
+    ENDING_MISSION: {"title": "story_scene_act4_t", "slides": [("fin", "story_scene_act4")], "music": ENDING_MUSIC},
     VIP_SCENE: {"title": "story_scene_vip_t", "slides": [("lyra_voss", "story_scene_vip")]},
     ACT3_ATTACK: {"title": "story_scene_attack_t",
                   "slides": [("phobos_attaque", "story_scene_attack_1"), ("ancrage_unique", "story_scene_attack_2")],
@@ -1316,7 +1328,7 @@ STORY_SCENES = {
 SCENE_ORDER = (["ch1_sortie", "best_s2", "best_s3", "best_s4", "ast_1", "dome_1", "sentinelle_1", "best_boss", "ast_2", "paint_1",
                 VIP_SCENE, ACT3_ATTACK, "act3_kept_shield", "act3_kept_phoenix", "up_shield_1", "up_phenix_1",
                 "bonus_wreck_phenix", "bonus_wreck_shield", "sentinelle_2", "sentinelle_3", "ast_3", "sentinelle_4", "final_1",
-                EPILOGUE])
+                EPILOGUE, ENDING_MISSION])
 
 
 # The films: videos watched full screen with their sound (assets/video/<video>.mp4, silent, and <video>.ogg, its
@@ -1330,6 +1342,10 @@ FILMS = {
     # the visual novel begins right after the concert: the film of the bar (no title over it), then the scene vn_1
     # (story_vn.VN_SCENES). Without its files the scene comes straight away.
     "vn_1": {"title": "story_film_vn1_t", "video": "vn_1_bar", "after": "lyra_3", "quiet": True, "vn": "vn_1"},
+    # the end of the Adventure: no sound of its own (the music of the ending plays on), the last picture stays until a key
+    # or a button is pressed (`hold`); the credits follow
+    ENDING_FILM: {"title": "story_film_theend_t", "video": "theend", "after": ENDING_MISSION, "quiet": True,
+                  "silent": True, "hold": True},
 }
 
 
@@ -1340,7 +1356,7 @@ def film_files(film_id):
         return None
     video = asset_path("video", film["video"] + ".mp4")
     sound = asset_path("video", film["video"] + ".ogg")
-    if not (os.path.isfile(video) and os.path.isfile(sound)):
+    if not os.path.isfile(video) or not (film.get("silent") or os.path.isfile(sound)):
         return None
     return video, sound
 
@@ -1612,16 +1628,51 @@ def mission_group(mission):
     return GROUP_STORY
 
 
+def ending_done(state):
+    """Has the open ending (Act IV) been told? From then on every act is on the map and every mission can be flown again."""
+    return flag(state, ENDING_DONE)
+
+
+def shown_acts(state):
+    """The acts the map lists, in order: the current one; with Triton won, Act IV next to it; once the ending has been
+    told, all four."""
+    act = min(max(int(_num(state.get("act"), 1)), 1), 3)
+    if ending_done(state):
+        return [1, 2, 3, ENDING_ACT]
+    if flag(state, GAME_WON):
+        return [act, ENDING_ACT]
+    return [act]
+
+
+def map_act(state, mission):
+    """The act whose section of the map lists this mission (the first of `shown_acts`), or None."""
+    return next((a for a in shown_acts(state) if _listed(state, mission, a)), None)
+
+
 def visible_missions(state, cheat=False):
-    """The missions the map lists, grouped (see GROUP_ORDER): those of the current act. The UNLK cheat lists every
-    mission, in the order of the table."""
+    """The missions the map lists, grouped (see GROUP_ORDER): those of the current act (Act IV too once Triton is
+    won, all the acts once the ending is told). The UNLK cheat lists every mission, in the order of the table."""
     if cheat:
         return list(MISSIONS)
-    act = int(_num(state.get("act"), 1))
-    shown = [m for m in MISSIONS if _listed(state, m, act)]
-    order = GROUP_ORDER.get(min(max(act, 1), 3), GROUP_ORDER[3])
-    shown.sort(key=lambda m: order.index(mission_group(m)))            # (stable: the table order inside a group)
+    shown = []
+    for act in shown_acts(state):
+        part = [m for m in MISSIONS if m not in shown and _listed(state, m, act)]
+        order = GROUP_ORDER.get(min(max(act, 1), 3), GROUP_ORDER[3])
+        part.sort(key=lambda m: order.index(mission_group(m)))        # (stable: the table order inside a group)
+        shown.extend(part)
     return shown
+
+
+def complete_ending(state):
+    """The ending has been told: Act IV is won, every mission is open to play again. True the first time."""
+    first = not ending_done(state)
+    if first:
+        state.setdefault("flags", {})[ENDING_DONE] = True
+        cleared = state.setdefault("cleared", [])
+        if ENDING_MISSION not in cleared:
+            cleared.append(ENDING_MISSION)
+        state.setdefault("log", []).append({"key": "story_log_act4"})
+    return first
 
 
 def unlock_source(state, flag_name, act=None):
@@ -1751,7 +1802,7 @@ def mission_playable(state, mission, cheat=False):
         return False
     if mission.get("drop") and mission_done(state, mission):
         return False                       # the item it drops is caught: a drop mission is offered until then
-    if mission.get("once") and mission.get("id") in (state.get("cleared") or []) \
+    if mission.get("once") and mission.get("id") in (state.get("cleared") or []) and not ending_done(state) \
             and not (mission.get("replay") and flag(state, mission["replay"])):
         return False                       # a story mission is flown once (a Sentinelle one until the series is done); hunts stay replayable
     if mission.get("reactor") and mission_done(state, mission):
