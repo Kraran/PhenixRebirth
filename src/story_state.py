@@ -54,7 +54,12 @@ DOME_CD_MIN = 3.0
 _EPS = 1e-6
 
 ACT3_PENDING = "act3_pending"          # Act 2 is won: the scene of the attack and the choice of the hull wait
-ANTIMATTER_FLAG = "antimatter_missile"   # the antimatter missile is unlocked (Silent Sentinels IV won): one per Adventure mission
+ANTIMATTER_FLAG = "antimatter_missile"   # the antimatter missile is unlocked (Silent Sentinels IV won): the workshop sells it
+LAUNCHER_FLAG = "missile_launcher"       # the missile launcher is bought (permanent)
+LAUNCHER_PRICE = 5000
+MISSILE_PRICE = 500                      # one missile, a consumable: it is carried to the next mission if it is not fired
+MISSILE_MAX = 9                          # the most missiles the hangar holds
+MISSILE_ROWS = ("missile_launcher", "missile_ammo")
 SENTINELLE_DONE = "sentinelles_done"   # the last Sentinelle mission is won: all four can be flown again
 GAME_WON = "game_won"                  # the last mission of Act 3 is won: the Adventure is over (it can still be played)
 ENDING_DONE = "ending_done"            # the open ending (Act IV) has been told: every mission can be flown again, all acts are listed
@@ -860,6 +865,7 @@ def default_state():
         "saved_at": "",
         "credits": 0,
         "flags": {"bestiary_s1": True},
+        "missiles": 0,
         "cleared": [],
         "slots": [
             {
@@ -963,6 +969,7 @@ def migrate_state(data):
     old_version = int(_num(data.get("version"), 2))
     base["credits"] = max(0, int(_num(data.get("credits"), 0)))
     base["selected_slot"] = int(_num(data.get("selected_slot"), 0))
+    base["missiles"] = max(0, min(MISSILE_MAX, int(_num(data.get("missiles"), 0))))
     # chapter (v2) became act (v3)
     base["act"] = max(1, min(3, int(_num(data.get("act", data.get("chapter")), 1))))
     if isinstance(data.get("name"), str):
@@ -1196,8 +1203,51 @@ def flag(state, name):
 
 
 def has_antimatter(state):
-    """The antimatter missile is unlocked (the last Silent Sentinels mission is won)."""
+    """The antimatter missile is unlocked (the last Silent Sentinels mission is won): the workshop sells it."""
     return flag(state, ANTIMATTER_FLAG)
+
+
+def has_launcher(state):
+    """The missile launcher is bought (it needs the missile to be unlocked)."""
+    return has_antimatter(state) and flag(state, LAUNCHER_FLAG)
+
+
+def missile_stock(state):
+    """Missiles held in the hangar."""
+    return max(0, min(MISSILE_MAX, int(_num((state or {}).get("missiles"), 0))))
+
+
+def missile_ready(state):
+    """A mission carries a missile: the launcher is bought and at least one missile is held."""
+    return has_launcher(state) and missile_stock(state) > 0
+
+
+def use_missile(state):
+    """A missile was fired in a mission: one less in the hangar. False when there was none."""
+    if missile_stock(state) <= 0:
+        return False
+    state["missiles"] = missile_stock(state) - 1
+    return True
+
+
+def missile_buyable(state, sid):
+    """Can the workshop row `sid` (launcher / missile) be bought now?"""
+    if not has_antimatter(state):
+        return False
+    credits = int(_num(state.get("credits"), 0))
+    if sid == "missile_launcher":
+        return not has_launcher(state) and credits >= LAUNCHER_PRICE
+    if sid == "missile_ammo":
+        return has_launcher(state) and missile_stock(state) < MISSILE_MAX and credits >= MISSILE_PRICE
+    return False
+
+
+def missile_rows(state):
+    """The workshop rows of the missile (once unlocked): the launcher, then the missiles."""
+    if not has_antimatter(state):
+        return []
+    return [("missile_launcher", "story_shop_launcher", LAUNCHER_PRICE, None),
+            ("missile_ammo", "story_shop_missile", MISSILE_PRICE, None)]
 
 
 # ------------------------------------------------------------------- intro
@@ -2072,6 +2122,7 @@ def shop_for(state):
         rows = [(sid, NOVICE_LABELS.get(label, label), cost, need) for sid, label, cost, need in rows]
     # the loot items caught (a reactor only for the hull flown)
     rows = rows + [item_row(i) for i in story_items.shop(state, slot.get("id"))]
+    rows = rows + missile_rows(state)
     # what is already at MAX goes last: the rows still to buy stay under the cursor, the finished ones are a footnote
     todo = [r for r in rows if upgrade_note(state, r[0]) != "story_owned"]
     return todo + [r for r in rows if upgrade_note(state, r[0]) == "story_owned"]
@@ -2128,6 +2179,12 @@ def upgrade_note(state, sid):
     item = item_of(sid)
     if item is not None:
         return "story_item_installed" if story_items.status(state, item) == story_items.INSTALLED else None
+    if sid == "missile_launcher":
+        return "story_owned" if has_launcher(state) else None
+    if sid == "missile_ammo":
+        if not has_launcher(state):
+            return "story_need_launcher"
+        return "story_missile_full" if missile_stock(state) >= MISSILE_MAX else None
     up = _upgrade(sid)
     if up is None:
         return None
@@ -2139,6 +2196,16 @@ def upgrade_note(state, sid):
 
 def buy(state, sid):
     """Buy one upgrade for the selected hull. True when it was bought."""
+    if sid in MISSILE_ROWS:
+        if not missile_buyable(state, sid):
+            return False
+        if sid == "missile_launcher":
+            state["credits"] = int(_num(state.get("credits"), 0)) - LAUNCHER_PRICE
+            state.setdefault("flags", {})[LAUNCHER_FLAG] = True
+        else:
+            state["credits"] = int(_num(state.get("credits"), 0)) - MISSILE_PRICE
+            state["missiles"] = missile_stock(state) + 1
+        return True
     item = item_of(sid)
     if item is not None:
         hull = (selected_slot(state) or {}).get("id")

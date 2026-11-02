@@ -69,7 +69,8 @@ class Armory:
 
 # ------------------------------------------------------------------------------------------------ the mission
 def begin(game, spec):
-    """The stock of a mission that starts (None when the mission has no missile)."""
+    """The stock of a mission that starts (None when the mission has no missile: the launcher is bought and a missile held,
+    see story_state.missile_ready)."""
     game.antimatter = Armory(True) if (spec or {}).get("antimatter") else None
     return game.antimatter
 
@@ -102,6 +103,9 @@ def fire(game, ship):
         m = Missile(ship.x, ship.y - ship.height // 2 - 6, 0.0, -1.0)
     arm.ready = False
     arm.missiles.append(m)
+    story = getattr(game, "story", None)
+    if story is not None:
+        story.use_missile()                       # one missile less in the hangar (one that is not fired stays for the next mission)
     try:
         game.sounds.play("shoot", volume=0.8, x=ship.x)
     except Exception:

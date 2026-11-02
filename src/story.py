@@ -1534,8 +1534,8 @@ class StoryHub:
                 spec["sw_levels"] = [list(lv) for lv in mission["sw_levels"]]   # the Sentinelle missions: their own levels
         if mission.get("lander"):
             spec.update(lander=True, items=[], training=True)        # (src/lander.py: a test, nothing won, nothing lost)
-        if ss.has_antimatter(self.state) and not mission.get("training"):
-            spec["antimatter"] = True                 # the missile of Silent Sentinels IV: one in every Adventure mission
+        if ss.missile_ready(self.state) and not mission.get("training"):
+            spec["antimatter"] = True                 # the launcher is bought and a missile is held: one in this mission
         if ship:
             spec["ship"] = ship                       # a mission that imposes its hull
         waves = ss.mission_waves(mission)
@@ -1664,6 +1664,11 @@ class StoryHub:
             self.toast = toast
             self.toast_kind = toast_kind
 
+    def use_missile(self):
+        """A missile left in a mission: one less in the hangar, written at once (leaving the mission does not give it back)."""
+        if ss.use_missile(self.state):
+            self.save()
+
     def _buy(self, row):
         hidden = [m for m in ss.MISSIONS if m.get("secret") and not ss.mission_open(self.state, m)]
         if not ss.buy(self.state, row[0]):
@@ -1671,8 +1676,8 @@ class StoryHub:
         if any(ss.mission_open(self.state, m) and ss.mission_in_act(m, self.state.get("act")) for m in hidden):
             self.toast = t("story_bonus_open")               # a reactor installed opens the VIP rescue
             self.toast_kind = "reward"
-        if ss.item_of(row[0]):
-            self.sound_events.append("1up")                  # a loot item is installed for the next mission
+        if ss.item_of(row[0]) or row[0] in ss.MISSILE_ROWS:
+            self.sound_events.append("1up")                  # a loot item is installed for the next mission (or a missile loaded)
         elif not self.cheating:
             story_feats.note_upgrade()                       # a workshop upgrade (achievement "Mécano")
         self.save()
@@ -2627,7 +2632,6 @@ class StoryHub:
         dome = bool(sl.get("dome"))
         dur = float(sl.get("dome_dur") or 0)
         cd = float(sl.get("dome_cd") or 5.0)
-        missile = ss.has_antimatter(self.state)
         dome_val = t("story_locked")
         if dome:
             dome_val = f"{dur:.1f}s / {cd:.0f}s"
@@ -2639,7 +2643,6 @@ class StoryHub:
             (t("story_stat_speed"), f"{sl.get('speed', ss.SPEED_START)}%"),
             (t("story_stat_phenix") if phenix else t("story_stat_dome"), dome_val),
             (t("story_stat_wall"), t("story_wall_" + str(sl.get("wall", "instant")))),
-            (t("story_stat_missile"), t("story_missile_ready") if missile else t("story_locked")),   # Silent Sentinels IV
         ]
         w, gap = 196, 12
         x = (BASE_WIDTH - (w * len(cells) + gap * (len(cells) - 1))) // 2
@@ -2647,7 +2650,7 @@ class StoryHub:
             r = pygame.Rect(x + i * (w + gap), y, w, 64)
             _fill(surface, menu_ui.PANEL_FILL, r, 8)
             pygame.draw.rect(surface, menu_ui.PANEL_EDGE, r, 1, border_radius=8)
-            col = (110, 115, 135) if ((i == 2 and not dome and not phenix) or (i == 4 and not missile)) else (220, 220, 235)
+            col = (110, 115, 135) if (i == 2 and not dome and not phenix) else (220, 220, 235)
             if not owned:
                 val = "—"
             _text(surface, small, lab, (150, 155, 175), r.y + 18, centerx=r.centerx)
@@ -2695,6 +2698,8 @@ class StoryHub:
                 locked = not ss.paint_state(self.state)["token"] or not ss.paint_affordable(self.state)
             if item:
                 locked = story_items.status(self.state, item) != story_items.INSTALLED and not story_items.affordable(self.state, item)
+            if sid in ss.MISSILE_ROWS:
+                locked = not ss.missile_buyable(self.state, sid)
             focus = self.zone == "shop" and i == self.shop_index
             row = pygame.Rect(box.x + 12, y, box.w - 24, 38)
             if focus:
@@ -2713,7 +2718,15 @@ class StoryHub:
                       col if locked else ((130, 220, 150) if perm else (235, 175, 110)),
                       row.centery, right=row.right - 180)
             else:
-                _text(surface, small, t(label), col, row.centery, left=row.x + 16)
+                name = t(label)
+                if sid == "missile_ammo":
+                    name += "   (%d/%d)" % (ss.missile_stock(self.state), ss.MISSILE_MAX)     # the missiles held
+                _text(surface, small, name, col, row.centery, left=row.x + 16)
+                if sid in ss.MISSILE_ROWS:
+                    perm = sid == "missile_launcher"
+                    _text(surface, small, t("story_item_permanent" if perm else "story_item_consumable"),
+                          col if locked else ((130, 220, 150) if perm else (235, 175, 110)),
+                          row.centery, right=row.right - 180)
             _text(surface, small, extra, col, row.centery, right=row.right - 12)
             y += 40
         # there are more rows than the window shows: an arrow on the right edge says where
@@ -2727,4 +2740,7 @@ class StoryHub:
             item = ss.item_of(rows[self.shop_index][0])
             if item and self.zone == "shop":
                 _text_fit(surface, small, t("item_%s_desc" % item), (190, 200, 220), box.bottom - 22,
+                          box.x + 20, box.w - 40)
+            elif rows[self.shop_index][0] in ss.MISSILE_ROWS and self.zone == "shop":
+                _text_fit(surface, small, t("story_desc_" + rows[self.shop_index][0]), (190, 200, 220), box.bottom - 22,
                           box.x + 20, box.w - 40)
