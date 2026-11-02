@@ -14,7 +14,7 @@ import pygame
 from settings import (BASE_HEIGHT, BASE_WIDTH, SCREEN_SHAKE_DECAY, stage_speed_mult)
 from achievements import BOLDLY_GO_STAGE
 from enemy import BigBird, Enemy
-from guardian import FireLaser, GuardianFormation
+from guardian import FireLaser, Guardian, GuardianFormation
 from explosion import TeslaCoilFx
 from i18n import t
 from loot import FallingItem
@@ -304,6 +304,36 @@ def tick_boss_outro(game):
             ship.destroy_bullet()
 
 
+def _shot_at_guardian(game, ship, shot_i, bullet_rect, bird):
+    """A shot against a Guardian: a wing first (it falls off, nothing else happens), else the body: one of its 3 HP."""
+    for side, box in (("left", bird.get_left_wing_hitbox()), ("right", bird.get_right_wing_hitbox())):
+        if bullet_rect.colliderect(box) and bird.hit_wing(side):
+            ship.destroy_bullet("neutral", index=shot_i)
+            game.explosions.append(game._boom(bird.x + (-52 if side == "left" else 52), bird.y - 10, kind="enemy"))
+            game.shake_amount = 3.0
+            game.sounds.play("enemy_explosion", volume=0.5, x=bird.x)
+            return True
+    if not bullet_rect.colliderect(bird.get_hitbox()):
+        return False
+    ship.destroy_bullet("valid", index=shot_i)
+    if bird.hit():
+        game._hitstop()
+        game._add_score(ship, game._enemy_kill_points(bird))
+        game._note_bird_kill()
+        if bird.diving:
+            game._note_scalable("butcher")
+        game._note_scalable("clean_shot", int(getattr(ship, "combo_streak", 0) or 0), absolute=True)
+        game.explosions.append(game._boom(bird.x, bird.y, kind="enemy", delay_frames=1))
+        game.shake_amount = 7.0
+        game.sounds.play("enemy_explosion", x=bird.x)
+    else:
+        game._hitstop(0.05)
+        game.explosions.append(game._boom(bird.x, bird.y, kind="enemy"))
+        game.shake_amount = 4.0
+        game.sounds.play("enemy_explosion", volume=0.6, x=bird.x)
+    return True
+
+
 def player_bullets_vs_enemies(game):
     """Player bullets against the boss, big birds and regular birds."""
     for ship in game._ships():
@@ -351,6 +381,11 @@ def player_bullets_vs_enemies(game):
             break  # indices shifted; next frame continues
 
         for enemy in game.formation.get_hittable_enemies():
+            if isinstance(enemy, Guardian):
+                if _shot_at_guardian(game, ship, shot_i, bullet_rect, enemy):
+                    hit_something = True
+                    break
+                continue
             if isinstance(enemy, BigBird):
                 if bullet_rect.colliderect(enemy.get_left_wing_hitbox()):
                     if enemy.hit_wing("left"):
