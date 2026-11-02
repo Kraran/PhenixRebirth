@@ -6831,7 +6831,7 @@ for _k, (_fr, _en) in _SENT_TEXTS.items():
 _MISSILE_TEXTS = {
     "act_missile": ("Missile antimatière", "Antimatter missile"),
     "kb_help_missile": (
-        "Lance le missile à antimatière, droit devant (débloqué par Sentinelles silencieuses IV, lance-missiles et missile à l'atelier). Un seul par mission : il "
+        "Lance le missile à antimatière, droit devant (lance-missiles et missile à l'atelier). Un seul par mission : il "
         "détruit tout ce qui se trouve près de l'impact. S'il ne touche rien, il est perdu.",
         "Fires the antimatter missile straight ahead (unlocked by Silent Sentinels IV). Only one per mission: it destroys "
         "everything near the impact. If it hits nothing, it is lost."),
