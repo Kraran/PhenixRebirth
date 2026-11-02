@@ -50,6 +50,8 @@ PLANET_FILES = [
 FREE_EXCLUDED = ("asteroid_dinkinesh.png", "asteroid_pallas.png")
 # The missions of the Adventure never show this planet in the background (the arcade game still does, see Starfield.set_adventure).
 ADVENTURE_EXCLUDED = ("fantasy_rings.png",)
+# ... nor this galaxy (the black hole), whatever the mission
+ADVENTURE_EXCLUDED_NEBULAE = ("galaxy_blackhole.png",)
 FREE_PARALLAX = {"star0": 0.05, "star1": 0.14, "star2": 0.30, "planet": 0.12, "galaxy": 0.06, "nebula": 0.08}
 
 
@@ -354,9 +356,10 @@ class Nebula:
     _cache = {}
     _raw = {}  # decoded only: the random scale is still chosen at first spawn
 
-    def __init__(self, filename=None, free=False):
+    def __init__(self, filename=None, free=False, adventure=False):
         self.parallax = 0.05
         self.alive = True
+        self.adventure = bool(adventure)             # a mission of the Adventure: never the black hole
         self.reset(filename, free)
 
     @classmethod
@@ -374,7 +377,9 @@ class Nebula:
         return cls._cache[filename].copy()
 
     def reset(self, filename=None, free=False):
-        filename = filename or random.choice(NEBULA_FILES)
+        if not filename:
+            pool = [n for n in NEBULA_FILES if not (self.adventure and n in ADVENTURE_EXCLUDED_NEBULAE)]
+            filename = random.choice(pool if self.adventure else NEBULA_FILES)
         self.image = self._load_image(filename)
         self.kind = filename
         if "pleiades" not in filename and random.random() < 0.4:
@@ -564,6 +569,8 @@ class Starfield:
         self.no_rings = on
         if on:
             self.planets = [p for p in self.planets if getattr(p, "filename", "") not in ADVENTURE_EXCLUDED]
+            if self.nebula is not None and self.nebula.kind in ADVENTURE_EXCLUDED_NEBULAE:
+                self.nebula = None                   # the black hole of the menu leaves the sky at once
 
     def set_bare(self, on):
         """No planets and no asteroids in the background (the SpaceWar levels, whose star is a planet of their own): the
@@ -640,7 +647,7 @@ class Starfield:
                 if self.nebula is None or random.random() < 0.40:
                     self.planets.append(Planet(free=self.free, no_rings=self.no_rings))
                     if self.nebula is None and random.random() < 0.12:
-                        self.nebula = Nebula(free=self.free)
+                        self.nebula = Nebula(free=self.free, adventure=self.no_rings)
                         self.nebula_timer = random.uniform(18.0, 32.0)
             self.planet_timer = random.uniform(16.0, 30.0)
 
@@ -653,7 +660,7 @@ class Starfield:
         if self.nebula_timer <= 0:
             if self.nebula is None:
                 if len(self.planets) == 0 or random.random() < 0.40:
-                    self.nebula = Nebula(free=self.free)
+                    self.nebula = Nebula(free=self.free, adventure=self.no_rings)
                     if len(self.planets) == 0 and not self.bare and random.random() < 0.12:
                         self.planets.append(Planet(free=self.free, no_rings=self.no_rings))
                         self.planet_timer = random.uniform(14.0, 28.0)

@@ -3,6 +3,12 @@ Current release: **v1.5.0**
 
 ## Unreleased (towards 1.5.1)
 
+- Fix: the Singularity Core now falls in the BONUS mission "le convoi de la Singularité" (the launch did not pass the item of the mission
+  to the game, so no plan to drop it was made).
+- Fix: the black hole (`galaxy_blackhole.png`) never shows behind a mission of the Adventure (the arcade game keeps it).
+- Fix: the secret codes of the high-score screen. The digits (LV02, 2222...) come from the physical key, so they work on an AZERTY
+  keyboard too (it gave "&", "é"...); the same on the mission map. The codes of the Adventure (`UNLK`, `2222`, `3333`, `NIX2`, `FINE`)
+  are taken on the high-score screen as well, and take effect when the next pilot is opened (like `VNOV`).
 - Adventure: the open ending, "Acte IV - No Mercy Left" (a pseudo act with one mission, "Alcyone - Le Grand Saut"). It appears on the map
   next to Act 3 once Triton (Riposte V) is won. It has no sortie: the scene (picture `assets/story/fin.jpg`, the text of the jump to the
   Pleiades), then the film `assets/video/theend.mp4` (no loop: its last picture waits for a key or a button), then the credits, then the

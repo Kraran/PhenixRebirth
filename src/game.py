@@ -209,6 +209,10 @@ BLAST_HIDE = 0.55                  # seconds the hull of a ship that was hit but
 LAST_ANNOUNCED_LEVEL = 31          # the announcer has recorded the stages 1 to 31 (assets/sounds/level<n>.wav); past it, silence
 
 
+# the codes of the Adventure that the high-score screen takes too (they work on the next pilot opened, see StoryHub)
+STORY_CHEATS = ("UNLK", "2222", "3333", "NIX2", "FINE")
+
+
 class Game:
     """
     Top-level application object.
@@ -2225,6 +2229,15 @@ class Game:
                 self.story.cheat_vn = self.cheat_vn
             self.cheat_buffer = ""
             self.cheat_msg = t("cheat_vn_on" if self.cheat_vn else "cheat_vn_off")
+            self.cheat_kind = "vn"
+            self.cheat_msg_timer = 5.0
+        elif any(buf.endswith(code) for code in STORY_CHEATS):
+            code = next(c for c in STORY_CHEATS if buf.endswith(c))
+            cheats = self.__dict__.setdefault("story_cheats", [])
+            if code not in cheats:
+                cheats.append(code)                         # taken by the Adventure when a pilot is opened
+            self.cheat_buffer = ""
+            self.cheat_msg = t("cheat_story").format(code=code)
             self.cheat_kind = "vn"
             self.cheat_msg_timer = 5.0
         elif "PHEN" in buf:

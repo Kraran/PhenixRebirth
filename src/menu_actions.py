@@ -174,6 +174,8 @@ def menu_confirm(game):
                 game.story = StoryHub()
                 game.story.sounds = getattr(game, "sounds", None)
             game.story.cheat_vn = bool(getattr(game, "cheat_vn", False))     # (the code VNOV, typed on the high scores)
+            game.story.pending_cheats = list(getattr(game, "story_cheats", []))   # (UNLK, 2222, 3333, NIX2, FINE: same place)
+            game.story_cheats = []
             game.story.open_slots()
             game.menu_screen = "story_hub"
             game.menu_idle = 0.0
