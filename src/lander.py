@@ -149,6 +149,11 @@ class Terrain:
                 continue
             r = float(rng.uniform(5, 22) if style == "rock" else rng.uniform(4, 15))
             self.boulders.append((bx, r, float(rng.uniform(0, 1))))
+        # (the same boulders in arrays, with the height of the ground under each: the view picks the visible ones with numpy)
+        self.boulder_x = np.array([b[0] for b in self.boulders], dtype=float)
+        self.boulder_r = np.array([b[1] for b in self.boulders], dtype=float)
+        self.boulder_tone = np.array([b[2] for b in self.boulders], dtype=float)
+        self.boulder_y = self.ground(self.boulder_x) if len(self.boulders) else np.zeros(0)
 
     @staticmethod
     def dx(a, b):
