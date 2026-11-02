@@ -285,6 +285,7 @@ class StoryHub:
         self.choice_ask = False        # its question "keep it? the other one will be lost" is on screen
         self.paint_choice = 0
         self.map_index = 0
+        self.map_page = 0              # rows of the map shown at once (set when it is drawn)
         self.toast = ""
         self.toast_kind = "info"       # its colour type (announce.TOAST_COLOR)
         self._ships = {}               # small pictures (the paint shop)
@@ -1278,6 +1279,31 @@ class StoryHub:
         if self.zone == "shop":
             self.shop_index = max(0, min(len(self.shop_rows()) - 1, self.shop_index + direction))
 
+    def page_v(self, direction):
+        """Page up / Page down (LB / RB on the pad): a page of the list at once, on the mission map and in the journal. With
+        less than a page left (or in all) the cursor goes to the very end."""
+        if self.screen != "hub" or self.paint_mode:
+            return
+        direction = 1 if direction > 0 else -1
+        if self.pane == "map":
+            page = max(1, int(getattr(self, "map_page", 0) or 0))
+            last = len(self.missions()) - 1
+            self.map_index = max(0, min(last, self.map_index + direction * page))
+            self.toast = ""
+        elif self.pane == "log":
+            top = max(0, len(self.story_entries()) - LOG_STORY_ROWS)
+            last = len(self.replay_entries()) - 1
+            if direction > 0:
+                if self.log_cursor < last:
+                    self.log_cursor = min(last, self.log_cursor + LOG_REPLAY_ROWS)
+                else:
+                    self.log_scroll = min(top, self.log_scroll + LOG_STORY_ROWS)
+            else:
+                if self.log_scroll > 0:
+                    self.log_scroll = max(0, self.log_scroll - LOG_STORY_ROWS)
+                else:
+                    self.log_cursor = max(0, self.log_cursor - LOG_REPLAY_ROWS)
+
     def _hub_confirm(self):
         """Shop buy, or a launch spec dict when a map node is confirmed."""
         if self.pane == "map":
@@ -1437,8 +1463,6 @@ class StoryHub:
         if res.get("training"):
             if (ss.mission_by_id(mission_id) or {}).get("lander"):
                 self.toast = t("story_lander_clear") if cleared else t("story_lander_retry")
-            elif (ss.mission_by_id(mission_id) or {}).get("spacewar"):
-                self.toast = t("story_spacewar_clear") if cleared else t("story_spacewar_retry")
             else:
                 self.toast = t("story_guardians_clear") if cleared else t("story_guardians_retry")
             self.toast_kind = "success" if cleared else "info"
@@ -2326,6 +2350,7 @@ class StoryHub:
         if first > 0:
             _text(surface, small, "^", (180, 180, 200), box.y + 28, right=box.right - 20)
         nxt = ss.next_mission(self.state, missions)
+        self.map_page = 0                                  # rows shown at once: what Page up / Page down (LB / RB) jump by
         for kind, ref in entries[first:]:
             if kind == "head":
                 if y + MAP_HEAD_H > low:
@@ -2339,6 +2364,7 @@ class StoryHub:
             if y + (76 if i == focus_i else 40) > low:
                 _text(surface, small, "v", (180, 180, 200), low - 12, right=box.right - 20)
                 break
+            self.map_page += 1
             open_ = self.mission_open(mission)
             playable = self.mission_playable(mission)
             done = ss.mission_done(self.state, mission)

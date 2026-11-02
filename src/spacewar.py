@@ -1,4 +1,4 @@
-"""The test level "SpaceWar" (story_state.py, id `test_spacewar`): a remake of Spacewar!, the 1962 game of the PDP-1
+"""The SpaceWar level (flown by the missions "EDF - Silent Sentinels", story_state.py `sentinelle_*`): a remake of Spacewar!, the 1962 game of the PDP-1
 that Cinematronics made an arcade game of in 1977, with the ship of the hangar and the birds of the game.
 
 The rules of the original, kept here:

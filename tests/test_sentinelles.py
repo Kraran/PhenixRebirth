@@ -1,6 +1,8 @@
 """EDF - Opération Sentinelles silencieuses I-IV: the SpaceWar level (src/spacewar.py) as four real missions of the
 Adventure, one round each gas giant. Their own levels, the normal points, the normal penalties, the order in which they are
 opened, and the replay of all four once the last one is won."""
+NEEDS_SW_MISSIONS = True        # the old SpaceWar test missions (tests/sw_missions.py)
+
 import copy
 import os
 import random
@@ -52,9 +54,9 @@ def test_four_missions_one_per_planet_with_their_levels():
         assert m["planet"] in sw.PLANETS
 
 
-def test_the_four_missions_come_after_the_tests_and_are_not_tests():
-    ids = [m["id"] for m in ss.MISSIONS]
-    assert ids.index("sentinelle_1") > ids.index("test_spacewar_neptune")
+def test_the_four_missions_are_not_tests_and_the_old_spacewar_tests_are_gone():
+    from sw_missions import TEST_MISSIONS                         # (only the tests add them, see tests/conftest.py)
+    assert not [m for m in ss.MISSIONS if m["id"].startswith("test_spacewar") and m not in TEST_MISSIONS]
     assert not [m for m in ss.MISSIONS if m["id"].startswith("sentinelle_") and m.get("training")]
 
 

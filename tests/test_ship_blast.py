@@ -1,4 +1,6 @@
 """The big explosion of the ship in the SpaceWar level (src/ship_blast.py)."""
+NEEDS_SW_MISSIONS = True        # the old SpaceWar test missions (tests/sw_missions.py)
+
 import random
 
 import pygame

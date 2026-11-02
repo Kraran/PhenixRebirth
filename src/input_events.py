@@ -202,6 +202,10 @@ def on_keydown(game, event):
             if event.key == pygame.K_DELETE:
                 story.key_delete()
                 return
+            if event.key in (pygame.K_PAGEUP, pygame.K_PAGEDOWN) and story.screen == "hub":
+                story.page_v(-1 if event.key == pygame.K_PAGEUP else 1)       # a page of the map / of the journal
+                game._reset_menu_idle()
+                return
         if game.menu_screen == "help":
             turn = _help_turn_key(event.key)
             if getattr(game, "help_manual", False) and turn:
@@ -455,6 +459,11 @@ def on_joy_button(game, event):
             game._reset_menu_idle()
         elif event.button in (4, 5) and game.menu_screen == "options":
             game._options_tab_step(-1 if event.button == 4 else 1)      # LB / RB: the tabs of the options
+        elif event.button in (4, 5) and game.menu_screen == "story_hub":
+            story = getattr(game, "story", None)
+            if story is not None and story.screen == "hub":
+                story.page_v(-1 if event.button == 4 else 1)            # LB / RB: a page of the map / of the journal
+                game._reset_menu_idle()
         elif event.button in (4, 5) and game.menu_screen in ("highscores", "achievements", "jukebox"):
             if not getattr(game, "juke_video", False):
                 game._extra_step(-1 if event.button == 4 else 1)        # LB / RB: scores, achievements, jukebox

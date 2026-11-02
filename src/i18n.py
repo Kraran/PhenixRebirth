@@ -6636,23 +6636,6 @@ _GUARDIAN_TEXTS = {
     "story_guardians_retry": ("Test terminé. Aucun progrès perdu : vous pouvez réessayer.",
                               "Test ended. No progress lost: you can try again."),
     # SpaceWar (src/spacewar.py)
-    "story_m_spacewar": ("TEST - SpaceWar", "TEST - SpaceWar"),
-    "story_m_spacewar_hud": ("SpaceWar", "SpaceWar"),
-    "story_m_spacewar_b": (
-        "Remake du Spacewar de 1977 : Jupiter attire les vaisseaux, l'inertie est totale, l'écran se referme sur lui-même. 3 niveaux (le dernier avec une soucoupe de boss), 1 vie. Sans gain ni perte.",
-        "Remake of the 1977 Spacewar: Jupiter pulls the ships, inertia is total, the screen wraps around. 3 levels (the last one with a boss saucer), 1 life. No gain or loss."),
-    "story_m_spacewar_saturn": ("TEST - SpaceWar : Saturne", "TEST - SpaceWar: Saturn"),
-    "story_m_spacewar_saturn_b": (
-        "SpaceWar avec Saturne au centre : un peu moins lourde que Jupiter, et ses anneaux sont sans danger (seul le globe détruit). 3 niveaux, 1 vie. Sans gain ni perte.",
-        "SpaceWar with Saturn in the middle: lighter than Jupiter, and its rings are harmless (only the globe destroys). 3 levels, 1 life. No gain or loss."),
-    "story_m_spacewar_uranus": ("TEST - SpaceWar : Uranus", "TEST - SpaceWar: Uranus"),
-    "story_m_spacewar_uranus_b": (
-        "SpaceWar avec Uranus au centre : une petite planète, une attraction faible, des vaisseaux plus lents. 3 niveaux, 1 vie. Sans gain ni perte.",
-        "SpaceWar with Uranus in the middle: a small planet, a weak pull, slower ships. 3 levels, 1 life. No gain or loss."),
-    "story_m_spacewar_neptune": ("TEST - SpaceWar : Neptune", "TEST - SpaceWar: Neptune"),
-    "story_m_spacewar_neptune_b": (
-        "SpaceWar avec Neptune au centre : une petite planète, une attraction faible, des vaisseaux plus lents. 3 niveaux, 1 vie. Sans gain ni perte.",
-        "SpaceWar with Neptune in the middle: a small planet, a weak pull, slower ships. 3 levels, 1 life. No gain or loss."),
     "story_spacewar_hud": ("NIVEAU {n}/{m}   TORPILLES {t}", "LEVEL {n}/{m}   TORPEDOES {t}"),
     "story_spacewar_level": ("NIVEAU {n} / {m}", "LEVEL {n} / {m}"),
     "story_spacewar_boss": ("DÉTRUISEZ LA SOUCOUPE", "DESTROY THE SAUCER"),
@@ -6661,10 +6644,6 @@ _GUARDIAN_TEXTS = {
     "story_spacewar_hint": (
         "Ouverture CBS : de profil à la planète, pousse un instant pour entrer en orbite.",
         "CBS opening: sideways to the planet, thrust briefly to enter orbit."),
-    "story_spacewar_clear": ("Les trois niveaux sont gagnés ! Vous pouvez recommencer à volonté.",
-                             "All three levels won! Replay whenever you like."),
-    "story_spacewar_retry": ("Partie terminée. Aucun progrès perdu : vous pouvez réessayer.",
-                             "Game over. No progress lost: you can try again."),
 }
 for _key, (_fr, _en) in _GUARDIAN_TEXTS.items():
     T[_key] = {code: _fr if code == "fr" else _en for code in LANG_CODES}
