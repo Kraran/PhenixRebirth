@@ -42,3 +42,16 @@ def pytest_terminal_summary(terminalreporter):
     for nodeid, text in _FAILURES:
         text = text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")[:1000]
         terminalreporter.write_line(f"::error title=Test failed {nodeid}::{text}")
+
+
+import pytest  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _spacewar_test_missions(request, monkeypatch):
+    """The SpaceWar engine tests fly the old training missions (tests/sw_missions.py); the game itself no longer lists them."""
+    if getattr(request.module, "NEEDS_SW_MISSIONS", False):
+        import story_state
+        from sw_missions import TEST_MISSIONS
+        monkeypatch.setattr(story_state, "MISSIONS", story_state.MISSIONS + TEST_MISSIONS)
+    yield

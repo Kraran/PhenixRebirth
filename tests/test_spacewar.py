@@ -1,6 +1,8 @@
 """The test level "SpaceWar" (src/spacewar.py): a remake of the 1977 arcade Spacewar with the ship of the hangar and the
 birds of the game. A star that pulls the ships, inertia, a screen joined on its four sides, torpedoes that the star does
 not pull, three levels of birds, one life."""
+NEEDS_SW_MISSIONS = True        # the old SpaceWar test missions (tests/sw_missions.py)
+
 import copy
 import math
 import random
@@ -14,7 +16,6 @@ import spacewar as sw
 import story_state as ss
 from settings import BASE_HEIGHT, BASE_WIDTH
 from spacewar import Bird, SpaceWarFormation, Torpedo
-from story import StoryHub
 from test_smoke import run  # noqa: F401  (fixture)
 
 DT = 1 / 60
@@ -119,49 +120,26 @@ def _bird(form, kind=1, x=900.0, y=100.0, vx=0.0, vy=0.0, angle=0.0):
     return b
 
 
-# ------------------------------------------------------------------ on the map
-@pytest.mark.parametrize("act", [1, 2, 3])
-@pytest.mark.parametrize("mode", ss.MODES)
-def test_available_and_replayable_in_every_act_and_mode(act, mode):
-    state = ss.default_state()
-    state.update(act=act, mode=mode)
-    mission = ss.mission_by_id("test_spacewar")
-    assert mission in ss.visible_missions(state)
-    assert ss.mission_group(mission) == ss.GROUP_EXTRA
-    assert ss.mission_playable(state, mission)
-    for win in (True, False, True):
-        before = copy.deepcopy(state)
-        result = ss.record_result(state, mission["id"], 9999, win, {"bird1": 6}, loot="reactor_shield", used=["genesis"])
-        assert state == before                                   # nothing won, nothing lost, nobody falls
-        assert result["training"] and result["score"] == 0 and not result["fallen"]
-        assert ss.mission_playable(state, mission)
-
-
-def test_it_is_never_the_suggested_mission():
-    state = ss.default_state()
-    assert ss.next_mission(state, [ss.mission_by_id("test_spacewar")]) is None
-
-
-def test_the_launch_spec_and_the_toasts(monkeypatch):
-    hub = StoryHub()
-    hub.state = ss.default_state()
-    hub.state["items"]["got"]["genesis"] = "installed"
-    hub.map_index = next(i for i, m in enumerate(hub.missions()) if m["id"] == "test_spacewar")
-    spec = hub._launch_selected()
-    assert spec["spacewar"] and spec["training"] and spec["items"] == [] and not spec.get("guardians")
-    monkeypatch.setattr(hub, "save", lambda: pytest.fail("a test must not save the progression"))
-    hub.apply_result(spec["id"], 500, True)
-    assert hub.toast == i18n.t("story_spacewar_clear") and hub.pane == "map"
-    hub.apply_result(spec["id"], 500, False)
-    assert hub.toast == i18n.t("story_spacewar_retry")
-
-
+# ------------------------------------------------------------------ the texts of the engine (the TEST - SpaceWar entries of
+# the map are gone: the Sentinelles missions use the engine, see tests/sw_missions.py for the tests)
 def test_the_texts_exist_in_every_language():
-    for key in ("story_m_spacewar", "story_m_spacewar_hud", "story_m_spacewar_b", "story_spacewar_hud",
-                "story_spacewar_level", "story_spacewar_next", "story_spacewar_empty", "story_spacewar_hint",
-                "story_spacewar_clear", "story_spacewar_retry"):
+    for key in ("story_spacewar_hud", "story_spacewar_level", "story_spacewar_boss", "story_spacewar_next",
+                "story_spacewar_empty", "story_spacewar_hint"):
         assert set(i18n.T[key]) == set(i18n.LANG_CODES) and all(i18n.T[key][c] for c in i18n.LANG_CODES)
     assert i18n.T["story_spacewar_hud"]["fr"].format(n=1, m=3, t=20)
+
+
+def test_the_test_missions_and_their_texts_are_gone_from_the_game():
+    from sw_missions import TEST_MISSIONS
+    assert not [m for m in ss.MISSIONS if m["id"].startswith("test_spacewar") and m not in TEST_MISSIONS]
+    for key in ("story_m_spacewar", "story_m_spacewar_hud", "story_m_spacewar_b", "story_m_spacewar_saturn",
+                "story_m_spacewar_saturn_b", "story_m_spacewar_uranus", "story_m_spacewar_uranus_b",
+                "story_m_spacewar_neptune", "story_m_spacewar_neptune_b", "story_spacewar_clear", "story_spacewar_retry"):
+        assert key not in i18n.T
+    for act in (1, 2, 3):
+        state = ss.default_state()
+        state["act"] = act
+        assert not [m for m in ss.visible_missions(state) if "spacewar" in m["id"] and m not in TEST_MISSIONS]
 
 
 # ------------------------------------------------------------------ the physics
@@ -914,7 +892,6 @@ def test_when_the_ship_is_gone_the_level_is_over_and_nothing_is_lost(run):
     form.torpedoes.append(Torpedo(p.x, p.y, 0.0, 0.0, _bird(form)))
     run.frames(int(60 * (p.DEATH_DURATION + 3.0)))
     assert g.adventure is None or not g.adventure                # back on the map (see _end_adventure)
-    assert g.story.toast == i18n.t("story_spacewar_retry")
 
 
 # ------------------------------------------------------------------ levels and the end
@@ -962,7 +939,6 @@ def test_winning_the_third_level_ends_the_test_as_won(run):
     run.frames(2)
     assert form.won and not g.game_over
     run.frames(int(60 * (sw.END_PAUSE + 1.0)))
-    assert g.story.toast == i18n.t("story_spacewar_clear")
 
 
 def test_the_level_is_over_when_both_sides_are_out_of_torpedoes(run):
@@ -978,7 +954,6 @@ def test_the_level_is_over_when_both_sides_are_out_of_torpedoes(run):
     run.frames(5)
     assert form.exhausted and g.adventure
     run.frames(int(60 * (sw.EXHAUST_PAUSE + 0.5)))
-    assert g.story.toast == i18n.t("story_spacewar_retry")
 
 
 def test_it_goes_on_while_a_bird_still_has_torpedoes_or_one_is_in_the_air(run):
@@ -1639,49 +1614,6 @@ def test_each_planet_has_its_mission_on_the_map_of_every_act(planet):
             before = copy.deepcopy(state)
             result = ss.record_result(state, mission["id"], 9999, True, {"bird1": 6}, used=["genesis"])
             assert state == before and result["training"] and not result["fallen"]
-
-
-def test_the_planet_missions_follow_the_jupiter_one_and_have_their_own_texts():
-    ids = [m["id"] for m in ss.MISSIONS if m.get("spacewar") and m.get("training")]
-    assert ids == list(PLANET_MISSIONS.values())
-    assert ss.next_mission(ss.default_state(), [ss.mission_by_id(i) for i in ids]) is None
-    for planet, mid in PLANET_MISSIONS.items():
-        m = ss.mission_by_id(mid)
-        for key in (m["title"], m["blurb"], m["hud_title"]):
-            assert set(i18n.T[key]) == set(i18n.LANG_CODES) and all(i18n.T[key][c] for c in i18n.LANG_CODES)
-        name_en = {"jupiter": "Jupiter", "saturn": "Saturn", "uranus": "Uranus", "neptune": "Neptune"}[planet]
-        assert name_en in i18n.T[m["blurb"]]["en"]
-    titles = {i18n.T[ss.mission_by_id(i)["title"]]["en"] for i in ids}
-    assert len(titles) == 4 and all(t.startswith("TEST - SpaceWar") for t in titles)
-
-
-@pytest.mark.parametrize("planet", sw.PLANET_KEYS)
-def test_the_mission_of_a_planet_puts_that_planet_in_the_middle(run, planet):
-    hub = StoryHub()
-    hub.state = ss.default_state()
-    hub.map_index = next(i for i, m in enumerate(hub.missions()) if m["id"] == PLANET_MISSIONS[planet])
-    spec = hub._launch_selected()
-    assert spec["spacewar"] and spec["planet"] == planet and spec["training"]
-    sw.set_planet("jupiter")
-    _launch(run, mission=PLANET_MISSIONS[planet])
-    g = run.game
-    assert sw.PLANET == planet and sw.GM == sw.PLANETS[planet]["gm"]
-    assert g.adventure["planet"] == planet
-    p = g.player
-    assert (p.x, p.y) == pytest.approx((sw.CX - sw.PLANETS[planet]["start"], sw.CY), abs=3.0)
-    surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT), pygame.SRCALPHA)
-    g.formation.draw(surf)
-    assert surf.get_at((int(sw.CX), int(sw.CY)))[3] == 255                            # the planet is drawn in the middle
-    g._end_adventure(False)
-
-
-def test_the_next_launch_starts_again_with_its_own_planet(run):
-    _launch(run, mission="test_spacewar_neptune")
-    assert sw.PLANET == "neptune"
-    run.game._end_adventure(False)
-    _launch(run)
-    assert sw.PLANET == "jupiter" and sw.GM == 5.0e6
-    run.game._end_adventure(False)
 
 
 @pytest.mark.parametrize("planet", sw.PLANET_KEYS)

@@ -1,6 +1,8 @@
 """The antimatter missile (src/antimatter.py): the reward of Silent Sentinels IV for every mission of the Adventure. One per
 mission, fired straight ahead with a key / a pad button, it destroys what is within a quarter of the screen of its impact
 (two bricks round the impact on the armour of the boss saucer) and is lost when it touches nothing."""
+NEEDS_SW_MISSIONS = True        # the old SpaceWar test missions (tests/sw_missions.py)
+
 import math
 
 import pygame
