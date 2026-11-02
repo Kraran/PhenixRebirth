@@ -49,6 +49,7 @@ VN_SCENES = {
         "film": None, "after": "vn_4", "wins": 1, "panel": "right", "panel_x": 660, "image": "vn_5_depart",
         "title": "story_vn5_t",
         "journal": "story_vn5_j", "speaker": "story_vn_lyra", "text": "story_vn5_q", "shuffle": True,
+        "ending": True,                            # the last scene: its reaction is followed by the ending (see `ending_id`)
         "answers": [("story_vn5_a1", 1, "story_vn5_r1"), ("story_vn5_a2", 2, "story_vn5_r2"),
                     ("story_vn5_a3", 3, "story_vn5_r3"), ("story_vn5_a4", 4, "story_vn5_r4")],
     },
@@ -98,7 +99,7 @@ NBSP = "\u00a0"
 def tidy(text):
     """A text with its extra spaces dropped and the spaces inside the French quotes (and before a `?` `!` `:` `;`)
     made unbreakable, so that a line never begins with the closing quote (see story._wrap_nb)."""
-    out = " ".join(str(text).split())
+    out = " ".join(str(text).replace(NBSP, "\ue000").split()).replace("\ue000", NBSP)     # (an unbreakable space stays)
     for old, new in ((" »", NBSP + "»"), ("« ", "«" + NBSP), (" ?", NBSP + "?"), (" !", NBSP + "!"),
                      (" :", NBSP + ":"), (" ;", NBSP + ";")):
         out = out.replace(old, new)
@@ -201,3 +202,93 @@ def points(state):
     for sid, idx in clean((state or {}).get("vn"))["picks"].items():
         total += VN_SCENES[sid]["answers"][idx][1]
     return total
+
+
+# --- the endings: told on the picture of the last scene, once its reaction is over, according to the total of points ---
+# (lowest total of the range, id). The totals go from 6 to 20 (five scenes, 1 to 4 points each): the first range
+# also takes everything below it, the last everything above it.
+ENDINGS = [(5, "fachery"), (9, "distance"), (13, "amitie"), (17, "romance")]
+ENDING_FLAG = "vn_ending_told"     # in the flags of the save: the ending was told, its gift paid
+GIFT_PER_POINT = 500               # Amitie and Romance: Lyra gives points x 500 credits
+SALE_PERCENT = 10                  # Romance: every price of the workshop is lower by this share
+GIFT_ENDINGS = ("amitie", "romance")
+SALE_ENDING = "romance"
+
+
+def last_scene():
+    """The scene whose reaction is followed by the ending."""
+    return next((sid for sid in VN_ORDER if VN_SCENES[sid].get("ending")), None)
+
+
+def complete(state):
+    """Every scene is answered."""
+    return next_scene(state) is None
+
+
+def ending_id(state):
+    """The ending the answers lead to ("fachery", "distance", "amitie", "romance"), or None while a scene is missing."""
+    if not complete(state):
+        return None
+    total = points(state)
+    out = ENDINGS[0][1]
+    for low, eid in ENDINGS:
+        if total >= low:
+            out = eid
+    return out
+
+
+def ending_gift(state):
+    """Credits Lyra gives to the station (0 for the two first endings)."""
+    return points(state) * GIFT_PER_POINT if ending_id(state) in GIFT_ENDINGS else 0
+
+
+def ending_sale(state):
+    """The percentage taken off every price of the workshop (0 unless the ending is Romance)."""
+    return SALE_PERCENT if ending_id(state) == SALE_ENDING else 0
+
+
+def ending_told(state):
+    return bool(((state or {}).get("flags") or {}).get(ENDING_FLAG))
+
+
+def sale_price(state, price):
+    """A workshop price once the sale of the Romance ending is applied (rounded to the nearest credit); the same price
+    for a save that has not told the ending yet."""
+    price = int(price)
+    pct = ending_sale(state) if ending_told(state) else 0
+    return price if not pct else (price * (100 - pct) + 50) // 100
+
+
+def ending_pages(state, name=""):
+    """The pages of the ending: its own text, then one page with its effects (gift, sale). [] without an ending.
+    `name` replaces {name} (the pilot)."""
+    from i18n import t
+    eid = ending_id(state)
+    if eid is None:
+        return []
+    text = str(t("story_vn_end_" + eid)).replace("{name}", str(name or "?"))
+    effects = []                                      # (Romance: the sale is told first, then the gift)
+    if ending_sale(state):
+        effects.append("*" + str(t("story_vn_end_sale")).format(pct=ending_sale(state)))
+    gift = ending_gift(state)
+    if gift:
+        effects.append("*" + str(t("story_vn_end_gift")).format(n=group(gift)))
+    out = pages(text)
+    if effects:
+        out += pages("\n".join(effects))
+    return out
+
+
+def group(n):
+    """A number with an unbreakable space between the thousands (7 500)."""
+    return "{:,}".format(int(n)).replace(",", NBSP)
+
+
+def tell_ending(state):
+    """The ending is told: pay its gift (once) and remember it. Returns the credits paid (0 when nothing is due)."""
+    if ending_id(state) is None or ending_told(state):
+        return 0
+    gift = ending_gift(state)
+    state["credits"] = int(state.get("credits", 0) or 0) + gift
+    state.setdefault("flags", {})[ENDING_FLAG] = True
+    return gift

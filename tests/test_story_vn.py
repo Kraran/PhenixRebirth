@@ -1770,6 +1770,8 @@ def test_the_longest_reaction_of_scene_five_is_told_page_by_page_to_the_end(fren
         assert hub.vn_page == page and hub.screen == "vn" and hub.vn_phase == "react"
         hub.vn_t = hub.VN_FADE + 999.0
         hub.confirm()
+    assert hub.screen == "vn" and hub.vn_phase == "end"      # (the ending of the visual novel follows: tests/test_vn_endings.py)
+    _finish(hub)
     assert hub.screen == "hub"
 
 

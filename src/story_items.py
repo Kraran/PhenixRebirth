@@ -16,6 +16,8 @@ Each one is sold for its own hull only (the workshop lists the one of the hull s
 No pygame here: the rules only read and write the save dict (see story_state.py).
 """
 
+import story_vn
+
 ITEMS = [
     # id, price (hangar points)
     ("singularity", 6000),     # fire rate x2
@@ -161,8 +163,14 @@ def find(state, item):
     return True
 
 
+def price(state, item):
+    """What the workshop asks for the item (the sale of the Romance ending included)."""
+    base = PRICES.get(item)
+    return 10 ** 9 if base is None else story_vn.sale_price(state, base)
+
+
 def affordable(state, item):
-    return int((state or {}).get("credits", 0) or 0) >= PRICES.get(item, 10 ** 9)
+    return int((state or {}).get("credits", 0) or 0) >= price(state, item)
 
 
 def buy(state, item):
@@ -170,7 +178,7 @@ def buy(state, item):
     b = book(state)
     if b["got"].get(item) != FOUND or not affordable(state, item):
         return False
-    state["credits"] = int(state.get("credits", 0)) - PRICES[item]
+    state["credits"] = int(state.get("credits", 0)) - price(state, item)
     b["got"][item] = INSTALLED
     return True
 
