@@ -20,6 +20,7 @@ import announce
 import story_feats
 import story_items
 import bindings
+from cheat_keys import cheat_char
 import story_state as ss
 import story_vn
 import loot
@@ -313,6 +314,7 @@ class StoryHub:
         self.cheat_act2 = False        # ACT2: the save jumped to Act 2, nothing is saved any more
         self.cheat_vn = False          # VNOV (typed on the high scores): every scene of the visual novel, nothing saved
         self.cheat_end = False         # FINE: the ending was started by the code, nothing is saved any more
+        self.pending_cheats = []       # the story codes typed on the high scores: they work on the next slot opened
         self.ending = False            # the open ending is under way: scene, film, credits (its music plays on throughout)
         self.ending_credits = False    # ... and its credits are on screen (the game opened them)
         self.film_wait = False         # a film that `hold`s has shown its last picture and waits for a key / button
@@ -952,6 +954,8 @@ class StoryHub:
         self.slot_no = int(slot_no)
         self.cheat_unlock = False                 # loading a save always starts clean
         self.cheat_act2 = False
+        self.cheat_end = False
+        self.ending = False
         self.cheat_buf = ""
         self.log_scroll = 0
         self.log_cursor = 0
@@ -1062,11 +1066,11 @@ class StoryHub:
     def type_key(self, event):
         """Real keyboard while typing a name. True when the key was used."""
         if self.screen == "hub" and self.pane in ("map", "hangar"):
-            ch = getattr(event, "unicode", "") or ""
+            ch = cheat_char(event)                # (the digits of 2222 / 3333 / NIX2 come from the physical key)
             if getattr(self, "_cheat_pane", None) != self.pane:
                 self._cheat_pane = self.pane
                 self.cheat_buf = ""               # a code is typed on one screen, not across two
-            if ch.isalnum():
+            if ch:
                 self.feed_cheat(ch)               # the letters still work as menu keys
             return False
         if self.screen != "name" or self.entry is None:
@@ -1084,6 +1088,21 @@ class StoryHub:
             self.msg = ""
             return True
         return False
+
+    CHEAT_PANE = {CHEAT_UNLOCK: "map", CHEAT_ACT2: "map", CHEAT_ACT3: "map", CHEAT_FINE: "map", CHEAT_NIX: "hangar"}
+
+    def _apply_pending_cheats(self):
+        """The story codes typed on the high-score screen (see Game._feed_cheat) take effect once a slot is open, as if they
+        were typed on the screen they belong to."""
+        codes, self.pending_cheats = list(self.pending_cheats), []
+        for code in codes:
+            if self.screen == "intro" and code != CHEAT_FINE:
+                continue                           # (the story of a new pilot is being told: the code waits no more)
+            self.pane = self.CHEAT_PANE[code]
+            self.cheat_buf = ""
+            for ch in code:
+                self.feed_cheat(ch)
+        self.cheat_buf = ""
 
     def feed_cheat(self, ch):
         """Secret code typed on the mission map. Returns True when UNLK was just completed."""
@@ -1218,6 +1237,7 @@ class StoryHub:
             else:
                 self.open_slot(self.sel + 1)
                 self._maybe_intro()
+                self._apply_pending_cheats()
         elif self.screen == "first_help":
             if self.first_help_t >= 0.5 and self.first_help_spec is not None:
                 spec = self.first_help_spec
@@ -1538,6 +1558,8 @@ class StoryHub:
                 spec["fire_mult"] = float(mission["fire_mult"])    # the birds shoot more (the Phenix version)
         if mission.get("reactor"):
             spec["reactor"] = mission["reactor"]      # the hull whose reactor falls in this mission, once
+        if mission.get("drop"):
+            spec["drop"] = mission["drop"]            # the item that falls once in this BONUS mission (the Singularity Core)
         if mission.get("asteroids"):
             spec["asteroids"] = True                  # the Asteroids level (src/asteroids.py)
             spec["target"] = int(mission.get("target") or 40)

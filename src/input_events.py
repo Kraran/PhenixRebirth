@@ -9,6 +9,7 @@ import pygame
 
 import antimatter
 import bindings
+from cheat_keys import cheat_char
 import controls
 import keybind_screen
 import main_menu
@@ -269,7 +270,7 @@ def on_keydown(game, event):
         elif game.menu_screen == "highscores":
             # Invisible cheats on this screen. Empty unicode (numlock,
             # dead keys) must NOT kick back to the title.
-            ch = (event.unicode or "")
+            ch = cheat_char(event)                  # (digits come from the physical key: AZERTY gives "&" and "é")
             if event.key in (pygame.K_TAB, pygame.K_PAGEUP, pygame.K_PAGEDOWN):
                 shift = bool(getattr(event, "mod", 0) & pygame.KMOD_SHIFT)
                 game._extra_step(-1 if (event.key == pygame.K_PAGEUP or shift) else 1)
@@ -277,7 +278,7 @@ def on_keydown(game, event):
                 game._extra_step(1)
             elif event.key in (pygame.K_LEFT, pygame.K_a, pygame.K_q):
                 game._extra_step(-1)
-            elif ch.isalnum():
+            elif ch:
                 game._feed_cheat(ch)
             elif event.key in (
                 pygame.K_RETURN, pygame.K_KP_ENTER, pygame.K_SPACE,
