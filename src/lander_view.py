@@ -82,15 +82,16 @@ def _sky(style):
     return sky
 
 
-def _stars():
+def _stars(sky):
+    """The sky of an asteroid (one flat colour) with its stars, as one opaque picture (an opaque blit is much faster)."""
     rng = np.random.default_rng(4)
-    layer = pygame.Surface((W, H), pygame.SRCALPHA)
+    layer = sky.copy()
     for _ in range(300):
         x, y = int(rng.integers(0, W)), int(rng.integers(0, H))
         v = int(rng.uniform(70, 255))
-        layer.set_at((x, y), (v, v, min(255, int(v * 1.05)), 255))
+        layer.set_at((x, y), (v, v, min(255, int(v * 1.05))))
         if rng.random() < 0.08:
-            layer.set_at(((x + 1) % W, y), (v, v, v, 255))
+            layer.set_at(((x + 1) % W, y), (v, v, v))
     return layer
 
 
@@ -99,9 +100,10 @@ def assets(style):
     got = _CACHE.get(style)
     if got is None:
         seed = 11 if style == "ice" else 23
+        sky = _sky(style)
         got = {
-            "sky": _sky(style),
-            "stars": _stars() if style == "rock" else None,
+            "sky": sky,
+            "stars": _stars(sky) if style == "rock" else None,
             "tiles": [_texture(style, size, seed + k) for k, (size, _) in enumerate(TILES)],
         }
         _CACHE[style] = got
@@ -141,6 +143,15 @@ class View:
         self.light = pygame.Surface((W, H), pygame.SRCALPHA)
         self.scaled = {}                                        # (tile, quantised zoom) -> the tile at that size
         self.fonts = {}
+        self.depth_bars = [None] + [self._bar(255 - int(min(190, i * 9.0))) for i in range(1, 24)]     # the shade of each depth strip
+        self.boulder_cols = {}                                  # id(terrain) -> (terrain, the colours of its boulders)
+        self.slopes = {}                                        # id(terrain) -> the table of the light on its slopes
+
+    @staticmethod
+    def _bar(grey):
+        bar = pygame.Surface((W, 104))
+        bar.fill((grey, grey, grey))
+        return bar
 
     # --- helpers
     def _tile(self, k, zoom):
@@ -166,18 +177,18 @@ class View:
     # --- the picture
     def draw(self, surface, form):
         z, cam_x, cam_y = snap_zoom(form.zoom), form.x, form.y
-        surface.blit(self.assets["sky"], (0, 0))
         if self.style == "rock":
             ox, oy = int(-cam_x * 0.03) % W, int(-cam_y * 0.03) % H
             for dx in (ox - W, ox):
                 for dy in (oy - H, oy):
                     surface.blit(self.assets["stars"], (dx, dy))
         else:
+            surface.blit(self.assets["sky"], (0, 0))
             self._haze(surface, cam_x, cam_y, z)
         terrain = form.terrain
         sxs, wx, gy, sy = relief(terrain, z, cam_x, cam_y)
         if float(sy.min()) < H + 10:
-            self._ground(surface, form, sxs, sy, gy, z, cam_x, cam_y)
+            self._ground(surface, form, sxs, sy, wx, z, cam_x, cam_y)
         self._boulders(surface, terrain, z, cam_x, cam_y)
         self._pads(surface, form, z, cam_x, cam_y)
 
@@ -192,12 +203,32 @@ class View:
             pts.append((W, H))
             pygame.draw.polygon(surface, col, pts)
 
-    def _ground(self, surface, form, sxs, sy, gy, z, cam_x, cam_y):
+    def _slope_table(self, terrain):
+        """The light on each stretch of the ground (the stretch k runs from k * COLUMN to (k + 1) * COLUMN in the world), made
+        once for the terrain: (alpha, lit) arrays. The slopes that face the light (upper left) are lit, the others fall in the
+        dark; nearly flat stretches (alpha < 6) are not drawn."""
+        tab = self.slopes.get(id(terrain))
+        if tab is None or tab[2] is not terrain:
+            n = int(round(lander.WORLD / COLUMN))
+            g = terrain.ground(np.arange(n + 1, dtype=float) * COLUMN)
+            facing = np.clip(0.5 - np.diff(g) / COLUMN * 1.15, 0.0, 1.0)
+            k = (facing - 0.5) * 2.0
+            lit = k > 0
+            alpha = np.where(lit, (120 * k).astype(int), (150 * -k).astype(int))
+            alpha[alpha < 6] = 0
+            tab = self.slopes[id(terrain)] = (alpha, lit, terrain)
+        return tab
+
+    def _ground(self, surface, form, sxs, sy, wx, z, cam_x, cam_y):
         top = max(0, int(float(sy.min())) - 14)
         region = pygame.Rect(0, top, W, H - top)
+        band_h = max(3.0, min(46.0, 34.0 * z))
+        # under `edge` the ground is whole (the outline and the lit slopes are all above it): the work of the outline (light,
+        # cut-out) is done on the band above it only
+        edge = min(H, max(top, int(float(sy.max()) + band_h) + 4))
+        band = pygame.Rect(0, top, W, edge - top)
         layer, mask, light = self.layer, self.mask, self.light
-        for s in (layer, mask, light):
-            s.set_clip(region)
+        layer.set_clip(region)
         # the texture: two tiles of different sizes, slid and scaled with the world
         for k, (_, world) in enumerate(TILES):
             tile = self._tile(k, z)
@@ -213,63 +244,74 @@ class View:
                         layer.blit(tile, (x, y))
                     x += tw
                 y += tw
-        # darker with the depth (world y): strips of a growing shade
-        light.fill((0, 0, 0, 0))
-        for i in range(24):
-            y_a = -520.0 + i * 100.0
-            a = int(min(190, max(0.0, i * 9.0)))
-            ya, yb = CY + (y_a - cam_y) * z, CY + (y_a + 100.0 - cam_y) * z
-            if yb < top or ya > H:
-                continue
-            pygame.draw.rect(light, (0, 0, 0, a), (0, int(ya), W, int(yb - ya) + 2))
-        layer.blit(light, (0, 0))
-        # light from the upper left: the slopes that face it are lit, the others fall in the dark
-        light.fill((0, 0, 0, 0))
-        band = max(3.0, min(46.0, 34.0 * z))
-        slope = np.diff(gy) / COLUMN
-        facing = np.clip(0.5 - slope * 1.15, 0.0, 1.0)
-        for i in range(len(sxs) - 1):
-            f = float(facing[i])
-            k = (f - 0.5) * 2.0
-            colour = (255, 236, 205, int(120 * k)) if k > 0 else (0, 0, 0, int(150 * -k))
-            if colour[3] < 6:
-                continue
-            x0, x1 = float(sxs[i]), float(sxs[i + 1])
-            y0, y1 = float(sy[i]), float(sy[i + 1])
-            pygame.draw.polygon(light, colour, [(x0, y0), (x1 + 1, y1), (x1 + 1, y1 + band), (x0, y0 + band)])
-        layer.blit(light, (0, 0))
-        # cut the ground out
-        mask.fill((0, 0, 0, 0))
-        pts = [(float(x), float(y)) for x, y in zip(sxs, sy)] + [(float(sxs[-1]), H + 4), (float(sxs[0]), H + 4)]
-        pygame.draw.polygon(mask, (255, 255, 255, 255), pts)
-        layer.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-        lip = [(float(x), float(y)) for x, y in zip(sxs, sy)]
+        # darker with the depth (world y): strips of a growing shade (a multiplication of the colours by a grey bar: the fast
+        # blit of pygame)
+        edges = [int(CY + (-520.0 + i * 100.0 - cam_y) * z) for i in range(25)]
+        for i in range(1, 24):
+            y0 = max(edges[i], top)
+            h = min(edges[i + 1], H) - y0
+            if h > 0:
+                layer.blit(self.depth_bars[i], (0, y0), (0, 0, W, h), special_flags=pygame.BLEND_RGB_MULT)
+        if band.height > 0:
+            # light from the upper left, only on the band of the outline
+            alpha, lit, _ = self._slope_table(form.terrain)
+            n = len(alpha)
+            first = int(round(float(wx[0]) / COLUMN))
+            idx = (np.arange(len(sxs) - 1) + first) % n
+            al = alpha[idx]
+            xs, ys = sxs.tolist(), sy.tolist()
+            light.set_clip(band)
+            light.fill((0, 0, 0, 0))
+            for i in np.nonzero(al)[0].tolist():
+                colour = (255, 236, 205, int(al[i])) if lit[idx[i]] else (0, 0, 0, int(al[i]))
+                x0, x1, y0, y1 = xs[i], xs[i + 1] + 1, ys[i], ys[i + 1]
+                pygame.draw.polygon(light, colour, [(x0, y0), (x1, y1), (x1, y1 + band_h), (x0, y0 + band_h)])
+            layer.blit(light, band.topleft, band)
+            # cut the ground out
+            mask.set_clip(band)
+            mask.fill((0, 0, 0, 0))
+            pts = list(zip(xs, ys)) + [(xs[-1], H + 4), (xs[0], H + 4)]
+            pygame.draw.polygon(mask, (255, 255, 255, 255), pts)
+            layer.blit(mask, band.topleft, band, special_flags=pygame.BLEND_RGBA_MULT)
+        lip = list(zip(sxs.tolist(), sy.tolist()))
         pygame.draw.lines(layer, (255, 232, 200) if self.style == "ice" else (205, 205, 200), False, lip,
                           max(1, int(round(2.2 * z + 0.6))))
         surface.blit(layer, region.topleft, region)
         for s in (layer, mask, light):
             s.set_clip(None)
 
+    def _boulder_colours(self, terrain):
+        """The three colours (shadow, body, highlight) of every boulder of the terrain, made once."""
+        got = self.boulder_cols.get(id(terrain))
+        if got is None or got[0] is not terrain:
+            plain = (92, 90, 86) if self.style == "rock" else (150, 120, 92)
+            cols = []
+            for tone in terrain.boulder_tone.tolist():
+                base = tuple(int(v * (0.85 + 0.3 * tone)) for v in plain)
+                cols.append((tuple(int(v * 0.55) for v in base), base, tuple(min(255, int(v * 1.3)) for v in base)))
+            got = self.boulder_cols[id(terrain)] = (terrain, cols)
+        return got[1]
+
     def _boulders(self, surface, terrain, z, cam_x, cam_y):
-        for bx, r, tone in terrain.boulders:
-            d = (bx - cam_x + lander.WORLD / 2) % lander.WORLD - lander.WORLD / 2
-            px = CX + d * z
-            if not -60 < px < W + 60:
-                continue
-            gy = CY + (terrain.ground(bx) - cam_y) * z
-            if not -40 < gy < H + 40:
-                continue
+        d = (terrain.boulder_x - cam_x + lander.WORLD / 2) % lander.WORLD - lander.WORLD / 2
+        px_all = CX + d * z
+        gy_all = CY + (terrain.boulder_y - cam_y) * z
+        seen = np.nonzero((px_all > -60) & (px_all < W + 60) & (gy_all > -40) & (gy_all < H + 40))[0]
+        if not len(seen):
+            return
+        cols = self._boulder_colours(terrain)
+        for i in seen.tolist():
+            px, gy, r = float(px_all[i]), float(gy_all[i]), float(terrain.boulder_r[i])
+            shadow, base, light = cols[i]
             rr = max(1.0, r * z)
-            base = (92, 90, 86) if self.style == "rock" else (150, 120, 92)
-            base = tuple(int(v * (0.85 + 0.3 * tone)) for v in base)
             rect = pygame.Rect(0, 0, int(rr * 2.2), max(2, int(rr * 1.5)))
             rect.midbottom = (int(px), int(gy + rr * 0.35))
-            pygame.draw.ellipse(surface, tuple(int(v * 0.55) for v in base), rect.move(int(rr * 0.25), int(rr * 0.1)))
+            pygame.draw.ellipse(surface, shadow, rect.move(int(rr * 0.25), int(rr * 0.1)))
             pygame.draw.ellipse(surface, base, rect)
             hi = rect.inflate(-int(rect.width * 0.5), -int(rect.height * 0.5))
             hi.topleft = (rect.left + int(rr * 0.3), rect.top + int(rr * 0.15))
             if hi.width > 0 and hi.height > 0:
-                pygame.draw.ellipse(surface, tuple(min(255, int(v * 1.3)) for v in base), hi)
+                pygame.draw.ellipse(surface, light, hi)
 
     def _pads(self, surface, form, z, cam_x, cam_y):
         blink = 0.5 + 0.5 * math.sin(form.time * 5.0)

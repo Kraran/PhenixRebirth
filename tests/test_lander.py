@@ -3,6 +3,7 @@ the rock of an asteroid, with a limited fuel, three zooms, flat zones of three s
 import math
 import random
 
+import numpy as np
 import pygame
 import pytest
 
@@ -645,3 +646,193 @@ def test_there_is_no_ring_round_the_ship(run):
             for r in range(12, 23) for a in range(24)]
     assert not [p for p in ring if tuple(surf.get_at(p))[:3] == lv.HUD_COLOR]
     assert not hasattr(lv.View, "draw_marker")
+
+
+# ------------------------------------------------------------------ the speed of the picture
+def _bare_form(style, seed=3, z=0.5, alt=-120.0, sink=0.0):
+    """A formation with no boulder and no zone (only the sky and the outline of the ground), camera at `alt` over the ground;
+    `sink` lowers the ground by that much AFTER the camera is placed (a big one leaves only the sky and the haze)."""
+    f = _form(style, seed)
+    f.terrain.pads = []
+    f.terrain.boulders = []
+    t = f.terrain
+    t.boulder_x = t.boulder_r = t.boulder_tone = t.boulder_y = np.zeros(0)
+    f.zoom = z
+    f.x = 1500.37
+    f.y = t.ground(f.x) - ld.FOOT_Y - alt
+    t.h = t.h + sink
+    return f
+
+
+def _image(view, form, fill=(255, 0, 255)):
+    surf = pygame.Surface((1280, 720))
+    surf.fill(fill)
+    view.draw(surf, form)
+    return pygame.surfarray.array3d(surf).astype(int)
+
+
+@pytest.mark.parametrize("style", ["ice", "rock"])
+@pytest.mark.parametrize("z", [0.25, 0.5, 1.0])
+def test_the_sky_and_the_ground_cover_the_whole_screen_and_the_outline_is_where_the_relief_is(style, z):
+    pygame.display.set_mode((1280, 720))
+    view = lv.View(style)
+    f = _bare_form(style, z=z, alt=-120.0)
+    img = _image(view, f)
+    assert not (img == [255, 0, 255]).all(axis=2).any()                       # nothing is left unpainted (the background is skipped)
+    sky = _image(view, _bare_form(style, z=z, alt=-120.0, sink=6000.0))        # the same view without the ground: the sky and the haze
+    sxs, wx, gy, sy = lv.relief(f.terrain, z, f.x, f.y)
+    columns = list(range(40, 1240, 17))
+    for x in columns:
+        same = (np.abs(img[x] - sky[x]).max(axis=1) <= 6)                      # (a faint glow of 1 level is not the ground)
+        first = int(np.argmin(same))                                           # the first row that is not the sky
+        inside = (sxs >= x - 8) & (sxs <= x + 8)                               # (the line is thick, the slopes steep: a window)
+        near = np.concatenate((np.interp([x - 8, x, x + 8], sxs, sy), sy[inside]))
+        assert near.min() - 4.0 <= first <= near.max() + 4.0, (x, first, near)
+        outline = float(near.max())
+        below = int(max(outline, 0)) + 8
+        if below < 700:
+            assert not same[below:].all()                                      # the ground goes on under the outline
+
+
+def test_the_work_of_the_outline_is_done_only_on_a_band_but_the_ground_is_whole_below_it():
+    pygame.display.set_mode((1280, 720))
+    view = lv.View("rock")
+    f = _bare_form("rock", z=0.5, alt=-300.0)                                 # the outline high on the screen, a lot of ground under it
+    img = _image(view, f)
+    sky = _image(view, _bare_form("rock", z=0.5, alt=-300.0, sink=6000.0))
+    sxs, wx, gy, sy = lv.relief(f.terrain, 0.5, f.x, f.y)
+    low = int(sy.max()) + 60
+    assert low < 700
+    assert ((img[:, low:] == sky[:, low:]).all(axis=2).mean()) < 0.01         # no hole under the outline
+    dark_top, dark_low = img[:, int(sy.max()) + 8:int(sy.max()) + 20].mean(), img[:, 690:].mean()
+    assert dark_low < dark_top                                                # the deeper, the darker
+
+
+def test_the_boulders_are_in_arrays_with_the_height_of_the_ground_under_them():
+    t = ld.Terrain("rock", 5)
+    assert len(t.boulders) == len(t.boulder_x) == len(t.boulder_r) == len(t.boulder_tone) == len(t.boulder_y) > 50
+    assert t.boulder_x.tolist() == [b[0] for b in t.boulders] and t.boulder_r.tolist() == [b[1] for b in t.boulders]
+    assert t.boulder_tone.tolist() == [b[2] for b in t.boulders]
+    assert np.allclose(t.boulder_y, [t.ground(b[0]) for b in t.boulders])
+
+
+def test_only_the_boulders_on_the_screen_are_drawn(monkeypatch):
+    pygame.display.set_mode((1280, 720))
+    view = lv.View("rock")
+    f = _form("rock", 5)
+    f.zoom = 1.0
+    f.x = 3000.0
+    f.y = f.terrain.ground(f.x) - ld.FOOT_Y - 100.0
+    drawn = []
+    real = pygame.draw.ellipse
+    monkeypatch.setattr(pygame.draw, "ellipse", lambda *a, **k: drawn.append(1) or real(*a, **k))
+    _image(view, f)
+    on_screen = sum(1 for b in f.terrain.boulders if abs((b[0] - f.x + 3000) % 6000 - 3000) < 640 + 60)
+    assert 0 < len(drawn) <= 3 * on_screen + 3 and len(drawn) < 3 * len(f.terrain.boulders) / 3
+
+
+def test_the_light_on_the_slopes_is_made_once_for_the_terrain():
+    view = lv.View("ice")
+    t = ld.Terrain("ice", 6)
+    alpha, lit, owner = view._slope_table(t)
+    assert owner is t and view._slope_table(t)[0] is alpha                    # the same table the second time
+    n = int(round(ld.WORLD / lv.COLUMN))
+    assert len(alpha) == len(lit) == n
+    for k in (0, 5, 77, n - 1):
+        slope = (t.ground((k + 1) * lv.COLUMN) - t.ground(k * lv.COLUMN)) / lv.COLUMN
+        facing = min(1.0, max(0.0, 0.5 - slope * 1.15))
+        kk = (facing - 0.5) * 2.0
+        want = int(120 * kk) if kk > 0 else int(150 * -kk)
+        assert alpha[k] == (want if want >= 6 else 0) and bool(lit[k]) == (kk > 0)
+    assert view._slope_table(ld.Terrain("ice", 7))[2] is not t                 # (another terrain: another table)
+
+
+def test_the_sky_of_an_asteroid_is_one_opaque_picture_with_its_stars():
+    pygame.display.set_mode((1280, 720))
+    a = lv.assets("rock")
+    assert a["stars"].get_flags() & pygame.SRCALPHA == 0
+    assert a["stars"].get_at((0, 0))[:3] == a["sky"].get_at((0, 0))[:3]
+    bright = [(x, y) for x in range(0, 1280, 3) for y in range(0, 720, 3) if sum(a["stars"].get_at((x, y))[:3]) > 150]
+    assert len(bright) > 20
+
+
+def test_the_background_of_the_game_is_not_painted_under_the_lander_but_is_after_the_crash(run):
+    g, form, _ = _land_in_game(run)
+    calls = []
+    import draw_frame
+    real = draw_frame.draw_background
+    draw_frame.draw_background = lambda game: calls.append(1) or real(game)
+    try:
+        run.frames(3)
+        assert calls == []                                                    # the sky and the ground fill the screen
+        g.game_over = True
+        g.hs_phase = "name"
+        run.frames(1)
+        assert calls                                                           # under the game over screen: the background
+    finally:
+        draw_frame.draw_background = real
+
+
+def test_the_picture_does_not_depend_on_the_frames_drawn_before():
+    """The surfaces are reused from one frame to the next: nothing of an earlier frame may stay in the next one."""
+    pygame.display.set_mode((1280, 720))
+    spots = [(1500.37, -120.0, 0.5), (1500.37, 300.0, 0.5), (2500.0, 40.0, 1.0), (900.5, 700.0, 0.25), (3400.0, -200.0, 0.75)]
+    used = lv.View("rock")
+    for x, alt, z in spots + spots[::-1]:
+        f = _bare_form("rock", z=z, alt=alt)
+        f.x = x
+        f.y = f.terrain.ground(x) - ld.FOOT_Y - alt
+        assert (_image(used, f) == _image(lv.View("rock"), f)).all(), (x, alt, z)
+
+
+def test_the_slopes_facing_the_light_are_lit_where_the_table_says(monkeypatch):
+    pygame.display.set_mode((1280, 720))
+    view = lv.View("rock")
+    f = _bare_form("rock", z=1.0, alt=-100.0)
+    lit_img = _image(view, f)
+    alpha, lit, owner = view._slope_table(f.terrain)
+    monkeypatch.setattr(view, "_slope_table", lambda t: (np.zeros_like(alpha), lit, t))
+    flat_img = _image(view, f)                                              # the same picture without any light on the slopes
+    sxs, wx, gy, sy = lv.relief(f.terrain, 1.0, f.x, f.y)
+    first = int(round(float(wx[0]) / lv.COLUMN))
+    n = len(alpha)
+    checked_lit = 0
+    for i in range(1, len(sxs) - 2):
+        k = (i + first) % n
+        x0, x1 = int(sxs[i]) + 2, int(sxs[i + 1]) - 2
+        if not (4 <= x0 < x1 < 1276):
+            continue
+        y_hi = int(min(sy[i], sy[i + 1])) + 2
+        y_lo = int(max(sy[i], sy[i + 1])) + 12
+        changed = np.abs(lit_img[x0:x1, y_hi:y_lo] - flat_img[x0:x1, y_hi:y_lo]).max() > 0
+        if alpha[k] > 0:
+            checked_lit += 1
+            assert changed, ("a lit or dark stretch with nothing drawn", i, k)
+    assert checked_lit > 100
+
+
+def test_every_stretch_of_the_light_table_is_either_off_or_visible():
+    for style, seed in (("rock", 2), ("ice", 8)):
+        alpha, lit, _ = lv.View(style)._slope_table(ld.Terrain(style, seed))
+        assert ((alpha == 0) | (alpha >= 6)).all() and (alpha > 0).sum() > 300 and (alpha == 0).sum() > 0
+        assert alpha[lit].max() <= 120 and alpha[~lit].max() <= 150
+
+
+def test_the_stars_of_an_asteroid_are_in_the_picture_and_the_haze_only_on_titan():
+    pygame.display.set_mode((1280, 720))
+    rock = _image(lv.View("rock"), _bare_form("rock", z=0.25, alt=-200.0, sink=6000.0))
+    ice = _image(lv.View("ice"), _bare_form("ice", z=0.25, alt=-200.0, sink=6000.0))
+    assert 100 < (rock.sum(axis=2) > 200).sum() < 5000                       # a few stars on the black sky, no haze
+    assert (ice.sum(axis=2) > 200).sum() > 100000 and ice[:, :, 0].mean() > 60  # the orange sky and its hills
+
+
+def test_the_deeper_the_darker_ground():
+    pygame.display.set_mode((1280, 720))
+    view = lv.View("rock")
+    f = _bare_form("rock", z=0.25, alt=-150.0)
+    plain = _image(view, f)
+    saved = view.depth_bars
+    view.depth_bars = [None] + [lv.View._bar(255)] * 23                      # (no shade of depth at all)
+    bright = _image(view, f)
+    view.depth_bars = saved
+    assert bright[:, 650:700].mean() > plain[:, 650:700].mean() + 8

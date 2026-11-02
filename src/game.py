@@ -4563,8 +4563,10 @@ class Game:
     def _draw_canvas(self):
         self._announce_done = False
         story = getattr(self, "story", None)
-        if not (not self.started and self.menu_screen == "story_hub" and story is not None
-                and story.covers_screen()):
+        lander_covers = (lander.active(self) is not None and self.started
+                         and (not self.game_over or self.hs_phase == "card"))      # (its sky and ground fill the screen)
+        if not lander_covers and not (not self.started and self.menu_screen == "story_hub" and story is not None
+                                      and story.covers_screen()):
             draw_frame.draw_background(self)       # (a full-screen slide paints over it anyway)
         
         shake_x = shake_y = 0
