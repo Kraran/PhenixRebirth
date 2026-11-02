@@ -78,3 +78,16 @@ animation. A remaining life respawns the normal hull at the starting position.
 Respawn protection still works for ordinary attacks; Guardian lasers bypass it.
 The final life returns to the adventure map after the full animation. Training
 save/progression rules are unchanged.
+
+## Health, wings and wounds
+
+Each Sentinelle has 3 HP (a hit on the body = 1 HP) and a life bar of three segments above its head. The wings are
+separate targets with the gargoyles' rules: one shot destroys a wing without hurting the bird; it regrows after 3.2 s,
+the last 0.8 s being an unfolding animation with a white-hot front. Without both wings no dive, without any wing no
+laser (a charge in progress is cancelled). Ramming and the antimatter missile still kill at once.
+
+`src/guardian_parts.py` cuts every cell of `sentinelle.png` once into a left wing, a body and a right wing along a
+jagged line (an exact partition) and bakes three health levels: intact, 2 HP (soot, glowing cracks, a hole in each
+wing, smoke) and 1 HP (deep pulsing cracks, a shot-out eye, a red eye, a broken crest, ragged wings, flames, falling
+embers, sparks, shudder, slower wingbeat). Effects use a private random generator, so the arcade's random state and
+the replays are untouched.
