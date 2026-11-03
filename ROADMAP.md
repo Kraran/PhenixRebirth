@@ -21,6 +21,12 @@ Current release: **v1.6.0**
   to watch again (which keep the steel and the lit row). The Extras are holographic signs, like the ones of the corridor: blue glass with a
   grid, the chosen one lit in gold. Tests: `tests/test_phobos_ui.py`.
 
+- **Menus of the Adventure, step 7: the screens before the hub.** The saves, the pilot name, the mode, the choice of the hull, the YES / NO
+  questions and the Lunar Lander menu wear the steel too, on the picture of the pilot's quarters: steel cards (the chosen one lit in
+  gold, DELETE and the destroying YES in red), the name typed on a CRT terminal with steel keys, the two hulls as holograms, the questions on
+  a hazard plate, the preview of the Lander in a hologram, and the scenes of the visual novel on a solid blue glass panel. The
+  toasts keep their coloured plates (their colour tells the type of the message). Tests: `tests/test_phobos_ui.py`.
+
 - **Lunar Lander test: five settings and a menu to choose one.** Europa (bright ice with long red-brown fractures, Jupiter in the sky),
   Deimos (dark dusty rock with worn craters, Mars in the sky; almost no gravity) and Triton (pinkish "cantaloupe" ice with dark
   streaks, Neptune in the sky) join Titan (Saturn in the sky) and the asteroid (other asteroids in the sky). The mother planets

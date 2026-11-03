@@ -4,6 +4,7 @@ import os
 import pygame
 import pytest
 
+import phobos_ui
 import story_state as ss
 from story import StoryHub
 from test_smoke import run  # noqa: F401  (fixture)
@@ -96,13 +97,15 @@ def test_the_four_cards_and_the_hint_fit_on_the_screen(run):
     hub.sel = 3
     g = run.game
     seen = []
-    real = story._fill
-    story._fill = lambda surface, color, rect, radius=0: (seen.append(pygame.Rect(rect)), real(surface, color, rect, radius))[1]
+    reals = {n: getattr(phobos_ui, n) for n in ("plate", "lit")}
+    for n, real in reals.items():
+        setattr(phobos_ui, n, lambda surface, rect, *a, _r=real, **k: (seen.append(pygame.Rect(rect)), _r(surface, rect, *a, **k))[1])
     try:
         surf = pygame.Surface((1280, 720))
         hub.draw(surf, g.font, g.medium_font, g.font)
     finally:
-        story._fill = real
+        for n, real in reals.items():
+            setattr(phobos_ui, n, real)
     cards = [r for r in seen if r.w > 800]
     assert len(cards) == 4
     assert all(a.bottom < b.top for a, b in zip(cards, cards[1:]))              # no overlap

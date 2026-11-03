@@ -8,6 +8,7 @@ import pytest
 
 import i18n
 import story_state as ss
+import phobos_ui
 import story_vn
 from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
 import story
@@ -751,7 +752,7 @@ def _draw_real(hub):
 
 def _panel_span(surf, y):
     """The first and the last column where the edge of the panel is drawn on this row."""
-    xs = [x for x in range(BASE_WIDTH) if surf.get_at((x, y))[:3] == (70, 90, 130)]
+    xs = [x for x in range(BASE_WIDTH) if surf.get_at((x, y))[:3] == phobos_ui.HOLO_EDGE]
     return (xs[0], xs[-1]) if xs else None
 
 
@@ -779,8 +780,8 @@ def test_the_panel_of_every_page_stays_on_the_screen():
                 for _ in range(4):
                     hub.vn_t = hub.VN_FADE + 999.0
                     surf = _draw_real(hub)
-                    assert surf.get_at((BASE_WIDTH // 2, BASE_HEIGHT - 2))[:3] != (70, 90, 130)
-                    assert surf.get_at((BASE_WIDTH // 2, BASE_HEIGHT - 20))[:3] != (70, 90, 130)
+                    assert surf.get_at((BASE_WIDTH // 2, BASE_HEIGHT - 2))[:3] != phobos_ui.HOLO_EDGE
+                    assert surf.get_at((BASE_WIDTH // 2, BASE_HEIGHT - 20))[:3] != phobos_ui.HOLO_EDGE
                     if hub.vn_ready():
                         break
                     hub.confirm()
@@ -1041,7 +1042,7 @@ def test_scene_two_has_its_text_on_the_right_and_scene_one_on_the_left():
         hub.vn_t = hub.VN_FADE + 999.0
         surf = _draw(hub)
         # the panel edge colour is only where the panel is
-        px = [x for x in range(0, BASE_WIDTH, 8) if surf.get_at((x, 300))[:3] == (70, 90, 130)]
+        px = [x for x in range(0, BASE_WIDTH, 8) if surf.get_at((x, 300))[:3] == phobos_ui.HOLO_EDGE]
         assert px, sid
         assert (px[0] < 400) == (side == "left"), sid
 
@@ -1134,8 +1135,8 @@ def test_the_panel_of_every_page_of_scene_two_stays_on_the_screen():
                 for _ in range(6):
                     hub.vn_t = hub.VN_FADE + 999.0
                     surf = _draw_real(hub)
-                    assert surf.get_at((BASE_WIDTH - 300, BASE_HEIGHT - 2))[:3] != (70, 90, 130)
-                    assert surf.get_at((BASE_WIDTH - 300, BASE_HEIGHT - 20))[:3] != (70, 90, 130)
+                    assert surf.get_at((BASE_WIDTH - 300, BASE_HEIGHT - 2))[:3] != phobos_ui.HOLO_EDGE
+                    assert surf.get_at((BASE_WIDTH - 300, BASE_HEIGHT - 20))[:3] != phobos_ui.HOLO_EDGE
                     if hub.vn_ready():
                         break
                     hub.confirm()
@@ -1305,8 +1306,8 @@ def test_the_panel_of_every_page_of_scene_three_stays_on_the_screen():
                 for _ in range(6):
                     hub.vn_t = hub.VN_FADE + 999.0
                     surf = _draw_real(hub)
-                    assert surf.get_at((BASE_WIDTH - 300, BASE_HEIGHT - 2))[:3] != (70, 90, 130)
-                    assert surf.get_at((BASE_WIDTH - 300, BASE_HEIGHT - 20))[:3] != (70, 90, 130)
+                    assert surf.get_at((BASE_WIDTH - 300, BASE_HEIGHT - 2))[:3] != phobos_ui.HOLO_EDGE
+                    assert surf.get_at((BASE_WIDTH - 300, BASE_HEIGHT - 20))[:3] != phobos_ui.HOLO_EDGE
                     if hub.vn_ready():
                         break
                     hub.confirm()
@@ -1535,8 +1536,8 @@ def test_the_panel_of_every_page_of_scene_four_stays_on_the_screen():
                 for _ in range(6):
                     hub.vn_t = hub.VN_FADE + 999.0
                     surf = _draw_real(hub)
-                    assert surf.get_at((300, BASE_HEIGHT - 2))[:3] != (70, 90, 130)
-                    assert surf.get_at((300, BASE_HEIGHT - 20))[:3] != (70, 90, 130)
+                    assert surf.get_at((300, BASE_HEIGHT - 2))[:3] != phobos_ui.HOLO_EDGE
+                    assert surf.get_at((300, BASE_HEIGHT - 20))[:3] != phobos_ui.HOLO_EDGE
                     if hub.vn_ready():
                         break
                     hub.confirm()
@@ -1789,9 +1790,9 @@ def test_the_panel_of_every_page_of_scene_five_stays_on_the_screen():
                 for _ in range(8):
                     hub.vn_t = hub.VN_FADE + 999.0
                     surf = _draw_real(hub)
-                    assert surf.get_at((BASE_WIDTH - 300, BASE_HEIGHT - 2))[:3] != (70, 90, 130)
-                    assert surf.get_at((BASE_WIDTH - 300, BASE_HEIGHT - 20))[:3] != (70, 90, 130)
-                    assert any(surf.get_at((BASE_WIDTH - 300, y))[:3] == (70, 90, 130)         # (the foot of the panel is seen)
+                    assert surf.get_at((BASE_WIDTH - 300, BASE_HEIGHT - 2))[:3] != phobos_ui.HOLO_EDGE
+                    assert surf.get_at((BASE_WIDTH - 300, BASE_HEIGHT - 20))[:3] != phobos_ui.HOLO_EDGE
+                    assert any(surf.get_at((BASE_WIDTH - 300, y))[:3] == phobos_ui.HOLO_EDGE         # (the foot of the panel is seen)
                                for y in range(150, BASE_HEIGHT - 3))
                     if hub.vn_ready():
                         break

@@ -6,6 +6,7 @@ import pygame
 import pytest
 
 import invaders as inv
+import phobos_ui
 import story
 import story_state as ss
 from settings import BASE_HEIGHT, BASE_WIDTH
@@ -171,6 +172,7 @@ def test_the_slide_covers_the_screen_but_the_hub_does_not(monkeypatch):
 def test_the_starfield_is_not_drawn_under_a_slide(run, monkeypatch):
     import draw_frame
     g = run.game
+    phobos_ui._backdrops.clear()
     g.menu_screen, g.started = "story_hub", False
     g.story.open_slots()
     calls = []
@@ -178,7 +180,11 @@ def test_the_starfield_is_not_drawn_under_a_slide(run, monkeypatch):
     monkeypatch.setattr(draw_frame, "draw_background", lambda game: (calls.append(1), real(game))[1])
     g.story.screen = "slots"
     g._draw_canvas()
-    assert calls == [1]                                                  # menus still show the stars through
+    assert calls == []                                                   # the picture of the quarters covers them
+    with monkeypatch.context() as m:
+        m.setattr(phobos_ui, "BACKDROPS", {})
+        g._draw_canvas()
+    assert calls == [1]                                                  # ... and without it the stars show through
     g.story.screen = "intro"
     g.story.intro_slides = [("epave_shield", "story_scene_dome_1")]
     g.story.intro_index = 0
