@@ -353,3 +353,46 @@ def test_the_empty_bestiary_is_one_terminal_with_its_line(run):
     s = _hangar_pixels(g, hub)
     assert s.get_at((70 + 12, 300))[:3] == phobos_ui.STEEL_EDGE              # the bezel
     assert any(s.get_at((x, y))[:3] == phobos_ui.CRT_TEXT for x in range(400, 880) for y in range(330, 380))
+
+
+# ------------------------------------------------------------------ the journal and the extras
+def _journal_hub(g, done=True):
+    hub = _hub(g, "log")
+    if done:
+        hub.state.setdefault("log", []).append({"key": "story_log_clear"})       # a line of what happened
+    return hub
+
+
+def test_what_happened_is_read_on_a_terminal_under_the_scenes(run):
+    g = run.game
+    hub = _journal_hub(g)
+    s = _hangar_pixels(g, hub)
+    zone2 = 78 + 104 + 4 * 34
+    assert s.get_at((200, zone2 + 2))[:3] == phobos_ui.STEEL_EDGE                    # the bezel of the terminal
+    assert s.get_at((200, 630 - 12))[:3] == phobos_ui.STEEL_EDGE                     # ... and its lower edge
+    assert any(c[1] > 170 and c[2] > 150 and c[0] < 140 for c in (s.get_at((x, y))[:3] for x in range(100, 400)
+                                                                  for y in range(zone2 + 14, zone2 + 40)))   # the heading
+    assert any(c[0] < 140 and c[1] > 200 for c in (s.get_at((x, y))[:3] for x in range(100, 900)
+                                                    for y in range(zone2 + 50, zone2 + 80)))        # phosphor lines
+
+
+def test_the_scenes_to_watch_again_stay_on_steel_with_the_lit_row(run):
+    g = run.game
+    hub = _journal_hub(g)
+    s = _hangar_pixels(g, hub)
+    assert phobos_ui.LIT_EDGE in {s.get_at((300, y))[:3] for y in range(160, 205)}     # the cursor row
+    assert phobos_ui.HOLO_TEXT in {s.get_at((x, y))[:3] for x in range(100, 300) for y in range(140, 160)} or \
+        any(c[2] > c[0] + 40 for c in (s.get_at((x, 148))[:3] for x in range(100, 300)))    # the blue heading
+
+
+def test_the_extras_are_holographic_signs_and_the_chosen_one_is_gold(run):
+    g = run.game
+    hub = _hub(g, "extras")
+    hub.extras_index = 1
+    s = _hangar_pixels(g, hub)
+    assert s.get_at((640, 124))[:3] == phobos_ui.HOLO_EDGE or s.get_at((640, 246))[:3] == phobos_ui.LIT_EDGE
+    tops = [y for y in range(100, 600) if s.get_at((640, y))[:3] == phobos_ui.LIT_EDGE]
+    assert tops and 240 <= tops[0] <= 252                                              # the second sign is the lit one
+    assert not any(s.get_at((640, y))[:3] == phobos_ui.LIT_EDGE for y in range(100, 235))   # the first one is not
+    head = [s.get_at((x, y))[:3] for x in range(238, 500) for y in range(140, 165)]
+    assert any(c[0] < 150 and c[2] > 200 and c[1] > 150 for c in head)                  # the head of an unlit sign: blue glass text

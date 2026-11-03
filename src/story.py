@@ -2409,7 +2409,7 @@ class StoryHub:
         under a line that says what to do next."""
         box = pygame.Rect(80, 78, BASE_WIDTH - 160, BASE_HEIGHT - 168)
         phobos_ui.plate(surface, box, hazard=True)
-        head_col = (120, 160, 210)
+        head_col = phobos_ui.HOLO_TEXT
         arrow_col = (255, 190, 110)
         ax = box.right - 22
         nxt = ss.next_mission(self.state, self.missions())
@@ -2436,24 +2436,24 @@ class StoryHub:
         if first + LOG_REPLAY_ROWS < len(replay):
             pygame.draw.polygon(surface, arrow_col, [(ax - 7, zone2 - 18), (ax + 7, zone2 - 18), (ax, zone2 - 8)])
         # zone 2: what happened
-        pygame.draw.line(surface, menu_ui.PANEL_EDGE, (box.x + 20, zone2 + 2), (box.right - 20, zone2 + 2), 1)
-        _text_fit(surface, small, t("story_log_head_log"), head_col, zone2 + 26, box.x + 24, 400, scale=0.8)
+        phobos_ui.crt(surface, pygame.Rect(box.x + 12, zone2 + 2, box.w - 24, box.bottom - 10 - (zone2 + 2)))   # a terminal
+        _text_fit(surface, small, t("story_log_head_log"), phobos_ui.CRT, zone2 + 26, box.x + 24, 400, scale=0.8)
         entries = self.story_entries()
         rows, step = LOG_STORY_ROWS, 36
         start = self.log_scroll = max(0, min(self.log_scroll, len(entries) - rows))
         y = zone2 + 62
         if not entries:
-            _text(surface, small, t("story_log_empty"), (160, 170, 200), y, left=box.x + 24)
+            _text(surface, small, t("story_log_empty"), phobos_ui.CRT_DIM, y, left=box.x + 24)
         for i in range(start, min(len(entries), start + rows)):
             entry = entries[i]
             indent = 0
             if isinstance(entry, dict) and ("kills" in entry or "level" in entry):
                 text = log_text(entry, t)
-                col = (190, 175, 130)
+                col = phobos_ui.CRT_DIM
                 indent = 56                                   # sits under its mission line
             else:
                 text = log_text(entry, t)
-                col = (200, 200, 220)
+                col = phobos_ui.CRT_TEXT
             _text_fit(surface, small, text, col, y, box.x + 24 + indent, box.w - 80 - indent)
             y += step
         if start > 0:
@@ -2485,15 +2485,12 @@ class StoryHub:
             chosen = i == self.extras_index
             y = top + i * step
             box = pygame.Rect(cx - width // 2, y, width, step - gap)
-            if chosen:
-                phobos_ui.lit(surface, box)
-            else:
-                phobos_ui.plate(surface, box, rivets=False, alpha=205)
+            phobos_ui.holo(surface, box, chosen)                    # a holographic sign, the chosen one lit in gold
             head = t(DOOR_TITLES.get(door, door))
-            _text(surface, medium, head, (255, 230, 120) if chosen else (170, 175, 200), y + head_dy, left=box.x + 28)
+            _text(surface, medium, head, (255, 230, 120) if chosen else phobos_ui.HOLO_TEXT, y + head_dy, left=box.x + 28)
             body = getattr(self, "_body", None) or small
             for j, line in enumerate(_wrap(body, t("story_door_" + door), width - 60)[:2]):
-                _text(surface, body, line, (205, 208, 228) if chosen else (140, 145, 170),
+                _text(surface, body, line, (225, 228, 240) if chosen else (150, 180, 215),
                       y + body_dy + j * line_h, left=box.x + 28)
 
     def _draw_bestiary(self, surface, font, medium, small):

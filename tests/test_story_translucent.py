@@ -132,7 +132,7 @@ def test_no_menu_panel_is_painted_opaque(run):
         story.pygame.draw.rect = real
 
 
-@pytest.mark.parametrize("name, point", [("log", (640, 400)), ("workshop", (640, 610)), ("bestiary", (1200, 500)),
+@pytest.mark.parametrize("name, point", [("log", (87, 400)), ("workshop", (640, 610)), ("bestiary", (1200, 500)),
                                          ("slots", (640, 150))])
 def test_the_backdrop_shows_through_the_panels(run, name, point, monkeypatch):
     """(the panes have a picture of their own now: it is left out here to see the panel itself)"""
