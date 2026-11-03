@@ -286,3 +286,81 @@ def test_the_texts_of_the_settings_exist_in_french_and_english():
     assert i18n.T["lander_pick_title"]["fr"] != i18n.T["lander_pick_title"]["en"]
     for style in ld.BODIES:
         assert "..." not in i18n.T["lander_info_" + style]["fr"] and "..." not in i18n.T["lander_info_" + style]["en"]
+
+
+# ------------------------------------------------------------------ the fixes of the menu, of the end texts and of the speed
+@pytest.mark.parametrize("lang", ["fr", "en"])
+def test_the_sky_line_of_each_row_stays_in_its_frame_with_the_real_font(run, lang):
+    before = i18n.get_lang()
+    i18n.set_lang(lang)
+    try:
+        font = run.game.font
+        for key in ld.MENU_ORDER:
+            for name in ("lander_body_", "lander_planet_"):
+                assert font.size(i18n.t(name + key))[0] <= 400 - 24 - 24, (name, key)       # the row is 400 px wide, 24 px of margin
+        assert i18n.t("lander_planet_rock") in ("Dans le ciel : astéroïdes", "In the sky: asteroids")
+    finally:
+        i18n.set_lang(before)
+
+
+def test_the_two_texts_of_the_end_do_not_overlap(run):
+    import announce
+
+    g = run.game
+    spec = _launch(run, "test_lander")
+    g._begin_adventure(spec)
+    g.input_grace = 0.0
+    run.frames(2)
+    form = g.formation
+    form.phase, form.result, form.pad, form.points, form.bonus = "landed", "perfect", form.terrain.pads[0], 500, 5000
+    seen = []
+    real = announce.draw
+
+    def spy(game, surface, text, ctype, level, center):
+        seen.append((text, center))
+        return real(game, surface, text, ctype, level, center)
+
+    announce.draw = spy
+    try:
+        g.game_surface.fill((0, 0, 0))
+        lv.draw_hud(g, form)
+    finally:
+        announce.draw = real
+    assert len(seen) == 2
+    (_, first), (_, second) = seen
+    assert second[1] - first[1] >= 120 and second[1] < BASE_HEIGHT // 2 + 40            # well apart, the second nearer the centre
+
+
+@pytest.mark.parametrize("style", ["rock", "deimos", "europa"])
+def test_the_ground_made_by_chunks_is_the_ground_made_whole(style, monkeypatch):
+    f = _form(style)
+    pictures = []
+    for chunk in (lv.CHUNK, lv.W):
+        monkeypatch.setattr(lv, "CHUNK", chunk)
+        view = lv.View(style)
+        got = []
+        for x, y, z in ((f.terrain.pads[0]["x"], -130.0, 1.0), (3000.0, -600.0, 0.25), (1000.0, -50.0, 1.0), (500.0, 900.0, 0.5)):
+            f.x, f.y, f.zoom = x, y, z
+            surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+            view.draw(surf, f)
+            got.append(pygame.image.tostring(surf, "RGB"))
+        pictures.append(got)
+    assert pictures[0] == pictures[1]
+
+
+def test_the_text_of_the_menu_is_wrapped_once_per_setting():
+    import story
+
+    hub = _hub()
+    hub.confirm()
+    font = pygame.font.Font(None, 28)
+    surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+    calls = []
+    real = story._wrap_nb
+    story._wrap_nb = lambda *a: calls.append(a) or real(*a)
+    try:
+        for _ in range(5):
+            hub.draw(surf, font, font, font)
+    finally:
+        story._wrap_nb = real
+    assert len(calls) == 1

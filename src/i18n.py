@@ -6929,7 +6929,7 @@ _LANDER_TEXTS = {
     "lander_body_europa": ("Europe", "Europa"),
     "lander_body_deimos": ("Déimos", "Deimos"),
     "lander_body_triton": ("Triton", "Triton"),
-    "lander_planet_rock": ("Dans le ciel : d'autres astéroïdes", "In the sky: other asteroids"),
+    "lander_planet_rock": ("Dans le ciel : astéroïdes", "In the sky: asteroids"),
     "lander_planet_ice": ("Dans le ciel : Saturne", "In the sky: Saturn"),
     "lander_planet_europa": ("Dans le ciel : Jupiter", "In the sky: Jupiter"),
     "lander_planet_deimos": ("Dans le ciel : Mars", "In the sky: Mars"),

@@ -19,6 +19,7 @@ W, H = BASE_WIDTH, BASE_HEIGHT
 CX, CY = W / 2.0, H / 2.0
 COLUMN = 8.0                                # one point of the relief every COLUMN px OF THE WORLD (the points follow the ground, not the screen: a peak never blinks)
 TILES = ((1024, 1024), (768, 768))          # (texture size in px, size of the tile in the world in px)
+CHUNK = 160                                 # width of the chunks of columns of the ground
 ZQ = 256                                    # the zoom drawn is a multiple of 1/ZQ: the tiles (1024 and 768 world px) then have a whole size
 HUD_COLOR = (120, 235, 255)
 _CACHE = {}                                 # per body: sky, textures
@@ -438,30 +439,42 @@ class View:
         edge = min(H, max(top, int(float(sy.max()) + band_h) + 4))
         band = pygame.Rect(0, top, W, edge - top)
         layer, mask, light = self.layer, self.mask, self.light
-        layer.set_clip(region)
+        # the ground is made by chunks of columns: above its outline a chunk has nothing to show (the cut-out would erase it), so
+        # every chunk only works from where ITS outline begins (the picture is the same, the pixels thrown away are not made)
+        sp = float(sxs[1] - sxs[0]) + 2.0 if len(sxs) > 1 else 2.0
+        chunks = []
+        for cx in range(0, W, CHUNK):
+            near = sy[(sxs >= cx - sp) & (sxs <= cx + CHUNK + sp)]
+            if not len(near):
+                near = sy
+            ctop = max(top, int(float(near.min())) - 14)
+            chunks.append((pygame.Rect(cx, ctop, CHUNK, H - ctop), float(near.min()), float(near.max())))
         # the texture: two tiles of different sizes, slid and scaled with the world
+        origins = []
         for k, (_, world) in enumerate(TILES):
             tile = self._tile(k, z)
-            tw = tile.get_width()
-            x0, y0 = tile_origin(tw, z, cam_x, cam_y)
             if k == 1:
                 tile.set_alpha(110)
-            y = y0
-            while y < H:
-                x = x0
-                while x < W:
-                    if y + tw > top:
-                        layer.blit(tile, (x, y))
-                    x += tw
-                y += tw
+            origins.append((tile, tile.get_width()) + tuple(tile_origin(tile.get_width(), z, cam_x, cam_y)))
         # darker with the depth (world y): strips of a growing shade (a multiplication of the colours by a grey bar: the fast
         # blit of pygame)
         edges = [int(CY + (-520.0 + i * 100.0 - cam_y) * z) for i in range(25)]
-        for i in range(1, 24):
-            y0 = max(edges[i], top)
-            h = min(edges[i + 1], H) - y0
-            if h > 0:
-                layer.blit(self.depth_bars[i], (0, y0), (0, 0, W, h), special_flags=pygame.BLEND_RGB_MULT)
+        for rect, _, _ in chunks:
+            layer.set_clip(rect)
+            for tile, tw, x0, y0 in origins:
+                yy = y0 + ((rect.top - y0) // tw) * tw          # the first tile that reaches the chunk
+                x = x0 + ((rect.left - x0) // tw) * tw
+                while yy < H:
+                    xx = x
+                    while xx < rect.right:
+                        layer.blit(tile, (xx, yy))
+                        xx += tw
+                    yy += tw
+            for i in range(1, 24):
+                y0 = max(edges[i], rect.top)
+                h = min(edges[i + 1], H) - y0
+                if h > 0:
+                    layer.blit(self.depth_bars[i], (rect.left, y0), (0, 0, rect.w, h), special_flags=pygame.BLEND_RGB_MULT)
         if band.height > 0:
             # light from the upper left, only on the band of the outline
             alpha, lit, _ = self._slope_table(form.terrain)
@@ -476,17 +489,26 @@ class View:
                 colour = (255, 236, 205, int(al[i])) if lit[idx[i]] else (0, 0, 0, int(al[i]))
                 x0, x1, y0, y1 = xs[i], xs[i + 1] + 1, ys[i], ys[i + 1]
                 pygame.draw.polygon(light, colour, [(x0, y0), (x1, y1), (x1, y1 + band_h), (x0, y0 + band_h)])
-            layer.blit(light, band.topleft, band)
             # cut the ground out
             mask.set_clip(band)
             mask.fill((0, 0, 0, 0))
             pts = list(zip(xs, ys)) + [(xs[-1], H + 4), (xs[0], H + 4)]
             pygame.draw.polygon(mask, (255, 255, 255, 255), pts)
-            layer.blit(mask, band.topleft, band, special_flags=pygame.BLEND_RGBA_MULT)
+            for rect, lo, hi in chunks:
+                layer.set_clip(None)
+                # the light only lies on the strip of the outline of the chunk; the cut-out on the band
+                strip = pygame.Rect(rect.left, int(lo) - 2, rect.w, int(hi + band_h) - int(lo) + 6).clip(band)
+                if strip.height > 0:
+                    layer.blit(light, strip.topleft, strip)
+                cut = rect.clip(band)
+                if cut.height > 0:
+                    layer.blit(mask, cut.topleft, cut, special_flags=pygame.BLEND_RGBA_MULT)
+        layer.set_clip(None)
         lip = list(zip(sxs.tolist(), sy.tolist()))
         pygame.draw.lines(layer, LOOKS[self.style]["lip"], False, lip,
                           max(1, int(round(2.2 * z + 0.6))))
-        surface.blit(layer, region.topleft, region)
+        for rect, _, _ in chunks:
+            surface.blit(layer, rect.topleft, rect)
         for s in (layer, mask, light):
             s.set_clip(None)
 
@@ -612,4 +634,4 @@ def draw_hud(game, form):
         announce.draw(game, surface, text, ctype, "major", (BASE_WIDTH // 2, BASE_HEIGHT // 2 - 150))
         if form.phase == "landed":
             detail = t("lander_points").format(p=form.points, b=form.bonus, z=lander.PAD_BONUS[form.pad["kind"]])
-            announce.draw(game, surface, detail, "gain", "standard", (BASE_WIDTH // 2, BASE_HEIGHT // 2 - 90))
+            announce.draw(game, surface, detail, "gain", "standard", (BASE_WIDTH // 2, BASE_HEIGHT // 2 - 20))
