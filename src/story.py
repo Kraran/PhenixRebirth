@@ -2292,7 +2292,14 @@ class StoryHub:
         surface.blit(pic, (px, y))
         pygame.draw.rect(surface, menu_ui.SEL_EDGE, pygame.Rect(px, y, pic.get_width(), pic.get_height()), 2)
         ty = y + pic.get_height() + 34
-        for line in _wrap_nb(body, t("lander_info_" + key), BASE_WIDTH - px - 50):
+        # the wrapping measures every word: done once per text, language and font, not at each frame
+        info = t("lander_info_" + key)
+        cache = self.__dict__.setdefault("_lander_wrap", {})
+        ck = (info, id(body), BASE_WIDTH - px - 50)
+        lines = cache.get(ck)
+        if lines is None:
+            lines = cache[ck] = _wrap_nb(body, info, BASE_WIDTH - px - 50)
+        for line in lines:
             _text(surface, body, line, menu_ui.TEXT, ty, left=px)
             ty += 32
 
