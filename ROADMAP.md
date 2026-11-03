@@ -3,7 +3,11 @@ Current release: **v1.6.0**
 
 ## Unreleased (towards 1.6.1)
 
-_Nothing yet._
+- **Visual novel: the four endings.** After the reaction to the last scene, an ending is told on the same picture, chosen by the
+  total of points: Fâcherie (5–8), Distance (9–12), Amitié (13–16), Romance (17–20), each ending on its last line.
+  Amitié and Romance: Lyra gives points × 500 credits (paid once). Romance: every price of the workshop (upgrades, items,
+  launcher, missiles, paint) is 10 % lower, for good. A save that had already answered the last scene gets its ending after
+  its next story mission. The cheat VNOV tells the ending without gift nor sale. Tests: `tests/test_vn_endings.py`.
 
 ## Done in 1.6.0
 

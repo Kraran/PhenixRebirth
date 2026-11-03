@@ -6578,6 +6578,66 @@ _VN_TEXTS = {
         "“I have to go. I have a concert to give to an entire planet.”\n"
         "*She steps back a few paces, then turns around one last time.\n"
         "“But after Eloncity… I’d like us to see each other again. And this time, I’d like it to be for us.”"),
+    # --- the four endings (told after the reaction of the last scene, according to the total of points) ---
+    "story_vn_end_t_fachery": ("FIN : FÂCHERIE", "ENDING: FALLING OUT"),
+    "story_vn_end_t_distance": ("FIN : DISTANCE", "ENDING: DISTANCE"),
+    "story_vn_end_t_amitie": ("FIN : AMITIÉ", "ENDING: FRIENDSHIP"),
+    "story_vn_end_t_romance": ("FIN : ROMANCE", "ENDING: ROMANCE"),
+    "story_vn_end_fachery": (
+        "*Lyra serre la sangle de son sac. Elle te regarde un instant, avec une vraie reconnaissance, mais sans "
+        "chercher à retenir quoi que ce soit.\n"
+        "*Entre vous, les mots n’ont pas fait naître de véritable lien.\n"
+        "\n"
+        "« Tu m’as sauvée, et je ne l’oublierai jamais. Mais ça ne veut pas dire qu’on se comprend. Bonne chance "
+        "pour la suite. »",
+        "*Lyra tightens the strap of her bag. She looks at you for a moment, truly grateful, but makes no attempt "
+        "to hold on to anything.\n"
+        "*Between the two of you, the words never grew into a real bond.\n"
+        "\n"
+        "“You saved me, and I’ll never forget it. But that doesn’t mean we understand each other. Good luck with "
+        "whatever comes next.”"),
+    "story_vn_end_distance": (
+        "*Lyra garde de vous deux un souvenir chaleureux. Vous échangez vos coordonnées, sans vous faire de "
+        "promesse.\n"
+        "*Elle a son concert à préparer ; toi, tes missions.\n"
+        "\n"
+        "« Envoie-moi des nouvelles, de temps en temps. Et si tu passes par Eloncity, tu sais où me trouver. »",
+        "*Lyra keeps a warm memory of the two of you. You exchange contact details, with no promises made.\n"
+        "*She has a concert to prepare; you have your missions.\n"
+        "\n"
+        "“Send me news, now and then. And if you pass through Eloncity, you know where to find me.”"),
+    "story_vn_end_amitie": (
+        "*Pour une fois, Lyra part en ayant simplement été elle-même. Une amitié sincère, rare dans sa vie de "
+        "célébrité.\n"
+        "\n"
+        "« Je crois que je peux te faire confiance. Et ça, pour moi, c’est plus rare que tu ne l’imagines. Alors "
+        "ne disparais pas complètement, d’accord ? »",
+        "*For once, Lyra leaves having simply been herself. A sincere friendship, rare in her life as a "
+        "celebrity.\n"
+        "\n"
+        "“I think I can trust you. And for me, that’s rarer than you can imagine. So don’t disappear completely, "
+        "all right?”"),
+    "story_vn_end_romance": (
+        "*Lyra reconnaît que ses sentiments dépassent la simple gratitude. Elle part pour Eloncity avec l’espoir "
+        "de retrouver {name} après son concert.\n"
+        "\n"
+        "« Je vais monter sur cette scène, regarder des milliers de personnes et chanter comme je ne l’ai jamais "
+        "fait. Mais je crois que, cette fois, il y aura quelqu’un dans le public que j’aurai vraiment envie de "
+        "retrouver après le spectacle. »",
+        "*Lyra admits that her feelings go beyond simple gratitude. She leaves for Eloncity hoping to find {name} "
+        "again after her concert.\n"
+        "\n"
+        "“I’m going to step onto that stage, look out at thousands of people and sing like I never have before. "
+        "But I think this time, there will be someone in the audience I truly want to find again after the "
+        "show.”"),
+    "story_vn_end_gift": (
+        "Lyra fait un don de {n} crédits à la station Phobos sur sa fortune personnelle.",
+        "Lyra donates {n} credits to Phobos Station from her personal fortune."),
+    "story_vn_end_sale": (
+        "Lyra mobilise les foules pour soutenir la station Phobos : tous les prix de l’atelier, présents et futurs, "
+        "baissent de {pct} %.",
+        "Lyra rallies the crowds to support Phobos Station: every price at the workshop, now and in the future, "
+        "drops by {pct}%."),
 }
 
 for _k, (_fr, _en) in list(_ACT3_TEXTS.items()) + list(_VIP_TEXTS.items()) + list(_BELT_TEXTS.items()) + list(_VN_TEXTS.items()):

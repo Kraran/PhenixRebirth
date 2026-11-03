@@ -340,6 +340,7 @@ class StoryHub:
         self.vn_choice_wait = 0.0
         self.first_help_spec = None
         self.first_help_t = 0.0
+        self.vn_cheat_picks = {}       # VNOV: the answers given in this session (they decide the ending told, nothing is saved)
         self.vn_page = 0               # the page of the text on screen (an empty line of the text cuts a new page)
         self.vn_order = [0, 1, 2, 3]   # the indexes of the answers in the order they are shown (random in some scenes)
         self._clip_name = None
@@ -683,6 +684,8 @@ class StoryHub:
         sc = story_vn.scene(self.vn_id)
         if sc is None:
             return []
+        if self.vn_phase == "end":                       # the ending of the visual novel, on the picture of its last scene
+            return story_vn.ending_pages(self._vn_ending_state(), self.state.get("name"))
         if self.vn_phase == "react":
             key = story_vn.reaction(self.vn_id, self.vn_pick)
             return story_vn.pages(t(key)) if key else []
@@ -714,7 +717,43 @@ class StoryHub:
         self.vn_page = 0
         self.vn_t = self.VN_FADE
         if not self.vn_pages():
+            self._vn_ending_or_end()
+
+    def _vn_ending_or_end(self):
+        """The last scene is over: its ending follows (the gift is paid once, nothing under the cheat VNOV)."""
+        if story_vn.scene(self.vn_id).get("ending") and story_vn.ending_id(self._vn_ending_state()) is not None \
+                and self.vn_phase != "end":
+            self._vn_start_ending()
+        else:
             self._end_vn()
+
+    def _vn_ending_state(self):
+        """The save the ending is worked out from. Under VNOV the answers given in this session count too (nothing is
+        saved): a copy of the save, never the save itself."""
+        if not self.cheat_vn:
+            return self.state
+        vn = story_vn.clean(self.state.get("vn"))
+        vn["picks"].update(self.vn_cheat_picks)
+        return dict(self.state, vn=vn)
+
+    def _vn_start_ending(self):
+        self.vn_phase = "end"
+        self.vn_page = 0
+        self.vn_t = self.VN_FADE
+        if not self.cheat_vn:
+            story_vn.tell_ending(self.state)             # (the gift is paid once)
+            self.save()
+
+    def start_vn_ending(self, back_to="map"):
+        """Tell the ending alone (a save that answered the last scene before the endings existed)."""
+        sid = story_vn.last_scene()
+        if sid is None or story_vn.ending_id(self.state) is None or not self.start_vn(sid, back_to=back_to):
+            return False
+        self.vn_pick = story_vn.pick(self.state, sid)
+        self.vn_review = True
+        self._vn_start_ending()
+        self.vn_t = 0.0                                  # (it fades in from black like a scene)
+        return True
 
     def _vn_confirm(self):
         sc = story_vn.scene(self.vn_id)
@@ -726,6 +765,8 @@ class StoryHub:
             self.vn_page += 1
             self.vn_t = self.VN_FADE
         elif self.vn_phase == "react":
+            self._vn_ending_or_end()
+        elif self.vn_phase == "end":
             self._end_vn()
         elif self.vn_review:
             self._vn_react()
@@ -733,6 +774,7 @@ class StoryHub:
             return  # repeated confirms may reveal text, never immediately commit an answer
         elif self.cheat_vn:                              # VNOV: the answer is not kept, Lyra answers all the same
             self.vn_pick = self.vn_index
+            self.vn_cheat_picks[self.vn_id] = self.vn_index
             self._vn_react()
         elif story_vn.choose(self.state, self.vn_id, self.vn_index, ss.story_wins(self.state)):
             self.save()
@@ -754,6 +796,8 @@ class StoryHub:
             self.save()
         sid = ss.vn_due(self.state)
         if not sid:
+            if ss.vn_ending_due(self.state):
+                self.start_vn_ending(back_to="map")      # (answered before the endings existed: told after the next mission)
             return
         film = story_vn.scene(sid).get("film")
         if not film or ss.film_seen(self.state, film):
@@ -1304,7 +1348,7 @@ class StoryHub:
         elif self.screen == "vn":
             if self.vn_review:
                 self._end_vn()                           # watched again: B / Esc closes it
-            elif not self.vn_ready() or self.vn_phase == "react":
+            elif not self.vn_ready() or self.vn_phase in ("react", "end"):
                 self._vn_confirm()                       # the answer cannot be skipped: B only shows the text (next page)
         elif self.screen == "film":
             self._end_film()                             # B / Esc: the film is skipped (A does nothing: no accident)
@@ -1471,7 +1515,7 @@ class StoryHub:
             self.toast_kind = "danger"
             return
         if not ss.paint_affordable(self.state):
-            self.toast = t("story_paint_poor").format(pts=ss.PAINT_COST)
+            self.toast = t("story_paint_poor").format(pts=ss.paint_cost(self.state))
             self.toast_kind = "danger"
             return
         tints = ss.paint_tints(self.state)
@@ -1687,7 +1731,7 @@ class StoryHub:
         if sid == "paint":
             if not ss.paint_state(self.state)["token"]:
                 return t("story_locked")
-            return t("story_paint_ready").format(pts=ss.PAINT_COST)
+            return t("story_paint_ready").format(pts=ss.paint_cost(self.state))
         key = ss.upgrade_note(self.state, sid)
         if key == "story_locked":
             src = ss.shop_after(self.state, sid)
@@ -1793,7 +1837,8 @@ class StoryHub:
                 break
         r = pygame.Rect(px, top, width, height)
         menu_ui.panel(surface, r, radius=12)
-        _text(surface, medium, t(sc["speaker"]), menu_ui.TEXT_SEL, r.y + 36, left=x)
+        head = t("story_vn_end_t_" + story_vn.ending_id(self._vn_ending_state())) if self.vn_phase == "end" else t(sc["speaker"])
+        _text(surface, medium, head, menu_ui.TEXT_SEL, r.y + 36, left=x)
         pygame.draw.line(surface, menu_ui.PANEL_EDGE, (x, r.y + 66), (r.right - 28, r.y + 66), 1)
         shown = self.vn_typed()                                  # the text, typed
         y = r.y + 100
@@ -1892,8 +1937,10 @@ class StoryHub:
         if self.screen == "vn":
             if not self.vn_ready():
                 return [("ok", "hint_next")], None
-            if self.vn_phase == "react":
+            if self.vn_phase == "end" or (self.vn_phase == "react" and not (story_vn.scene(self.vn_id) or {}).get("ending")):
                 return [("ok", "hint_close")], None
+            if self.vn_phase == "react":
+                return [("ok", "hint_next")], None
             if self.vn_review:                           # watched again: the reaction (when there is one) comes, then it closes
                 return [("ok", "hint_next" if story_vn.reaction(self.vn_id, self.vn_index) else "hint_close")], None
             return ([("ud", "hint_choose")] if self.vn_choice_wait > 0 else
@@ -2660,7 +2707,7 @@ class StoryHub:
         """The paint shop: the three colours of the hull it works on (the Shield, or the hull kept in Act 3)."""
         hull = (ss.paint_target(self.state) or {}).get("id") or "shield"
         title = "story_paint_title" if hull == "shield" else "story_paint_title_phenix"
-        _text(surface, small, t(title).format(pts=ss.PAINT_COST), (255, 160, 70), box.y + 26, left=box.x + 16)
+        _text(surface, small, t(title).format(pts=ss.paint_cost(self.state)), (255, 160, 70), box.y + 26, left=box.x + 16)
         tints = ss.paint_tints(self.state)
         current = ss.worn_tint(self.state)
         cell_w = 300

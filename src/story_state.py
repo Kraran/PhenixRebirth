@@ -817,8 +817,13 @@ def worn_tint(state):
     return sl.get("tint") if sl.get("tint") in tints else tints[0]
 
 
+def paint_cost(state):
+    """Credits a colour change costs (the sale of the Romance ending included)."""
+    return story_vn.sale_price(state, PAINT_COST)
+
+
 def paint_affordable(state):
-    return int(_num(state.get("credits"), 0)) >= PAINT_COST
+    return int(_num(state.get("credits"), 0)) >= paint_cost(state)
 
 
 def paint_change(state, tint):
@@ -830,7 +835,7 @@ def paint_change(state, tint):
         return False
     if worn_tint(state) == tint or not paint_affordable(state):
         return False
-    state["credits"] = int(_num(state.get("credits"), 0)) - PAINT_COST
+    state["credits"] = int(_num(state.get("credits"), 0)) - paint_cost(state)
     hull["tint"] = tint
     state["paint"] = dict(paint_state(state), token=False)
     return True
@@ -1236,9 +1241,9 @@ def missile_buyable(state, sid):
         return False
     credits = int(_num(state.get("credits"), 0))
     if sid == "missile_launcher":
-        return not has_launcher(state) and credits >= LAUNCHER_PRICE
+        return not has_launcher(state) and credits >= story_vn.sale_price(state, LAUNCHER_PRICE)
     if sid == "missile_ammo":
-        return has_launcher(state) and missile_stock(state) < MISSILE_MAX and credits >= MISSILE_PRICE
+        return has_launcher(state) and missile_stock(state) < MISSILE_MAX and credits >= story_vn.sale_price(state, MISSILE_PRICE)
     return False
 
 
@@ -1452,6 +1457,16 @@ def vn_due(state):
     if base is None:
         return None
     return sid if story_wins(state) - base >= int(scene.get("wins") or 1) else None
+
+
+def vn_ending_due(state):
+    """A save that answered the last scene of the visual novel before the endings existed: the ending comes after the
+    next story mission won (counted from its answer, like a scene). False once told, or while a scene is open."""
+    sid = story_vn.last_scene()
+    if sid is None or story_vn.ending_id(state) is None or story_vn.ending_told(state):
+        return False
+    base = story_vn.mark(state, sid)
+    return base is not None and story_wins(state) - base >= 1
 
 
 def film_seen(state, film_id):
@@ -2124,6 +2139,7 @@ def shop_for(state):
     rows = rows + [item_row(i) for i in story_items.shop(state, slot.get("id"))]
     rows = rows + missile_rows(state)
     # what is already at MAX goes last: the rows still to buy stay under the cursor, the finished ones are a footnote
+    rows = [(sid, label, story_vn.sale_price(state, cost), need) for sid, label, cost, need in rows]   # (Romance: -10 %)
     todo = [r for r in rows if upgrade_note(state, r[0]) != "story_owned"]
     return todo + [r for r in rows if upgrade_note(state, r[0]) == "story_owned"]
 
@@ -2200,10 +2216,10 @@ def buy(state, sid):
         if not missile_buyable(state, sid):
             return False
         if sid == "missile_launcher":
-            state["credits"] = int(_num(state.get("credits"), 0)) - LAUNCHER_PRICE
+            state["credits"] = int(_num(state.get("credits"), 0)) - story_vn.sale_price(state, LAUNCHER_PRICE)
             state.setdefault("flags", {})[LAUNCHER_FLAG] = True
         else:
-            state["credits"] = int(_num(state.get("credits"), 0)) - MISSILE_PRICE
+            state["credits"] = int(_num(state.get("credits"), 0)) - story_vn.sale_price(state, MISSILE_PRICE)
             state["missiles"] = missile_stock(state) + 1
         return True
     item = item_of(sid)
@@ -2220,7 +2236,7 @@ def buy(state, sid):
     slot = selected_slot(state)
     if slot is None or not slot.get("owned"):
         return False
-    cost = upgrade_cost(slot, sid)                     # before the purchase: the step it buys decides the price
+    cost = story_vn.sale_price(state, upgrade_cost(slot, sid))     # before the purchase: the step it buys decides the price
     if int(state.get("credits", 0)) < cost:
         return False
     if not up[4](slot):
