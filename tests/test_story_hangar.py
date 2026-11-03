@@ -228,12 +228,12 @@ def test_the_map_says_which_ship_flies(run):
         hub = _hub(_state(selected=selected))
         hub.pane = "map"
         seen = []
-        real = story._text
-        story._text = lambda s, f, text, *a, **k: (seen.append(str(text)), real(s, f, text, *a, **k))[1]
+        real = story.phobos_ui.badge                          # (the hull is written on a steel badge)
+        story.phobos_ui.badge = lambda s, f, text, *a, **k: (seen.append(str(text)), real(s, f, text, *a, **k))[1]
         try:
             _draw(hub, run)
         finally:
-            story._text = real
+            story.phobos_ui.badge = real
         assert t("story_ship_label").format(name=name) in seen
 
 

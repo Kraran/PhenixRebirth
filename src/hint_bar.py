@@ -21,6 +21,7 @@ from i18n import t
 import i18n
 import fonts
 import main_menu
+import phobos_ui
 from settings import BASE_WIDTH, BASE_HEIGHT
 
 BAND_H = 46                       # height of the band at the bottom of the screen
@@ -66,15 +67,21 @@ def device_is_pad(game):
 
 
 # --- the buttons -------------------------------------------------------------------------------------------------
-def _keycap(text, size=15):
+STEEL_CAP_FILL = (22, 18, 11)         # the Adventure's keys: dark, with a copper edge and warm letters
+STEEL_CAP_EDGE = (150, 108, 44)
+STEEL_CAP_TEXT = (236, 214, 150)
+
+
+def _keycap(text, size=15, steel=False):
     f = _font(size)
-    img = f.render(text, True, CAP_TEXT)
+    img = f.render(text, True, STEEL_CAP_TEXT if steel else CAP_TEXT)
     w = max(26, img.get_width() + 14)
     h = 26
     s = pygame.Surface((w, h), pygame.SRCALPHA)
-    pygame.draw.rect(s, CAP_FILL, s.get_rect(), border_radius=5)
-    pygame.draw.rect(s, CAP_EDGE, s.get_rect(), width=2, border_radius=5)
-    pygame.draw.line(s, (60, 60, 88), (4, h - 4), (w - 5, h - 4), 2)       # the edge of a key, seen from the front
+    radius = 3 if steel else 5
+    pygame.draw.rect(s, STEEL_CAP_FILL if steel else CAP_FILL, s.get_rect(), border_radius=radius)
+    pygame.draw.rect(s, STEEL_CAP_EDGE if steel else CAP_EDGE, s.get_rect(), width=2, border_radius=radius)
+    pygame.draw.line(s, (86, 62, 26) if steel else (60, 60, 88), (4, h - 4), (w - 5, h - 4), 2)   # the edge of a key
     s.blit(img, ((w - img.get_width()) // 2, (h - 3 - img.get_height()) // 2))
     return s
 
@@ -118,14 +125,14 @@ def _shoulders():
     return s
 
 
-def glyph(kind, pad):
+def glyph(kind, pad, steel=False):
     """The picture of one button, for the keyboard or the pad (None for a plain label)."""
     if kind is None:
         return None
     if kind == "sh":
-        return _shoulders() if pad else _keycap("TAB")
+        return _shoulders() if pad else _keycap("TAB", steel=steel)
     if kind == "del":                                   # clear (the screen "Keys and buttons")
-        return _round_button("Y", (200, 165, 60)) if pad else _keycap(t("hint_key_del"))
+        return _round_button("Y", (200, 165, 60)) if pad else _keycap(t("hint_key_del"), steel=steel)
     if pad:
         if kind == "ok":
             return _round_button("A", PAD_A)
@@ -133,23 +140,23 @@ def glyph(kind, pad):
             return _round_button("B", PAD_B)
         return _dpad({"ud": "ud", "lr": "lr", "l": "l", "r": "r", "all": "udlr"}.get(kind, "udlr"))
     if kind == "ok":
-        return _keycap(t("hint_key_enter"))
+        return _keycap(t("hint_key_enter"), steel=steel)
     if kind == "back":
-        return _keycap(t("hint_key_esc"))
-    return _keycap({"ud": "↑↓", "lr": "←→", "l": "←", "r": "→", "all": "←↑↓→"}.get(kind, "?"), size=18)
+        return _keycap(t("hint_key_esc"), steel=steel)
+    return _keycap({"ud": "↑↓", "lr": "←→", "l": "←", "r": "→", "all": "←↑↓→"}.get(kind, "?"), size=18, steel=steel)
 
 
 # --- the bar -----------------------------------------------------------------------------------------------------
-def render(items, pad, lit=None):
+def render(items, pad, lit=None, steel=False):
     """The bar's content (without the band), cached by its pairs, the device and the language.
     `lit`: index of a pair whose label is drawn gold (the Adventure's "the text is over, press A")."""
-    key = (tuple(items), bool(pad), getattr(i18n, "_lang", ""), lit)
+    key = (tuple(items), bool(pad), getattr(i18n, "_lang", ""), lit, bool(steel))
     img = _cache.get(key)
     if img is not None:
         return img
     parts = []
     for i, (kind, label) in enumerate(items):
-        g = glyph(kind, pad)
+        g = glyph(kind, pad, steel)
         txt = _font(20).render(t(label), True, LIT_COLOR if i == lit else LABEL_COLOR)
         parts.append((g, txt))
     widths = [(g.get_width() + GAP_GLYPH if g is not None else 0) + txt.get_width() for g, txt in parts]
@@ -178,14 +185,21 @@ def band():
     return _band
 
 
+def is_steel(game):
+    """True on the screens of the Adventure: the band and the keys wear the steel of the station (phobos_ui)."""
+    return (not getattr(game, "started", False) and getattr(game, "menu_screen", "") == "story_hub"
+            and getattr(game, "story", None) is not None)
+
+
 def draw(game, surface, items, right=None, lit=None):
     """The band and its pairs at the bottom of `surface`. `right`: a small picture shown at the right end."""
     hold = getattr(game, "_bar_hold", None)
     if hold is not None:
         hold.append((items, right, lit))         # a screen is sliding in: the bar is drawn in place afterwards
         return
-    surface.blit(band(), (0, BAND_Y))
-    img = render(items, device_is_pad(game), lit)
+    steel = is_steel(game)
+    surface.blit(phobos_ui.band() if steel else band(), (0, BAND_Y))
+    img = render(items, device_is_pad(game), lit, steel)
     surface.blit(img, ((BASE_WIDTH - img.get_width()) // 2, BAND_Y + (BAND_H - img.get_height()) // 2))
     right_w = 0
     if right is not None:

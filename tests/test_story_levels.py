@@ -112,14 +112,14 @@ def test_the_level_line_is_a_comment_and_not_selectable(run):
     entries = hub.log_entries()
     assert {"level": 2, "mission": "ch1_sortie"} in entries
     drawn = []
-    real = story.menu_ui.highlight
+    real = story.phobos_ui.lit
 
     def spy(surface, rect, *a, **k):
         if pygame.Rect(rect).y < story.StoryHub.TAB_Y - 20:      # the lit frame of the cursor (not the open tab)
             drawn.append(pygame.Rect(rect).y)
         return real(surface, rect, *a, **k)
 
-    story.menu_ui.highlight = spy
+    story.phobos_ui.lit = spy
     try:
         g = run.game
         for steps in (0, 1, 2, 3):
@@ -129,7 +129,7 @@ def test_the_level_line_is_a_comment_and_not_selectable(run):
             hub.draw(pygame.Surface((1280, 720)), g.font, g.medium_font, g.font)
             assert len(drawn) == 1                                # the cursor stays on the intro line
     finally:
-        story.menu_ui.highlight = real
+        story.phobos_ui.lit = real
 
 
 # ------------------------------------------------------------------ the map and the game

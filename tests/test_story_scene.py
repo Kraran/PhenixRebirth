@@ -300,14 +300,14 @@ def test_the_journal_draws_the_scene_line_with_one_cursor(run):
     hub = _hub(seen_scene=True)
     hub.pane = "log"
     gold = []
-    real = story.menu_ui.highlight
+    real = story.phobos_ui.lit
 
     def spy(surface, rect, *a, **k):
         if pygame.Rect(rect).y < story.StoryHub.TAB_Y - 20:      # the lit frame of the cursor (not the open tab)
             gold.append(pygame.Rect(rect).y)
         return real(surface, rect, *a, **k)
 
-    story.menu_ui.highlight = spy
+    story.phobos_ui.lit = spy
     try:
         shown0, _ = _drawn(hub, run)
         y0 = list(gold)
@@ -316,6 +316,6 @@ def test_the_journal_draws_the_scene_line_with_one_cursor(run):
         shown1, _ = _drawn(hub, run)
         y1 = list(gold)
     finally:
-        story.menu_ui.highlight = real
+        story.phobos_ui.lit = real
     assert len(y0) == 1 and len(y1) == 1 and y1[0] > y0[0]             # the frame moved down one line
     assert any("Revoir : Dôme I" in s for s in shown0)
