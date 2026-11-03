@@ -822,7 +822,8 @@ def test_the_stars_of_an_asteroid_are_in_the_picture_and_the_haze_only_on_titan(
     pygame.display.set_mode((1280, 720))
     rock = _image(lv.View("rock"), _bare_form("rock", z=0.25, alt=-200.0, sink=6000.0))
     ice = _image(lv.View("ice"), _bare_form("ice", z=0.25, alt=-200.0, sink=6000.0))
-    assert 100 < (rock.sum(axis=2) > 200).sum() < 5000                       # a few stars on the black sky, no haze
+    assert 100 < (rock.sum(axis=2) > 200).sum() < 60000                      # stars and a few grey rocks on the black sky, no haze
+    assert rock[:, :, 0].mean() < 40 and abs(float(rock[:, :, 0].mean()) - float(rock[:, :, 2].mean())) < 6
     assert (ice.sum(axis=2) > 200).sum() > 100000 and ice[:, :, 0].mean() > 60  # the orange sky and its hills
 
 

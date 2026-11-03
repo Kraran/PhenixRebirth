@@ -6917,10 +6917,41 @@ _LANDER_TEXTS = {
     "story_m_lander": ("TEST - Lunar Lander", "TEST - Lunar Lander"),
     "story_m_lander_hud": ("Lunar Lander", "Lunar Lander"),
     "story_m_lander_b": (
-        "Remake du Lunar Lander d'Atari (1979) : pose le vaisseau en douceur sur une zone plane de Titan ou d'un astéroïde, "
-        "avec un carburant limité. La vue zoome quand tu descends. Sans gain ni perte.",
-        "Remake of Atari's Lunar Lander (1979): set the ship down gently on a flat zone of Titan or of an asteroid, with a "
-        "limited fuel. The view zooms in as you come down. No gain or loss."),
+        "Remake du Lunar Lander d'Atari (1979) : pose le vaisseau en douceur sur une zone plane d'un astéroïde, de Titan, d'Europe, de Déimos ou de Triton, "
+        "avec un carburant limité. La vue zoome quand tu descends. Sans gain ni perte. Tu choisis le décor au départ : astéroïde, "
+        "Titan, Europe, Déimos ou Triton.",
+        "Remake of Atari's Lunar Lander (1979): set the ship down gently on a flat zone of an asteroid, Titan, Europa, Deimos "
+        "or Triton, with a limited fuel. The view zooms in as you come down. No gain or loss. You choose the setting at the "
+        "start."),
+    "lander_pick_title": ("TEST - Lunar Lander : choix du décor", "TEST - Lunar Lander: choose the setting"),
+    "lander_body_rock": ("Astéroïde", "Asteroid"),
+    "lander_body_ice": ("Titan", "Titan"),
+    "lander_body_europa": ("Europe", "Europa"),
+    "lander_body_deimos": ("Déimos", "Deimos"),
+    "lander_body_triton": ("Triton", "Triton"),
+    "lander_planet_rock": ("Dans le ciel : d'autres astéroïdes", "In the sky: other asteroids"),
+    "lander_planet_ice": ("Dans le ciel : Saturne", "In the sky: Saturn"),
+    "lander_planet_europa": ("Dans le ciel : Jupiter", "In the sky: Jupiter"),
+    "lander_planet_deimos": ("Dans le ciel : Mars", "In the sky: Mars"),
+    "lander_planet_triton": ("Dans le ciel : Neptune", "In the sky: Neptune"),
+    "lander_info_rock": (
+        "Un rocher gris et crevé de cratères, au milieu de ses semblables. Faible gravité : le vaisseau tombe doucement.",
+        "A grey, cratered rock among its kind. Weak gravity: the ship falls gently."),
+    "lander_info_ice": (
+        "Lune de Saturne, sous une brume orange. Glace et roche brunâtre, gravité forte : 1,35 m/s².",
+        "A moon of Saturn, under an orange haze. Ice and brownish rock, strong gravity: 1.35 m/s²."),
+    "lander_info_europa": (
+        "Lune de Jupiter. Une glace éclatante, striée de longues fractures brun-rouge. Gravité forte : 1,31 m/s².",
+        "A moon of Jupiter. A dazzling ice, streaked with long red-brown fractures. Strong gravity: 1.31 m/s²."),
+    "lander_info_deimos": (
+        "Petite lune de Mars : un rocher sombre sous la poussière, aux cratères usés. Sa gravité est presque nulle : "
+        "pilote doucement.",
+        "A small moon of Mars: a dark rock under the dust, with worn craters. Its gravity is almost nothing: fly gently."),
+    "lander_info_triton": (
+        "Lune de Neptune. Une glace d'azote rosée au relief en peau de melon, striée de traînées sombres. Gravité moyenne : "
+        "0,78 m/s².",
+        "A moon of Neptune. A pinkish nitrogen ice with a cantaloupe-skin relief, streaked with dark trails. Medium "
+        "gravity: 0.78 m/s²."),
     "lander_alt": ("ALTITUDE", "ALTITUDE"),
     "lander_hs": ("VIT. HORIZ.", "H. SPEED"),
     "lander_vs": ("VIT. VERT.", "V. SPEED"),

@@ -22,6 +22,8 @@ import story_items
 import bindings
 from cheat_keys import cheat_char
 import story_state as ss
+import lander
+import lander_view
 import story_vn
 import loot
 from text_cache import TextCache
@@ -340,6 +342,7 @@ class StoryHub:
         self.vn_choice_wait = 0.0
         self.first_help_spec = None
         self.first_help_t = 0.0
+        self.lander_index = 0          # the Lunar Lander test: the setting under the cursor (screen "lander_pick", lander.MENU_ORDER)
         self.vn_cheat_picks = {}       # VNOV: the answers given in this session (they decide the ending told, nothing is saved)
         self.vn_page = 0               # the page of the text on screen (an empty line of the text cuts a new page)
         self.vn_order = [0, 1, 2, 3]   # the indexes of the answers in the order they are shown (random in some scenes)
@@ -1226,6 +1229,8 @@ class StoryHub:
             self.col = max(0, min(1, self.col + direction)) if self._summary().get("status") != "missing" else 0
         elif self.screen in ("delete", "leave"):
             self.del_yes = direction > 0
+        elif self.screen == "lander_pick":
+            self._lander_move(direction)
         elif self.screen == "choice":
             if self.choice_ask:
                 self.del_yes = direction > 0
@@ -1253,6 +1258,8 @@ class StoryHub:
                 pos = self.vn_order.index(self.vn_index) if self.vn_index in self.vn_order else 0
                 pos = max(0, min(len(self.vn_order) - 1, pos + (1 if direction > 0 else -1)))
                 self.vn_index = self.vn_order[pos]
+        elif self.screen == "lander_pick":
+            self._lander_move(direction)
         elif self.screen == "name":
             self.entry.move(0, 1 if direction > 0 else -1)
         elif self.screen == "mode":
@@ -1292,6 +1299,8 @@ class StoryHub:
             return self._intro_next()
         elif self.screen == "choice":
             self._choice_confirm()
+        elif self.screen == "lander_pick":
+            return self._lander_confirm()
         elif self.screen == "vn":
             self._vn_confirm()
         elif self.screen == "film":
@@ -1329,6 +1338,8 @@ class StoryHub:
             self.first_help_spec = None
             self.screen = "hub"
             self.pane = "map"
+        elif self.screen == "lander_pick":
+            self.screen = "hub"                          # nothing is launched
         elif self.screen == "slots":
             self.screen = "leave"
             self.del_yes = False                         # NO is lit: a second B / Esc does not leave by accident
@@ -1472,6 +1483,10 @@ class StoryHub:
                     and not ss.scene_seen(self.state, mission["id"])):
                 self.start_scene(mission["id"], back_to="map", launch=True)       # the story comes first
                 return None
+            if mission and mission.get("lander") and self.mission_playable(mission):
+                self.lander_index = 0                 # the Lunar Lander test: the setting is chosen first (to be taken out of
+                self.screen = "lander_pick"           # the final missions)
+                return None
             return self._launch_selected()
         if self.pane == "extras":
             doors = self.doors()
@@ -1534,6 +1549,16 @@ class StoryHub:
             self.sound_events.append("paint_fanfare")            # trumpets for the new colour
         self.paint_mode = False
 
+    # --- the Lunar Lander test: the choice of the setting (the asteroid, Titan, Europa, Deimos, Triton) ---
+    def _lander_move(self, direction):
+        n = len(lander.MENU_ORDER)
+        self.lander_index = (self.lander_index + (1 if direction > 0 else -1)) % n
+
+    def _lander_confirm(self):
+        """The setting is chosen: the launch spec of the test, with it ("body")."""
+        self.screen = "hub"
+        return self._launch_selected(body=lander.MENU_ORDER[self.lander_index % len(lander.MENU_ORDER)])
+
     def show_first_help(self, spec):
         """A quiet briefing before the first flight; no combat or timers run."""
         self.first_help_spec = dict(spec)
@@ -1551,7 +1576,7 @@ class StoryHub:
                 y += small.get_linesize() + 14
             y += 20
 
-    def _launch_selected(self):
+    def _launch_selected(self, body=None):
         mission = self._mission()
         if not self.mission_playable(mission):
             return None
@@ -1578,6 +1603,8 @@ class StoryHub:
                 spec["sw_levels"] = [list(lv) for lv in mission["sw_levels"]]   # the Sentinelle missions: their own levels
         if mission.get("lander"):
             spec.update(lander=True, items=[], training=True)        # (src/lander.py: a test, nothing won, nothing lost)
+            if body in lander.BODIES:
+                spec["body"] = body                   # the setting chosen in the menu of the test (else drawn at random)
         if ss.missile_ready(self.state) and not mission.get("training"):
             spec["antimatter"] = True                 # the launcher is bought and a missile is held: one in this mission
         if ship:
@@ -1956,6 +1983,8 @@ class StoryHub:
             return [("lr", "hint_choose"), ("ok", "hint_ok"), ("back", "hint_cancel")], None
         if self.screen == "choice":
             return [("lr", "hint_hull"), ("ok", "hint_ok")], None
+        if self.screen == "lander_pick":
+            return [choose, ("ok", "hint_takeoff"), back], None
         if self.screen == "name":
             items = [("all", "hint_letters"), ("ok", "hint_ok"), ("back", "hint_cancel")]
             return (items if pad else [(None, "hint_type_name")] + items), None
@@ -2184,7 +2213,8 @@ class StoryHub:
     def _draw_gate(self, surface, font, medium, small):
         cx = BASE_WIDTH // 2
         titles = {"slots": "story_gate_title", "delete": "story_delete_title", "leave": "story_leave_title",
-                  "name": "story_name_title", "mode": "story_mode_title", "choice": "story_choice_title"}
+                  "name": "story_name_title", "mode": "story_mode_title", "choice": "story_choice_title",
+                  "lander_pick": "lander_pick_title"}
         ts = medium.render(t(titles[self.screen]), True, menu_ui.TITLE)
         surface.blit(ts, (cx - ts.get_width() // 2, 18))
         getattr(self, "_draw_gate_" + self.screen)(surface, font, medium, small)
@@ -2243,6 +2273,28 @@ class StoryHub:
         _text(surface, medium, t("story_leave_ask"), (255, 230, 140), 200, centerx=cx)
         _text(surface, small, t("story_leave_warn"), (170, 175, 195), 270, centerx=cx)
         self._draw_yes_no(surface, small, cx, danger=False)
+
+    def _draw_gate_lander_pick(self, surface, font, medium, small):
+        """The Lunar Lander test: the five settings in a list, and a picture of the one under the cursor (its sky, its ground, its
+        mother planet) with a few words on it."""
+        body = getattr(self, "_body", None) or small
+        x, y, w, h, gap = 60, 96, 400, 78, 12
+        for i, key in enumerate(lander.MENU_ORDER):
+            r = pygame.Rect(x, y + i * (h + gap), w, h)
+            focus = i == self.lander_index
+            _fill(surface, menu_ui.SEL_FILL if focus else menu_ui.PANEL_FILL, r, 12)
+            pygame.draw.rect(surface, menu_ui.SEL_EDGE if focus else menu_ui.PANEL_EDGE, r, 3 if focus else 2, border_radius=12)
+            _text(surface, medium, t("lander_body_" + key), (255, 230, 140) if focus else (220, 220, 235), r.y + 28, left=r.x + 24)
+            _text(surface, small, t("lander_planet_" + key), (170, 175, 195), r.y + 58, left=r.x + 24)
+        key = lander.MENU_ORDER[self.lander_index % len(lander.MENU_ORDER)]
+        pic = lander_view.preview(key)
+        px = 500
+        surface.blit(pic, (px, y))
+        pygame.draw.rect(surface, menu_ui.SEL_EDGE, pygame.Rect(px, y, pic.get_width(), pic.get_height()), 2)
+        ty = y + pic.get_height() + 34
+        for line in _wrap_nb(body, t("lander_info_" + key), BASE_WIDTH - px - 50):
+            _text(surface, body, line, menu_ui.TEXT, ty, left=px)
+            ty += 32
 
     def _draw_gate_choice(self, surface, font, medium, small):
         """Act 3: which hull keeps the quantum anchor (Veteran: which one the pilot flies). The two hulls side by
