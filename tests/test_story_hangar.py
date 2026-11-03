@@ -3,7 +3,8 @@ from types import SimpleNamespace
 
 import pygame
 
-import menu_ui
+import menu_ui  # noqa: F401
+import phobos_ui
 import pytest
 
 import story
@@ -94,8 +95,8 @@ def test_the_chosen_frame_is_gold_and_the_other_one_is_plain(run):
     hub.pane = "hangar"
     _markers(hub)
     surf = _draw(hub, run)
-    assert _px(surf, 180, 54 + 80) == menu_ui.PANEL_EDGE      # the left frame, not chosen (the panels' edge)
-    assert _px(surf, 1099, 54 + 80) == menu_ui.SEL_EDGE       # the right frame, chosen (the lit frame)
+    assert _px(surf, 180, 64 + 80) == phobos_ui.HOLO_EDGE      # the left frame, not chosen (the panels' edge)
+    assert _px(surf, 1099, 64 + 80) == phobos_ui.LIT_EDGE       # the right frame, chosen (the lit frame)
 
 
 def test_the_chosen_hull_keeps_the_gold_frame_whatever_the_cursor(run):
@@ -105,8 +106,8 @@ def test_the_chosen_hull_keeps_the_gold_frame_whatever_the_cursor(run):
     gold = []
     for zone in ("slots", "shop"):
         hub.zone = zone
-        gold.append(_px(_draw(hub, run), 180, 54 + 80))
-    assert gold == [menu_ui.SEL_EDGE] * 2
+        gold.append(_px(_draw(hub, run), 180, 64 + 80))
+    assert gold == [phobos_ui.LIT_EDGE] * 2
 
 
 def test_a_hull_not_owned_yet_shows_nothing_about_itself(run):
@@ -116,7 +117,7 @@ def test_a_hull_not_owned_yet_shows_nothing_about_itself(run):
     _markers(hub)
     surf = _draw(hub, run)
     assert _px(surf, *RIGHT) != (13, 14, 15) and _px(surf, *RIGHT) != (113, 114, 115)
-    assert _px(surf, 1099, 54 + 80) == menu_ui.PANEL_EDGE     # a plain frame
+    assert _px(surf, 1099, 64 + 80) == phobos_ui.HOLO_EDGE     # a plain frame
     # the picture of the Phenix is not even on screen
     seen = []
     real = story._text
@@ -136,10 +137,10 @@ def test_only_the_chosen_hull_moves_and_nothing_animates(run):
     a = _draw(hub, run)
     hub.anim_t = 0.5                                                   # a quarter of the bob period
     b = _draw(hub, run)
-    other = pygame.Rect(660, 54, 440, 176)
+    other = pygame.Rect(660, 64, 440, 170)
     assert pygame.image.tobytes(a.subsurface(other), "RGB") == pygame.image.tobytes(b.subsurface(other), "RGB")
-    assert pygame.image.tobytes(a.subsurface((180, 54, 440, 120)), "RGB") != \
-        pygame.image.tobytes(b.subsurface((180, 54, 440, 120)), "RGB")        # a gentle bob only
+    assert pygame.image.tobytes(a.subsurface((180, 64, 440, 120)), "RGB") != \
+        pygame.image.tobytes(b.subsurface((180, 64, 440, 120)), "RGB")        # a gentle bob only
 
 
 def test_the_real_portraits_use_the_ship_select_size_and_dimming(run):

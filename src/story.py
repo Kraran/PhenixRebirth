@@ -2692,28 +2692,23 @@ class StoryHub:
         other one dimmed), without the Phenix / dome animations. The chosen hull flies the missions."""
         slots = self.state.get("slots") or []
         sel = int(self.state.get("selected_slot", 0))
-        slot_w, slot_h = 440, 176
+        slot_w, slot_h = 440, 170
         gap = 40
         x0 = (BASE_WIDTH - (slot_w * 2 + gap)) // 2
-        y0 = 54
+        y0 = 64                                                 # below the badges of the pilot and of the points
         for i, sl in enumerate(slots[:2]):
             r = pygame.Rect(x0 + i * (slot_w + gap), y0, slot_w, slot_h)
             owned = bool(sl.get("owned"))
             chosen = i == sel
-            if owned and chosen:
-                border = menu_ui.SEL_EDGE                       # the lit frame of the menus
-            else:
-                border = menu_ui.PANEL_EDGE
-            _fill(surface, menu_ui.PANEL_FILL, r, 10)
-            pygame.draw.rect(surface, border, r, 2, border_radius=10)
+            phobos_ui.holo(surface, r, owned and chosen)        # the chosen hull is lit in gold
             key = self._hull_key(sl)
             img = (self._portraits if chosen else self._greyed).get(key)
             if owned and img is not None:
                 bob = int(math.sin(self.anim_t * 3.2) * 4) if chosen else 0
-                surface.blit(img, (r.centerx - img.get_width() // 2, r.y + 12 + bob))
+                surface.blit(img, (r.centerx - img.get_width() // 2, r.y + 10 + bob))
                 label = t("ship_shield") if sl.get("id") == "shield" else t("ship_phoenix")
-                col = (255, 230, 120) if chosen else (150, 150, 175)
-                _text(surface, small, label, col, r.bottom - 22, centerx=r.centerx)
+                col = (255, 230, 120) if chosen else phobos_ui.HOLO_TEXT
+                _text(surface, small, label, col, r.bottom - 20, centerx=r.centerx)
             elif sl.get("destroyed"):
                 # Act 3: the hull lost in the attack on Phobos, dimmed and crossed out
                 dim = self._greyed.get(key)
@@ -2724,17 +2719,17 @@ class StoryHub:
                 pygame.draw.line(surface, menu_ui.DANGER, (r.x + 40, r.y + 24), (r.right - 40, r.bottom - 44), 3)
                 pygame.draw.line(surface, menu_ui.DANGER, (r.right - 40, r.y + 24), (r.x + 40, r.bottom - 44), 3)
                 label = t("ship_shield") if sl.get("id") == "shield" else t("ship_phoenix")
-                _text(surface, small, label + " — " + t("story_hull_lost"), menu_ui.DANGER, r.bottom - 22,
+                _text(surface, small, label + " — " + t("story_hull_lost"), menu_ui.DANGER, r.bottom - 20,
                       centerx=r.centerx)
             else:
                 # a hull that is not owned yet shows nothing about itself (no spoiler)
-                _text(surface, medium, t("story_hull_empty"), (110, 115, 135), r.centery, centerx=r.centerx)
+                _text(surface, medium, t("story_hull_empty"), (95, 130, 170), r.centery, centerx=r.centerx)
 
         sl = slots[sel] if 0 <= sel < len(slots) else (slots[0] if slots else {})
         self._draw_stats(surface, sl, small, y0 + slot_h + 6)
         self._draw_shop(surface, small)
-        pts = medium.render(f"{int(self.state.get('credits', 0))} PTS", True, (255, 210, 80))
-        surface.blit(pts, (BASE_WIDTH - 80 - pts.get_width(), 18))
+        phobos_ui.badge(surface, small, f"{int(self.state.get('credits', 0))} PTS", phobos_ui.GOLD, 40,
+                        right=BASE_WIDTH - 56, max_w=330)
 
     def _draw_stats(self, surface, sl, small, y):
         owned = bool(sl.get("owned"))
@@ -2757,13 +2752,19 @@ class StoryHub:
         x = (BASE_WIDTH - (w * len(cells) + gap * (len(cells) - 1))) // 2
         for i, (lab, val) in enumerate(cells):
             r = pygame.Rect(x + i * (w + gap), y, w, 64)
-            _fill(surface, menu_ui.PANEL_FILL, r, 8)
-            pygame.draw.rect(surface, menu_ui.PANEL_EDGE, r, 1, border_radius=8)
+            phobos_ui.plate(surface, r, rivets=False)
             col = (110, 115, 135) if (i == 2 and not dome and not phenix) else (220, 220, 235)
             if not owned:
                 val = "—"
-            _text(surface, small, lab, (150, 155, 175), r.y + 18, centerx=r.centerx)
-            _text(surface, small, str(val), col, r.y + 46, centerx=r.centerx)
+            _text(surface, small, lab, phobos_ui.HOLO_TEXT, r.y + 15, centerx=r.centerx)
+            _text(surface, small, str(val), col, r.y + 38, centerx=r.centerx)
+            if owned and i in (0, 1):                                  # lives and speed: a level of small cells
+                if i == 0:
+                    total, filled = ss.act_caps(self.state)["lives"], int(sl.get("lives", 1))
+                else:
+                    total, filled = 5, int(sl.get("speed", ss.SPEED_START)) // 20
+                cells_w = total * 16 + (total - 1) * 3
+                phobos_ui.meter(surface, r.centerx - cells_w // 2, r.bottom - 9, filled, total)
 
     def _draw_paint(self, surface, small, box):
         """The paint shop: the three colours of the hull it works on (the Shield, or the hull kept in Act 3)."""
@@ -2777,9 +2778,10 @@ class StoryHub:
         for i, tint in enumerate(tints):
             r = pygame.Rect(x0 + i * (cell_w + 20), box.y + 52, cell_w, 190)
             focus = i == self.paint_choice
-            _fill(surface, menu_ui.SEL_FILL if focus else (22, 24, 36), r, 8)
-            pygame.draw.rect(surface, menu_ui.SEL_EDGE if focus else menu_ui.PANEL_EDGE, r, 3 if focus else 1,
-                             border_radius=8)
+            if focus:
+                phobos_ui.lit(surface, r)
+            else:
+                phobos_ui.plate(surface, r, rivets=False, alpha=205)
             img = self._ships.get(hull + "_" + tint)
             if img is not None:
                 surface.blit(img, (r.centerx - img.get_width() // 2, r.y + 24))

@@ -7,6 +7,8 @@ Everything here is drawn once and kept by its size, so a menu costs a few blits 
 - `lit`: the lit frame behind the chosen row (a warm fill and a gold edge, as before but squarer);
 - `title`: the title of a screen in a copper cartouche, with a glow like a lamp;
 - `badge`: a small steel plate with a line of text (the pilot, the hull);
+- `holo`: a holographic card (blue glass with a grid and cut corners), lit in gold when it is the chosen one;
+- `meter`: a row of small cells, some of them lit (a level);
 - `tab`: a tab of the strip at the bottom;
 - `band`: the steel band of the help bar;
 - `backdrop`: the picture behind a pane (assets/story/ui_<name>.jpg, already darkened), or None.
@@ -191,6 +193,59 @@ def tab(surface, rect, lit_on):
         _keep(key, img)
     surface.blit(img, r.topleft)
     return r
+
+
+HOLO_EDGE = (61, 139, 214)
+HOLO_TEXT = (125, 175, 225)
+CRT = (79, 209, 197)
+
+
+def _chamfer(w, h, c):
+    return [(c, 0), (w - c - 1, 0), (w - 1, c), (w - 1, h - c - 1), (w - c - 1, h - 1), (c, h - 1), (0, h - c - 1), (0, c)]
+
+
+def holo(surface, rect, chosen=False):
+    """A holographic card: dark blue glass, a faint grid, cut corners. `chosen`: lit in gold (the hull that flies)."""
+    r = pygame.Rect(rect)
+    key = ("holo", r.w, r.h, bool(chosen))
+    img = _layers.get(key)
+    if img is None:
+        img = pygame.Surface((r.w, r.h), pygame.SRCALPHA)
+        pts = _chamfer(r.w, r.h, 12)
+        pygame.draw.polygon(img, (10, 22, 42, 215), pts)
+        pygame.draw.polygon(img, (40, 110, 190, 40), pts)
+        grid = (AMBER if chosen else HOLO_EDGE) + (26,)
+        for x in range(20, r.w - 14, 20):
+            pygame.draw.line(img, grid, (x, 8), (x, r.h - 9))
+        for y in range(20, r.h - 14, 20):
+            pygame.draw.line(img, grid, (8, y), (r.w - 9, y))
+        if chosen:
+            pygame.draw.polygon(img, (255, 179, 71, 60), pts, 5)             # a soft glow inside the edge
+        pygame.draw.polygon(img, (LIT_EDGE if chosen else HOLO_EDGE) + (255,), pts, 2)
+        _keep(key, img)
+    surface.blit(img, r.topleft)
+    return r
+
+
+def meter(surface, x, y, filled, total, cell_w=16, cell_h=5, gap=3, colour=CRT):
+    """`total` small cells side by side from (x, y), the first `filled` lit. Returns the rect of the row."""
+    total = max(0, int(total))
+    filled = max(0, min(total, int(filled)))
+    key = ("meter", filled, total, cell_w, cell_h, gap, tuple(colour))
+    img = _layers.get(key)
+    if img is None:
+        w = total * cell_w + max(0, total - 1) * gap
+        img = pygame.Surface((max(1, w), cell_h), pygame.SRCALPHA)
+        for i in range(total):
+            cell = pygame.Rect(i * (cell_w + gap), 0, cell_w, cell_h)
+            if i < filled:
+                pygame.draw.rect(img, tuple(colour) + (255,), cell)
+                pygame.draw.rect(img, tuple(colour) + (70,), cell.inflate(2, 2), 1)
+            else:
+                pygame.draw.rect(img, (42, 47, 57, 255), cell)
+        _keep(key, img)
+    surface.blit(img, (x, y))
+    return pygame.Rect(x, y, img.get_width(), cell_h)
 
 
 _band = None
