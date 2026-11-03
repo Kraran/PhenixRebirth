@@ -105,7 +105,7 @@ def test_the_paragraphs_and_the_chosen_one_are_drawn(hub):
     from i18n import t
     texts = []
     lit = []
-    real, real_lit = story._text, story.menu_ui.highlight
+    real, real_lit = story._text, story.phobos_ui.lit
 
     def spy(surface, font, text, *a, **k):
         texts.append(text)
@@ -114,13 +114,13 @@ def test_the_paragraphs_and_the_chosen_one_are_drawn(hub):
     def spy_lit(surface, rect, *a, **k):
         lit.append(pygame.Rect(rect))
         return real_lit(surface, rect, *a, **k)
-    story._text, story.menu_ui.highlight = spy, spy_lit
+    story._text, story.phobos_ui.lit = spy, spy_lit
     try:
         hub.story.pane = "extras"
         hub.story.extras_index = 1
         hub.draw()
     finally:
-        story._text, story.menu_ui.highlight = real, real_lit
+        story._text, story.phobos_ui.lit = real, real_lit
     for door in DOORS:
         assert any(t(door) in x for x in texts), door
         assert any(t("story_door_" + door).split()[0] in x for x in texts), door

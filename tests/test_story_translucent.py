@@ -2,6 +2,7 @@
 import pygame
 import pytest
 
+import phobos_ui
 import story
 import story_state as ss
 from story import StoryHub, _fill
@@ -133,7 +134,9 @@ def test_no_menu_panel_is_painted_opaque(run):
 
 @pytest.mark.parametrize("name, point", [("log", (640, 400)), ("workshop", (640, 610)), ("bestiary", (300, 500)),
                                          ("slots", (640, 150))])
-def test_the_backdrop_shows_through_the_panels(run, name, point):
+def test_the_backdrop_shows_through_the_panels(run, name, point, monkeypatch):
+    """(the panes have a picture of their own now: it is left out here to see the panel itself)"""
+    monkeypatch.setattr(phobos_ui, "BACKDROPS", {})
     g = run.game
     hub = _hub()
     dict(_screens(hub))[name]()
@@ -141,12 +144,15 @@ def test_the_backdrop_shows_through_the_panels(run, name, point):
     surf.fill(BACK)
     hub.draw(surf, g.font, g.medium_font, g.font)
     px = surf.get_at(point)[:3]
-    assert px[0] > 45 and px != BACK                              # a bit of the backdrop, tinted by the panel
+    black = pygame.Surface((1280, 720))
+    hub.draw(black, g.font, g.medium_font, g.font)
+    assert px[0] - black.get_at(point)[0] >= 15 and px != BACK     # a bit of the backdrop, tinted by the panel
     assert px[0] < BACK[0]
 
 
-def test_the_text_is_still_readable_over_a_bright_backdrop(run):
+def test_the_text_is_still_readable_over_a_bright_backdrop(run, monkeypatch):
     """The panel stays dark enough: the light text keeps its contrast even over a pale backdrop."""
+    monkeypatch.setattr(phobos_ui, "BACKDROPS", {})
     g = run.game
     hub = _hub()
     hub.open_slot(1)

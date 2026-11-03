@@ -168,16 +168,20 @@ def test_the_five_paragraphs_fit_between_the_title_and_the_tabs(run):
     hub = _hub(addon=True)
     hub.pane = "extras"
     boxes = []
-    real = story_mod.menu_ui.panel                  # the paragraphs are menu panels (the chosen one lit)
+    real_plate, real_lit = story_mod.phobos_ui.plate, story_mod.phobos_ui.lit   # steel plates (the chosen one lit)
 
-    def spy(surface, rect, *a, **k):
+    def spy_plate(surface, rect, *a, **k):
         boxes.append(pygame.Rect(rect))
-        return real(surface, rect, *a, **k)
-    story_mod.menu_ui.panel = spy
+        return real_plate(surface, rect, *a, **k)
+
+    def spy_lit(surface, rect, *a, **k):
+        boxes.append(pygame.Rect(rect))
+        return real_lit(surface, rect, *a, **k)
+    story_mod.phobos_ui.plate, story_mod.phobos_ui.lit = spy_plate, spy_lit
     try:
         _draw(hub, run)
     finally:
-        story_mod.menu_ui.panel = real
+        story_mod.phobos_ui.plate, story_mod.phobos_ui.lit = real_plate, real_lit
     paragraphs = [b for b in boxes if b.width == 860]
     assert len(paragraphs) == 5 and paragraphs[-1].bottom < BASE_HEIGHT - 90
     assert paragraphs[0].top > 70                                                   # below the title

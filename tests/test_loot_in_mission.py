@@ -603,16 +603,17 @@ def test_the_shop_row_of_an_item_shows_its_picture_and_the_description_under_the
     assert len(colours) > 8                                   # a picture, not the plain panel
 
 
-def test_a_workshop_row_that_is_not_an_item_has_no_description(run):
+def test_a_workshop_row_that_is_not_an_item_has_no_description(run, monkeypatch):
+    import phobos_ui
+    monkeypatch.setattr(phobos_ui, "BACKDROPS", {})            # (the picture of the pane would show through the steel)
     g = run.game
     hub = _hangar(found=("tesla",), credits=2000)
     box = pygame.Rect(70, 308, BASE_WIDTH - 140, 328)
     desc = pygame.Rect(box.x + 20, box.bottom - 34, box.w - 40, 24)
     _focus(hub, "speed_60")
     plain = _hub_picture(g, hub)
-    colours = {tuple(plain.get_at((x, y))[:3]) for x in range(desc.left, desc.right, 3)
-               for y in range(desc.top, desc.bottom, 3)}
-    assert len(colours) == 1                                  # the plain panel, no text
+    for y in range(desc.top, desc.bottom, 3):                 # (the steel is a gradient: one colour along a row)
+        assert len({tuple(plain.get_at((x, y))[:3]) for x in range(desc.left, desc.right, 3)}) == 1   # no text
 
 
 def test_every_row_of_a_long_list_can_be_reached_and_drawn(run):

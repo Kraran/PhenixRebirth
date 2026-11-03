@@ -3,6 +3,12 @@ Current release: **v1.6.0**
 
 ## Unreleased (towards 1.6.1)
 
+- **Menus of the Adventure, station of Phobos (steps 1 to 3 of the upgrade).** The hub wears riveted black steel: plates with a hazard
+  strip, a copper cartouche for the title, steel badges for the pilot and the hull, lit rows with a gold edge, steel tabs and a steel
+  help bar with copper keys. Each pane has its own picture behind it (the bar of Phobos for the map, the hangar, the corridor, the cabin and the
+  walkway), made by `tools/make_ui_backdrops.py` and loaded on first use; the starfield is no longer drawn under the hub. The classic
+  menus are untouched. The insides of the hangar, bestiary, journal and extras follow in the next steps. Tests: `tests/test_phobos_ui.py`.
+
 - **Lunar Lander test: five settings and a menu to choose one.** Europa (bright ice with long red-brown fractures, Jupiter in the sky),
   Deimos (dark dusty rock with worn craters, Mars in the sky; almost no gravity) and Triton (pinkish "cantaloupe" ice with dark
   streaks, Neptune in the sky) join Titan (Saturn in the sky) and the asteroid (other asteroids in the sky). The mother planets

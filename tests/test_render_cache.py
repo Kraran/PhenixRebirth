@@ -156,11 +156,14 @@ def test_an_intro_frame_allocates_no_new_picture(run, monkeypatch):
     assert big == []                                                     # nothing big is built per frame
 
 
-def test_the_slide_covers_the_screen_but_the_hub_does_not():
+def test_the_slide_covers_the_screen_but_the_hub_does_not(monkeypatch):
+    import phobos_ui
     hub = _hub_on_intro()
     assert hub.covers_screen() is True
     hub.screen = "hub"
-    assert hub.covers_screen() is False
+    assert hub.covers_screen() is True                                   # (a pane with its own picture covers it too)
+    monkeypatch.setattr(phobos_ui, "BACKDROPS", {})
+    assert hub.covers_screen() is False                                  # ... a pane without one shows the stars
     hub.screen = "slots"
     assert hub.covers_screen() is False
 
@@ -173,7 +176,7 @@ def test_the_starfield_is_not_drawn_under_a_slide(run, monkeypatch):
     calls = []
     real = draw_frame.draw_background
     monkeypatch.setattr(draw_frame, "draw_background", lambda game: (calls.append(1), real(game))[1])
-    g.story.screen = "hub"
+    g.story.screen = "slots"
     g._draw_canvas()
     assert calls == [1]                                                  # menus still show the stars through
     g.story.screen = "intro"
