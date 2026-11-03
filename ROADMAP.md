@@ -9,6 +9,13 @@ Current release: **v1.6.0**
   come from the photographs of the game. A menu before the flight picks the setting (to be taken out of the final missions).
   Tests: `tests/test_lander_bodies.py`.
 
+- **BONUS - Lunar Lander.** The same level as the test, with its menu of five settings (the menu stays), but for real: a landing
+  pays its points (plus the fuel left) in credits, a crash costs what a failure costs. Secret until the game is finished (the
+  open ending told), then on the map of every act, replayable. The test mission stays a test (nothing won, nothing lost).
+  Also: the stars of Europa, Deimos and Triton now pass BEHIND the mother planet, and the pictures of the menu load about twice
+  as fast (faster noise and cells, same pixels) and are made in the background while the menu is read.
+  Tests: `tests/test_lander_bodies.py`.
+
 - **Visual novel: the four endings.** After the reaction to the last scene, an ending is told on the same picture, chosen by the
   total of points: Fâcherie (5–8), Distance (9–12), Amitié (13–16), Romance (17–20), each ending on its last line.
   Amitié and Romance: Lyra gives points × 500 credits (paid once). Romance: every price of the workshop (upgrades, items,

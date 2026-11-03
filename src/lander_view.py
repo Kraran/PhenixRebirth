@@ -7,6 +7,7 @@ places look like. Everything heavy is made once per body: the sky and the two ti
 those tiles, cuts the ground out of them with the polygon of the relief and lays the light on its edge.
 """
 import math
+import threading
 
 import numpy as np
 import pygame
@@ -23,6 +24,9 @@ CHUNK = 160                                 # width of the chunks of columns of 
 ZQ = 256                                    # the zoom drawn is a multiple of 1/ZQ: the tiles (1024 and 768 world px) then have a whole size
 HUD_COLOR = (120, 235, 255)
 _CACHE = {}                                 # per body: sky, textures
+_LOCK = threading.RLock()                   # (a body is made once, by whoever asks first: the menu or the background)
+WARM_UP = True                              # the menu makes the pictures of the other settings in the background (off in the tests)
+_warming = False
 # What differs from one body to the next: the sky ("haze": the orange sky of Titan, "stars": black with stars), the seed of the
 # textures, the colour of the boulders and of the lit edge of the ground.
 LOOKS = {
@@ -49,10 +53,10 @@ def _octave(size, cells, rng):
     f = t - i
     f = f * f * (3 - 2 * f)
     j = (i + 1) % cells
-    fx, fy = f[None, :], f[:, None]
-    a, b = lattice[i][:, i], lattice[i][:, j]
-    c, d = lattice[j][:, i], lattice[j][:, j]
-    return (a * (1 - fx) + b * fx) * (1 - fy) + (c * (1 - fx) + d * fx) * fy
+    # the same bilinear blend, but along x first on the `cells` rows of the lattice only (small), then along y: two big gathers
+    # instead of four, a third of the work
+    across = lattice[:, i] * (1 - f)[None, :] + lattice[:, j] * f[None, :]
+    return across[i] * (1 - f)[:, None] + across[j] * f[:, None]
 
 
 def _fbm(size, base, octaves, rng):
@@ -75,17 +79,23 @@ def _worley(size, count, rng):
     """The distance to the nearest (f1) and the second nearest (f2) of `count` random points, on a torus, in units of the
     mean distance between points: the cells of a cantaloupe."""
     pts = rng.random((count, 2)) * size
-    ys, xs = np.mgrid[0:size, 0:size].astype(np.float32)
-    f1 = np.full((size, size), 1e9, dtype=np.float32)
+    # the squared distances, from the two small 1-D tables of each point (a torus distance in x and in y): one add and three
+    # min/max per point instead of a dozen operations on whole fields; the square roots are taken once at the end
+    line = np.arange(size, dtype=np.float32)
+    f1 = np.full((size, size), 1e18, dtype=np.float32)
     f2 = f1.copy()
+    d = np.empty_like(f1)
+    tmp = np.empty_like(f1)
     for px, py in pts:
-        dx = np.abs(xs - np.float32(px))
-        dx = np.minimum(dx, size - dx)
-        dy = np.abs(ys - np.float32(py))
-        dy = np.minimum(dy, size - dy)
-        d = np.sqrt(dx * dx + dy * dy)
-        f2 = np.minimum(f2, np.maximum(f1, d))
-        f1 = np.minimum(f1, d)
+        dx = np.abs(line - np.float32(px))
+        dx = np.minimum(dx, size - dx) ** 2
+        dy = np.abs(line - np.float32(py))
+        dy = np.minimum(dy, size - dy) ** 2
+        np.add(dy[:, None], dx[None, :], out=d)
+        np.maximum(f1, d, out=tmp)
+        np.minimum(f2, tmp, out=f2)
+        np.minimum(f1, d, out=f1)
+    f1, f2 = np.sqrt(f1), np.sqrt(f2)
     unit = size / math.sqrt(count)
     return f1 / unit, f2 / unit
 
@@ -240,7 +250,21 @@ def _planet_picture(name, width, tint=(255, 255, 255), keep=1.0, disc=0.5):
     dim = pygame.Surface(canvas.get_size())
     dim.fill(tuple(int(c * keep) for c in tint))
     canvas.blit(dim, (0, 0), special_flags=pygame.BLEND_RGB_MULT)
-    return canvas
+    # the body of the planet, in black, to lay under it: the stars pass BEHIND the planet (the picture itself is ADDed, which
+    # would let them shine through). Its opacity follows the light of the photograph (the rings of Saturn keep their gaps); a
+    # round planet is filled to its whole disc, the dark side included.
+    seen = pygame.surfarray.array3d(crop).max(axis=2).astype(np.float32).T          # (rows, columns)
+    body = np.clip((seen - 6.0) / 26.0, 0.0, 1.0)
+    if disc >= 0.5:
+        cy, cx = (height - 1) / 2.0, (int(width) - 1) / 2.0
+        yy2, xx2 = np.mgrid[0:height, 0:int(width)].astype(np.float32)
+        body = np.maximum(body, np.clip((width * disc - 0.5 - np.hypot(xx2 - cx, yy2 - cy)) / 1.5, 0.0, 1.0))
+    back = pygame.Surface(canvas.get_size(), pygame.SRCALPHA)
+    back.fill((0, 0, 0, 0))
+    alpha = np.zeros((canvas.get_width(), canvas.get_height()), dtype=np.uint8)
+    alpha[pad:pad + int(width), pad:pad + height] = (body * 255).astype(np.uint8).T
+    pygame.surfarray.pixels_alpha(back)[:] = alpha
+    return canvas, back.convert_alpha()
 
 
 def _asteroid_items():
@@ -268,21 +292,27 @@ def assets(style):
     """The sky and the textures of a body (made the first time, then kept)."""
     got = _CACHE.get(style)
     if got is None:
-        look = LOOKS[style]
-        sky = _sky(style)
-        planet = lander.BODIES[style]["planet"]
-        mother = None
-        if planet in PLANET_DRAW:
-            width, pos, tint, keep, disc = PLANET_DRAW[planet]
-            mother = (_planet_picture(planet, width, tint, keep, disc), pos)
-        got = {
-            "sky": sky,
-            "stars": _stars(sky) if look["sky"] == "stars" else None,
-            "tiles": [_texture(style, size, look["seed"] + k) for k, (size, _) in enumerate(TILES)],
-            "planet": mother,                                    # (picture, where its middle is on the screen) or None
-            "rocks": _asteroid_items() if planet == "asteroids" else [],
-        }
-        _CACHE[style] = got
+        with _LOCK:
+            got = _CACHE.get(style) or _make_assets(style)
+    return got
+
+
+def _make_assets(style):
+    look = LOOKS[style]
+    sky = _sky(style)
+    planet = lander.BODIES[style]["planet"]
+    mother = None
+    if planet in PLANET_DRAW:
+        width, pos, tint, keep, disc = PLANET_DRAW[planet]
+        mother = _planet_picture(planet, width, tint, keep, disc) + (pos,)
+    got = {
+        "sky": sky,
+        "stars": _stars(sky) if look["sky"] == "stars" else None,
+        "tiles": [_texture(style, size, look["seed"] + k) for k, (size, _) in enumerate(TILES)],
+        "planet": mother,                                    # (picture, its black body, where its middle is on the screen) or None
+        "rocks": _asteroid_items() if planet == "asteroids" else [],
+    }
+    _CACHE[style] = got
     return got
 
 
@@ -295,15 +325,41 @@ def preview(style):
     landing zone, seen from the middle zoom."""
     pic = _PREVIEWS.get(style)
     if pic is None:
-        import random
-        form = lander.LanderFormation(style=style, seed=5, rng=random.Random(1))
-        form.view = View(style)
-        pad = form.terrain.pads[0]
-        form.x, form.y, form.zoom = pad["x"] - 120.0, pad["y"] - 330.0, 0.5
-        full = pygame.Surface((W, H))
-        form.view.draw(full, form)
-        pic = _PREVIEWS[style] = pygame.transform.smoothscale(full, PREVIEW_SIZE)
+        with _LOCK:
+            pic = _PREVIEWS.get(style) or _make_preview(style)
     return pic
+
+
+def _make_preview(style):
+    import random
+    form = lander.LanderFormation(style=style, seed=5, rng=random.Random(1))
+    form.view = View(style)
+    pad = form.terrain.pads[0]
+    form.x, form.y, form.zoom = pad["x"] - 120.0, pad["y"] - 330.0, 0.5
+    full = pygame.Surface((W, H))
+    form.view.draw(full, form)
+    _PREVIEWS[style] = pygame.transform.smoothscale(full, PREVIEW_SIZE)
+    return _PREVIEWS[style]
+
+
+def warm(order):
+    """Make the pictures of the menu (and with them the textures of the flight) in the background, in this order, while the
+    player reads the first one: moving the cursor then costs nothing, and neither does the launch. Once per run."""
+    global _warming
+    if not WARM_UP or _warming:
+        return None
+    _warming = True
+
+    def work():
+        for style in order:
+            try:
+                preview(style)
+            except Exception:                    # (the screen is closed: nothing to do)
+                return
+
+    thread = threading.Thread(target=work, name="lander-warm-up", daemon=True)
+    thread.start()
+    return thread
 
 
 def snap_zoom(zoom):
@@ -397,9 +453,11 @@ class View:
         rise = (cam_y - lander.START_Y) * 0.012                  # (they rise a little while the ship comes down)
         mother = self.assets["planet"]
         if mother is not None:
-            pic, (px, py) = mother
-            surface.blit(pic, (round(px - pic.get_width() / 2 - 34 * turn), round(py - pic.get_height() / 2 - rise)),
-                         special_flags=pygame.BLEND_ADD)
+            pic, back, (px, py) = mother
+            where = (round(px - pic.get_width() / 2 - 34 * turn), round(py - pic.get_height() / 2 - rise))
+            if self.assets["stars"] is not None:
+                surface.blit(back, where)                        # (the planet hides the stars behind it; Titan keeps its haze)
+            surface.blit(pic, where, special_flags=pygame.BLEND_ADD)
         for pic, x, y, amp in self.assets["rocks"]:
             surface.blit(pic, (round(x - pic.get_width() / 2 - amp * turn), round(y - pic.get_height() / 2 - rise * amp / 60.0)))
 

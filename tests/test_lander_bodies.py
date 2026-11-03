@@ -1,6 +1,7 @@
 """The five settings of the Lunar Lander test (src/lander.py BODIES, src/lander_view.py, the menu of the choice in story.py): the
 asteroid, Titan, Europa, Deimos and Triton, each with its ground, its sky and its mother planet (Saturn, Jupiter, Mars, Neptune;
 other asteroids for the asteroid)."""
+import math
 import random
 
 import numpy as np
@@ -364,3 +365,142 @@ def test_the_text_of_the_menu_is_wrapped_once_per_setting():
     finally:
         story._wrap_nb = real
     assert len(calls) == 1
+
+
+# ------------------------------------------------------------------ the stars behind the planet
+@pytest.mark.parametrize("style", NEW)
+def test_the_stars_pass_behind_the_mother_planet(style):
+    f = _form(style)
+    f.x, f.y, f.zoom = 3000.0, -1750.0, 0.25
+    view = lv.View(style)
+    with_stars = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+    view.draw(with_stars, f)
+    # the same sky with every star put out: inside the disc of the planet nothing must change
+    plain = pygame.Surface(view.assets["stars"].get_size())
+    plain.fill(view.assets["stars"].get_at((1, 1)))
+    stars = view.assets["stars"]
+    view.assets["stars"] = plain
+    without = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+    view.draw(without, f)
+    view.assets["stars"] = stars
+    pic, back, (px, py) = view.assets["planet"]
+    turn = math.sin(2 * math.pi * f.x / ld.WORLD)
+    cx, cy = px - 34 * turn, py - (f.y - ld.START_Y) * 0.012
+    radius = lv.PLANET_DRAW[ld.BODIES[style]["planet"]][0] * 0.5 - 8
+    a = pygame.surfarray.array3d(with_stars).astype(int)
+    b = pygame.surfarray.array3d(without).astype(int)
+    xs, ys = np.mgrid[0:BASE_WIDTH, 0:BASE_HEIGHT]
+    inside = np.hypot(xs - cx, ys - cy) < radius
+    assert inside.sum() > 10000
+    assert (a[inside] == b[inside]).all()
+    assert (a != b).any()                                       # (and the stars do shine elsewhere)
+
+
+def test_titan_keeps_its_haze_through_saturn():
+    assert lv.View("ice").assets["stars"] is None               # (no star: the planet is laid as it was)
+
+
+# ------------------------------------------------------------------ the pictures of the menu are quicker
+def test_the_noise_and_the_cells_are_what_the_plain_formulas_give():
+    size, cells = 64, 6
+    got = lv._octave(size, cells, np.random.default_rng(4))
+    lattice = np.random.default_rng(4).random((cells, cells))
+    t = np.arange(size) * cells / float(size)
+    i = np.floor(t).astype(int)
+    f = t - i
+    f = f * f * (3 - 2 * f)
+    j = (i + 1) % cells
+    fx, fy = f[None, :], f[:, None]
+    a, b, c, d = lattice[i][:, i], lattice[i][:, j], lattice[j][:, i], lattice[j][:, j]
+    assert np.allclose(got, (a * (1 - fx) + b * fx) * (1 - fy) + (c * (1 - fx) + d * fx) * fy, atol=1e-12)
+    pts = np.random.default_rng(9).random((12, 2)) * size
+    f1, f2 = lv._worley(size, 12, np.random.default_rng(9))
+    ys, xs = np.mgrid[0:size, 0:size].astype(float)
+    dist = []
+    for px, py in pts:
+        dx = np.abs(xs - px)
+        dy = np.abs(ys - py)
+        dist.append(np.hypot(np.minimum(dx, size - dx), np.minimum(dy, size - dy)))
+    dist = np.sort(np.stack(dist), axis=0)
+    unit = size / math.sqrt(12)
+    assert np.allclose(f1, dist[0] / unit, atol=1e-3) and np.allclose(f2, dist[1] / unit, atol=1e-3)
+
+
+def test_the_menu_makes_the_pictures_of_the_settings_in_the_background(monkeypatch):
+    monkeypatch.setattr(lv, "WARM_UP", True)
+    monkeypatch.setattr(lv, "_warming", False)
+    monkeypatch.setattr(lv, "_PREVIEWS", {})
+    monkeypatch.setattr(lv, "_CACHE", {})
+    thread = lv.warm(["rock", "deimos"])
+    assert thread is not None
+    thread.join(60)
+    assert set(lv._PREVIEWS) == {"rock", "deimos"}
+    assert lv.warm(["rock"]) is None                            # (once per run)
+
+
+def test_the_background_work_is_off_in_the_tests_and_the_menu_asks_for_it(monkeypatch):
+    assert lv.WARM_UP is False
+    asked = []
+    monkeypatch.setattr(lv, "warm", lambda order: asked.append(list(order)))
+    hub = _hub()
+    hub.confirm()
+    assert asked == [list(ld.MENU_ORDER)]
+
+
+# ------------------------------------------------------------------ the BONUS mission
+def _bonus_hub(done=True):
+    st = ss.create_slot(1, "NOVA", "normal")
+    ss.mark_intro_seen(st)
+    ss.jump_to_act2(st)
+    if done:
+        ss.complete_ending(st)
+    ss.save_state(ss.story_path(1), st)
+    hub = StoryHub()
+    hub.open_slot(1)
+    hub.screen, hub.pane = "hub", "map"
+    return hub
+
+
+def test_the_bonus_lander_is_secret_until_the_game_is_finished():
+    assert "bonus_lander" not in [m["id"] for m in _bonus_hub(done=False).missions()]
+    rows = [m["id"] for m in _bonus_hub().missions()]
+    assert rows.count("bonus_lander") == 1 and "test_lander" in rows
+
+
+def test_the_bonus_lander_is_a_bonus_of_the_map_and_never_what_the_map_suggests():
+    hub = _bonus_hub()
+    hub.state["cleared"] = [c for c in hub.state["cleared"] if c != "bonus_lander"]       # (the ACT2 shortcut of the helper won it)
+    m = ss.mission_by_id("bonus_lander")
+    assert ss.mission_group(m) == ss.GROUP_EXTRA and not m.get("training") and not m.get("test") and m["lander"]
+    assert ss.next_mission(hub.state, [m]) is None                # (alone on the map, it is still not suggested)
+    assert ss.mission_playable(hub.state, m) and not ss.mission_playable(_bonus_hub(done=False).state, m)
+    for lang in ("fr", "en"):
+        before = i18n.get_lang()
+        i18n.set_lang(lang)
+        try:
+            assert i18n.t(m["title"]).startswith("BONUS - ") and i18n.t(m["blurb"]) != m["blurb"]
+        finally:
+            i18n.set_lang(before)
+
+
+def test_the_bonus_lander_has_the_same_menu_and_a_real_spec():
+    hub = _bonus_hub()
+    hub.map_index = [m["id"] for m in hub.missions()].index("bonus_lander")
+    assert hub.confirm() is None and hub.screen == "lander_pick"
+    hub.lander_index = 3
+    spec = hub.confirm()
+    assert spec["lander"] and spec["body"] == ld.MENU_ORDER[3] and not spec.get("training") and spec["id"] == "bonus_lander"
+
+
+def test_the_bonus_lander_pays_its_points_and_a_crash_costs_a_failure():
+    hub = _bonus_hub()
+    hub.state["credits"] = 1000
+    hub.apply_result("bonus_lander", 5500, True)
+    assert hub.state["credits"] == 6500
+    hub.apply_result("bonus_lander", 5500, True)
+    assert hub.state["credits"] == 12000                         # (it can be flown again and again)
+    assert ss.mission_playable(hub.state, ss.mission_by_id("bonus_lander"))
+    hub.apply_result("bonus_lander", 0, False)
+    assert hub.state["credits"] == 12000 - ss.failure_penalty(12000)
+    test = ss.mission_by_id("test_lander")
+    assert test["training"] and ss.record_result(hub.state, "test_lander", 999, True)["score"] == 0   # (the test still pays nothing)
