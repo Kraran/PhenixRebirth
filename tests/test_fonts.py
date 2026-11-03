@@ -119,6 +119,9 @@ def test_story_reads_in_the_regular_font(run):
     hub = StoryHub()
     surf = pygame.Surface((1280, 720))
     hub.draw(surf, g.font, g.medium_font, g.font, body=g.read_font)
+    assert hub._body is fonts.body(hub.AIRY_BODY)               # the hub reads in the regular font, a little smaller
+    hub.screen = "first_help"                                    # (the other screens keep what the game gives)
+    hub.draw(surf, g.font, g.medium_font, g.font, body=g.read_font)
     assert hub._body is g.read_font
     hub.draw(surf, g.font, g.medium_font, g.font)
     assert hub._body is g.font

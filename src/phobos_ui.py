@@ -328,7 +328,8 @@ def band():
 
 # --- the pictures behind the panes ----------------------------------------------------------------------------------
 BACKDROPS = {"map": "ui_map", "hangar": "ui_hangar", "bestiary": "ui_bestiary", "log": "ui_log", "extras": "ui_extras",
-             "gate": "ui_log"}            # the screens before the hub (games, mode, name, ...) share the pilot's quarters
+             "gate": "ui_log",        # (the screens before the hub share the pilot's quarters)
+             "bar": "ui_map"}         # (the Jukebox and the Add-On opened from the Extras: the bar of the station)
 _backdrops = {}
 
 

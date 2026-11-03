@@ -398,11 +398,11 @@ def test_the_extras_are_holographic_signs_and_the_chosen_one_is_gold(run):
     hub = _hub(g, "extras")
     hub.extras_index = 1
     s = _hangar_pixels(g, hub)
-    assert s.get_at((640, 124))[:3] == phobos_ui.HOLO_EDGE or s.get_at((640, 246))[:3] == phobos_ui.LIT_EDGE
+    assert s.get_at((640, 96))[:3] == phobos_ui.HOLO_EDGE                        # the first sign: its blue edge
     tops = [y for y in range(100, 600) if s.get_at((640, y))[:3] == phobos_ui.LIT_EDGE]
-    assert tops and 240 <= tops[0] <= 252                                              # the second sign is the lit one
-    assert not any(s.get_at((640, y))[:3] == phobos_ui.LIT_EDGE for y in range(100, 235))   # the first one is not
-    head = [s.get_at((x, y))[:3] for x in range(238, 500) for y in range(140, 165)]
+    assert tops and 228 <= tops[0] <= 236                                              # the second sign is the lit one
+    assert not any(s.get_at((640, y))[:3] == phobos_ui.LIT_EDGE for y in range(100, 225))   # the first one is not
+    head = [s.get_at((x, y))[:3] for x in range(238, 500) for y in range(110, 145)]
     assert any(c[0] < 150 and c[2] > 200 and c[1] > 150 for c in head)                  # the head of an unlit sign: blue glass text
 
 
@@ -553,3 +553,79 @@ def test_the_visual_novel_panel_is_solid_glass(run, monkeypatch):
     _draw(g, hub)
     holo = [c for c in calls if c[0] == "holo"]
     assert len(holo) == 1 and holo[0][3].get("glass") == 242
+
+
+# ------------------------------------------------------------------ the bar behind the Jukebox and the Add-On
+def _door(g, screen, door="jukebox"):
+    hub = _hub(g, "extras")
+    g.started = False
+    g.menu_screen = screen
+    g.story_door = door
+    return hub
+
+
+@pytest.mark.parametrize("screen", ["jukebox", "addon"])
+def test_the_bar_is_behind_the_jukebox_and_the_addon_opened_from_the_adventure(run, screen, monkeypatch):
+    g = run.game
+    _door(g, screen, screen)
+    assert g._door_picture() is phobos_ui.backdrop("bar") and g._door_picture() is not None
+    assert hint_bar.is_steel(g)                                                   # the band is the steel one too
+    calls = []
+    monkeypatch.setattr(draw_frame, "draw_background", lambda game: calls.append(1))
+    s = g.game_surface
+    s.fill((0, 0, 0))
+    g._draw_canvas()
+    assert not calls                                                               # the stars are not drawn under it
+    assert sum(s.get_at((x, 400))[:3][0] for x in range(0, 200, 20)) > 40         # the bar is on screen
+    g.story_door = None                                                            # from the main menu: nothing changes
+    assert g._door_picture() is None and not hint_bar.is_steel(g)
+    g._draw_canvas()
+    assert calls
+
+
+def test_the_picture_of_a_door_needs_the_adventure_the_right_screen_and_the_file(run, monkeypatch):
+    g = run.game
+    _door(g, "jukebox", "jukebox")
+    g.menu_screen = "highscores"
+    assert g._door_picture() is None                                               # (another screen of the main menu)
+    g.menu_screen = "jukebox"
+    g.story_door = "credits"
+    assert g._door_picture() is None                                               # (the credits keep their own look)
+    g.story_door = "jukebox"
+    monkeypatch.setattr(phobos_ui, "BACKDROPS", {})
+    assert g._door_picture() is None                                               # no picture: the stars show again
+
+
+# ------------------------------------------------------------------ airy: smaller letters, more room
+def test_the_hub_and_its_gates_use_the_smaller_letters(run, monkeypatch):
+    import fonts
+    import story
+    g = run.game
+    hub = _hub(g, "map")
+    seen = set()
+    real = story._text
+
+    def spy(surface, font, *a, **k):
+        seen.add(id(font))
+        return real(surface, font, *a, **k)
+    monkeypatch.setattr(story, "_text", spy)
+    _draw(g, hub)
+    assert id(fonts.text(24)) in seen and id(fonts.text(28)) not in seen            # the game's 28 is for the scenes
+    assert hub.AIRY_TEXT == 24 and hub.AIRY_TITLE == 28 and hub.AIRY_BODY == 24
+
+
+def test_the_map_rows_have_room_around_their_text(run, monkeypatch):
+    import story
+    g = run.game
+    hub = _hub(g, "map")
+    calls = _spy(monkeypatch, "lit")
+    _draw(g, hub)
+    row = [c[1] for c in calls if c[0] == "lit"][0]
+    assert row.h == story.MAP_FOCUS_H == 84 and story.MAP_ROW_H == 44
+    assert row.x >= 70 + 16 and row.right <= 1280 - 70 - 16                       # the row is inside the plate with a margin
+
+
+def test_the_extras_descriptions_get_smaller_with_more_paragraphs(run):
+    import fonts
+    hub = _hub(run.game, "extras")
+    assert [hub._extras_body(n) for n in (3, 4, 5)] == [fonts.body(24), fonts.body(22), fonts.body(20)]
