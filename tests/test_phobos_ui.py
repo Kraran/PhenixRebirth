@@ -238,3 +238,68 @@ def test_the_map_wears_the_steel_plate_and_the_lit_row(run):
     assert phobos_ui.HAZARD in strip                                             # the hazard strip on the list
     row_edge = [s.get_at((300, y))[:3] for y in range(150, 175)]
     assert phobos_ui.LIT_EDGE in row_edge                                        # the lit row of the next mission
+
+
+# ------------------------------------------------------------------ the hangar
+def test_a_holo_card_has_cut_corners_and_a_gold_edge_when_chosen():
+    a, b = _surf(), _surf()
+    phobos_ui.holo(a, pygame.Rect(20, 20, 200, 100), True)
+    phobos_ui.holo(b, pygame.Rect(20, 20, 200, 100), False)
+    assert a.get_at((120, 20))[:3] == phobos_ui.LIT_EDGE and b.get_at((120, 20))[:3] == phobos_ui.HOLO_EDGE
+    assert a.get_at((20, 20))[:3] == (0, 0, 0)                          # the corner is cut: nothing drawn there
+    inside = b.get_at((120, 70))[:3]
+    assert inside[2] > inside[0]                                         # blue glass
+
+
+def test_a_meter_lights_the_first_cells():
+    s = _surf()
+    r = phobos_ui.meter(s, 10, 10, 2, 5)
+    assert r.w == 5 * 16 + 4 * 3 and r.h == 5
+    lit = [s.get_at((10 + i * 19 + 8, 12))[:3] == phobos_ui.CRT for i in range(5)]
+    assert lit == [True, True, False, False, False]
+    phobos_ui.meter(s, 10, 30, 9, 5)                                     # more than the total: all lit, no error
+    assert all(s.get_at((10 + i * 19 + 8, 32))[:3] == phobos_ui.CRT for i in range(5))
+
+
+def _hangar_pixels(g, hub):
+    s = g.game_surface
+    s.fill((0, 0, 0))
+    hub.draw(s, g.font, g.medium_font, g.font, body=g.read_font)
+    return s
+
+
+def test_the_hangar_cards_sit_below_the_badges_and_the_chosen_one_is_gold(run):
+    g = run.game
+    hub = _hub(g, "hangar")
+    hub.state["slots"][0]["owned"] = True
+    hub.state["selected_slot"] = 0
+    s = _hangar_pixels(g, hub)
+    assert s.get_at((400, 64))[:3] == phobos_ui.LIT_EDGE                 # the chosen hull: gold edge on its top line
+    assert s.get_at((880, 64))[:3] == phobos_ui.HOLO_EDGE                # the other one: blue glass
+    badge = phobos_ui.badge(pygame.Surface((1280, 100)), g.font, "NOVA  -  NORMAL", (200, 200, 200), 40, left=56, max_w=330)
+    assert badge.bottom < 64                                             # nothing under the pilot badge now
+
+
+def test_the_workshop_stats_show_the_levels_as_cells(run):
+    g = run.game
+    hub = _hub(g, "hangar")
+    sl = hub.state["slots"][0]
+    sl.update(owned=True, lives=2, speed=60)
+    hub.state["selected_slot"] = 0
+    s = _hangar_pixels(g, hub)
+    cells = lambda x0, n: [s.get_at((x0 + i * 19 + 8, 238 + 64 - 9 + 2))[:3] == phobos_ui.CRT for i in range(n)]
+    lives_x = (1280 - (196 * 4 + 12 * 3)) // 2 + 98 - (2 * 16 + 3) // 2
+    speed_x = lives_x + 208 - (5 * 16 + 4 * 3) // 2 + (2 * 16 + 3) // 2
+    assert cells(lives_x, 2) == [True, True]                             # 2 lives of 2
+    assert cells(speed_x, 5) == [True, True, True, False, False]         # 60 % = three cells of five
+    sl["owned"] = False
+    s = _hangar_pixels(g, hub)
+    assert not any(s.get_at((x, 238 + 64 - 7))[:3] == phobos_ui.CRT for x in range(180, 1100))   # no hull, no levels
+
+
+def test_the_points_are_on_a_steel_badge_at_the_right(run):
+    g = run.game
+    hub = _hub(g, "hangar")
+    s = _hangar_pixels(g, hub)
+    assert s.get_at((BASE_WIDTH - 56 - 1, 40))[:3] == phobos_ui.STEEL_EDGE      # the right end of the badge
+    assert any(s.get_at((x, 40))[:3] == phobos_ui.GOLD for x in range(1000, 1224))   # gold digits
