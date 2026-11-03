@@ -166,13 +166,14 @@ def test_the_paint_shop_says_which_hull_costs_too_much(hull, name, lang):
         i18n.set_lang(before)
 
 
-def test_the_other_languages_follow_the_paint_line_and_lose_the_old_gate_line():
+def test_the_other_languages_follow_the_paint_line_and_the_gate_line_no_longer_speaks_of_the_dome():
     for code in i18n.LANG_CODES:
         if code in ("fr", "en"):
             continue
         with open(__import__("settings").asset_path("lang", code + ".json"), encoding="utf-8") as f:
             data = json.load(f)
-        assert "story_log_gate" not in data
+        assert "Phenix" in data["story_log_gate"]
+        assert not re.search(r"dom|koepel|kopu|kubbe|kupol|купол", data["story_log_gate"], re.I), code      # (the dome is not what it waits for)
         if "story_paint_poor" in data:
             assert "{pts}" in data["story_paint_poor"]
-            assert "{ship}" in data["story_paint_poor"] or code in ("pl", "tr")
+            assert "{ship}" in data["story_paint_poor"]

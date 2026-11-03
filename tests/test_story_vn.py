@@ -1693,7 +1693,7 @@ def test_the_french_reactions_of_scene_five_are_the_ones_asked_for(french):
     r = [i18n.t("story_vn5_r%d" % k).split("\n") for k in (1, 2, 3, 4)]
     assert r[0] == ["*Lyra encaisse la réponse sans protester.",
                     "« Oui. Bien sûr. Je ne sais pas vraiment à quoi je m’attendais. »", "*Elle tente un sourire.",
-                    "« Merci, en tout cas. Pour ce que tu as fait sur Phobos. Je ne l’oublierai pas. »", "",
+                    "« Merci, en tout cas. Pour ce que tu as fait à proximité de Phobos. Je ne l’oublierai pas. »", "",
                     "*Elle te serre brièvement dans ses bras, puis recule.",
                     "« Prends soin de toi. La guerre n’est pas terminée. »"]
     assert r[1][:2] == ["*Lyra sourit, visiblement rassurée.",
