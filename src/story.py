@@ -1814,10 +1814,10 @@ class StoryHub:
 
         if self.cheating:
             # small, top left above the pilot name: the title, the credits and the FPS counter own the rest
-            _text_fit(surface, small, t("story_cheat_banner"), announce.SPECIAL, 11, 80, 330, scale=0.7)
+            _text_fit(surface, small, t("story_cheat_banner"), announce.SPECIAL, 9, 80, 300, scale=0.7)
         if self.state.get("name"):
             mode = t("story_mode_" + str(self.state.get("mode", "normal")))
-            phobos_ui.badge(surface, small, f"{self.state['name']}  -  {mode}", (200, 205, 222), 38, left=56, max_w=330)
+            phobos_ui.badge(surface, small, f"{self.state['name']}  -  {mode}", (200, 205, 222), 40, left=56, max_w=330)
         if self.pane == "hangar":
             self._draw_hangar(surface, font, medium, small)
         elif self.pane == "map":
@@ -2557,7 +2557,7 @@ class StoryHub:
 
     def _draw_map(self, surface, font, medium, small):
         # the missions are flown with the hull chosen in the hangar
-        phobos_ui.badge(surface, small, t("story_ship_label").format(name=self._ship_name()), (200, 205, 222), 38,
+        phobos_ui.badge(surface, small, t("story_ship_label").format(name=self._ship_name()), (200, 205, 222), 40,
                         right=BASE_WIDTH - 56, max_w=330)
         box = pygame.Rect(70, 78, BASE_WIDTH - 140, BASE_HEIGHT - 168)
         phobos_ui.plate(surface, box, hazard=True)

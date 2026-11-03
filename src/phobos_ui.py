@@ -158,10 +158,10 @@ def badge(surface, font, text, colour, cy, left=None, right=None, max_w=None):
         if max_w is not None and txt.get_width() > max_w - 40:
             k = (max_w - 40) / txt.get_width()
             txt = pygame.transform.smoothscale(txt, (max(1, int(txt.get_width() * k)), max(1, int(txt.get_height() * k))))
-        w, h = txt.get_width() + 40, txt.get_height() + 16
+        w, h = txt.get_width() + 40, txt.get_height() + 10
         img = pygame.Surface((w, h), pygame.SRCALPHA)
         plate(img, img.get_rect(), rivets=False)
-        img.blit(txt, (20, 8))
+        img.blit(txt, (20, 5))
         _keep(key, img)
     r = img.get_rect(centery=int(cy))
     if left is not None:

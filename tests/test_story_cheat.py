@@ -3,10 +3,18 @@ import os
 from types import SimpleNamespace
 
 import pygame
+import pytest
 
 import story_state as ss
 from story import StoryHub
 from test_smoke import run  # noqa: F401  (fixture)
+
+
+@pytest.fixture(autouse=True)
+def _no_pictures(monkeypatch):
+    """(the panes have a picture of their own: the tests read the pixels on a black screen)"""
+    import phobos_ui
+    monkeypatch.setattr(phobos_ui, "BACKDROPS", {})
 
 
 def _ev(ch):
