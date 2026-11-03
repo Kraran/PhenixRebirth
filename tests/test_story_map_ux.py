@@ -228,10 +228,10 @@ def test_shop_arrows_are_drawn_only_when_rows_are_hidden(run, act):
     ARROW = (255, 190, 110)
 
     def arrows():
-        box = pygame.Rect(70, 308, 1280 - 140, 328)
+        box = pygame.Rect(70, 312, 1280 - 140, 324)
         ax = box.right - 14
         up = surf.get_at((ax, box.y + 33))[:3] == ARROW
-        dn = surf.get_at((ax, box.y + 46 + story.SHOP_WINDOW * 40 + 8))[:3] == ARROW
+        dn = surf.get_at((ax, box.y + 50 + story.SHOP_WINDOW * 40 + 8))[:3] == ARROW
         return up, dn
 
     hub.shop_index = 0

@@ -53,7 +53,8 @@ CHEAT_FINE = "FINE"            # typed on the mission map: the open ending (Act 
 LOG_REPLAY_ROWS = 4            # journal: scenes to watch again, shown at once (the cursor moves in them)
 LOG_STORY_ROWS = 6             # journal: lines of what happened, shown at once (they scroll)
 MODE_COLORS = {"novice": (120, 200, 255), "normal": (140, 220, 160), "veteran": (255, 110, 100)}   # title of each mode card
-MAP_HEAD_H = 26                # a group heading of the map (story, hunts, BONUS)
+MAP_ROW_H, MAP_FOCUS_H = 44, 84    # a row of the map, and the row under the cursor (it carries a line of blurb)
+MAP_HEAD_H = 30                # a group heading of the map (story, hunts, BONUS)
 SHOP_WINDOW = 6                # workshop rows shown at once (the line under them describes a loot item)
 
 
@@ -1783,6 +1784,14 @@ class StoryHub:
         return phobos_ui.backdrop("gate") is not None               # (the games, the name, the mode ... share one picture)
 
     # --- draw ---
+    AIRY_TEXT, AIRY_TITLE, AIRY_BODY = 24, 28, 24         # the letters of the hub and of the screens before it (the game's: 28, 32, 28)
+
+    def _airy_fonts(self):
+        """The fonts of the hub and of the screens before it: a little smaller than those of the game, so that the
+        plates keep a margin around their text. (The scenes, the intro and the films keep the game's.)"""
+        import fonts
+        return fonts.text(self.AIRY_TEXT), fonts.title(self.AIRY_TITLE), fonts.text(self.AIRY_TEXT), fonts.body(self.AIRY_BODY)
+
     def draw(self, surface, font, medium, small, body=None):
         """`body`: the font of what is read at length (the story, the descriptions); `font` when not given."""
         self._ensure_art()
@@ -1799,6 +1808,8 @@ class StoryHub:
         if self.screen == "vn":
             self._draw_vn(surface, medium, small)
             return
+        font, medium, small, body = self._airy_fonts()
+        self._body = body
         if self.screen != "hub":
             self._draw_gate(surface, font, medium, small)
             return
@@ -2310,8 +2321,8 @@ class StoryHub:
                 phobos_ui.lit(surface, r)
             else:
                 phobos_ui.plate(surface, r)
-            _text(surface, medium, t("lander_body_" + key), (255, 230, 140) if focus else (220, 220, 235), r.y + 28, left=r.x + 24)
-            _text(surface, small, t("lander_planet_" + key), (170, 175, 195), r.y + 58, left=r.x + 24)
+            _text(surface, medium, t("lander_body_" + key), (255, 230, 140) if focus else (220, 220, 235), r.y + 27, left=r.x + 32)
+            _text(surface, small, t("lander_planet_" + key), (170, 175, 195), r.y + 55, left=r.x + 32)
         key = lander.MENU_ORDER[self.lander_index % len(lander.MENU_ORDER)]
         pic = lander_view.preview(key)
         px = 500
@@ -2321,13 +2332,13 @@ class StoryHub:
         # the wrapping measures every word: done once per text, language and font, not at each frame
         info = t("lander_info_" + key)
         cache = self.__dict__.setdefault("_lander_wrap", {})
-        ck = (info, id(body), BASE_WIDTH - px - 50)
+        ck = (info, id(body), BASE_WIDTH - px - 80)
         lines = cache.get(ck)
         if lines is None:
-            lines = cache[ck] = _wrap_nb(body, info, BASE_WIDTH - px - 50)
-        phobos_ui.plate(surface, pygame.Rect(px - 16, ty - 20, BASE_WIDTH - px - 28, 32 * len(lines) + 12), rivets=False)
+            lines = cache[ck] = _wrap_nb(body, info, BASE_WIDTH - px - 80)
+        phobos_ui.plate(surface, pygame.Rect(px - 12, ty - 28, BASE_WIDTH - px - 32, 32 * len(lines) + 24), rivets=False)
         for line in lines:
-            _text(surface, body, line, menu_ui.TEXT, ty, left=px)
+            _text(surface, body, line, menu_ui.TEXT, ty, left=px + 12)
             ty += 32
 
     def _draw_gate_choice(self, surface, font, medium, small):
@@ -2361,8 +2372,8 @@ class StoryHub:
                 surface.blit(img, (r.centerx - img.get_width() // 2, r.y + 18 + bob))
             _text(surface, medium, t("ship_" + hull), (255, 230, 140) if focus else (160, 160, 180),
                   r.y + 196, centerx=r.centerx)
-            for li, line in enumerate(_wrap(body, t("story_choice_%s_d" % hull), r.w - 56)[:5]):
-                _text(surface, body, line, (200, 200, 215) if focus else (165, 170, 190), r.y + 246 + li * 30,
+            for li, line in enumerate(_wrap(body, t("story_choice_%s_d" % hull), r.w - 96)[:5]):
+                _text(surface, body, line, (200, 200, 215) if focus else (165, 170, 190), r.y + 252 + li * 30,
                       centerx=r.centerx)
         self._caption(surface, small, t("story_choice_note"), (200, 205, 222), 116 + h + 34)
 
@@ -2427,8 +2438,8 @@ class StoryHub:
             col = MODE_COLORS[key]
             _text(surface, medium, t("story_mode_" + key), col if focus else (150, 155, 175), r.y + 46, centerx=r.centerx)
             body = getattr(self, "_body", None) or small
-            for li, line in enumerate(_wrap(body, t("story_mode_%s_d" % key), r.w - 40)):
-                _text(surface, body, line, (200, 200, 215) if focus else (130, 135, 155), r.y + 112 + li * 36, centerx=r.centerx)
+            for li, line in enumerate(_wrap(body, t("story_mode_%s_d" % key), r.w - 80)):
+                _text(surface, body, line, (200, 200, 215) if focus else (150, 155, 175), r.y + 118 + li * 34, centerx=r.centerx)
 
     def _draw_log(self, surface, font, small):
         """The journal in two zones: the scenes to watch again (the cursor is there) and what happened (it scrolls),
@@ -2440,10 +2451,10 @@ class StoryHub:
         ax = box.right - 22
         nxt = ss.next_mission(self.state, self.missions())
         if nxt is not None:
-            _text_fit(surface, small, t("story_log_goal").format(name=t(nxt["title"])), (255, 230, 140), box.y + 30,
-                      box.x + 24, box.w - 48)
+            _text_fit(surface, small, t("story_log_goal").format(name=t(nxt["title"])), (255, 230, 140), box.y + 34,
+                      box.x + 36, box.w - 72)
         # zone 1: the scenes to watch again
-        _text_fit(surface, small, t("story_log_head_scenes"), head_col, box.y + 72, box.x + 24, 400, scale=0.8)
+        _text_fit(surface, small, t("story_log_head_scenes"), head_col, box.y + 76, box.x + 36, 400, scale=0.8)
         replay = self.replay_entries()
         step = 34
         first = max(0, min(self.log_cursor - 1, len(replay) - LOG_REPLAY_ROWS))
@@ -2452,9 +2463,9 @@ class StoryHub:
             entry = replay[i]
             focus = i == self.log_cursor
             if focus:
-                phobos_ui.lit(surface, pygame.Rect(box.x + 12, y - step // 2 + 2, box.w - 24, step - 4))
+                phobos_ui.lit(surface, pygame.Rect(box.x + 20, y - step // 2, box.w - 40, step))
             text = t("story_log_intro") if entry.get("intro") else log_text(entry, t)
-            _text_fit(surface, small, text, (255, 230, 140) if focus else (255, 190, 90), y, box.x + 24, box.w - 80)
+            _text_fit(surface, small, text, (255, 230, 140) if focus else (255, 190, 90), y, box.x + 36, box.w - 110)
             y += step
         zone2 = box.y + 104 + LOG_REPLAY_ROWS * step
         if first > 0:
@@ -2463,13 +2474,13 @@ class StoryHub:
             pygame.draw.polygon(surface, arrow_col, [(ax - 7, zone2 - 18), (ax + 7, zone2 - 18), (ax, zone2 - 8)])
         # zone 2: what happened
         phobos_ui.crt(surface, pygame.Rect(box.x + 12, zone2 + 2, box.w - 24, box.bottom - 10 - (zone2 + 2)))   # a terminal
-        _text_fit(surface, small, t("story_log_head_log"), phobos_ui.CRT, zone2 + 26, box.x + 24, 400, scale=0.8)
+        _text_fit(surface, small, t("story_log_head_log"), phobos_ui.CRT, zone2 + 28, box.x + 40, 400, scale=0.8)
         entries = self.story_entries()
         rows, step = LOG_STORY_ROWS, 36
         start = self.log_scroll = max(0, min(self.log_scroll, len(entries) - rows))
         y = zone2 + 62
         if not entries:
-            _text(surface, small, t("story_log_empty"), phobos_ui.CRT_DIM, y, left=box.x + 24)
+            _text(surface, small, t("story_log_empty"), phobos_ui.CRT_DIM, y, left=box.x + 40)
         for i in range(start, min(len(entries), start + rows)):
             entry = entries[i]
             indent = 0
@@ -2480,7 +2491,7 @@ class StoryHub:
             else:
                 text = log_text(entry, t)
                 col = phobos_ui.CRT_TEXT
-            _text_fit(surface, small, text, col, y, box.x + 24 + indent, box.w - 80 - indent)
+            _text_fit(surface, small, text, col, y, box.x + 40 + indent, box.w - 110 - indent)
             y += step
         if start > 0:
             pygame.draw.polygon(surface, arrow_col, [(ax - 7, zone2 + 46), (ax + 7, zone2 + 46), (ax, zone2 + 36)])
@@ -2498,7 +2509,12 @@ class StoryHub:
 
     # the layout of the Extras tab for 3, 4 and 5 paragraphs: top, step, gap between boxes, title / text offsets,
     # text line height
-    EXTRAS_LAYOUT = {3: (124, 150, 24, 30, 68, 30), 4: (124, 122, 14, 26, 60, 27), 5: (84, 108, 10, 22, 55, 24)}
+    EXTRAS_LAYOUT = {3: (112, 150, 24, 36, 74, 29), 4: (96, 134, 14, 30, 64, 25), 5: (82, 108, 8, 24, 56, 22)}
+
+    def _extras_body(self, count):
+        """The font of the descriptions: the more paragraphs, the smaller (24, 22, 20)."""
+        import fonts
+        return fonts.body(self.AIRY_BODY - 2 * (max(3, min(5, count)) - 3))
 
     def _draw_extras(self, surface, medium, small):
         """One paragraph for each screen of the main menu (Achievements, Jukebox, Credits, Options, and the Add-On when
@@ -2513,11 +2529,11 @@ class StoryHub:
             box = pygame.Rect(cx - width // 2, y, width, step - gap)
             phobos_ui.holo(surface, box, chosen)                    # a holographic sign, the chosen one lit in gold
             head = t(DOOR_TITLES.get(door, door))
-            _text(surface, medium, head, (255, 230, 120) if chosen else phobos_ui.HOLO_TEXT, y + head_dy, left=box.x + 28)
-            body = getattr(self, "_body", None) or small
-            for j, line in enumerate(_wrap(body, t("story_door_" + door), width - 60)[:2]):
+            _text(surface, medium, head, (255, 230, 120) if chosen else phobos_ui.HOLO_TEXT, y + head_dy, left=box.x + 40)
+            body = self._extras_body(len(doors))
+            for j, line in enumerate(_wrap(body, t("story_door_" + door), width - 100)[:2]):
                 _text(surface, body, line, (225, 228, 240) if chosen else (150, 180, 215),
-                      y + body_dy + j * line_h, left=box.x + 28)
+                      y + body_dy + j * line_h, left=box.x + 40)
 
     def _draw_bestiary(self, surface, font, medium, small):
         """Left: the enemies met so far. Right: what the pilot has learned about the selected one."""
@@ -2539,18 +2555,18 @@ class StoryHub:
             if focus:
                 phobos_ui.phosphor(surface, row.inflate(0, -6))                         # negative: dark letters on phosphor
             col = phobos_ui.CRT_BG if focus else phobos_ui.CRT_DIM
-            _text_fit(surface, small, t(entry["name"]), col, y, row.x + 16, list_w - 30, scale=0.8)
+            _text_fit(surface, small, t(entry["name"]), col, y, row.x + 22, list_w - 44, scale=0.8)
             y += 56
 
         entry, count = entries[self.best_index]
         tiers = ss.best_tiers(count, bool(entry.get("boss")))
         panel = pygame.Rect(box.x + list_w + 44, box.y + 16, box.w - list_w - 64, box.h - 32)
         phobos_ui.crt(surface, panel)                                              # the sheet: a second terminal
-        panel = panel.inflate(-24, -20)
+        panel = panel.inflate(-44, -36)
         cx = panel.centerx
 
         # picture: 1 kill = small, 3 = twice as big, 5 = animated
-        frame = pygame.Rect(panel.x, panel.y, panel.w, 210)
+        frame = pygame.Rect(panel.x, panel.y, panel.w, 190)
         _fill(surface, (1, 8, 7), frame, 4, alpha=235)
         pygame.draw.rect(surface, phobos_ui.CRT_DIM, frame, 2, border_radius=4)
         img = self.bestiary_picture(entry["id"], count)
@@ -2558,21 +2574,21 @@ class StoryHub:
 
         name_w = medium.size(t(entry["name"]))[0]
         if name_w <= panel.w - 20:
-            _text(surface, medium, t(entry["name"]), (255, 170, 80), frame.bottom + 36, centerx=cx)
+            _text(surface, medium, t(entry["name"]), (255, 170, 80), frame.bottom + 34, centerx=cx)
         else:                                   # a long translated name is shrunk to fit
-            _text_fit(surface, medium, t(entry["name"]), (255, 170, 80), frame.bottom + 36,
+            _text_fit(surface, medium, t(entry["name"]), (255, 170, 80), frame.bottom + 34,
                       panel.x + 10, panel.w - 20)
-        _text(surface, small, t("story_best_count").format(n=count), phobos_ui.CRT_DIM, frame.bottom + 76, centerx=cx)
-        line_y = frame.bottom + 116
+        _text(surface, small, t("story_best_count").format(n=count), phobos_ui.CRT_DIM, frame.bottom + 68, centerx=cx)
+        line_y = frame.bottom + 108
         if tiers["text"]:
             body = getattr(self, "_body", None) or small
-            for line in _wrap(body, t(entry["text"]), panel.w - 40):
+            for line in _wrap(body, t(entry["text"]), panel.w - 60):
                 _text(surface, body, line, phobos_ui.CRT_TEXT, line_y, centerx=cx)
-                line_y += 36
+                line_y += 34
         if tiers["bonus"]:
             _text(surface, small, t("story_best_bonus_boss" if entry.get("boss") else "story_best_bonus").format(
                       pts=ss.bestiary_bonus(entry["id"])), (255, 215, 90),
-                  panel.bottom - 14, centerx=cx)
+                  panel.bottom - 8, centerx=cx)
 
     def _ship_name(self):
         slot = ss.selected_slot(self.state) or {}
@@ -2590,8 +2606,8 @@ class StoryHub:
         chapter = "story_ch1" if self.cheat_unlock or act < 2 else ("story_ch2" if act == 2 else "story_ch3")
         acts = [] if self.cheat_unlock else ss.shown_acts(self.state)
         if len(acts) < 2:
-            _text(surface, small, t(chapter), (255, 170, 80), box.y + 28, left=box.x + 16)
-        y = box.y + 52
+            _text(surface, small, t(chapter), (255, 170, 80), box.y + 38, left=box.x + 32)
+        y = box.y + 62
         # the list scrolls: entries from `first` on, so that the focused row (taller) always fits. The entries are
         # the missions and, between two groups (story, hunts, BONUS), a small heading
         low = box.bottom - (62 if self._toast_level() == "standard" else 44)      # the rows stop above the toast
@@ -2609,13 +2625,13 @@ class StoryHub:
                 entries.append(("head", group))
                 last = group
             entries.append(("row", i))
-        height = lambda e: MAP_HEAD_H if e[0] in ("head", "act") else 40
+        height = lambda e: MAP_HEAD_H if e[0] in ("head", "act") else MAP_ROW_H
         focus_e = entries.index(("row", focus_i)) if missions else 0
         first = 0
-        while first < focus_e and sum(height(e) + 4 for e in entries[first:focus_e]) + 76 + 4 > room:
+        while first < focus_e and sum(height(e) + 4 for e in entries[first:focus_e]) + MAP_FOCUS_H + 4 > room:
             first += 1
         if first > 0:
-            _text(surface, small, "^", (180, 180, 200), box.y + 28, right=box.right - 20)
+            _text(surface, small, "^", (180, 180, 200), box.y + 38, right=box.right - 28)
         nxt = ss.next_mission(self.state, missions)
         self.map_page = 0                                  # rows shown at once: what Page up / Page down (LB / RB) jump by
         for kind, ref in entries[first:]:
@@ -2625,14 +2641,14 @@ class StoryHub:
                     break
                 if kind == "act":
                     _text_fit(surface, small, t("story_ch" + str(ref)), (255, 170, 80), y + MAP_HEAD_H // 2 + 2,
-                              box.x + 16, 700, scale=0.9)
+                              box.x + 32, 700, scale=0.9)
                 else:
                     _text_fit(surface, small, t("story_grp_" + ref), (120, 160, 210), y + MAP_HEAD_H // 2 + 2,
-                              box.x + 16, 400, scale=0.8)
+                              box.x + 32, 400, scale=0.8)
                 y += MAP_HEAD_H + 4
                 continue
             i, mission = ref, missions[ref]
-            if y + (76 if i == focus_i else 40) > low:
+            if y + (MAP_FOCUS_H if i == focus_i else MAP_ROW_H) > low:
                 _text(surface, small, "v", (180, 180, 200), low - 12, right=box.right - 20)
                 break
             self.map_page += 1
@@ -2641,7 +2657,7 @@ class StoryHub:
             done = ss.mission_done(self.state, mission)
             focus = i == self.map_index
             # the focused row is taller: title line + one line for the blurb
-            row = pygame.Rect(box.x + 12, y, box.w - 24, 76 if focus else 40)
+            row = pygame.Rect(box.x + 16, y, box.w - 32, MAP_FOCUS_H if focus else MAP_ROW_H)
             if focus:
                 phobos_ui.lit(surface, row)
             if not open_:
@@ -2658,20 +2674,20 @@ class StoryHub:
             else:
                 col = (180, 180, 140) if focus else (150, 150, 160)
                 state = t("story_soon")
-            cy = row.y + 20
+            cy = row.y + MAP_ROW_H // 2
             name = t(mission["title"])
             level = ss.mission_level(self.state, mission)
             if open_ and level is not None:
                 name += "   " + t("story_level").format(n=level)
-            _text(surface, small, name, col, cy, left=row.x + 16)
-            _text(surface, small, state, col, cy, right=row.right - 14)
+            _text(surface, small, name, col, cy, left=row.x + 24)
+            _text(surface, small, state, col, cy, right=row.right - 24)
             if focus:
                 before = None if open_ else ss.unlock_hint(self.state, mission)
                 if before is not None:
                     _text_fit(surface, small, t("story_unlock_after").format(name=t(before["title"])), (225, 185, 120),
-                              cy + 34, row.x + 28, row.w - 40)       # what opens it, in place of its blurb
+                              cy + 36, row.x + 36, row.w - 72)       # what opens it, in place of its blurb
                 else:
-                    _text_fit(surface, small, mission_blurb(mission), (170, 175, 195), cy + 34, row.x + 28, row.w - 40)
+                    _text_fit(surface, small, mission_blurb(mission), (170, 175, 195), cy + 36, row.x + 36, row.w - 72)
             y += row.h + 4
         if self.toast:
             self._draw_toast(surface, medium, small, box)
@@ -2717,7 +2733,7 @@ class StoryHub:
         other one dimmed), without the Phenix / dome animations. The chosen hull flies the missions."""
         slots = self.state.get("slots") or []
         sel = int(self.state.get("selected_slot", 0))
-        slot_w, slot_h = 440, 170
+        slot_w, slot_h = 440, 158
         gap = 40
         x0 = (BASE_WIDTH - (slot_w * 2 + gap)) // 2
         y0 = 64                                                 # below the badges of the pilot and of the points
@@ -2776,20 +2792,20 @@ class StoryHub:
         w, gap = 196, 12
         x = (BASE_WIDTH - (w * len(cells) + gap * (len(cells) - 1))) // 2
         for i, (lab, val) in enumerate(cells):
-            r = pygame.Rect(x + i * (w + gap), y, w, 64)
+            r = pygame.Rect(x + i * (w + gap), y, w, 76)
             phobos_ui.plate(surface, r, rivets=False)
             col = (110, 115, 135) if (i == 2 and not dome and not phenix) else (220, 220, 235)
             if not owned:
                 val = "—"
-            _text(surface, small, lab, phobos_ui.HOLO_TEXT, r.y + 15, centerx=r.centerx)
-            _text(surface, small, str(val), col, r.y + 38, centerx=r.centerx)
+            _text(surface, small, lab, phobos_ui.HOLO_TEXT, r.y + 20, centerx=r.centerx)
+            _text(surface, small, str(val), col, r.y + 44, centerx=r.centerx)
             if owned and i in (0, 1):                                  # lives and speed: a level of small cells
                 if i == 0:
                     total, filled = ss.act_caps(self.state)["lives"], int(sl.get("lives", 1))
                 else:
                     total, filled = 5, int(sl.get("speed", ss.SPEED_START)) // 20
                 cells_w = total * 16 + (total - 1) * 3
-                phobos_ui.meter(surface, r.centerx - cells_w // 2, r.bottom - 9, filled, total)
+                phobos_ui.meter(surface, r.centerx - cells_w // 2, r.bottom - 12, filled, total)
 
     def _draw_paint(self, surface, small, box):
         """The paint shop: the three colours of the hull it works on (the Shield, or the hull kept in Act 3)."""
@@ -2814,17 +2830,17 @@ class StoryHub:
             _text(surface, small, label, (255, 230, 140) if focus else (200, 200, 210), r.bottom - 28, centerx=r.centerx)
 
     def _draw_shop(self, surface, small):
-        box = pygame.Rect(70, 308, BASE_WIDTH - 140, 328)
+        box = pygame.Rect(70, 312, BASE_WIDTH - 140, 324)
         phobos_ui.plate(surface, box, hazard=True)
         if self.paint_mode:
             self._draw_paint(surface, small, box)
             return
-        _text(surface, small, t("story_workshop"), (255, 160, 70), box.y + 26, left=box.x + 16)
+        _text(surface, small, t("story_workshop"), (255, 160, 70), box.y + 30, left=box.x + 32)
         flags = self.state.get("flags") or {}
         window = SHOP_WINDOW
         rows = self.shop_rows()
         start = max(0, min(self.shop_index - 3, len(rows) - window))
-        y = box.y + 46
+        y = box.y + 50
         for i in range(start, min(len(rows), start + window)):
             sid, label, cost, need = rows[i]
             item = ss.item_of(sid)
@@ -2836,7 +2852,7 @@ class StoryHub:
             if sid in ss.MISSILE_ROWS:
                 locked = not ss.missile_buyable(self.state, sid)
             focus = self.zone == "shop" and i == self.shop_index
-            row = pygame.Rect(box.x + 12, y, box.w - 24, 38)
+            row = pygame.Rect(box.x + 16, y, box.w - 32, 38)
             if focus:
                 phobos_ui.lit(surface, row)
             col = (100, 100, 110) if locked else ((255, 230, 140) if focus else (200, 200, 210))
@@ -2856,20 +2872,20 @@ class StoryHub:
                 name = t(label)
                 if sid == "missile_ammo":
                     name += "   (%d/%d)" % (ss.missile_stock(self.state), ss.MISSILE_MAX)     # the missiles held
-                _text(surface, small, name, col, row.centery, left=row.x + 16)
+                _text(surface, small, name, col, row.centery, left=row.x + 24)
                 if sid in ss.MISSILE_ROWS:
                     perm = sid == "missile_launcher"
                     _text(surface, small, t("story_item_permanent" if perm else "story_item_consumable"),
                           col if locked else ((130, 220, 150) if perm else (235, 175, 110)),
                           row.centery, right=row.right - 180)
-            _text(surface, small, extra, col, row.centery, right=row.right - 12)
+            _text(surface, small, extra, col, row.centery, right=row.right - 24)
             y += 40
         # there are more rows than the window shows: an arrow on the right edge says where
         ax = box.right - 14
         if start > 0:
             pygame.draw.polygon(surface, (255, 190, 110), [(ax - 7, box.y + 36), (ax + 7, box.y + 36), (ax, box.y + 26)])
         if start + window < len(rows):
-            ay = box.y + 46 + window * 40 + 2
+            ay = box.y + 50 + window * 40 + 2
             pygame.draw.polygon(surface, (255, 190, 110), [(ax - 7, ay), (ax + 7, ay), (ax, ay + 10)])
         if 0 <= self.shop_index < len(rows):
             item = ss.item_of(rows[self.shop_index][0])

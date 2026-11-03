@@ -92,6 +92,7 @@ import menu_sfx
 import menu_fx
 import hint_bar
 import menu_ui
+import phobos_ui
 import main_menu
 import draw_frame
 import ach_helpers
@@ -430,6 +431,14 @@ class Game:
         else:
             self._open_jukebox()
 
+    def _door_picture(self):
+        """The bar of the station behind the Jukebox and the Add-On when they were opened from the Adventure (None
+        elsewhere: the main menu keeps its stars, and so does the Add-On when its picture is missing)."""
+        if (getattr(self, "story_door", None) in ("jukebox", "addon") and not getattr(self, "started", False)
+                and getattr(self, "menu_screen", "") in ("jukebox", "addon")):
+            return phobos_ui.backdrop("bar")
+        return None
+
     def _story_scene_door(self, door):
         """The scene that ends in a screen of the main menu (the Phobos bar) has been read: fade to black, then open it
         (see _apply_fade_action), and the screen comes up from black."""
@@ -666,14 +675,15 @@ class Game:
             )
             extra = "  ||" if playing and self.juke_paused else ("  >" if playing else "")
             labels.append(self._juke_title(key) + extra)
-        rows_font = fonts.text(32)                  # the tracks: a list to read, in Play (the titles are Audiowide)
+        airy = self._door_picture() is not None      # opened from the Adventure: smaller letters, more room in the panel
+        rows_font = fonts.text(28 if airy else 32)  # the tracks: a list to read, in Play (the titles are Audiowide)
         row_h = rows_font.get_linesize()
         index = int(getattr(self, "juke_index", 0) or 0) % max(1, len(cat))
         top = self._juke_scroll(index, len(cat))
         shown = labels[top:top + self.JUKE_ROWS]
         width = max(self._txt(rows_font, label, menu_ui.row_colour(False)).get_width() for label in labels)
         box = menu_ui.draw_rows(self, surface, rows_font, shown, y0, 46, index - top,
-                                pad_y=max(1, (46 - row_h) // 2), panel_pad=(24, 12), min_width=width)
+                                pad_y=max(1, (46 - row_h) // 2), panel_pad=(40, 20) if airy else (24, 12), min_width=width)
         self._juke_arrows(surface, box, top > 0, top + self.JUKE_ROWS < len(cat))
         # The LED rack, the seek bar and the clock of the track playing (or paused), wherever the cursor is in the
         # list: they follow the next track only once it is played.
@@ -4597,8 +4607,8 @@ class Game:
         story = getattr(self, "story", None)
         lander_covers = (lander.active(self) is not None and self.started
                          and (not self.game_over or self.hs_phase == "card"))      # (its sky and ground fill the screen)
-        if not lander_covers and not (not self.started and self.menu_screen == "story_hub" and story is not None
-                                      and story.covers_screen()):
+        if not lander_covers and self._door_picture() is None and not (
+                not self.started and self.menu_screen == "story_hub" and story is not None and story.covers_screen()):
             draw_frame.draw_background(self)       # (a full-screen slide paints over it anyway)
         
         shake_x = shake_y = 0

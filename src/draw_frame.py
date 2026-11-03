@@ -329,10 +329,14 @@ def draw_menu_screens(game):
                             body=getattr(game, "read_font", None))
             if not game.quit_confirm:
                 hint_bar.draw_for(game, game.game_surface)        # the same help bar as the classic menus
-    elif game.menu_screen == "addon":
-        game._draw_addon_menu(game.game_surface)
-    elif game.menu_screen == "jukebox":
-        game._draw_jukebox(game.game_surface)
+    elif game.menu_screen in ("addon", "jukebox"):
+        picture = game._door_picture()
+        if picture is not None:
+            game.game_surface.blit(picture, (0, 0))              # opened from the Adventure: the bar of the station
+        if game.menu_screen == "addon":
+            game._draw_addon_menu(game.game_surface)
+        else:
+            game._draw_jukebox(game.game_surface)
     elif game.menu_screen == "main":
         # five entries, in the large font: PLAY, ADVENTURE, EXTRAS, OPTIONS, QUIT
         labels = [t(main_menu.MAIN_TITLES[name]) for name in main_menu.MAIN]

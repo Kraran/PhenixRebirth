@@ -187,8 +187,12 @@ def band():
 
 def is_steel(game):
     """True on the screens of the Adventure: the band and the keys wear the steel of the station (phobos_ui)."""
-    return (not getattr(game, "started", False) and getattr(game, "menu_screen", "") == "story_hub"
-            and getattr(game, "story", None) is not None)
+    if getattr(game, "started", False):
+        return False
+    if getattr(game, "menu_screen", "") == "story_hub":
+        return getattr(game, "story", None) is not None
+    door = getattr(game, "_door_picture", None)             # the Jukebox / Add-On opened from the Adventure: steel too
+    return bool(door and door() is not None)
 
 
 def draw(game, surface, items, right=None, lit=None):

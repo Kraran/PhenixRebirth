@@ -27,6 +27,13 @@ Current release: **v1.6.0**
   a hazard plate, the preview of the Lander in a hologram, and the scenes of the visual novel on a solid blue glass panel. The
   toasts keep their coloured plates (their colour tells the type of the message). Tests: `tests/test_phobos_ui.py`.
 
+- **Menus of the Adventure, airier.** The hub and the screens before it use smaller letters (24 for the text and the descriptions, 28 for the
+  titles, instead of 28 and 32), the rows of the map are taller, and the plates keep a wider margin around their text (map, workshop,
+  stat plates of the hangar, bestiary, journal, extras, mode and hull cards, Lander menu). The descriptions of the Extras get smaller
+  the more paragraphs there are. The Jukebox and the Add-On, when opened from the Extras of the Adventure, now show the bar of the station
+  behind them (with the steel help bar, and a little more room in the Jukebox list); from the main menu they are unchanged.
+  Tests: `tests/test_phobos_ui.py`.
+
 - **Lunar Lander test: five settings and a menu to choose one.** Europa (bright ice with long red-brown fractures, Jupiter in the sky),
   Deimos (dark dusty rock with worn craters, Mars in the sky; almost no gravity) and Triton (pinkish "cantaloupe" ice with dark
   streaks, Neptune in the sky) join Titan (Saturn in the sky) and the asteroid (other asteroids in the sky). The mother planets
