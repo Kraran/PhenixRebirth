@@ -303,3 +303,53 @@ def test_the_points_are_on_a_steel_badge_at_the_right(run):
     s = _hangar_pixels(g, hub)
     assert s.get_at((BASE_WIDTH - 56 - 1, 40))[:3] == phobos_ui.STEEL_EDGE      # the right end of the badge
     assert any(s.get_at((x, 40))[:3] == phobos_ui.GOLD for x in range(1000, 1224))   # gold digits
+
+
+# ------------------------------------------------------------------ the bestiary
+def test_a_crt_has_dark_green_glass_scan_lines_and_a_steel_bezel():
+    s = _surf()
+    phobos_ui.crt(s, pygame.Rect(20, 20, 300, 120))
+    assert s.get_at((20, 70))[:3] == phobos_ui.STEEL_EDGE                    # the bezel
+    glass = {s.get_at((170, y))[:3] for y in range(40, 100)}
+    assert len(glass) == 2                                                    # scan lines: a darker row every third one
+    dark, light = sorted(glass)
+    assert dark[1] < light[1] and light[1] > light[0] and max(light) < 60         # dark green glass
+
+
+def _bestiary_hub(g, kills=None):
+    hub = _hub(g, "bestiary")
+    if kills:
+        ss.record_result(hub.state, "ch1_sortie", 100, True, kills)
+    hub.best_index = 0
+    return hub
+
+
+def test_the_bestiary_list_is_a_terminal_with_the_chosen_entry_in_negative(run):
+    g = run.game
+    hub = _bestiary_hub(g, {"bird1": 160, "bird2": 55})
+    s = _hangar_pixels(g, hub)
+    lit = lambda y: sum(s.get_at((300, yy))[:3][1] > 200 for yy in range(y - 2, y + 3))
+    assert lit(100) >= 2                                                     # the chosen row: phosphor
+    assert lit(170) == 0                                                     # the other one: not lit
+    row = {s.get_at((x, y))[:3] for x in range(100, 300) for y in range(104, 132)}
+    assert min(sum(c) for c in row) < 70 and any(c[1] > 200 for c in row)    # dark letters on the lit row
+    hub.best_index = 1
+    s = _hangar_pixels(g, hub)
+    assert lit(170) >= 2 and lit(100) == 0
+
+
+def test_the_sheet_is_read_on_a_second_terminal(run):
+    g = run.game
+    hub = _bestiary_hub(g, {"bird1": 160})
+    s = _hangar_pixels(g, hub)
+    assert s.get_at((516, 300))[:3] == phobos_ui.STEEL_EDGE                  # the bezel of the right terminal
+    assert any(s.get_at((x, 430))[:3] == phobos_ui.CRT_TEXT for x in range(540, 1180)) or \
+        any(s.get_at((x, y))[:3] == phobos_ui.CRT_TEXT for x in range(540, 1180) for y in range(420, 560))
+
+
+def test_the_empty_bestiary_is_one_terminal_with_its_line(run):
+    g = run.game
+    hub = _bestiary_hub(g)
+    s = _hangar_pixels(g, hub)
+    assert s.get_at((70 + 12, 300))[:3] == phobos_ui.STEEL_EDGE              # the bezel
+    assert any(s.get_at((x, y))[:3] == phobos_ui.CRT_TEXT for x in range(400, 880) for y in range(330, 380))

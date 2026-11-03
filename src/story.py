@@ -2502,32 +2502,34 @@ class StoryHub:
         phobos_ui.plate(surface, box, hazard=True)
         entries = ss.bestiary_entries(self.state)
         if not entries:
-            _text(surface, font, t("story_best_empty"), (160, 170, 200), box.centery, centerx=box.centerx)
+            phobos_ui.crt(surface, box.inflate(-24, -34))
+            _text(surface, font, t("story_best_empty"), phobos_ui.CRT_TEXT, box.centery, centerx=box.centerx)
             return
         self.best_index = max(0, min(len(entries) - 1, self.best_index))
 
         list_w = 400
-        y = box.y + 30
+        phobos_ui.crt(surface, pygame.Rect(box.x + 12, box.y + 16, list_w + 8, box.h - 32))      # the list: a terminal
+        y = box.y + 40
         for i, (entry, count) in enumerate(entries):
             focus = i == self.best_index
-            row = pygame.Rect(box.x + 12, y - 24, list_w, 48)
+            row = pygame.Rect(box.x + 18, y - 24, list_w - 4, 48)
             if focus:
-                phobos_ui.lit(surface, row)
-            col = (255, 230, 140) if focus else (200, 200, 215)
-            _text_fit(surface, small, t(entry["name"]), col, y, row.x + 16, list_w - 26, scale=0.8)
+                phobos_ui.phosphor(surface, row.inflate(0, -6))                         # negative: dark letters on phosphor
+            col = phobos_ui.CRT_BG if focus else phobos_ui.CRT_DIM
+            _text_fit(surface, small, t(entry["name"]), col, y, row.x + 16, list_w - 30, scale=0.8)
             y += 56
-        pygame.draw.line(surface, (60, 70, 100), (box.x + list_w + 24, box.y + 16),
-                         (box.x + list_w + 24, box.bottom - 16), 1)
 
         entry, count = entries[self.best_index]
         tiers = ss.best_tiers(count, bool(entry.get("boss")))
         panel = pygame.Rect(box.x + list_w + 44, box.y + 16, box.w - list_w - 64, box.h - 32)
+        phobos_ui.crt(surface, panel)                                              # the sheet: a second terminal
+        panel = panel.inflate(-24, -20)
         cx = panel.centerx
 
         # picture: 1 kill = small, 3 = twice as big, 5 = animated
         frame = pygame.Rect(panel.x, panel.y, panel.w, 210)
-        _fill(surface, (8, 10, 18), frame, 8)
-        pygame.draw.rect(surface, (50, 60, 90), frame, 1, border_radius=8)
+        _fill(surface, (1, 8, 7), frame, 4, alpha=235)
+        pygame.draw.rect(surface, phobos_ui.CRT_DIM, frame, 2, border_radius=4)
         img = self.bestiary_picture(entry["id"], count)
         surface.blit(img, (frame.centerx - img.get_width() // 2, frame.centery - img.get_height() // 2))
 
@@ -2537,12 +2539,12 @@ class StoryHub:
         else:                                   # a long translated name is shrunk to fit
             _text_fit(surface, medium, t(entry["name"]), (255, 170, 80), frame.bottom + 36,
                       panel.x + 10, panel.w - 20)
-        _text(surface, small, t("story_best_count").format(n=count), (150, 155, 180), frame.bottom + 76, centerx=cx)
+        _text(surface, small, t("story_best_count").format(n=count), phobos_ui.CRT_DIM, frame.bottom + 76, centerx=cx)
         line_y = frame.bottom + 116
         if tiers["text"]:
             body = getattr(self, "_body", None) or small
             for line in _wrap(body, t(entry["text"]), panel.w - 40):
-                _text(surface, body, line, (215, 218, 232), line_y, centerx=cx)
+                _text(surface, body, line, phobos_ui.CRT_TEXT, line_y, centerx=cx)
                 line_y += 36
         if tiers["bonus"]:
             _text(surface, small, t("story_best_bonus_boss" if entry.get("boss") else "story_best_bonus").format(

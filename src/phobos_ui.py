@@ -8,6 +8,7 @@ Everything here is drawn once and kept by its size, so a menu costs a few blits 
 - `title`: the title of a screen in a copper cartouche, with a glow like a lamp;
 - `badge`: a small steel plate with a line of text (the pilot, the hull);
 - `holo`: a holographic card (blue glass with a grid and cut corners), lit in gold when it is the chosen one;
+- `crt`: a CRT screen (dark green glass, scan lines, a steel bezel), for the terminals;
 - `meter`: a row of small cells, some of them lit (a level);
 - `tab`: a tab of the strip at the bottom;
 - `band`: the steel band of the help bar;
@@ -197,7 +198,10 @@ def tab(surface, rect, lit_on):
 
 HOLO_EDGE = (61, 139, 214)
 HOLO_TEXT = (125, 175, 225)
-CRT = (79, 209, 197)
+CRT = (79, 209, 197)              # the phosphor of the screens
+CRT_DIM = (58, 168, 157)          # an entry of a terminal list
+CRT_TEXT = (111, 224, 212)        # what is read on a terminal
+CRT_BG = (4, 18, 15)
 
 
 def _chamfer(w, h, c):
@@ -222,6 +226,44 @@ def holo(surface, rect, chosen=False):
         if chosen:
             pygame.draw.polygon(img, (255, 179, 71, 60), pts, 5)             # a soft glow inside the edge
         pygame.draw.polygon(img, (LIT_EDGE if chosen else HOLO_EDGE) + (255,), pts, 2)
+        _keep(key, img)
+    surface.blit(img, r.topleft)
+    return r
+
+
+def crt(surface, rect):
+    """A CRT screen: dark green glass with a glow along the edge, scan lines and a steel bezel."""
+    r = pygame.Rect(rect)
+    key = ("crt", r.w, r.h)
+    img = _layers.get(key)
+    if img is None:
+        img = pygame.Surface((r.w, r.h), pygame.SRCALPHA)
+        pygame.draw.rect(img, CRT_BG + (238,), img.get_rect(), border_radius=4)
+        for i, a in enumerate((46, 30, 18, 9)):                                 # the glow, brighter at the edge
+            pygame.draw.rect(img, CRT + (a,), img.get_rect().inflate(-6 - i * 4, -6 - i * 4), 4, border_radius=4)
+        lines = pygame.Surface((r.w, r.h), pygame.SRCALPHA)
+        for y in range(1, r.h - 3, 3):
+            pygame.draw.line(lines, (0, 0, 0, 70), (3, y), (r.w - 4, y))
+        img.blit(lines, (0, 0))                                                 # (blended: a darker line, not a hole)
+        pygame.draw.rect(img, STEEL_EDGE + (255,), img.get_rect(), 3, border_radius=4)
+        pygame.draw.rect(img, STEEL_DARK + (255,), img.get_rect().inflate(-6, -6), 1, border_radius=3)
+        _keep(key, img)
+    surface.blit(img, r.topleft)
+    return r
+
+
+def phosphor(surface, rect):
+    """The chosen row of a terminal list: lit phosphor (dark letters go on it), with the scan lines of the screen."""
+    r = pygame.Rect(rect)
+    key = ("phosphor", r.w, r.h)
+    img = _layers.get(key)
+    if img is None:
+        img = pygame.Surface((r.w, r.h), pygame.SRCALPHA)
+        pygame.draw.rect(img, CRT + (246,), img.get_rect(), border_radius=2)
+        lines = pygame.Surface((r.w, r.h), pygame.SRCALPHA)
+        for y in range(1, r.h, 3):
+            pygame.draw.line(lines, (0, 40, 36, 40), (0, y), (r.w, y))
+        img.blit(lines, (0, 0))
         _keep(key, img)
     surface.blit(img, r.topleft)
     return r
