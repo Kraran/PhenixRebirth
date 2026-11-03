@@ -1,7 +1,9 @@
 """What the player sees in the Lunar Lander level (src/lander.py): the sky, the ground (a texture of the body, lit from the
 upper left, darker with the depth), the landing zones and the HUD. The ship itself is drawn by the Player, in the middle.
 
-Everything heavy is made once per body: the sky and the two tiles of texture of the ground. A frame only slides and scales
+Five bodies (lander.BODIES): the asteroid, Titan, Europa, Deimos and Triton, each with its own texture of ground, its sky and
+its mother planet in the sky (Saturn, Jupiter, Mars, Neptune; the other asteroids for the asteroid), made from what the real
+places look like. Everything heavy is made once per body: the sky and the two tiles of texture of the ground. A frame only slides and scales
 those tiles, cuts the ground out of them with the polygon of the relief and lays the light on its edge.
 """
 import math
@@ -11,7 +13,7 @@ import pygame
 
 import announce
 import lander
-from settings import BASE_HEIGHT, BASE_WIDTH
+from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
 
 W, H = BASE_WIDTH, BASE_HEIGHT
 CX, CY = W / 2.0, H / 2.0
@@ -20,6 +22,22 @@ TILES = ((1024, 1024), (768, 768))          # (texture size in px, size of the t
 ZQ = 256                                    # the zoom drawn is a multiple of 1/ZQ: the tiles (1024 and 768 world px) then have a whole size
 HUD_COLOR = (120, 235, 255)
 _CACHE = {}                                 # per body: sky, textures
+# What differs from one body to the next: the sky ("haze": the orange sky of Titan, "stars": black with stars), the seed of the
+# textures, the colour of the boulders and of the lit edge of the ground.
+LOOKS = {
+    "ice": {"sky": "haze", "seed": 11, "plain": (150, 120, 92), "lip": (255, 232, 200)},
+    "rock": {"sky": "stars", "seed": 23, "plain": (92, 90, 86), "lip": (205, 205, 200)},
+    "europa": {"sky": "stars", "seed": 31, "plain": (206, 200, 192), "lip": (248, 250, 255)},
+    "deimos": {"sky": "stars", "seed": 47, "plain": (84, 74, 66), "lip": (200, 182, 160)},
+    "triton": {"sky": "stars", "seed": 59, "plain": (196, 164, 160), "lip": (255, 228, 226)},
+}
+GLOW = {"saturn": (200, 160, 100), "jupiter": (190, 165, 130), "mars": (190, 100, 60), "neptune": (50, 100, 220)}   # the halo of each
+PLANET_DRAW = {                             # the mother planet: (width of its picture in px, where, tint, the share of its light kept,
+    "saturn": (640, (900, 200), (255, 196, 140), 0.78, 0.22),   # the radius of the disc in widths of the picture: Saturn has its rings)
+    "jupiter": (600, (330, 190), (255, 255, 255), 1.0, 0.5),    # (Saturn is seen through the orange haze of Titan)
+    "mars": (380, (930, 210), (255, 255, 255), 1.0, 0.5),
+    "neptune": (430, (320, 200), (255, 255, 255), 1.0, 0.5),
+}
 
 
 # ------------------------------------------------------------------ textures (made once)
@@ -46,6 +64,55 @@ def _fbm(size, base, octaves, rng):
     return total / norm
 
 
+def _mix(a, b, k):
+    """a * (1 - k) + b * k, with k a field (size, size) and a, b colours or fields."""
+    k = np.asarray(k)[..., None]
+    return a * (1 - k) + np.asarray(b, dtype=float) * k
+
+
+def _worley(size, count, rng):
+    """The distance to the nearest (f1) and the second nearest (f2) of `count` random points, on a torus, in units of the
+    mean distance between points: the cells of a cantaloupe."""
+    pts = rng.random((count, 2)) * size
+    ys, xs = np.mgrid[0:size, 0:size].astype(np.float32)
+    f1 = np.full((size, size), 1e9, dtype=np.float32)
+    f2 = f1.copy()
+    for px, py in pts:
+        dx = np.abs(xs - np.float32(px))
+        dx = np.minimum(dx, size - dx)
+        dy = np.abs(ys - np.float32(py))
+        dy = np.minimum(dy, size - dy)
+        d = np.sqrt(dx * dx + dy * dy)
+        f2 = np.minimum(f2, np.maximum(f1, d))
+        f1 = np.minimum(f1, d)
+    unit = size / math.sqrt(count)
+    return f1 / unit, f2 / unit
+
+
+def _craters(size, count, r_lo, r_hi, rng):
+    """The light of `count` craters laid on a looping tile: (size, size) around 0 (positive on the rim that faces the light
+    from the upper left, negative inside, on the far side of the bowl)."""
+    height = np.zeros((size, size))
+    for _ in range(count):
+        cx, cy = int(rng.integers(0, size)), int(rng.integers(0, size))
+        r = float(rng.uniform(r_lo, r_hi)) * float(rng.uniform(0.5, 1.0)) ** 0.5
+        reach = int(r * 1.5) + 2
+        iy, ix = np.arange(cy - reach, cy + reach + 1), np.arange(cx - reach, cx + reach + 1)
+        d = np.hypot(ix[None, :] - cx, iy[:, None] - cy) / r
+        bowl = -np.clip(1 - d * d, 0, 1) * 0.55
+        rim = 0.32 * np.exp(-(((d - 1.0) / 0.16) ** 2))
+        height[np.ix_(iy % size, ix % size)] += bowl + rim
+    return (height - np.roll(np.roll(height, 2, 0), 2, 1)) * 5.0
+
+
+def _smear(field, steps, shift, axis):
+    """A field stretched along an axis (the mean of itself shifted: streaks)."""
+    out = np.zeros_like(field)
+    for k in range(steps):
+        out += np.roll(field, k * shift, axis)
+    return out / steps
+
+
 def _texture(style, size, seed):
     rng = np.random.default_rng(seed)
     big = _fbm(size, 3, 4, rng)
@@ -59,6 +126,60 @@ def _texture(style, size, seed):
         crack = np.abs(_fbm(size, 9, 4, rng) - 0.5)                         # fine cracks in the crust
         col = col * (1 - 0.28 * (crack < 0.008)[..., None])
         col = col * (0.88 + 0.22 * fine[..., None])
+    elif style == "europa":
+        # Europa: a bright ice, white with a blue-grey tinge, crossed by long ridges and fractures of a reddish brown (the
+        # "lineae" of the photographs of Galileo), with mottled patches of a darker tan (the chaos terrain)
+        cream, blue = np.array([236, 232, 222.0]), np.array([206, 218, 232.0])
+        col = _mix(cream, blue, big)
+        brown, tan = np.array([150, 86, 58.0]), np.array([186, 146, 116.0])
+        # the lineae: long straight fractures that cross each other (a line of a whole direction (a, b) comes round on the
+        # tile), a little bent by a slow wave, each with its dark reddish stain and its fine pale core
+        ys, xs = np.mgrid[0:size, 0:size].astype(np.float32)
+        bend = ((_fbm(size, 4, 2, rng) - 0.5) * 40.0).astype(np.float32)
+        dirs = [(1, 0), (0, 1), (1, 1), (1, -1), (1, 2), (2, 1), (1, -2), (2, -1), (3, 1), (1, 3), (3, -1), (1, -3)]
+        wide, core = np.zeros((size, size)), np.zeros((size, size))
+        big_n, thin_n = (7, 4) if size >= 1000 else (3, 3)                   # (the second tile, fainter, has fewer)
+        for k in range(big_n + thin_n):
+            a_, b_ = dirs[int(rng.integers(0, len(dirs)))]
+            x0, y0 = float(rng.uniform(0, size)), float(rng.uniform(0, size))
+            f = (-b_ * (xs - x0) + a_ * (ys - y0)) + bend * float(rng.uniform(0.6, 1.4))
+            dist = np.abs((f + size / 2.0) % size - size / 2.0) / math.hypot(a_, b_)
+            w = float(rng.uniform(3.0, 9.0)) * (1.5 if k < big_n else 1.0)
+            wide = np.maximum(wide, np.clip(1 - dist / (w * 4.5), 0, 1) ** 2 * (0.45 if k < big_n else 0.18))
+            core = np.maximum(core, np.clip(1 - dist / w, 0, 1) * (0.85 if k < big_n else 0.55))
+        col = _mix(col, brown, wide)
+        col = _mix(col, np.array([120, 66, 46.0]), core)
+        col = _mix(col, np.array([226, 214, 200.0]), 0.5 * np.clip(1 - (core > 0.5) * 0 - np.abs(core - 0.95) / 0.05, 0, 1) * (core > 0.85))
+        chaos = np.clip((mid - 0.56) / 0.1, 0, 1)
+        col = _mix(col, tan, 0.65 * chaos)
+        col = col * (0.9 + 0.2 * fine[..., None]) * (1 - 0.12 * chaos[..., None] * (fine[..., None] - 0.4))
+    elif style == "deimos":
+        # Deimos: a dark brown-grey rock blanketed with dust, smooth and soft; lighter streaks of dust slide down the slopes
+        dark, light = np.array([66, 58, 52.0]), np.array([126, 112, 99.0])
+        col = _mix(dark, light, big * 0.9 + mid * 0.1)
+        streak = _smear(_fbm(size, 22, 2, rng), 12, 3, 0)
+        col = col * (1 + 0.55 * (streak[..., None] - 0.5))
+        col = col * (0.92 + 0.16 * fine[..., None])
+        dust = np.clip((mid - 0.55) / 0.12, 0, 1)                            # patches of finer, redder dust
+        col = _mix(col, np.array([112, 92, 76.0]), 0.35 * dust)
+        crat = _craters(size, 46 if size >= 1000 else 30, 16, 110, rng)             # (soft, worn craters: the dust fills them)
+        col = col * (1 + 0.55 * np.clip(crat, -0.6, 0.6)[..., None])
+    elif style == "triton":
+        # Triton: a nitrogen ice of a pinkish cream, in the cells and the ridges of the "cantaloupe" terrain, with dark
+        # streaks left by the geysers, all stretched the same way by the wind
+        cells = 110 if size >= 1000 else 150
+        f1, f2 = _worley(size, cells, rng)
+        edge = np.clip(1 - (f2 - f1) / 0.22, 0, 1)
+        cream, pink = np.array([236, 214, 200.0]), np.array([214, 168, 166.0])
+        col = _mix(cream, pink, big * 0.8 + mid * 0.2)
+        col = col * (0.86 + 0.2 * (1 - np.clip(f1, 0, 1.2) / 1.2)[..., None])        # each cell a little dimple
+        col = _mix(col, np.array([112, 90, 108.0]), 0.7 * edge)                      # the ridges between them
+        bump = (f1 - np.roll(np.roll(f1, 3, 0), 3, 1)) * -6.0                         # each cell a bowl lit from the upper left
+        col = col * (1 + 0.5 * np.clip(bump, -0.5, 0.5)[..., None])
+        streak = _smear(_fbm(size, 16, 3, rng), 14, 3, 1)
+        dark = np.clip((streak - 0.52) / 0.08, 0, 1)
+        col = _mix(col, np.array([66, 50, 52.0]), 0.55 * dark)
+        col = col * (0.92 + 0.16 * fine[..., None])
     else:
         light, grey, dark = np.array([128, 124, 118.0]), np.array([88, 85, 81.0]), np.array([44, 43, 42.0])
         col = grey * (1 - big[..., None]) + light * big[..., None]
@@ -72,7 +193,7 @@ def _texture(style, size, seed):
 
 def _sky(style):
     sky = pygame.Surface((W, H))
-    if style == "ice":
+    if LOOKS[style]["sky"] == "haze":
         top, low = np.array([48, 26, 12.0]), np.array([205, 128, 58.0])
         k = (np.clip(np.arange(H) / (H * 0.95), 0, 1) ** 1.3)[:, None, None]
         arr = np.repeat(top + (low - top) * k, W, axis=1)
@@ -83,7 +204,7 @@ def _sky(style):
 
 
 def _stars(sky):
-    """The sky of an asteroid (one flat colour) with its stars, as one opaque picture (an opaque blit is much faster)."""
+    """The sky of a body without air (one flat colour) with its stars, as one opaque picture (an opaque blit is much faster)."""
     rng = np.random.default_rng(4)
     layer = sky.copy()
     for _ in range(300):
@@ -95,19 +216,93 @@ def _stars(sky):
     return layer
 
 
+def _planet_picture(name, width, tint=(255, 255, 255), keep=1.0, disc=0.5):
+    """The mother planet, from the photograph of the game (assets/sprites/planets/<name>.jpg: the planet on black), cut to its
+    outline and scaled to `width` px, with a soft glow around it. The picture is on black: it is laid on the sky with an
+    ADD blit, so the black disappears. `tint` and `keep` dim it (Saturn is seen through the haze of Titan)."""
+    img = pygame.image.load(asset_path("sprites", "planets", name + ".jpg")).convert()
+    arr = pygame.surfarray.array3d(img).max(axis=2)
+    xs, ys = np.nonzero(arr > 14)
+    box = pygame.Rect(int(xs.min()), int(ys.min()), int(xs.max() - xs.min()) + 1, int(ys.max() - ys.min()) + 1)
+    crop = img.subsurface(box).copy()
+    height = max(1, int(round(width * box.height / box.width)))
+    crop = pygame.transform.smoothscale(crop, (int(width), height))
+    pad = int(width * 0.22)
+    canvas = pygame.Surface((int(width) + 2 * pad, height + 2 * pad))
+    # the glow: a halo that fades out around the middle of the disc
+    yy, xx = np.mgrid[0:canvas.get_height(), 0:canvas.get_width()].astype(np.float32)
+    r = np.hypot(xx - canvas.get_width() / 2.0, yy - canvas.get_height() / 2.0) / (width * disc)
+    glow = np.clip(1.0 - (r - 1.0) / 0.3, 0, 1) ** 2.5 * (r >= 1.0) * 0.45         # (only outside the disc)
+    halo = np.stack([glow * c for c in GLOW.get(name, (70, 85, 120))], axis=2)
+    pygame.surfarray.blit_array(canvas, np.clip(halo, 0, 255).astype(np.uint8).swapaxes(0, 1))
+    canvas.blit(crop, (pad, pad), special_flags=pygame.BLEND_ADD)
+    dim = pygame.Surface(canvas.get_size())
+    dim.fill(tuple(int(c * keep) for c in tint))
+    canvas.blit(dim, (0, 0), special_flags=pygame.BLEND_RGB_MULT)
+    return canvas
+
+
+def _asteroid_items():
+    """Other asteroids in the sky of the asteroid: a few rocks of the game (assets/sprites/planets), turned and dimmed by their
+    distance. (picture, x, y, parallax: how far it slides when the ship moves, in px)."""
+    rng = np.random.default_rng(7)
+    sources = [pygame.image.load(asset_path("sprites", "planets", n)).convert_alpha()
+               for n in ("asteroid_pallas.png", "asteroid_dinkinesh.png")]
+    plan = ((230, 0.9), (150, 0.8), (110, 0.7), (84, 0.65), (62, 0.55), (46, 0.5), (34, 0.45), (26, 0.42), (20, 0.4))
+    items = []
+    for i, (size, light) in enumerate(plan):
+        img = sources[i % 2]
+        k = size / float(max(img.get_size()))
+        pic = pygame.transform.rotozoom(img, float(rng.uniform(0, 360)), k)
+        shade = pygame.Surface(pic.get_size(), pygame.SRCALPHA)
+        shade.fill((int(255 * light),) * 3 + (255,))
+        pic.blit(shade, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+        x = float(rng.uniform(80, W - 80))
+        y = float(rng.uniform(40, H * 0.62))
+        items.append((pic, x, y, 40.0 + size * 0.6))
+    return items
+
+
 def assets(style):
     """The sky and the textures of a body (made the first time, then kept)."""
     got = _CACHE.get(style)
     if got is None:
-        seed = 11 if style == "ice" else 23
+        look = LOOKS[style]
         sky = _sky(style)
+        planet = lander.BODIES[style]["planet"]
+        mother = None
+        if planet in PLANET_DRAW:
+            width, pos, tint, keep, disc = PLANET_DRAW[planet]
+            mother = (_planet_picture(planet, width, tint, keep, disc), pos)
         got = {
             "sky": sky,
-            "stars": _stars(sky) if style == "rock" else None,
-            "tiles": [_texture(style, size, seed + k) for k, (size, _) in enumerate(TILES)],
+            "stars": _stars(sky) if look["sky"] == "stars" else None,
+            "tiles": [_texture(style, size, look["seed"] + k) for k, (size, _) in enumerate(TILES)],
+            "planet": mother,                                    # (picture, where its middle is on the screen) or None
+            "rocks": _asteroid_items() if planet == "asteroids" else [],
         }
         _CACHE[style] = got
     return got
+
+
+PREVIEW_SIZE = (720, 405)
+_PREVIEWS = {}
+
+
+def preview(style):
+    """A picture of a setting for the menu of the test (made once): the sky with its mother planet, a stretch of the ground and a
+    landing zone, seen from the middle zoom."""
+    pic = _PREVIEWS.get(style)
+    if pic is None:
+        import random
+        form = lander.LanderFormation(style=style, seed=5, rng=random.Random(1))
+        form.view = View(style)
+        pad = form.terrain.pads[0]
+        form.x, form.y, form.zoom = pad["x"] - 120.0, pad["y"] - 330.0, 0.5
+        full = pygame.Surface((W, H))
+        form.view.draw(full, form)
+        pic = _PREVIEWS[style] = pygame.transform.smoothscale(full, PREVIEW_SIZE)
+    return pic
 
 
 def snap_zoom(zoom):
@@ -177,13 +372,15 @@ class View:
     # --- the picture
     def draw(self, surface, form):
         z, cam_x, cam_y = snap_zoom(form.zoom), form.x, form.y
-        if self.style == "rock":
+        if self.assets["stars"] is not None:
             ox, oy = int(-cam_x * 0.03) % W, int(-cam_y * 0.03) % H
             for dx in (ox - W, ox):
                 for dy in (oy - H, oy):
                     surface.blit(self.assets["stars"], (dx, dy))
         else:
             surface.blit(self.assets["sky"], (0, 0))
+        self._mother(surface, cam_x, cam_y)
+        if LOOKS[self.style]["sky"] == "haze":
             self._haze(surface, cam_x, cam_y, z)
         terrain = form.terrain
         sxs, wx, gy, sy = relief(terrain, z, cam_x, cam_y)
@@ -191,6 +388,19 @@ class View:
             self._ground(surface, form, sxs, sy, wx, z, cam_x, cam_y)
         self._boulders(surface, terrain, z, cam_x, cam_y)
         self._pads(surface, form, z, cam_x, cam_y)
+
+    def _mother(self, surface, cam_x, cam_y):
+        """The mother planet in the sky (or the other asteroids). They slide a little when the ship moves (the nearer, the more),
+        in a loop with the world so that nothing jumps when the ground comes round."""
+        turn = math.sin(2 * math.pi * cam_x / lander.WORLD)
+        rise = (cam_y - lander.START_Y) * 0.012                  # (they rise a little while the ship comes down)
+        mother = self.assets["planet"]
+        if mother is not None:
+            pic, (px, py) = mother
+            surface.blit(pic, (round(px - pic.get_width() / 2 - 34 * turn), round(py - pic.get_height() / 2 - rise)),
+                         special_flags=pygame.BLEND_ADD)
+        for pic, x, y, amp in self.assets["rocks"]:
+            surface.blit(pic, (round(x - pic.get_width() / 2 - amp * turn), round(y - pic.get_height() / 2 - rise * amp / 60.0)))
 
     def _haze(self, surface, cam_x, cam_y, z):
         """Titan: two ranges of hills in the orange haze, far behind the ground."""
@@ -274,7 +484,7 @@ class View:
             pygame.draw.polygon(mask, (255, 255, 255, 255), pts)
             layer.blit(mask, band.topleft, band, special_flags=pygame.BLEND_RGBA_MULT)
         lip = list(zip(sxs.tolist(), sy.tolist()))
-        pygame.draw.lines(layer, (255, 232, 200) if self.style == "ice" else (205, 205, 200), False, lip,
+        pygame.draw.lines(layer, LOOKS[self.style]["lip"], False, lip,
                           max(1, int(round(2.2 * z + 0.6))))
         surface.blit(layer, region.topleft, region)
         for s in (layer, mask, light):
@@ -284,7 +494,7 @@ class View:
         """The three colours (shadow, body, highlight) of every boulder of the terrain, made once."""
         got = self.boulder_cols.get(id(terrain))
         if got is None or got[0] is not terrain:
-            plain = (92, 90, 86) if self.style == "rock" else (150, 120, 92)
+            plain = LOOKS[self.style]["plain"]
             cols = []
             for tone in terrain.boulder_tone.tolist():
                 base = tuple(int(v * (0.85 + 0.3 * tone)) for v in plain)

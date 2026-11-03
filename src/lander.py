@@ -36,12 +36,28 @@ PAD_SIZES = {"x1": SHIP_W * 3, "x2": SHIP_W * 2, "x5": int(SHIP_W * 1.5)}      #
 PAD_BONUS = {"x1": 1, "x2": 2, "x5": 5}
 PAD_BLEND = 28                    # samples over which the ground is brought to the level of a zone
 
-# The two bodies: gravity (px/s^2) and the look of the ground (lander_view.py).
+# The five bodies: gravity (px/s^2, about 40 px/s^2 for 1 m/s^2: Titan and Europa pull the hardest, Deimos hardly at all)
+# and the shape of the ground (see Terrain); the look of each one (texture, sky, mother planet) is in lander_view.py.
+# "relief": the height of the hills (1.0 = Titan and the asteroid), "rough": the fine grit, "craters": (number, radius
+# range, depth: 1.0 = a deep bowl), "boulders": (number, radius range).
 BODIES = {
-    "ice": {"gravity": 55.0, "name": "Titan"},
-    "rock": {"gravity": 26.0, "name": "asteroid"},
+    "ice": {"gravity": 55.0, "name": "Titan", "planet": "saturn",
+            "relief": 1.0, "rough": 60.0, "craters": (6, (70, 230), 0.6), "boulders": (170, (4, 15))},
+    "rock": {"gravity": 26.0, "name": "asteroid", "planet": "asteroids",
+             "relief": 1.0, "rough": 60.0, "craters": (14, (70, 230), 1.0), "boulders": (170, (5, 22))},
+    # Europa: bright, smooth ice crossed by long ridges, few craters, blocks of ice (Jupiter in the sky)
+    "europa": {"gravity": 53.0, "name": "Europa", "planet": "jupiter",
+               "relief": 0.6, "rough": 12.0, "craters": (3, (90, 240), 0.5), "boulders": (90, (3, 10))},
+    # Deimos: a small dark rock under a blanket of dust, soft and worn craters (Mars in the sky); its real gravity is nearly
+    # nothing: here a feeble pull, to be flown slowly
+    "deimos": {"gravity": 12.0, "name": "Deimos", "planet": "mars",
+               "relief": 0.8, "rough": 22.0, "craters": (10, (110, 260), 0.8), "boulders": (110, (4, 16))},
+    # Triton: nitrogen ice with its dimples ("cantaloupe terrain") (Neptune in the sky)
+    "triton": {"gravity": 32.0, "name": "Triton", "planet": "neptune",
+               "relief": 0.7, "rough": 16.0, "craters": (30, (60, 150), 0.4), "boulders": (45, (4, 11))},
 }
 BODY_KEYS = tuple(BODIES)
+MENU_ORDER = ("rock", "ice", "europa", "deimos", "triton")      # the choice of the test (story.py, screen "lander_pick")
 
 THRUST = 190.0                    # px/s^2 along the axis of the ship
 TURN_SPEED = 2.0                  # rad/s
@@ -121,33 +137,37 @@ class Terrain:
         self.n = n
         xs = np.arange(n) * float(STEP)
         h = np.zeros(n)
+        body = BODIES.get(style) or BODIES["rock"]
+        relief = body["relief"]
         for k, (amp, wave) in enumerate(((250, 1), (170, 2), (120, 4), (70, 8), (30, 17), (12, 36))):
             ph = rng.uniform(0, 2 * math.pi)
-            h += amp * np.sin(2 * math.pi * wave * xs / WORLD + ph) * (1.0 if k < 4 else rng.uniform(0.4, 0.8))
+            h += relief * amp * np.sin(2 * math.pi * wave * xs / WORLD + ph) * (1.0 if k < 4 else rng.uniform(0.4, 0.8))
         # a few steep ridges and a rough fine detail
         for _ in range(7):
             cx, w, a = rng.uniform(0, WORLD), rng.uniform(60, 220), rng.uniform(-120, 160)
             d = np.minimum(np.abs(xs - cx), WORLD - np.abs(xs - cx))
-            h += a * np.exp(-(d / w) ** 2)
+            h += relief * a * np.exp(-(d / w) ** 2)
         rough = rng.normal(0.0, 1.0, n)
         for _ in range(5):                                       # (smoothed noise: a gritty ground)
             rough = (np.roll(rough, 1) + rough * 2 + np.roll(rough, -1)) / 4.0
-        h += rough * 60.0
+        h += rough * body["rough"]
         # craters (bowl and rim), more of them on the rock
-        for _ in range(14 if style == "rock" else 6):
-            cx, r = rng.uniform(0, WORLD), rng.uniform(70, 230)
+        n_craters, (r_lo, r_hi), depth = body["craters"]
+        for _ in range(n_craters):
+            cx, r = rng.uniform(0, WORLD), rng.uniform(r_lo, r_hi)
             d = np.minimum(np.abs(xs - cx), WORLD - np.abs(xs - cx))
             bowl = np.clip(1 - (d / r) ** 2, 0, 1)
-            h += (-0.35 * r * bowl + 0.06 * r * np.exp(-((d - r) / (0.18 * r)) ** 2)) * (1.0 if style == "rock" else 0.6)
+            h += (-0.35 * r * bowl + 0.06 * r * np.exp(-((d - r) / (0.18 * r)) ** 2)) * depth
         h -= h.mean()
         self.h = h
         self.pads = self._place_pads(rng)
         self.boulders = []
-        for _ in range(170):
+        n_boulders, (b_lo, b_hi) = body["boulders"]
+        for _ in range(n_boulders):
             bx = float(rng.uniform(0, WORLD))
             if any(self.dx(bx, p["x"]) < p["w"] / 2 + 60 for p in self.pads):
                 continue
-            r = float(rng.uniform(5, 22) if style == "rock" else rng.uniform(4, 15))
+            r = float(rng.uniform(b_lo, b_hi))
             self.boulders.append((bx, r, float(rng.uniform(0, 1))))
         # (the same boulders in arrays, with the height of the ground under each: the view picks the visible ones with numpy)
         self.boulder_x = np.array([b[0] for b in self.boulders], dtype=float)
