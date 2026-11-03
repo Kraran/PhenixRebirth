@@ -573,6 +573,14 @@ MISSIONS = [
         "title": "story_m_lander", "hud_title": "story_m_lander_hud", "blurb": "story_m_lander_b",
         "need": None, "content": 1, "speed": 1.0,
     },
+    # BONUS: Lunar Lander, the same level as the test (the menu of the five settings included) but for real: the landing pays its
+    # points (+ the fuel left) in credits, a crash costs what a failure always costs. Secret until the game is finished (the open
+    # ending of Act IV has been told); then on the map of every act, replayable at will.
+    {
+        "id": "bonus_lander", "acts": (1, 2, 3), "secret": True, "extra": True, "lander": True,
+        "title": "story_m_lander_bonus", "hud_title": "story_m_lander_hud", "blurb": "story_m_lander_bonus_b",
+        "need": ENDING_DONE, "content": 1, "speed": 1.0,
+    },
     # EDF - Opération Sentinelles silencieuses (I-IV): a stealth spy satellite to put in orbit round each gas giant, built on the
     # SpaceWar level (src/spacewar.py) but for real: the birds and the saucers pay their normal points and a failure costs what
     # it always costs. Flown in order (I from the start of Act 1, II and III in Act 2, IV in Act 3), once each, until the
@@ -1687,7 +1695,7 @@ def mission_group(mission):
     m = mission or {}
     if m.get("hunt"):
         return GROUP_HUNT
-    if (m.get("training") or m.get("reactor") or m.get("drop") or m.get("needs_reactor") or m.get("reward")
+    if (m.get("training") or m.get("extra") or m.get("reactor") or m.get("drop") or m.get("needs_reactor") or m.get("reward")
             or m.get("paint") or m.get("carry")):
         return GROUP_EXTRA
     return GROUP_STORY
@@ -1774,8 +1782,8 @@ def next_mission(state, missions):
     """The mission the map suggests: the first one of the list that can be flown and is not won yet. None when there is
     none."""
     for m in missions:
-        if m.get("training"):
-            continue
+        if m.get("training") or m.get("extra"):
+            continue                       # (a test or a BONUS is never what the map suggests)
         if not mission_playable(state, m):
             continue
         if not mission_done(state, m):

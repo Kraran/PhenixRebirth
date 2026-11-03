@@ -25,6 +25,10 @@ import settings  # noqa: E402  (must come first, see docstring)
 
 settings.user_data_dir = lambda: _USER_DIR
 
+import lander_view  # noqa: E402
+
+lander_view.WARM_UP = False          # (the menu of the Lunar Lander would make its pictures in a thread: not in the tests)
+
 
 _FAILURES = []
 

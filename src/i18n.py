@@ -6960,6 +6960,14 @@ _LANDER_TEXTS = {
     "lander_empty": ("RÉSERVOIR VIDE", "OUT OF FUEL"),
     "lander_perfect": ("ATTERRISSAGE PARFAIT !", "PERFECT LANDING!"),
     "lander_rough": ("Atterrissage réussi, mais rude", "Landed, but hard"),
+    "story_m_lander_bonus": ("BONUS - Lunar Lander", "BONUS - Lunar Lander"),
+    "story_m_lander_bonus_b": (
+        "Le Lunar Lander du test, pour de vrai : pose le vaisseau sur une zone plane d'un astéroïde, de Titan, d'Europe, de "
+        "Déimos ou de Triton. L'atterrissage rapporte ses points (plus le carburant restant) ; un crash coûte ce que coûte "
+        "un échec. Tu choisis le décor au départ. Ouverte une fois le jeu terminé.",
+        "The test's Lunar Lander, for real: set the ship down on a flat zone of an asteroid, Titan, Europa, Deimos or Triton. "
+        "The landing pays its points (plus the fuel left); a crash costs what a failure costs. You choose the setting at the "
+        "start. Open once the game is finished."),
     "lander_crash": ("CRASH !", "CRASH!"),
     "lander_points": ("{p} points  +  carburant {b}   (zone \u00d7{z})", "{p} points  +  fuel {b}   (zone \u00d7{z})"),
     "story_lander_clear": ("Atterrissage réussi ! Vous pouvez recommencer à volonté.",

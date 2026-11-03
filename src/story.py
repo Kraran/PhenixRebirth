@@ -1486,6 +1486,7 @@ class StoryHub:
             if mission and mission.get("lander") and self.mission_playable(mission):
                 self.lander_index = 0                 # the Lunar Lander test: the setting is chosen first (to be taken out of
                 self.screen = "lander_pick"           # the final missions)
+                lander_view.warm(lander.MENU_ORDER)   # (the pictures of the five settings are made in the background)
                 return None
             return self._launch_selected()
         if self.pane == "extras":
@@ -1602,7 +1603,9 @@ class StoryHub:
             if mission.get("sw_levels"):
                 spec["sw_levels"] = [list(lv) for lv in mission["sw_levels"]]   # the Sentinelle missions: their own levels
         if mission.get("lander"):
-            spec.update(lander=True, items=[], training=True)        # (src/lander.py: a test, nothing won, nothing lost)
+            spec.update(lander=True, items=[])                       # (src/lander.py)
+            if mission.get("training"):
+                spec["training"] = True                             # the test: nothing won, nothing lost (the BONUS pays)
             if body in lander.BODIES:
                 spec["body"] = body                   # the setting chosen in the menu of the test (else drawn at random)
         if ss.missile_ready(self.state) and not mission.get("training"):
