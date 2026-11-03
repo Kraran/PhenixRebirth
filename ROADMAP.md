@@ -13,6 +13,10 @@ Current release: **v1.6.0**
   lit in gold), the stats are steel plates with a row of small cells for the lives and the speed, the points sit on a steel badge at the
   top right, the cards moved down so they no longer touch the badge of the pilot, the paint shop uses the lit row. Tests: `tests/test_phobos_ui.py`.
 
+- **Menus of the Adventure, step 5: the bestiary.** The list of enemies and the sheet are two CRT terminals (dark green glass, scan lines,
+  a steel bezel); the chosen entry is lit phosphor with dark letters, the picture of the enemy sits in a framed screen and the text is
+  read in phosphor green. Tests: `tests/test_phobos_ui.py`.
+
 - **Lunar Lander test: five settings and a menu to choose one.** Europa (bright ice with long red-brown fractures, Jupiter in the sky),
   Deimos (dark dusty rock with worn craters, Mars in the sky; almost no gravity) and Triton (pinkish "cantaloupe" ice with dark
   streaks, Neptune in the sky) join Titan (Saturn in the sky) and the asteroid (other asteroids in the sky). The mother planets
