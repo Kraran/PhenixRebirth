@@ -62,7 +62,6 @@
  "story_item_caught": "PRZEDMIOT ZDOBYTY: {name}",
  "story_item_found": "Nowy przedmiot w hangarze: {name}",
  "story_log_best3": "Bestiariusz — gargulce zapisane. Warsztat ścian otwarty.",
- "story_log_gate": "Akt 1 ukończony. Kopuła i Phenix czekają na ciebie w kolejnych aktach.",
  "story_fail_pen": "Porażka  -{pts} PTS",
  "story_fail_none": "Porażka  bez strat",
  "story_fell_msg": "{name} poległ w walce.",
@@ -191,7 +190,7 @@
  "story_log_pt3": "Lakier III — lakiernia otwarta.",
  "story_shop_paint": "Lakiernia",
  "story_paint_ready": "1 ZMIANA  -  {pts} PTS",
- "story_paint_poor": "Lakierowanie Shielda kosztuje {pts} PTS.",
+ "story_paint_poor": "Lakierowanie ({ship}) kosztuje {pts} PTS.",
  "story_paint_locked": "Ukończ trzy misje lakiernicze, aby zmienić kolor.",
  "story_paint_done": "Shield zmienia kolor!",
  "story_paint_title": "LAKIERNIA — TYLKO JEDNA ZMIANA — {pts} PTS",
@@ -220,5 +219,10 @@
  "story_unlock_after": "Otwiera się po: {name}",
  "story_log_goal": "CEL: {name}",
  "story_log_head_scenes": "SCENY DO OBEJRZENIA",
- "story_log_head_log": "DZIENNIK POKŁADOWY"
+ "story_log_head_log": "DZIENNIK POKŁADOWY",
+ "story_scene_sortie_v": "Mars płonie swoją wieczną czerwienią; tam w dole drzemie NX01. Z zatoki na Fobosie czujniki wychwytują maleńkie, liczne sygnatury, krążące nad kraterami i lawirujące między blokami asteroid. To Awioidy. Niebieskie ptaki, mówią nieliczni ocaleni, z powodu barwy ich łuskowatej skóry, łupkowego błękitu, nocnego błękitu, i tych czerwonych błysków, które tlą się w ich oczach i piersiach.\n\nNikt nie wie, czego szukają. Nie komunikują się, niczego nie żądają. Patrolują, nurkują, rozszarpują. Swoimi skrzydłami z napiętej skóry, rozżarzonymi szponami i bronią plazmową rozerwały więcej Shieldów, niż ja mam godzin lotu. To zwiadowcy hordy, najszybsi, najliczniejsi, i zawsze od nich wszystko się zaczyna.\n\nWięc trudno, że NX01 ledwo trzyma się w powietrzu. Od czegoś trzeba zacząć. Wylecę, zmierzę się z nimi jeden po drugim i przyjrzę się z bliska, czym są, bo pokonać można tylko to, co dobrze się zna. Jeśli kotwica kwantowa zrobi to, co obiecał Kamarasow, wrócę z danymi na pierwszy zestaw. Jeśli nie… cóż, nie będę musiał się już tym przejmować.",
+ "story_scene_best3_v": "Khaki nie są jedynymi, które krążą w pobliżu. Dalej, w pierścieniach Saturna, czujniki wychwytują sygnaturę, której nie rozpoznaję. Masywniejszą, wolniejszą i dziwnie zimną. To już nie są ptaki. Nieliczni ocaleni mówią o gargulcach, z powodu ich korpusu z ciemnego metalu, najeżonego płytami, i tych czerwonych oczu, które zapalają się bezgłośnie, w głębi maski z kamienia i stali.\n\nNiebieskie nurkują w linii, khaki nadlatują w gromadach. Gargulce nie tworzą niczego. Dryfują samotnie między blokami lodu, cierpliwe, a potem spadają na pierwszy błysk silnika, jaki napotkają. Ich skrzydła przyjmują trafienia jak pancerz, a jeśli zwlekasz z ich zestrzeleniem, odrastają. Co ogień oderwał, maszyna odbudowuje.\n\nTrzeba więc będzie uderzać szybko i celnie. Wiem, czym ryzykuję, krążąc w ich pierścieniach statkiem, który ledwo trzyma się w powietrzu. Ale każdy zestrzelony gargulec wypełni kolejną stronę Bestiariusza i nauczy mnie, jak poradzić sobie z następnymi. Jeśli kotwica kwantowa zrobi to, co obiecał Kamarasow, wrócę z tym, czego trzeba, by je złamać. Jeśli nie…",
+ "story_scene_best4_v": "Gargulce nie są ostatnie. Daleko za Saturnem, tam gdzie Słońce jest już tylko jedną z wielu gwiazd, przed bladym lodowym olbrzymem Uranem, odczyty pokazują liczniejsze echa, żywsze, niemal niewidoczne. To znów gargulce, ale w fiolecie tak głębokim, że wydaje się czarny, fiolecie, który pije światło i nie pozwala dostrzec niczego z ich korpusu. Zdradzają je tylko czerwone oczy, dwa nieruchome żary, które zbliżają się dużo szybciej, niż powinny.\n\nOcaleni nie lubią o nich mówić. Ci, którzy to zrobili, twierdzą, że polują w stadach, że uderzają, zanim w ogóle je zobaczysz, i że ich skrzydła, gdy się rozkładają, połykają nawet ostatni blask lodowego olbrzyma. Niektórzy przysięgają, że odrastają szybciej niż u gargulca. Inni nie przysięgają już na nic.\n\nNie wiem, czy NX01 jest do tego stworzony. Ale Bestiariusz będzie coś wart tylko wtedy, gdy będzie kompletny, a nie będzie, dopóki ta strona pozostanie pusta. Więc lecę, ze strachem w brzuchu i palcem na spuście. Jeśli kotwica kwantowa dotrzyma obietnicy, wrócę z tym, czego brakuje. Jeśli nie, przynajmniej nie będę musiał o tym opowiadać.",
+ "story_scene_bestboss_v": "Jest jeszcze jedna strona Bestiariusza, której nie odważyłem się otworzyć. Na samym krańcu znanej przestrzeni, na orbicie Neptuna, nad niebieskimi burzami, które od milionów lat zwijają się same w sobie, odczyty nie pokazują już stad, lecz jedno echo, ogromne i nieruchome. Czarny spodek, popękany jak stary pancerz, opasany czerwonymi światłami, które powoli pulsują. Na szczycie jego kopuły, za ciemną zatoką, widać zarys istoty z mackami, do której nikt nie zdołał się zbliżyć, nie tracąc życia.\n\nTo on dowodzi: telepatyczny mózg, centrum zbiorowej inteligencji Awioidów. Gargulce, zielone i ciemne, krążą wokół spodka, nigdy się od niego nie oddalając. Ukryty w jego sercu, za pancerzem, pojawia się dopiero, gdy droga jest wolna, i wtedy wystarczy jeden strzał. Jeden. Trzeba jednak do niego dotrzeć. Jednego już zestrzeliliśmy. Inny zajął jego miejsce, twardszy, a potem jeszcze jeden.\n\nNie wiem, czy coś takiego da się naprawdę pokonać. Ale za każdym razem, gdy padnie, będę mógł dopisać kolejną linijkę, a każda linijka uczyni następną mniej niepewną. Więc lecę. Jeśli kotwica kwantowa wytrzyma, powiem mu, co myślę o jego hodowli. Jeśli nie, ostatnią stronę zapełni następny pilot.",
+ "story_log_gate": "Akt 1 ukończony. Phenix czeka na ciebie w kolejnym akcie."
 }

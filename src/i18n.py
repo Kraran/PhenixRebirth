@@ -319,13 +319,19 @@ T = {
         "ru": "Стены: иммунитет",
     },
     "story_ch1": {
-        "fr": "CHAPITRE 1 — SECTEUR OISEAUX", "en": "CHAPTER 1 — BIRD SECTOR",
-        "es": "CAPÍTULO 1 — SECTOR AVES", "de": "KAPITEL 1 — VOGELSEKTOR",
-        "it": "CAPITOLO 1 — SETTORE UCCELLI", "pt": "CAPÍTULO 1 — SETOR AVES",
-        "nl": "HOOFDSTUK 1 — VOGELSECTOR", "pl": "ROZDZIAŁ 1 — SEKTOR PTAKÓW",
-        "tr": "BÖLÜM 1 — KUŞ SEKTÖRÜ", "sv": "KAPITEL 1 — FÅGELSEKTOR",
-        "no": "KAPITTEL 1 — FUGLESEKTOR", "da": "KAPITEL 1 — FUGLESEKTOR",
-        "ru": "ГЛАВА 1 — СЕКТОР ПТИЦ",
+        "fr": "ACTE 1 — SECTEUR OISEAUX",
+        "en": "ACT 1 — BIRD SECTOR",
+        "es": "ACTO 1 — SECTOR AVES",
+        "de": "AKT 1 — VOGELSEKTOR",
+        "it": "ATTO 1 — SETTORE UCCELLI",
+        "pt": "ATO 1 — SETOR AVES",
+        "nl": "AKTE 1 — VOGELSECTOR",
+        "pl": "AKT 1 — SEKTOR PTAKÓW",
+        "tr": "PERDE 1 — KUŞ SEKTÖRÜ",
+        "sv": "AKT 1 — FÅGELSEKTOR",
+        "no": "AKT 1 — FUGLESEKTOR",
+        "da": "AKT 1 — FUGLESEKTOR",
+        "ru": "АКТ 1 — СЕКТОР ПТИЦ",
     },
     "story_m_sortie": {
         "fr": "Bestiaire I : Première sortie", "en": "Bestiary I: First sortie", "es": "Bestiario I: Primera salida",
@@ -407,79 +413,64 @@ T = {
         "ru": "Бестиарий IV: тёмные горгульи",
     },
     "story_m_best4_b": {
-        "fr": "Dernière fiche du chapitre.",
-        "en": "Last file of the chapter.",
-        "es": "Última ficha del capítulo.",
-        "de": "Letzte Akte des Kapitels.",
-        "it": "Ultima scheda del capitolo.",
-        "pt": "Última ficha do capítulo.",
-        "nl": "Laatste fiche van het hoofdstuk.",
-        "pl": "Ostatnia karta rozdziału.",
-        "tr": "Bölümün son kaydı.",
-        "sv": "Kapitlets sista kort.",
-        "no": "Siste kort i kapitlet.",
-        "da": "Sidste kort i kapitlet.",
-        "ru": "Последняя карта главы.",
-    },
-    "story_m_gate": {
-        "fr": "Relève du chapitre", "en": "Chapter relief",
-        "es": "Relevo del capítulo", "de": "Kapitelablösung",
-        "it": "Cambio della guardia", "pt": "Rendição do capítulo",
-        "nl": "Aflossing", "pl": "Zmiana warty",
-        "tr": "Nöbet değişimi", "sv": "Kapitelskifte",
-        "no": "Kapittelskifte", "da": "Kapitelskifte",
-        "ru": "Смена главы",
-    },
-    "story_m_gate_b": {
-        "fr": "Oiseaux sombres, plus vite. Débloque l'atelier du dôme.",
-        "en": "Dark birds, faster. Unlocks the dome workshop.",
-        "es": "Aves oscuras, más rápido. Abre el taller del domo.",
-        "de": "Dunkle Vögel, schneller. Schaltet die Dom-Werkstatt frei.",
-        "it": "Uccelli scuri, più veloci. Sblocca l'officina del domo.",
-        "pt": "Aves escuras, mais rápidas. Abre a oficina do domo.",
-        "nl": "Donkere vogels, sneller. Opent de koepelwerkplaats.",
-        "pl": "Ciemne ptaki, szybciej. Odblokowuje warsztat kopuły.",
-        "tr": "Koyu kuşlar, daha hızlı. Kubbe atölyesini açar.",
-        "sv": "Mörka fåglar, snabbare. Öppnar domverkstaden.",
-        "no": "Mørke fugler, raskere. Åpner domeverkstedet.",
-        "da": "Mørke fugle, hurtigere. Åbner domeværkstedet.",
-        "ru": "Тёмные птицы, быстрее. Открывает мастерскую купола.",
+        "fr": "Dernière fiche de l'acte.",
+        "en": "Last file of the act.",
+        "es": "Última ficha del acto.",
+        "de": "Letzte Akte dieses Akts.",
+        "it": "Ultima scheda dell'atto.",
+        "pt": "Última ficha do ato.",
+        "nl": "Laatste fiche van de akte.",
+        "pl": "Ostatnia karta aktu.",
+        "tr": "Perdenin son kaydı.",
+        "sv": "Aktens sista kort.",
+        "no": "Siste kort i akten.",
+        "da": "Sidste kort i akten.",
+        "ru": "Последняя карта акта.",
     },
     "story_m_ch2": {
-        "fr": "Chapitre 2", "en": "Chapter 2", "es": "Capítulo 2", "de": "Kapitel 2",
-        "it": "Capitolo 2", "pt": "Capítulo 2", "nl": "Hoofdstuk 2", "pl": "Rozdział 2",
-        "tr": "Bölüm 2", "sv": "Kapitel 2", "no": "Kapittel 2", "da": "Kapitel 2",
-        "ru": "Глава 2",
+        "fr": "Acte 2",
+        "en": "Act 2",
+        "es": "Acto 2",
+        "de": "Akt 2",
+        "it": "Atto 2",
+        "pt": "Ato 2",
+        "nl": "Akte 2",
+        "pl": "Akt 2",
+        "tr": "Perde 2",
+        "sv": "Akt 2",
+        "no": "Akt 2",
+        "da": "Akt 2",
+        "ru": "Акт 2",
     },
     "story_m_ch2_b": {
-        "fr": "Pas encore. Le Phenix se débloque en fin de chapitre 2.",
-        "en": "Not yet. Phenix unlocks at the end of chapter 2.",
-        "es": "Aún no. Phenix se desbloquea al final del capítulo 2.",
-        "de": "Noch nicht. Der Phenix wird am Ende von Kapitel 2 freigeschaltet.",
-        "it": "Non ancora. Phenix si sblocca a fine capitolo 2.",
-        "pt": "Ainda não. O Phenix desbloqueia-se no fim do capítulo 2.",
-        "nl": "Nog niet. De Phenix komt vrij aan het eind van hoofdstuk 2.",
-        "pl": "Jeszcze nie. Phenix odblokowuje się na końcu rozdziału 2.",
-        "tr": "Henüz değil. Phenix 2. bölümün sonunda açılır.",
-        "sv": "Inte än. Phenix låses upp i slutet av kapitel 2.",
-        "no": "Ikke ennå. Phenix låses opp på slutten av kapittel 2.",
-        "da": "Ikke endnu. Phenix låses op i slutningen af kapitel 2.",
-        "ru": "Пока нет. Phenix откроется в конце главы 2.",
+        "fr": "Pas encore. Le Phenix se débloque en fin d'acte 2.",
+        "en": "Not yet. Phenix unlocks at the end of Act 2.",
+        "es": "Aún no. Phenix se desbloquea al final del acto 2.",
+        "de": "Noch nicht. Der Phenix wird am Ende von Akt 2 freigeschaltet.",
+        "it": "Non ancora. Phenix si sblocca a fine atto 2.",
+        "pt": "Ainda não. O Phenix desbloqueia-se no fim do ato 2.",
+        "nl": "Nog niet. De Phenix komt vrij aan het eind van akte 2.",
+        "pl": "Jeszcze nie. Phenix odblokowuje się na końcu aktu 2.",
+        "tr": "Henüz değil. Phenix 2. perdenin sonunda açılır.",
+        "sv": "Inte än. Phenix låses upp i slutet av akt 2.",
+        "no": "Ikke ennå. Phenix låses opp på slutten av akt 2.",
+        "da": "Ikke endnu. Phenix låses op i slutningen af akt 2.",
+        "ru": "Пока нет. Phenix откроется в конце акта 2.",
     },
     "story_log_sortie": {
-        "fr": "Chapitre 1 — première sortie. Atelier vitesse ouvert.",
-        "en": "Chapter 1 — first sortie. Speed workshop open.",
-        "es": "Capítulo 1 — primera salida. Taller de velocidad abierto.",
-        "de": "Kapitel 1 — erster Einsatz. Tempo-Werkstatt offen.",
-        "it": "Capitolo 1 — prima sortita. Officina velocità aperta.",
-        "pt": "Capítulo 1 — primeira saída. Oficina de velocidade aberta.",
-        "nl": "Hoofdstuk 1 — eerste vlucht. Snelheidswerkplaats open.",
-        "pl": "Rozdział 1 — pierwszy wylot. Warsztat prędkości otwarty.",
-        "tr": "Bölüm 1 — ilk uçuş. Hız atölyesi açık.",
-        "sv": "Kapitel 1 — första uppdrag. Fartverkstad öppen.",
-        "no": "Kapittel 1 — første tokt. Fartverksted åpent.",
-        "da": "Kapitel 1 — første togt. Fartværksted åbent.",
-        "ru": "Глава 1 — первый вылет. Мастерская скорости открыта.",
+        "fr": "Acte 1 — première sortie. Atelier vitesse ouvert.",
+        "en": "Act 1 — first sortie. Speed workshop open.",
+        "es": "Acto 1 — primera salida. Taller de velocidad abierto.",
+        "de": "Akt 1 — erster Einsatz. Tempo-Werkstatt offen.",
+        "it": "Atto 1 — prima sortita. Officina velocità aperta.",
+        "pt": "Ato 1 — primeira saída. Oficina de velocidade aberta.",
+        "nl": "Akte 1 — eerste vlucht. Snelheidswerkplaats open.",
+        "pl": "Akt 1 — pierwszy wylot. Warsztat prędkości otwarty.",
+        "tr": "Perde 1 — ilk uçuş. Hız atölyesi açık.",
+        "sv": "Akt 1 — första uppdrag. Fartverkstad öppen.",
+        "no": "Akt 1 — første tokt. Fartverksted åpent.",
+        "da": "Akt 1 — første togt. Fartværksted åbent.",
+        "ru": "Акт 1 — первый вылет. Мастерская скорости открыта.",
     },
     "story_log_best2": {
         "fr": "Bestiaire — oiseaux kaki archivés. Atelier vies ouvert.",
@@ -558,13 +549,19 @@ T = {
         "ru": "КУПОЛ ОТКЛЮЧЁН",
     },
     "story_phoenix_locked": {
-        "fr": "Fin du chapitre 2", "en": "End of chapter 2",
-        "es": "Fin del capítulo 2", "de": "Ende von Kapitel 2",
-        "it": "Fine del capitolo 2", "pt": "Fim do capítulo 2",
-        "nl": "Einde hoofdstuk 2", "pl": "Koniec rozdziału 2",
-        "tr": "2. bölümün sonu", "sv": "Slutet av kapitel 2",
-        "no": "Slutten av kapittel 2", "da": "Slutningen af kapitel 2",
-        "ru": "Конец главы 2",
+        "fr": "Fin de l'acte 2",
+        "en": "End of Act 2",
+        "es": "Fin del acto 2",
+        "de": "Ende von Akt 2",
+        "it": "Fine dell'atto 2",
+        "pt": "Fim do ato 2",
+        "nl": "Einde akte 2",
+        "pl": "Koniec aktu 2",
+        "tr": "2. perdenin sonu",
+        "sv": "Slutet av akt 2",
+        "no": "Slutten av akt 2",
+        "da": "Slutningen af akt 2",
+        "ru": "Конец акта 2",
     },
 
     "play_2p": {
@@ -4878,8 +4875,8 @@ _ADVENTURE_TEXTS = {
     "story_item_found": ("Nouvel objet au hangar : {name}", "New item in the hangar: {name}"),
     "story_log_best3": ("Bestiaire — gargouilles archivées. Atelier des murs ouvert.",
                         "Bestiary — gargoyles filed. Walls workshop open."),
-    "story_log_gate": ("Acte 1 terminé. Le dôme et le Phenix t'attendent dans les actes suivants.",
-                       "Act 1 complete. The dome and the Phenix wait in the next acts."),
+    "story_log_gate": ("Acte 1 terminé. Le Phenix t'attend dans l'acte suivant.",
+                       "Act 1 complete. The Phenix waits in the next act."),
     "story_fail_pen": ("Échec  -{pts} PTS", "Failed  -{pts} PTS"),
     "story_fail_none": ("Échec  aucune perte", "Failed  nothing lost"),
     "story_fell_msg": ("{name} est tombé au combat.", "{name} fell in battle."),
@@ -4978,18 +4975,18 @@ _INTRO_FR["story_scene_dome_1"] = (
     'Le problème, c’est qu’entre nous et l’épave s’étend tout un secteur sous contrôle avioïde. Leurs patrouilles quadrillent les corridors d’approche, leurs nids orbitaux surveillent les points de Lagrange, et la moindre signature de propulsion au-delà de la ligne de débris attire déjà une réponse. Atteindre la carcasse exigera une trajectoire précisément calculée, puis une extraction sous silence radio. Si le générateur tient, nous repartirons avec lui. S’il a cédé, nous n’aurons fait que confirmer la malédiction qui pèse sur la race humaine.'
 )
 _INTRO_FR["story_scene_sortie"] = (
-    'Mars brûle de son éternel rouge ; là-bas somnole le NX01. Depuis la baie de Phobos, les capteurs relèvent des signatures minuscules, nombreuses, qui tournent au-dessus des cratères en se jouant des blocs d’astéroïdes. Ce sont des Avioïdes. Des oiseaux bleus, disent les rares survivants, à cause de la teinte de leur peau écailleuse, un bleu d’ardoise, un bleu de nuit, et de ces lueurs rouges qui couvent dans leurs yeux et dans leur poitrine.\n\n'
+    'Mars brûle de son éternel rouge ; en orbite de Mars, sur Phobos, somnole le NX01. Depuis la baie de Phobos, les capteurs relèvent des signatures minuscules, nombreuses, qui tournent au-dessus des cratères en se jouant des blocs d’astéroïdes. Ce sont des Avioïdes. Des oiseaux bleus, disent les rares survivants, à cause de la teinte de leur peau écailleuse, un bleu d’ardoise, un bleu de nuit, et de ces lueurs rouges qui couvent dans leurs yeux et dans leur poitrine.\n\n'
     'Personne ne sait ce qu’ils cherchent. Ils ne communiquent pas, ils n’exigent rien. Ils patrouillent, ils plongent, ils déchirent. Avec leurs ailes de cuir tendu, leurs serres incandescentes et leurs armes à plasma, ils ont mis en pièces plus de Shields que je n’ai d’heures de vol. Ce sont les éclaireurs de la horde, les plus rapides, les plus nombreux, et c’est toujours par eux que tout commence.\n\n'
     'Alors tant pis si le NX01 tient à peine en l’air. Il faut bien commencer par quelque part. Je vais sortir, les affronter un par un, et regarder de près ce qu’ils sont, car on ne bat que ce qu’on connaît bien. Si l’ancrage quantique fait ce que Kamarasov a promis, je reviendrai avec de quoi remplir le premier jeu de données. Sinon… eh bien, je n’aurai plus à m’en soucier.'
 )
 _INTRO_FR["story_scene_best2"] = (
-    'Les bleus ne sont pas les seuls. Sur les relevés de la première sortie, d’autres signatures reviennent, plus denses, plus vives, loin de Mars, au-dessus d’une lune de Jupiter que la géante écrase de sa masse rayée. Ce sont encore des Avioïdes. Des oiseaux kaki, disent les rares survivants, à cause du vert militaire de leur peau, un vert de blindage, un vert de mousse sombre, et de ces braises orange qui brillent dans leurs yeux et au creux de leur poitrine.\n\n'
-    'Là où les bleus plongent en ligne, les kakis arrivent en grappes et changent de cap sans prévenir. Leurs ailes de cuir battent plus vite, leurs serres claquent plus tôt, et leurs tirs de plasma se rapprochent. Ils se perdent dans la poussière des stations détruites. On ne les voit pas venir, ou alors trop tard.\n\n'
+    'Les Bleus ne sont pas les seuls. Sur les relevés de la première sortie, d’autres signatures reviennent, plus denses, plus vives, loin de Mars, au-dessus d’une lune de Jupiter que la géante écrase de sa masse rayée. Ce sont encore des Avioïdes. Des oiseaux kaki, disent les rares survivants, à cause du vert militaire de leur peau, un vert de blindage, un vert de mousse sombre, et de ces braises orange qui brillent dans leurs yeux et au creux de leur poitrine.\n\n'
+    'Là où les Bleus plongent en ligne, les Kakis arrivent en grappes et changent de cap sans prévenir. Leurs ailes de cuir battent plus vite, leurs serres claquent plus tôt, et leurs tirs de plasma se rapprochent. Ils se perdent dans la poussière des stations détruites. On ne les voit pas venir, ou alors trop tard.\n\n'
     'Cette fois, je ne sors pas pour regarder. Je sors pour apprendre à les battre. Ce qu’il y a derrière ces yeux orange, je le saurai en les voyant tomber, un par un, et chaque page ajoutée au Bestiaire rendra la suite moins périlleuse.'
 )
 _INTRO_FR["story_scene_best3"] = (
-    'Les kakis ne sont pas les seuls à rôder. Plus loin, dans les anneaux de Saturne, les capteurs relèvent une signature que je ne reconnais pas. Plus massive, plus lente, et d’une froideur étrange. Ce ne sont plus des oiseaux. Les rares survivants parlent de gargouilles, à cause de leur carcasse de métal sombre, hérissée de plaques, et de ces yeux rouges qui s’allument sans un bruit, au fond d’un masque de pierre et d’acier.\n\n'
-    'Les bleus plongent en ligne, les kakis arrivent en grappes. Les gargouilles, elles, ne forment rien. Elles dérivent seules entre les blocs de glace, patientes, puis fondent sur la première lueur de moteur qu’elles croisent. Leurs ailes encaissent les tirs comme un blindage, et si l’on tarde à les abattre, elles repoussent. Ce que le feu a arraché, la machine le reconstruit.\n\n'
+    'Les Kakis ne sont pas les seuls à rôder. Plus loin, dans les anneaux de Saturne, les capteurs relèvent une signature que je ne reconnais pas. Plus massive, plus lente, et d’une froideur étrange. Ce ne sont plus des oiseaux. Les rares survivants parlent de gargouilles, à cause de leur carcasse de métal sombre, hérissée de plaques, et de ces yeux rouges qui s’allument sans un bruit, au fond d’un masque de pierre et d’acier.\n\n'
+    'Les Bleus plongent en ligne, les Kakis arrivent en grappes. Les gargouilles, elles, ne forment rien. Elles dérivent seules entre les blocs de glace, patientes, puis fondent sur la première lueur de moteur qu’elles croisent. Leurs ailes encaissent les tirs comme un blindage, et si l’on tarde à les abattre, elles repoussent. Ce que le feu a arraché, la machine le reconstruit.\n\n'
     'Alors il faudra frapper vite, et frapper juste. Je sais ce que je risque, à tourner dans leurs anneaux avec un vaisseau qui tient à peine en l’air. Mais chaque gargouille tombée remplira une page de plus du Bestiaire, et m’apprendra comment venir à bout des suivantes. Si l’ancrage quantique fait ce que Kamarasov a promis, je reviendrai avec de quoi les faire plier. Sinon…'
 )
 _INTRO_FR["story_scene_best4"] = (
@@ -5002,11 +4999,34 @@ _INTRO_FR["story_scene_bestboss"] = (
     'C’est lui qui commande : le cerveau télépathique, le centre de l’intelligence collective des Avioïdes. Des gargouilles, vertes et sombres, tournent autour de la soucoupe sans jamais s’en éloigner. Terré en son cœur, derrière le blindage, il n’apparaît que lorsque la voie est dégagée, et il suffit alors d’un seul tir. Un seul. Encore faut-il l’atteindre. Nous en avons déjà abattu un. Un autre a pris sa place, plus coriace, puis un autre après lui.\n\n'
     'Je ne sais pas si l’on peut vraiment vaincre une chose pareille. Mais chaque fois qu’il tombera, je pourrai écrire une ligne de plus, et chaque ligne rendra la suivante moins incertaine. Alors j’y vais. Si l’ancrage quantique tient bon, je lui dirai ce que je pense de son élevage. Sinon, ce sera au prochain pilote de remplir la dernière page.'
 )
+def _veteran_text(key, old, new):
+    """The Veteran version of a scene of the first Acts: the same text, but where the quantum anchor was to bring the pilot back
+    (Kamarasov is dead in that mode, the anchor was never finished) the pilot knows nothing will."""
+    assert old in _INTRO_FR[key], key
+    return _INTRO_FR[key].replace(old, new)
+
+
+_INTRO_FR["story_scene_sortie_v"] = _veteran_text(
+    "story_scene_sortie",
+    "Si l’ancrage quantique fait ce que Kamarasov a promis, je reviendrai avec de quoi remplir le premier jeu de données.",
+    "Il n’y a pas d’ancrage pour me ramener : Kamarasov est mort avant de l’achever. Si je reviens, ce sera avec de quoi remplir le premier jeu de données.")
+_INTRO_FR["story_scene_best3_v"] = _veteran_text(
+    "story_scene_best3",
+    "Si l’ancrage quantique fait ce que Kamarasov a promis, je reviendrai avec de quoi les faire plier.",
+    "Il n’y a pas d’ancrage pour me ramener. Si je reviens, ce sera avec de quoi les faire plier.")
+_INTRO_FR["story_scene_best4_v"] = _veteran_text(
+    "story_scene_best4",
+    "Si l’ancrage quantique tient sa promesse, je reviendrai avec ce qu’il manque.",
+    "Sans ancrage, rien ne me ramènera si je tombe. Si je reviens, ce sera avec ce qu’il manque.")
+_INTRO_FR["story_scene_bestboss_v"] = _veteran_text(
+    "story_scene_bestboss",
+    "Si l’ancrage quantique tient bon, je lui dirai ce que je pense de son élevage.",
+    "Sans ancrage, personne ne me ramènera si je tombe. Si je reviens, je lui dirai ce que je pense de son élevage.")
 _INTRO_FR["story_scene_paint_1"] = (
     'L’atelier clandestin du vieux Wallems, creusé dans le flanc de l’astéroïde 434-Hungaria, tourne encore. Malgré l’invasion. Malgré les patrouilles. On y voit toujours des coques posées sur tréteaux, des bidons ouverts, des masques penchés sur le métal…\n\n'
     'Je ne suis pas assez fou pour tenter de franchir les hordes d’Avioïdes qui quadrillent le secteur, rang après rang, rien que pour faire repeindre mon vaisseau. Non. Je ne le suis pas.\n\n'
-    'Et pourtant la rumeur tient. Wallems prend encore les commandes, choisit ses teintes uniques à l’œil, et livre des coques magnifiques le tout avec en fond sonore des trompettes flamboyantes…\n'
-    'Non, je n\'irai pas, ça serait du délire…'
+    'Et pourtant la rumeur tient. Wallems prend encore les commandes, choisit ses teintes uniques à l’œil, et livre des coques magnifiques, le tout avec en fond sonore des trompettes flamboyantes…\n'
+    'Non, je n\'irai pas, ce serait du délire…'
 )
 _INTRO_FR["story_scene_bar"] = (
     'La porte du sas siffle en s’ouvrant, libérant une bouffée d’air recyclé qui sent le café et le métal rouillé. '
@@ -5060,7 +5080,7 @@ _ADVENTURE_TEXTS.update({
     "story_cheat_act2": ("Code 2222 : tu es à l'acte 2. Plus aucune sauvegarde.",
                          "Code 2222: you are in Act 2. Nothing is saved any more."),
     "story_ship_label": ("VAISSEAU : {name}", "SHIP: {name}"),
-    "story_m_dome1": ("Dôme I : les Bleus", "Dome I: the Blues"),
+    "story_m_dome1": ("Dôme I : l'épave du Shield", "Dome I: the Shield wreck"),
     "story_m_dome1_b": ("Trois vagues de Bleus, de plus en plus rapides. Une seule fois.",
                         "Three waves of Blues, each one faster. Once only."),
     "story_log_dome1": ("Dôme I — les Bleus sont vaincus.", "Dome I — the Blues are beaten."),
@@ -5103,9 +5123,9 @@ _ADVENTURE_TEXTS.update({
         "never retreating. Fragile, but never alone."),
     "story_b_bird2": ("AVIOÏDE KAKI", "KHAKI AVIOID"),
     "story_b_bird2_t": (
-        "Plus rapide et plus nombreux que l'éclaireur. Son plumage kaki se confond avec la "
+        "Plus rapide et plus nombreux que l'éclaireur. Sa peau métallique kaki se confond avec la "
         "poussière des stations détruites.",
-        "Faster and more numerous than the scout. Its khaki plumage blends with the dust "
+        "Faster and more numerous than the scout. Its khaki metallic skin blends with the dust "
         "of destroyed stations."),
     "story_b_garg3": ("GARGOUILLE", "GARGOYLE"),
     "story_b_garg3_t": (
@@ -5202,7 +5222,7 @@ _ADVENTURE_TEXTS.update({
     "story_log_pt3": ("Peinture III — l'atelier de peinture est ouvert.", "Paint III — the paint shop is open."),
     "story_shop_paint": ("Atelier de peinture", "Paint shop"),
     "story_paint_ready": ("1 CHANGEMENT  -  {pts} PTS", "1 CHANGE  -  {pts} PTS"),
-    "story_paint_poor": ("Il faut {pts} PTS pour peindre le Shield.", "Painting the Shield costs {pts} PTS."),
+    "story_paint_poor": ("Il faut {pts} PTS pour peindre le {ship}.", "Painting the {ship} costs {pts} PTS."),
     "story_paint_locked": ("Termine les trois missions de peinture pour changer de couleur.",
                            "Finish the three paint missions to change colour."),
     "story_paint_done": ("Le Shield change de couleur !", "The Shield has a new colour!"),
@@ -5238,9 +5258,9 @@ _ACH_ADV_TEXTS = {
     "ach_adv_sortie": ("Première sortie", "First Sortie", "Primera salida", "Erster Einsatz", "Prima sortita",
                        "Primeira saída", "Eerste vlucht", "Pierwszy wylot", "İlk uçuş", "Första uppdraget",
                        "Første tokt", "Første togt", "Первый вылет"),
-    "ach_adv_kaki": ("Plumage kaki", "Khaki Plumage", "Plumaje caqui", "Khaki-Gefieder", "Piumaggio kaki",
-                     "Plumagem caqui", "Kaki verenkleed", "Upierzenie khaki", "Haki tüyler", "Kakifjäderdräkt",
-                     "Khakifjærdrakt", "Kakifjerdragt", "Перья хаки"),
+    "ach_adv_kaki": ("Peau kaki", "Khaki Skin", "Piel caqui", "Khaki-Haut", "Pelle kaki",
+                     "Pele caqui", "Kaki huid", "Skóra khaki", "Haki deri", "Kakihud",
+                     "Khakihud", "Kakihud", "Кожа хаки"),
     "ach_adv_garg": ("Gargouilles", "Gargoyles", "Gárgolas", "Gargoyles", "Gargoyle", "Gárgulas", "Waterspuwers",
                      "Gargulce", "Gargoyleler", "Gargoyler", "Gargoyler", "Gargoyler", "Горгульи"),
     "ach_adv_shadow": ("Ombres", "Shadows", "Sombras", "Schatten", "Ombre", "Sombras", "Schaduwen", "Cienie",
@@ -5821,13 +5841,13 @@ _ACT3_TEXTS = {
         "Grok a tracé la route : Jupiter, Saturne, Uranus, Neptune. Chaque planète est gardée. Chaque passage devra "
         "être forcé.\n\n"
         "Je pars avec un seul vaisseau, à cent pour cent de ce qu’il peut être. Derrière moi, Phobos retient son "
-        "souffle. Devant moi, la route de Huygens, deux ans après le silence.",
+        "souffle. Devant moi, la route de Huygens, plus de deux ans après le silence.",
         "The signals of the horde all converge on the same point: Triton. Huygens station is nothing but a ruin, but "
         "something has grown beneath it, in the ice. A nest. The heart of the horde.\n\n"
         "Grok has plotted the route: Jupiter, Saturn, Uranus, Neptune. Every planet is guarded. Every passage will "
         "have to be forced.\n\n"
         "I leave with a single ship, at one hundred per cent of what it can be. Behind me, Phobos holds its breath. "
-        "Ahead of me, the road to Huygens, two years after the silence."),
+        "Ahead of me, the road to Huygens, more than two years after the silence."),
     "story_scene_epilogue_t": ("Épilogue", "Epilogue"),
     "story_scene_epilogue_1": (
         "Le nid est mort. Sous la glace de Triton, le cœur de la horde s’est éteint dans un dernier éclair, et d’un "
@@ -6493,14 +6513,14 @@ _VN_TEXTS = {
         "*Lyra encaisse la réponse sans protester.\n"
         "« Oui. Bien sûr. Je ne sais pas vraiment à quoi je m’attendais. »\n"
         "*Elle tente un sourire.\n"
-        "« Merci, en tout cas. Pour ce que tu as fait sur Phobos. Je ne l’oublierai pas. »\n"
+        "« Merci, en tout cas. Pour ce que tu as fait à proximité de Phobos. Je ne l’oublierai pas. »\n"
         "\n"
         "*Elle te serre brièvement dans ses bras, puis recule.\n"
         "« Prends soin de toi. La guerre n’est pas terminée. »",
         "*Lyra takes the answer without protest.\n"
         "“Yes. Of course. I don’t really know what I was expecting.”\n"
         "*She tries a smile.\n"
-        "“Thank you, anyway. For what you did on Phobos. I won’t forget it.”\n"
+        "“Thank you, anyway. For what you did near Phobos. I won’t forget it.”\n"
         "\n"
         "*She hugs you briefly, then steps back.\n"
         "“Take care of yourself. The war isn’t over.”"),
@@ -6691,10 +6711,10 @@ _GUARDIAN_TEXTS = {
         "5 Gardiens, 5 oiseaux bleus et 5 verts. Les lasers brûlent aussi les oiseaux. 3 vies min., bords sûrs. Sans gain ni perte.",
         "5 Guardians, 5 blue birds and 5 green birds. Lasers burn birds too. At least 3 lives, safe edges. No gain or loss."),
     "story_guardians_hud": ("ENNEMIS {n}/{total}", "ENEMIES {n}/{total}"),
-    "story_guardians_hint": ("Laser : aucune protection, même en Shield ou Phénix !", "Laser: no protection, even Shield or Phenix!"),
-    "story_guardians_clear": ("Test réussi ! Vous pouvez recommencer à volonté.",
+    "story_guardians_hint": ("Laser : aucune protection, même en Shield ou Phenix !", "Laser: no protection, even Shield or Phenix!"),
+    "story_guardians_clear": ("Test réussi ! Tu peux recommencer à volonté.",
                               "Test complete! Replay whenever you like."),
-    "story_guardians_retry": ("Test terminé. Aucun progrès perdu : vous pouvez réessayer.",
+    "story_guardians_retry": ("Test terminé. Aucun progrès perdu : tu peux réessayer.",
                               "Test ended. No progress lost: you can try again."),
     # SpaceWar (src/spacewar.py)
     "story_spacewar_hud": ("NIVEAU {n}/{m}   TORPILLES {t}", "LEVEL {n}/{m}   TORPEDOES {t}"),
@@ -6728,7 +6748,7 @@ _ACT4_TEXTS = {
         "Le nid de Triton s'est effondré dans un silence de glace. Quand la poussière d'azote est retombée, les équipes "
         "de récupération ont trouvé dans les ruines ce que personne n'espérait plus : leurs archives. Des semaines de "
         "déchiffrage plus tard, une carte du ciel est apparue sur les écrans du Commandement. Elle ne désignait qu'un "
-        "seul point, Alcyone, l'étoile la plus brillante des Pléiades, à 409 années-lumière de la Terre. C'est de là "
+        "seul point, Alcyone, l'étoile la plus brillante des Pléiades, à 440 années-lumière de la Terre. C'est de là "
         "que les Avioïdes étaient venus.\n\n"
         "Pendant toute la guerre, nous avions ramassé leurs épaves, démonté leurs réacteurs, disséqué les corps "
         "hybrides de leurs Gardiens. Pièce après pièce, leur technologie était devenue la nôtre. Dans un hangar "
@@ -6746,7 +6766,7 @@ _ACT4_TEXTS = {
         "The nest on Triton collapsed in a silence of ice. When the nitrogen dust settled, the recovery teams found in "
         "the ruins what nobody had hoped for any more: their archives. Weeks of decoding later, a map of the sky "
         "appeared on the screens of Command. It pointed to a single spot, Alcyone, the brightest star of the Pleiades, "
-        "409 light-years from Earth. That is where the Avioids had come from.\n\n"
+        "440 light-years from Earth. That is where the Avioids had come from.\n\n"
         "All through the war we had picked up their wrecks, taken apart their reactors, dissected the hybrid bodies of "
         "their Guardians. Piece by piece, their technology had become ours. In a space hangar in orbit around the "
         "Earth, a huge aircraft carrier that no human could have designed alone was taking shape. The day its engines "
@@ -6787,8 +6807,8 @@ _SENT_TEXTS = {
     "story_scene_sent1_t": ("Sentinelles silencieuses I : Jupiter", "Silent Sentinels I: Jupiter"),
     "story_scene_sent1": (
         "Commandement EDF, transmission prioritaire depuis la Terre.\n\n"
-        "Les Avioïdes ne viennent pas de nulle part. Pour savoir d’où ils surgissent, il nous faut des yeux là où il n’y a "
-        "plus aucune construction humaine qui a survécu à la guerre. Ta mission consiste à placer un satellite espion furtif "
+        "Les Avioïdes ne viennent pas de nulle part. Pour savoir d’où ils surgissent, il nous faut des yeux là où "
+        "plus aucune construction humaine n’a survécu à la guerre. Ta mission consiste à placer un satellite espion furtif "
         "en orbite autour de Jupiter.\n\n"
         "Un problème nous attend là-bas. Le champ magnétique des géantes gazeuses est bien trop puissant pour nos armes. À "
         "cette distance, la force de Lorentz dévie les ions de nos canons à plasma et brise la cohérence des tirs : ils se "
@@ -6970,9 +6990,9 @@ _LANDER_TEXTS = {
         "start. Open once the game is finished."),
     "lander_crash": ("CRASH !", "CRASH!"),
     "lander_points": ("{p} points  +  carburant {b}   (zone \u00d7{z})", "{p} points  +  fuel {b}   (zone \u00d7{z})"),
-    "story_lander_clear": ("Atterrissage réussi ! Vous pouvez recommencer à volonté.",
+    "story_lander_clear": ("Atterrissage réussi ! Tu peux recommencer à volonté.",
                            "Landing made! Replay whenever you like."),
-    "story_lander_retry": ("Le vaisseau s'est écrasé. Aucun progrès perdu : vous pouvez réessayer.",
+    "story_lander_retry": ("Le vaisseau s'est écrasé. Aucun progrès perdu : tu peux réessayer.",
                            "The ship crashed. No progress lost: you can try again."),
 }
 for _k, (_fr, _en) in _LANDER_TEXTS.items():

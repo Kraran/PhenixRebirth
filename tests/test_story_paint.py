@@ -496,7 +496,7 @@ def test_too_poor_to_paint_the_shop_does_not_open_and_says_so(run):
     hub = _hub(st)
     _go_to_paint_row(hub)
     hub.confirm()
-    assert not hub.paint_mode and hub.toast == t("story_paint_poor").format(pts=500)
+    assert not hub.paint_mode and hub.toast == t("story_paint_poor").format(pts=500, ship="Shield")
     assert ss.paint_state(hub.state)["token"] and hub.state["credits"] == 120
     shown = _texts(hub, run)
     assert _ready() in shown                                                  # the price is on the row

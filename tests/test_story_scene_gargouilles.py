@@ -43,7 +43,7 @@ def test_the_third_hunt_has_a_scene_with_a_picture_a_clip_and_a_text():
     assert pic == "gargouilles" and os.path.exists(asset_path("story", pic + ".jpg"))
     assert ss.clip_path(pic) and os.path.getsize(ss.clip_path(pic)) > 100000
     text = t(key)
-    assert text.startswith("Les kakis ne sont pas les seuls à rôder.")
+    assert text.startswith("Les Kakis ne sont pas les seuls à rôder.")
     assert text.endswith("Sinon…")
     assert text.count("\n\n") == 2                                 # three paragraphs, with a pause between
     for word in ("anneaux de Saturne", "gargouilles", "yeux rouges", "ailes", "repoussent", "Bestiaire"):

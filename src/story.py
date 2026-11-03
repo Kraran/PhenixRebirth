@@ -1531,7 +1531,8 @@ class StoryHub:
             self.toast_kind = "danger"
             return
         if not ss.paint_affordable(self.state):
-            self.toast = t("story_paint_poor").format(pts=ss.paint_cost(self.state))
+            hull = (ss.paint_target(self.state) or {}).get("id") or "shield"        # (the Shield, or the hull kept in Act 3)
+            self.toast = t("story_paint_poor").format(pts=ss.paint_cost(self.state), ship=t("ship_" + hull).title())
             self.toast_kind = "danger"
             return
         tints = ss.paint_tints(self.state)

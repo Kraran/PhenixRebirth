@@ -88,10 +88,10 @@ def test_act4_is_on_the_map_only_once_triton_is_won():
 def test_text_has_the_pilot_name_and_the_title():
     set_lang("fr")
     text = t("story_scene_act4")
-    assert "{name}" in text and "409 années-lumière" in text and text.rstrip().endswith("Le saut a commencé…")
+    assert "{name}" in text and "440 années-lumière" in text and text.rstrip().endswith("Le saut a commencé…")
     assert t("story_ch4") == "ACTE 4 — NO MERCY LEFT" and t("story_m_act4") == "Alcyone - Le Grand Saut"
     set_lang("en")
-    assert "409 light-years" in t("story_scene_act4") and t("story_m_act4") != "story_m_act4"
+    assert "440 light-years" in t("story_scene_act4") and t("story_m_act4") != "story_m_act4"
     set_lang("fr")
     assert ss.scene_slides(ss.ENDING_MISSION) == [("fin", "story_scene_act4")]
     assert ss.STORY_SCENES[ss.ENDING_MISSION]["music"] == "lyra_no_mercy_left"
