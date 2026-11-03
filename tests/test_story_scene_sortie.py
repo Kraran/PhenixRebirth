@@ -40,7 +40,7 @@ def test_the_first_sortie_has_a_scene_with_its_picture_and_text():
     pic, key = scene["slides"][0]
     assert pic == "oiseaux_bleus" and os.path.exists(asset_path("story", pic + ".jpg"))
     text = t(key)
-    assert text.startswith("Mars brûle de son éternel rouge ; là-bas somnole le NX01.")
+    assert text.startswith("Mars brûle de son éternel rouge ; en orbite de Mars, sur Phobos, somnole le NX01.")
     assert text.endswith("Sinon… eh bien, je n’aurai plus à m’en soucier.")
     assert text.count("\n\n") == 2                                 # three paragraphs, with a pause between
     for word in ("Phobos", "Avioïdes", "oiseaux bleus", "armes à plasma", "Kamarasov", "premier jeu de données"):

@@ -1340,12 +1340,16 @@ def mark_intro_seen(state):
 # picture and text). It can be watched again from the journal. Keyed by mission id: the slides are
 # [(picture in assets/story, text key)] and `title` is the journal line (after "watch again").
 SCENES = {
-    "ch1_sortie": {"title": "story_scene_sortie_t", "slides": [("oiseaux_bleus", "story_scene_sortie")]},
+    "ch1_sortie": {"title": "story_scene_sortie_t", "slides": [("oiseaux_bleus", "story_scene_sortie")],
+                  "veteran": [("oiseaux_bleus", "story_scene_sortie_v")]},
     "best_s2": {"title": "story_scene_best2_t", "slides": [("oiseaux_kaki", "story_scene_best2")]},
-    "best_s3": {"title": "story_scene_best3_t", "slides": [("gargouilles", "story_scene_best3")]},
-    "best_s4": {"title": "story_scene_best4_t", "slides": [("gargouilles_sombres", "story_scene_best4")]},
+    "best_s3": {"title": "story_scene_best3_t", "slides": [("gargouilles", "story_scene_best3")],
+               "veteran": [("gargouilles", "story_scene_best3_v")]},
+    "best_s4": {"title": "story_scene_best4_t", "slides": [("gargouilles_sombres", "story_scene_best4")],
+               "veteran": [("gargouilles_sombres", "story_scene_best4_v")]},
     "dome_1": {"title": "story_scene_dome_1_t", "slides": [("epave_shield", "story_scene_dome_1")]},
-    "best_boss": {"title": "story_scene_bestboss_t", "slides": [("soucoupe_commandement", "story_scene_bestboss")]},
+    "best_boss": {"title": "story_scene_bestboss_t", "slides": [("soucoupe_commandement", "story_scene_bestboss")],
+                 "veteran": [("soucoupe_commandement", "story_scene_bestboss_v")]},
     "paint_1": {"title": "story_scene_paint_1_t", "slides": [("atelier_wallems", "story_scene_paint_1")]},
     # the prelude of each act: the road through the asteroid belt (the picture will come later: until then the slide is
     # a dark sky behind the text)

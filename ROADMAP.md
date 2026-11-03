@@ -9,6 +9,15 @@ Current release: **v1.6.0**
   come from the photographs of the game. A menu before the flight picks the setting (to be taken out of the final missions).
   Tests: `tests/test_lander_bodies.py`.
 
+- **Review of the texts of the Adventure.** Veteran variants of the four scenes that counted on the quantum anchor (Kamarasov is dead
+  there: "there is no anchor to bring me back"); "Acte" everywhere, never "chapitre"; the dead texts of the old gate mission
+  (it unlocked the dome, Dôme V does now) taken out; the NX01 sleeps "in orbit of Mars, on Phobos"; the khaki birds have a
+  metallic skin (no plumage); "Bleus"/"Kakis" written the same way; the VIP thanks you for what you did "near Phobos"; "more
+  than two years after the silence"; the Guardians and the Lander speak to "tu"; the paint shop names the hull it paints
+  (Shield or Phenix); Dôme I is named after its scene ("l'épave du Shield"); Alcyone is 440 light-years away; small fixes
+  (Sentinelle I, "Phenix" without accent, Peinture I). French and English; the other languages follow where the change is
+  mechanical. Tests: `tests/test_text_review_1_6_1.py`.
+
 - **BONUS - Lunar Lander.** The same level as the test, with its menu of five settings (the menu stays), but for real: a landing
   pays its points (plus the fuel left) in credits, a crash costs what a failure costs. Secret until the game is finished (the
   open ending told), then on the map of every act, replayable. The test mission stays a test (nothing won, nothing lost).
