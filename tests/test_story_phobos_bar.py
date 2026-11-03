@@ -168,20 +168,16 @@ def test_the_five_paragraphs_fit_between_the_title_and_the_tabs(run):
     hub = _hub(addon=True)
     hub.pane = "extras"
     boxes = []
-    real_plate, real_lit = story_mod.phobos_ui.plate, story_mod.phobos_ui.lit   # steel plates (the chosen one lit)
+    real_holo = story_mod.phobos_ui.holo                                         # holographic signs (the chosen one lit)
 
-    def spy_plate(surface, rect, *a, **k):
+    def spy_holo(surface, rect, *a, **k):
         boxes.append(pygame.Rect(rect))
-        return real_plate(surface, rect, *a, **k)
-
-    def spy_lit(surface, rect, *a, **k):
-        boxes.append(pygame.Rect(rect))
-        return real_lit(surface, rect, *a, **k)
-    story_mod.phobos_ui.plate, story_mod.phobos_ui.lit = spy_plate, spy_lit
+        return real_holo(surface, rect, *a, **k)
+    story_mod.phobos_ui.holo = spy_holo
     try:
         _draw(hub, run)
     finally:
-        story_mod.phobos_ui.plate, story_mod.phobos_ui.lit = real_plate, real_lit
+        story_mod.phobos_ui.holo = real_holo
     paragraphs = [b for b in boxes if b.width == 860]
     assert len(paragraphs) == 5 and paragraphs[-1].bottom < BASE_HEIGHT - 90
     assert paragraphs[0].top > 70                                                   # below the title

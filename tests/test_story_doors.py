@@ -105,22 +105,23 @@ def test_the_paragraphs_and_the_chosen_one_are_drawn(hub):
     from i18n import t
     texts = []
     lit = []
-    real, real_lit = story._text, story.phobos_ui.lit
+    real, real_holo = story._text, story.phobos_ui.holo
 
     def spy(surface, font, text, *a, **k):
         texts.append(text)
         return real(surface, font, text, *a, **k)
 
-    def spy_lit(surface, rect, *a, **k):
-        lit.append(pygame.Rect(rect))
-        return real_lit(surface, rect, *a, **k)
-    story._text, story.phobos_ui.lit = spy, spy_lit
+    def spy_holo(surface, rect, chosen=False, *a, **k):
+        if chosen:
+            lit.append(pygame.Rect(rect))
+        return real_holo(surface, rect, chosen, *a, **k)
+    story._text, story.phobos_ui.holo = spy, spy_holo
     try:
         hub.story.pane = "extras"
         hub.story.extras_index = 1
         hub.draw()
     finally:
-        story._text, story.phobos_ui.lit = real, real_lit
+        story._text, story.phobos_ui.holo = real, real_holo
     for door in DOORS:
         assert any(t(door) in x for x in texts), door
         assert any(t("story_door_" + door).split()[0] in x for x in texts), door

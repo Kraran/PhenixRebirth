@@ -17,6 +17,10 @@ Current release: **v1.6.0**
   a steel bezel); the chosen entry is lit phosphor with dark letters, the picture of the enemy sits in a framed screen and the text is
   read in phosphor green. Tests: `tests/test_phobos_ui.py`.
 
+- **Menus of the Adventure, step 6: the journal and the extras.** In the journal, what happened is read on a CRT terminal under the scenes
+  to watch again (which keep the steel and the lit row). The Extras are holographic signs, like the ones of the corridor: blue glass with a
+  grid, the chosen one lit in gold. Tests: `tests/test_phobos_ui.py`.
+
 - **Lunar Lander test: five settings and a menu to choose one.** Europa (bright ice with long red-brown fractures, Jupiter in the sky),
   Deimos (dark dusty rock with worn craters, Mars in the sky; almost no gravity) and Triton (pinkish "cantaloupe" ice with dark
   streaks, Neptune in the sky) join Titan (Saturn in the sky) and the asteroid (other asteroids in the sky). The mother planets
