@@ -222,11 +222,19 @@ def test_the_starfield_is_not_drawn_under_a_pane_with_a_picture(run, monkeypatch
     assert calls
 
 
-def test_the_screens_before_the_hub_keep_the_starfield(run):
+def test_the_screens_before_the_hub_share_the_picture_of_the_quarters(run, monkeypatch):
     g = run.game
     hub = _hub(g, "map")
     hub.screen = "slots"
+    assert hub.covers_screen()
+    calls = []
+    monkeypatch.setattr(draw_frame, "draw_background", lambda game: calls.append(1))
+    g._draw_canvas()
+    assert not calls
+    monkeypatch.setattr(phobos_ui, "BACKDROPS", {})                              # no picture: the stars show again
     assert not hub.covers_screen()
+    g._draw_canvas()
+    assert calls
 
 
 def test_the_map_wears_the_steel_plate_and_the_lit_row(run):
@@ -396,3 +404,152 @@ def test_the_extras_are_holographic_signs_and_the_chosen_one_is_gold(run):
     assert not any(s.get_at((640, y))[:3] == phobos_ui.LIT_EDGE for y in range(100, 235))   # the first one is not
     head = [s.get_at((x, y))[:3] for x in range(238, 500) for y in range(140, 165)]
     assert any(c[0] < 150 and c[2] > 200 and c[1] > 150 for c in head)                  # the head of an unlit sign: blue glass text
+
+
+# ------------------------------------------------------------------ step 7: the screens before the hub
+def _spy(monkeypatch, *names):
+    calls = []
+    for name in names:
+        real = getattr(phobos_ui, name)
+
+        def wrap(surface, rect, *a, _n=name, _real=real, **k):
+            calls.append((_n, pygame.Rect(rect), a, k))
+            return _real(surface, rect, *a, **k)
+        monkeypatch.setattr(phobos_ui, name, wrap)
+    return calls
+
+
+def _gate(g, screen):
+    hub = _hub(g, "map")
+    hub.screen = screen
+    hub.summaries = ss.all_summaries()
+    return hub
+
+
+def _draw(g, hub):
+    s = g.game_surface
+    s.fill((0, 0, 0))
+    hub.draw(s, g.font, g.medium_font, g.font, body=g.read_font)
+    return s
+
+
+def test_a_danger_frame_is_red_and_a_solid_holo_hides_the_picture():
+    s = _surf()
+    phobos_ui.danger(s, pygame.Rect(10, 10, 100, 40))
+    r, g_, b = s.get_at((60, 30))[:3]
+    assert r > g_ * 1.8 and r > b * 1.8                                        # red
+    assert s.get_at((10, 10 + 20))[:3] == phobos_ui.DANGER_EDGE                # its edge
+    clear, solid = _surf(), _surf()
+    clear.fill((250, 250, 250, 255))
+    solid.fill((250, 250, 250, 255))
+    phobos_ui.holo(clear, pygame.Rect(0, 0, 200, 100))
+    phobos_ui.holo(solid, pygame.Rect(0, 0, 200, 100), glass=242)
+    assert sum(clear.get_at((100, 51))[:3]) > 450                              # clear glass: the light shows through
+    assert sum(solid.get_at((100, 51))[:3]) < 160                              # solid glass: it does not
+
+
+def test_the_slots_wear_steel_cards_the_chosen_one_is_lit_and_delete_is_red(run, monkeypatch):
+    g = run.game
+    hub = _gate(g, "slots")
+    hub.sel, hub.col = 0, 0
+    calls = _spy(monkeypatch, "plate", "lit", "danger")
+    _draw(g, hub)
+    kinds = [c[0] for c in calls]
+    assert kinds.count("lit") == 1 and calls[[c[0] for c in calls].index("lit")][1].w == 1040
+    assert "plate" in kinds and "danger" not in kinds
+    hub.col = 1
+    calls.clear()
+    _draw(g, hub)
+    red = [c for c in calls if c[0] == "danger"]
+    assert len(red) == 1 and red[0][1].w == 206 and red[0][1].x > 800           # the DELETE button of the first card
+
+
+def test_the_gates_are_drawn_on_the_picture_with_a_copper_title(run):
+    g = run.game
+    hub = _gate(g, "mode")
+    hub.new_name = "NOVA"
+    s = _draw(g, hub)
+    assert s.get_at((20, 400))[:3] != (0, 0, 0)                                  # the picture of the quarters
+    col = {s.get_at((x, y))[:3] for x in range(500, 780, 2) for y in range(20, 48, 2)}
+    assert any(c[0] > 150 and c[2] < 110 for c in col)                         # the amber letters of the cartouche
+
+
+def test_yes_no_lights_gold_and_red_when_it_destroys(run, monkeypatch):
+    g = run.game
+    hub = _gate(g, "leave")
+    hub.del_yes = True
+    calls = _spy(monkeypatch, "plate", "lit", "danger")
+    _draw(g, hub)
+    assert [c[0] for c in calls if c[1].size == (200, 60)] == ["plate", "lit"]  # NO plain, YES lit (not a destroying question)
+    hub.screen = "delete"
+    calls.clear()
+    _draw(g, hub)
+    assert [c[0] for c in calls if c[1].size == (200, 60)] == ["plate", "danger"]
+    hub.del_yes = False
+    calls.clear()
+    _draw(g, hub)
+    assert [c[0] for c in calls if c[1].size == (200, 60)] == ["lit", "plate"]    # NO lit, YES plain
+    big = [c for c in calls if c[1].size == (680, 290)]
+    assert big and big[0][3].get("hazard") is True                                 # the question sits on a hazard plate
+
+
+def test_the_name_is_typed_on_a_terminal_and_the_keys_are_plates(run, monkeypatch):
+    g = run.game
+    hub = _gate(g, "name")
+    hub.entry = ss.NameEntry()
+    calls = _spy(monkeypatch, "crt", "plate", "lit")
+    s = _draw(g, hub)
+    assert [c[1].size for c in calls if c[0] == "crt"] == [(560, 70)]
+    assert len([c for c in calls if c[0] == "lit"]) == 1                          # the key under the cursor
+    assert len([c for c in calls if c[0] == "plate" and c[1].size == (72, 56)]) == 39
+    gx = (BASE_WIDTH - (10 * 72 + 9 * 8)) // 2
+    ok = pygame.Rect(gx + 9 * 80, 190 + 3 * 64, 72, 56)
+    assert s.get_at((ok.centerx, ok.bottom - 8))[:3] == (90, 200, 120)             # the green lamp under OK
+
+
+def test_the_mode_cards_are_hazard_plates_and_the_chosen_one_is_lit(run, monkeypatch):
+    g = run.game
+    hub = _gate(g, "mode")
+    hub.new_name = "NOVA"
+    hub.mode_index = 1
+    calls = _spy(monkeypatch, "plate", "lit")
+    _draw(g, hub)
+    cards = [c for c in calls if c[1].size == (376, 270)]
+    assert [c[0] for c in cards] == ["plate", "lit", "plate"]
+    assert cards[0][3].get("hazard") is True and cards[2][3].get("hazard") is True
+
+
+def test_the_two_hulls_are_holograms_and_the_one_in_front_is_gold(run, monkeypatch):
+    g = run.game
+    hub = _gate(g, "choice")
+    hub.choice_ask = False
+    hub.choice_index = 1
+    calls = _spy(monkeypatch, "holo")
+    _draw(g, hub)
+    cards = [c for c in calls if c[1].size == (440, 400)]
+    assert [bool(c[2][0]) if c[2] else bool(c[3].get("chosen")) for c in cards] == [False, True]
+
+
+def test_the_lander_pick_lights_a_row_and_frames_the_preview(run, monkeypatch):
+    g = run.game
+    hub = _gate(g, "lander_pick")
+    hub.lander_index = 2
+    calls = _spy(monkeypatch, "plate", "lit", "holo")
+    _draw(g, hub)
+    lit = [c for c in calls if c[0] == "lit"]
+    assert len(lit) == 1 and lit[0][1].y == 96 + 2 * 90                             # the third row
+    assert len([c for c in calls if c[0] == "plate" and c[1].size == (400, 78)]) == 4
+    frame = [c for c in calls if c[0] == "holo"]
+    assert len(frame) == 1 and frame[0][1].x == 488                                # the picture sits in a hologram
+
+
+def test_the_visual_novel_panel_is_solid_glass(run, monkeypatch):
+    import story_vn
+    g = run.game
+    hub = _gate(g, "map")
+    hub.start_vn(story_vn.VN_ORDER[1])
+    hub.vn_t = 99
+    calls = _spy(monkeypatch, "holo", "lit")
+    _draw(g, hub)
+    holo = [c for c in calls if c[0] == "holo"]
+    assert len(holo) == 1 and holo[0][3].get("glass") == 242

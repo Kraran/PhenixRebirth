@@ -113,6 +113,23 @@ def lit(surface, rect):
     return r
 
 
+DANGER_EDGE = (235, 84, 70)
+
+
+def danger(surface, rect):
+    """The lit frame of an answer that destroys something (YES of the delete question): the same plate, in red."""
+    r = pygame.Rect(rect)
+    key = ("danger", r.w, r.h)
+    img = _layers.get(key)
+    if img is None:
+        img = _gradient(r.w, r.h, (86, 28, 24), (46, 14, 12), 235)
+        pygame.draw.rect(img, DANGER_EDGE + (255,), img.get_rect(), 2, border_radius=2)
+        pygame.draw.rect(img, (120, 40, 34, 255), img.get_rect().inflate(-6, -6), 1)
+        _keep(key, img)
+    surface.blit(img, r.topleft)
+    return r
+
+
 def _glow(text_img, colour, spread=5):
     """The text again, blurred and tinted: the light of a lamp behind the letters."""
     w, h = text_img.get_size()
@@ -208,21 +225,26 @@ def _chamfer(w, h, c):
     return [(c, 0), (w - c - 1, 0), (w - 1, c), (w - 1, h - c - 1), (w - c - 1, h - 1), (c, h - 1), (0, h - c - 1), (0, c)]
 
 
-def holo(surface, rect, chosen=False):
-    """A holographic card: dark blue glass, a faint grid, cut corners. `chosen`: lit in gold (the hull that flies)."""
+def holo(surface, rect, chosen=False, glass=None):
+    """A holographic card: dark blue glass, a faint grid, cut corners. `chosen`: lit in gold (the hull that flies). `glass`: None for clear glass, else its opacity (0-255)."""
     r = pygame.Rect(rect)
-    key = ("holo", r.w, r.h, bool(chosen))
+    key = ("holo", r.w, r.h, bool(chosen), glass)
     img = _layers.get(key)
     if img is None:
         img = pygame.Surface((r.w, r.h), pygame.SRCALPHA)
         pts = _chamfer(r.w, r.h, 12)
-        pygame.draw.polygon(img, (10, 22, 42, 215), pts)
-        pygame.draw.polygon(img, (40, 110, 190, 40), pts)
+        if glass is None:
+            pygame.draw.polygon(img, (40, 110, 190, 40), pts)             # clear glass: the picture shows through (cards)
+        else:
+            pygame.draw.polygon(img, (10, 22, 42, int(glass)), pts)       # solid glass: a long text is read on it
         grid = (AMBER if chosen else HOLO_EDGE) + (26,)
+        lines = img if glass is None else pygame.Surface((r.w, r.h), pygame.SRCALPHA)      # (solid glass: blended, not a hole)
         for x in range(20, r.w - 14, 20):
-            pygame.draw.line(img, grid, (x, 8), (x, r.h - 9))
+            pygame.draw.line(lines, grid, (x, 8), (x, r.h - 9))
         for y in range(20, r.h - 14, 20):
-            pygame.draw.line(img, grid, (8, y), (r.w - 9, y))
+            pygame.draw.line(lines, grid, (8, y), (r.w - 9, y))
+        if lines is not img:
+            img.blit(lines, (0, 0))
         if chosen:
             pygame.draw.polygon(img, (255, 179, 71, 60), pts, 5)             # a soft glow inside the edge
         pygame.draw.polygon(img, (LIT_EDGE if chosen else HOLO_EDGE) + (255,), pts, 2)
@@ -305,7 +327,8 @@ def band():
 
 
 # --- the pictures behind the panes ----------------------------------------------------------------------------------
-BACKDROPS = {"map": "ui_map", "hangar": "ui_hangar", "bestiary": "ui_bestiary", "log": "ui_log", "extras": "ui_extras"}
+BACKDROPS = {"map": "ui_map", "hangar": "ui_hangar", "bestiary": "ui_bestiary", "log": "ui_log", "extras": "ui_extras",
+             "gate": "ui_log"}            # the screens before the hub (games, mode, name, ...) share the pilot's quarters
 _backdrops = {}
 
 

@@ -1778,7 +1778,9 @@ class StoryHub:
         starfield underneath need not be drawn."""
         if self.screen == "hub":
             return phobos_ui.backdrop(self.pane) is not None        # (the picture of the pane fills the screen)
-        return self.screen in ("intro", "film", "vn", "first_help")
+        if self.screen in ("intro", "film", "vn", "first_help"):
+            return True
+        return phobos_ui.backdrop("gate") is not None               # (the games, the name, the mode ... share one picture)
 
     # --- draw ---
     def draw(self, surface, font, medium, small, body=None):
@@ -1872,10 +1874,10 @@ class StoryHub:
             if top + height <= BASE_HEIGHT - 16:
                 break
         r = pygame.Rect(px, top, width, height)
-        menu_ui.panel(surface, r, radius=12)
+        phobos_ui.holo(surface, r, glass=242)           # (more solid than a card: the text is long and the picture behind is bright)
         head = t("story_vn_end_t_" + story_vn.ending_id(self._vn_ending_state())) if self.vn_phase == "end" else t(sc["speaker"])
-        _text(surface, medium, head, menu_ui.TEXT_SEL, r.y + 36, left=x)
-        pygame.draw.line(surface, menu_ui.PANEL_EDGE, (x, r.y + 66), (r.right - 28, r.y + 66), 1)
+        _text(surface, medium, head, phobos_ui.GOLD, r.y + 36, left=x)
+        pygame.draw.line(surface, phobos_ui.HOLO_EDGE, (x, r.y + 66), (r.right - 28, r.y + 66), 1)
         shown = self.vn_typed()                                  # the text, typed
         y = r.y + 100
         taken = 0
@@ -1893,7 +1895,7 @@ class StoryHub:
                 h = 12 + 32 * len(lines)
                 focus = k == self.vn_index
                 if focus:
-                    menu_ui.highlight(surface, pygame.Rect(x - 12, y - 18, w + 24, h))
+                    phobos_ui.lit(surface, pygame.Rect(x - 12, y - 18, w + 24, h))
                 col = menu_ui.TEXT_SEL if focus else menu_ui.TEXT
                 for j, line in enumerate(lines):
                     _text(surface, body, line, col, y + 32 * j, left=x + 4)
@@ -2205,8 +2207,8 @@ class StoryHub:
         # the help bar (hint_bar, drawn by the game) lights "A" when the text is over
         self._intro_done = self.intro_finished_scrolling(height)
         if len(self.intro_slides) > 1:
-            _text(surface, small, f"{self.intro_index + 1} / {len(self.intro_slides)}", (140, 145, 170),
-                  28, right=BASE_WIDTH - 40)
+            phobos_ui.badge(surface, small, f"{self.intro_index + 1} / {len(self.intro_slides)}", (200, 205, 222), 30,
+                            right=BASE_WIDTH - 40)
 
         fade = 1.0 - min(1.0, self.intro_t / INTRO_FADE)
         if fade > 0:
@@ -2221,9 +2223,20 @@ class StoryHub:
         titles = {"slots": "story_gate_title", "delete": "story_delete_title", "leave": "story_leave_title",
                   "name": "story_name_title", "mode": "story_mode_title", "choice": "story_choice_title",
                   "lander_pick": "lander_pick_title"}
-        ts = medium.render(t(titles[self.screen]), True, menu_ui.TITLE)
-        surface.blit(ts, (cx - ts.get_width() // 2, 18))
+        picture = phobos_ui.backdrop("gate")
+        if picture is not None:
+            surface.blit(picture, (0, 0))
+        phobos_ui.title(surface, medium, t(titles[self.screen]), cx, 10)
         getattr(self, "_draw_gate_" + self.screen)(surface, font, medium, small)
+
+    def _caption(self, surface, font, text, colour, cy, centerx=BASE_WIDTH // 2):
+        """One line of text on a small steel plate (the picture behind is too busy to read on)."""
+        img = _render(font, text, colour)
+        r = pygame.Rect(0, 0, min(BASE_WIDTH - 40, img.get_width() + 56), img.get_height() + 16)
+        r.center = (centerx, int(cy))
+        phobos_ui.plate(surface, r, rivets=False)
+        surface.blit(img, (r.centerx - img.get_width() // 2, r.centery - img.get_height() // 2))
+        return r
 
     def _draw_gate_slots(self, surface, font, medium, small):
         card_w = min(BASE_WIDTH - 240, 1100)
@@ -2234,10 +2247,11 @@ class StoryHub:
             status = info.get("status")
             focus = i == self.sel
             on_card = focus and self.col == 0
-            border = menu_ui.SEL_EDGE if on_card else menu_ui.PANEL_EDGE
-            _fill(surface, menu_ui.SEL_FILL if on_card else menu_ui.PANEL_FILL, r, 12)
-            pygame.draw.rect(surface, border, r, 3 if on_card else 2, border_radius=12)
-            _text(surface, medium, str(i + 1), border if (on_card or status == "missing") else (180, 150, 110),
+            if on_card:
+                phobos_ui.lit(surface, r)
+            else:
+                phobos_ui.plate(surface, r)
+            _text(surface, medium, str(i + 1), phobos_ui.GOLD if (on_card or status == "missing") else phobos_ui.COPPER,
                   r.centery, left=r.x + 28)
             tx = r.x + 84
             if status == "missing":
@@ -2259,23 +2273,27 @@ class StoryHub:
             if status != "missing":
                 b = pygame.Rect(r.right - 230, r.centery - 26, 206, 52)
                 bf = focus and self.col == 1
-                _fill(surface, menu_ui.SEL_FILL if bf else (22, 24, 36), b, 8)
-                pygame.draw.rect(surface, menu_ui.SEL_EDGE if bf else menu_ui.PANEL_EDGE, b, 2, border_radius=8)
+                if bf:
+                    phobos_ui.danger(surface, b)
+                else:
+                    phobos_ui.plate(surface, b, rivets=False)
                 _text(surface, small, t("story_slot_delete"), (255, 230, 140) if bf else (150, 155, 175),
                       b.centery, centerx=b.centerx)
             y += h + gap
         if self.msg:
-            _text(surface, small, self.msg, (255, 220, 120), y + 20, centerx=BASE_WIDTH // 2)
+            self._caption(surface, small, self.msg, (255, 220, 120), y + 20)
 
     def _draw_gate_delete(self, surface, font, medium, small):
         cx = BASE_WIDTH // 2
         info = self._summary()
+        phobos_ui.plate(surface, pygame.Rect(cx - 340, 150, 680, 290), hazard=True)
         _text(surface, medium, info.get("name") or t("story_slot_damaged"), (255, 230, 140), 200, centerx=cx)
         _text(surface, small, t("story_delete_warn"), menu_ui.DANGER, 270, centerx=cx)
         self._draw_yes_no(surface, small, cx, danger=True)
 
     def _draw_gate_leave(self, surface, font, medium, small):
         cx = BASE_WIDTH // 2
+        phobos_ui.plate(surface, pygame.Rect(cx - 340, 150, 680, 290), hazard=True)
         _text(surface, medium, t("story_leave_ask"), (255, 230, 140), 200, centerx=cx)
         _text(surface, small, t("story_leave_warn"), (170, 175, 195), 270, centerx=cx)
         self._draw_yes_no(surface, small, cx, danger=False)
@@ -2288,15 +2306,17 @@ class StoryHub:
         for i, key in enumerate(lander.MENU_ORDER):
             r = pygame.Rect(x, y + i * (h + gap), w, h)
             focus = i == self.lander_index
-            _fill(surface, menu_ui.SEL_FILL if focus else menu_ui.PANEL_FILL, r, 12)
-            pygame.draw.rect(surface, menu_ui.SEL_EDGE if focus else menu_ui.PANEL_EDGE, r, 3 if focus else 2, border_radius=12)
+            if focus:
+                phobos_ui.lit(surface, r)
+            else:
+                phobos_ui.plate(surface, r)
             _text(surface, medium, t("lander_body_" + key), (255, 230, 140) if focus else (220, 220, 235), r.y + 28, left=r.x + 24)
             _text(surface, small, t("lander_planet_" + key), (170, 175, 195), r.y + 58, left=r.x + 24)
         key = lander.MENU_ORDER[self.lander_index % len(lander.MENU_ORDER)]
         pic = lander_view.preview(key)
         px = 500
+        phobos_ui.holo(surface, pygame.Rect(px - 12, y - 12, pic.get_width() + 24, pic.get_height() + 24), True)
         surface.blit(pic, (px, y))
-        pygame.draw.rect(surface, menu_ui.SEL_EDGE, pygame.Rect(px, y, pic.get_width(), pic.get_height()), 2)
         ty = y + pic.get_height() + 34
         # the wrapping measures every word: done once per text, language and font, not at each frame
         info = t("lander_info_" + key)
@@ -2305,6 +2325,7 @@ class StoryHub:
         lines = cache.get(ck)
         if lines is None:
             lines = cache[ck] = _wrap_nb(body, info, BASE_WIDTH - px - 50)
+        phobos_ui.plate(surface, pygame.Rect(px - 16, ty - 20, BASE_WIDTH - px - 28, 32 * len(lines) + 12), rivets=False)
         for line in lines:
             _text(surface, body, line, menu_ui.TEXT, ty, left=px)
             ty += 32
@@ -2318,23 +2339,21 @@ class StoryHub:
         if self.choice_ask:
             hull = ss.HULLS[self.choice_index % len(ss.HULLS)]
             other = ss.HULLS[(self.choice_index + 1) % len(ss.HULLS)]
+            phobos_ui.plate(surface, pygame.Rect(cx - 400, 150, 800, 290), hazard=True)
             _text(surface, medium, t("story_choice_ask").format(ship=t("ship_" + hull)), (255, 230, 140), 200,
                   centerx=cx)
             _text(surface, small, t("story_choice_warn").format(ship=t("ship_" + other)), menu_ui.DANGER, 270,
                   centerx=cx)
             self._draw_yes_no(surface, small, cx, danger=True)
             return
-        _text(surface, small, t("story_choice_q_v" if veteran else "story_choice_q"), (220, 220, 235), 84,
-              centerx=cx)
+        self._caption(surface, small, t("story_choice_q_v" if veteran else "story_choice_q"), (220, 220, 235), 84)
         w, h, gap = 440, 400, 40
         x0 = cx - (w * 2 + gap) // 2
         body = getattr(self, "_body", None) or small
         for k, hull in enumerate(ss.HULLS):
             r = pygame.Rect(x0 + k * (w + gap), 116, w, h)
             focus = k == self.choice_index
-            _fill(surface, menu_ui.SEL_FILL if focus else menu_ui.PANEL_FILL, r, 12)
-            pygame.draw.rect(surface, menu_ui.SEL_EDGE if focus else menu_ui.PANEL_EDGE, r, 3 if focus else 2,
-                             border_radius=12)
+            phobos_ui.holo(surface, r, focus)
             sl = next((s for s in self.state.get("slots") or [] if s.get("id") == hull), {})
             img = (self._portraits if focus else self._greyed).get(self._hull_key(sl))
             if img is not None:
@@ -2343,9 +2362,9 @@ class StoryHub:
             _text(surface, medium, t("ship_" + hull), (255, 230, 140) if focus else (160, 160, 180),
                   r.y + 196, centerx=r.centerx)
             for li, line in enumerate(_wrap(body, t("story_choice_%s_d" % hull), r.w - 56)[:5]):
-                _text(surface, body, line, (200, 200, 215) if focus else (130, 135, 155), r.y + 246 + li * 30,
+                _text(surface, body, line, (200, 200, 215) if focus else (165, 170, 190), r.y + 246 + li * 30,
                       centerx=r.centerx)
-        _text(surface, small, t("story_choice_note"), (170, 175, 195), 116 + h + 34, centerx=cx)
+        self._caption(surface, small, t("story_choice_note"), (200, 205, 222), 116 + h + 34)
 
     def _draw_yes_no(self, surface, small, cx, danger):
         """The NO / YES buttons of a question (NO on the left); `del_yes` tells which one is lit. YES is red when
@@ -2353,20 +2372,22 @@ class StoryHub:
         for k, (label, yes) in enumerate(((t("story_no"), False), (t("story_yes"), True))):
             b = pygame.Rect(cx - 230 + k * 260, 340, 200, 60)
             focus = self.del_yes == yes
-            _fill(surface, menu_ui.SEL_FILL if focus else (22, 24, 36), b, 10)
-            pygame.draw.rect(surface, (menu_ui.DANGER if yes and danger else menu_ui.SEL_EDGE) if focus else menu_ui.PANEL_EDGE,
-                             b, 3 if focus else 2, border_radius=10)
+            if focus and yes and danger:
+                phobos_ui.danger(surface, b)
+            elif focus:
+                phobos_ui.lit(surface, b)
+            else:
+                phobos_ui.plate(surface, b, rivets=False)
             _text(surface, small, label, (255, 230, 140) if focus else (150, 155, 175), b.centery, centerx=b.centerx)
 
     def _draw_gate_name(self, surface, font, medium, small):
         cx = BASE_WIDTH // 2
         box = pygame.Rect(cx - 280, 90, 560, 70)
-        _fill(surface, menu_ui.SEL_FILL, box, 10)
-        pygame.draw.rect(surface, menu_ui.SEL_EDGE, box, 2, border_radius=10)
+        phobos_ui.crt(surface, box)
         text = self.entry.text
         shown = text + ("_" if (pygame.time.get_ticks() // 450) % 2 == 0 and len(text) < ss.NAME_MAX else " ")
-        _text(surface, medium, shown, (255, 230, 140), box.centery, left=box.x + 22)
-        _text(surface, small, f"{len(text)}/{ss.NAME_MAX}", (120, 125, 150), box.centery, right=box.right - 16)
+        _text(surface, medium, shown, phobos_ui.CRT_TEXT, box.centery, left=box.x + 22)
+        _text(surface, small, f"{len(text)}/{ss.NAME_MAX}", phobos_ui.CRT_DIM, box.centery, right=box.right - 16)
         cw, ch, cg = 72, 56, 8
         gx = (BASE_WIDTH - (10 * cw + 9 * cg)) // 2
         gy = 190
@@ -2375,13 +2396,17 @@ class StoryHub:
             for ci, tok in enumerate(row):
                 r = pygame.Rect(gx + ci * (cw + cg), gy + ri * (ch + cg), cw, ch)
                 focus = ri == self.entry.row and ci == self.entry.col
-                tint = (60, 150, 90) if tok == "OK" else ((170, 80, 70) if tok == "DEL" else (80, 85, 105))
-                _fill(surface, menu_ui.SEL_FILL if focus else menu_ui.PANEL_FILL, r, 8)
-                pygame.draw.rect(surface, menu_ui.SEL_EDGE if focus else tint, r, 3 if focus else 2, border_radius=8)
+                if focus:
+                    phobos_ui.lit(surface, r)
+                else:
+                    phobos_ui.plate(surface, r, rivets=False)
+                    if tok in ("OK", "DEL"):                         # the two keys that act: a coloured lamp under the letters
+                        surface.fill((90, 200, 120) if tok == "OK" else (210, 100, 85),
+                                     pygame.Rect(r.x + 14, r.bottom - 9, r.w - 28, 3))
                 _text(surface, small, labels.get(tok, tok), (255, 230, 140) if focus else (200, 200, 215),
                       r.centery, centerx=r.centerx)
         if self.msg:
-            _text(surface, small, self.msg, (255, 220, 120), gy + 4 * (ch + cg) + 24, centerx=cx)
+            self._caption(surface, small, self.msg, (255, 220, 120), gy + 4 * (ch + cg) + 24)
 
     @staticmethod
     def mode_card_rects():
@@ -2392,12 +2417,13 @@ class StoryHub:
 
     def _draw_gate_mode(self, surface, font, medium, small):
         cx = BASE_WIDTH // 2
-        _text(surface, small, f"{t('story_pilot')} : {self.new_name}", (170, 175, 195), 100, centerx=cx)
+        self._caption(surface, small, f"{t('story_pilot')} : {self.new_name}", (200, 205, 222), 100)
         for k, (key, r) in enumerate(zip(ss.MODES, self.mode_card_rects())):
             focus = k == self.mode_index
-            _fill(surface, menu_ui.SEL_FILL if focus else menu_ui.PANEL_FILL, r, 12)
-            pygame.draw.rect(surface, menu_ui.SEL_EDGE if focus else menu_ui.PANEL_EDGE, r, 3 if focus else 2,
-                             border_radius=12)
+            if focus:
+                phobos_ui.lit(surface, r)
+            else:
+                phobos_ui.plate(surface, r, hazard=True)
             col = MODE_COLORS[key]
             _text(surface, medium, t("story_mode_" + key), col if focus else (150, 155, 175), r.y + 46, centerx=r.centerx)
             body = getattr(self, "_body", None) or small
