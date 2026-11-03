@@ -129,6 +129,7 @@ def test_the_map_shows_a_cleared_dome_mission_as_done(run):
     hub = _open(bestiary_s4=True)
     hub.apply_result("dome_1", 100, True)
     hub.pane = "map"
+    hub.map_index = [m["id"] for m in hub.missions()].index("dome_2")     # (the list scrolls to the row under the cursor)
     seen = []
     real = story._text
 
