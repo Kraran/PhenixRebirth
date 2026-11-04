@@ -56,7 +56,7 @@ VN_SCENES = {
                     ("story_vn5_a3", 3, "story_vn5_r3"), ("story_vn5_a4", 4, "story_vn5_r4")],
     },
 }
-VN_MUSIC_LEVEL = 0.6           # "music" of a scene: its share of the normal music volume while the scene is on screen
+VN_MUSIC_LEVEL = 1.0           # "music" of a scene: its share of the normal music volume (the usual background level)
 
 
 def scene_music(scene_id):

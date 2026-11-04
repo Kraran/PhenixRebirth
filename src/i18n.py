@@ -7072,11 +7072,11 @@ _SCRAMBLE_TEXTS = {
     "scramble_boss_hp": ("CHEF", "MASTER"),
     "story_m_scramble_bonus": ("BONUS - Scramble", "BONUS - Scramble"),
     "story_m_scramble_bonus_b": (
-        "Le Scramble du test, pour de vrai : traverse la roche jusqu'à la base ennemie et abats son chef rouge. Les points "
-        "rapportent des crédits ; un échec coûte ce que coûte un échec. Les lance-missiles et le chef rouge entrent au "
+        "Le Scramble du test, pour de vrai : traverse la roche jusqu'à la base ennemie et abats son commandant avioïde rouge. Les points "
+        "rapportent des crédits ; un échec coûte ce que coûte un échec. Les lance-missiles et le commandant avioïde rouge entrent au "
         "Bestiaire. Tu choisis le décor au départ. Ouverte une fois le jeu terminé.",
-        "The test's Scramble, for real: fly through the rock to the enemy base and shoot down its red master. The points "
-        "pay in credits; a failure costs what a failure costs. The missile launchers and the red master go into the "
+        "The test's Scramble, for real: fly through the rock to the enemy base and shoot down its red Avioid commander. The points "
+        "pay in credits; a failure costs what a failure costs. The missile launchers and the red Avioid commander go into the "
         "Bestiary. You choose the setting at the start. Open once the game is finished."),
     "story_b_station": ("LANCE-MISSILE", "MISSILE LAUNCHER"),
     "story_b_station_t": (
@@ -7084,7 +7084,7 @@ _SCRAMBLE_TEXTS = {
         "croiser ta route. Celui dressé sur son rail est son point faible.",
         "An armoured launcher, on the rock or hanging from the ceiling. Its missiles fly straight on, timed to cross "
         "your course. The one standing on its rail is its weak point."),
-    "story_b_redboss": ("CHEF ROUGE", "RED MASTER"),
+    "story_b_redboss": ("COMMANDANT AVIOÏDE ROUGE", "RED AVIOID COMMANDER"),
     "story_b_redboss_t": (
         "Un parent rouge du commandant avioïde, terré derrière le mur de sa base. Perce le mur brique par brique, puis "
         "touche-le trois fois.",
