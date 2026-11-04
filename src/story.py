@@ -441,6 +441,7 @@ class StoryHub:
 
     def _reset_slide(self):
         self._stop_clip()                 # a video starts over with its slide
+        self._stop_film_backdrop()
         self._stop_voice()                # and so does the voice
         self.intro_t = 0.0
         self.intro_pos = 0.0
@@ -473,6 +474,7 @@ class StoryHub:
         """Last slide done, or skipped: remember it and go back (the hangar, the map or the journal). After the attack
         on Phobos, the choice of the hull comes next (it cannot be skipped)."""
         self._stop_clip()
+        self._stop_film_backdrop()
         self._stop_voice()
         choose = self.scene_id == ss.ACT3_ATTACK and ss.act3_pending(self.state)
         film = ss.film_after(self.scene_id) if self.scene_id else None
@@ -589,8 +591,70 @@ class StoryHub:
         return True
 
     def film_playing(self):
-        """A film is on screen: the game leaves the music to it."""
-        return self.screen == "film"
+        """A film is on screen (or a scene whose picture is a film with its sound): the game leaves the music to it."""
+        return self.screen == "film" or (self.screen == "intro" and self._scene_film() is not None)
+
+    # --- a scene whose picture is a film played once, with its sound (story_state.film_bg: the concert of Lyra Voss) ---
+    def _scene_film(self):
+        if not self.scene_id:
+            return None
+        cache = self.__dict__.setdefault("_film_bg_found", {})
+        if self.scene_id not in cache:
+            cache[self.scene_id] = ss.film_bg(self.scene_id)
+        return cache[self.scene_id]
+
+    def _film_backdrop(self, spec):
+        """The frame of the film of the scene, or None while the picture shows alone: for its first `still` seconds, and
+        once the film is over (or when it cannot play). Its sound starts with its first picture."""
+        if self.intro_t < spec["still"] or getattr(self, "_bg_film_over", False):
+            return None
+        clip = getattr(self, "_bg_film", None)
+        if clip is None:
+            try:
+                clip = videoclip.ClipPlayer(spec["files"][0], (BASE_WIDTH, BASE_HEIGHT), self._reading_shade(),
+                                            loop=False, fit="cover", hard_clock=True)
+            except Exception:
+                log_exc("story._film_backdrop")
+                clip = None
+            if clip is None or clip.failed:
+                if clip is not None:
+                    clip.close()
+                self._bg_film_over = True
+                return None
+            self._bg_film = clip
+            self._bg_film_sound = spec["files"][1]
+        if clip.failed or clip.ended:
+            self._stop_film_backdrop(keep_sound=True)       # (the song ends with the film: the picture comes back)
+            self._bg_film_over = True
+            return None
+        if self._bg_film_sound is not None and clip.ready:
+            self._start_film_sound(self._bg_film_sound)
+            self._bg_film_sound = None
+            self._bg_film_heard = True
+        clip.pump()
+        return clip.surface if clip.playing else None
+
+    def _stop_film_backdrop(self, keep_sound=False):
+        clip = getattr(self, "_bg_film", None)
+        if clip is not None:
+            clip.close()
+        self._bg_film = None
+        self._bg_film_sound = None
+        if not keep_sound and getattr(self, "_bg_film_heard", False):
+            try:
+                pygame.mixer.music.stop()                  # (skipped or closed before its end: the song stops with it)
+            except Exception:
+                log_exc("story._stop_film_backdrop")
+        if not keep_sound:
+            self._bg_film_heard = False
+            self._bg_film_over = False
+
+    def _reading_shade(self):
+        if self._clip_shade is None:
+            band = INTRO_TEXT_W + 120                          # the same shade and reading band as a still
+            self._clip_shade = videoclip.make_shade(
+                (BASE_WIDTH, BASE_HEIGHT), [(0, BASE_WIDTH, 70), ((BASE_WIDTH - band) // 2, band, 120)])
+        return self._clip_shade
 
     def _tick_film(self, dt):
         clip = self._film
@@ -779,7 +843,7 @@ class StoryHub:
         elif self.vn_phase == "react":
             self._vn_ending_or_end()
         elif self.vn_phase == "end":
-            self._end_vn()
+            self._vn_close_ending()
         elif self.vn_review:
             self._vn_react()
         elif self.vn_choice_wait > 0:
@@ -792,6 +856,15 @@ class StoryHub:
             self.save()
             self.vn_pick = self.vn_index
             self._vn_react()
+
+    def _vn_close_ending(self):
+        """The ending has been read: the two best ones go on with the concert of Lyra Voss (a scene with its film,
+        story_state.CONCERT_SCENES); the others close the visual novel."""
+        concert = ss.concert_of_ending(story_vn.ending_id(self._vn_ending_state()))
+        back = self.vn_return
+        self._end_vn()
+        if concert:
+            self.start_scene(concert, back_to=back)
 
     def _end_vn(self):
         self.vn_id = None
@@ -2197,7 +2270,12 @@ class StoryHub:
 
     def _intro_backdrop(self, name):
         """The slide picture with the dark reading band already baked in (cached, opaque)."""
-        if self._clip_file(name):
+        spec = self._scene_film()
+        if spec is not None:
+            moving = self._film_backdrop(spec)
+            if moving is not None:
+                return moving
+        elif self._clip_file(name):
             moving = self._clip_backdrop(name)
             if moving is not None:
                 return moving
