@@ -366,13 +366,18 @@ def test_a_shot_dies_in_the_rock_with_sparks():
 
 
 # ------------------------------------------------------------------ the end
-def test_reaching_the_arena_wins_the_mission(run):
+def test_killing_the_boss_of_the_base_wins_the_mission(run):
     _launch_scramble(run)
     g = run.game
     form, p = g.formation, g.player
     p.invulnerable = 1e9
     form.cam = form.course.stop - 2.0
-    run.frames(int(60 * (sc.ARENA_WAIT + 1)))
+    run.frames(60)
+    assert form.phase == "arena" and g.adventure        # reaching the arena is not enough any more
+    run.frames(60 * 3)
+    assert g.adventure
+    form.base._kill_boss(g)
+    run.frames(int(60 * (scb.DONE_AFTER + 1)))
     assert not g.adventure                              # over, and won (a training: nothing won either)
     assert g.story.toast == __import__("i18n").t("story_scramble_clear")
 
@@ -495,6 +500,9 @@ class _Game:
 
     def _enemy_kill_points(self, enemy):
         return self._enemy_points(enemy.stage)
+
+    def _boss_kill_points(self):
+        return 200
 
     def _boom(self, x, y, kind="enemy"):
         class _B:
@@ -629,6 +637,7 @@ def test_a_shot_destroys_a_station_for_the_points_of_a_green_bird():
     f = _form("rock", 2)
     st = _station_ahead(f, "floor", 400.0)
     st.lead = -99.0                                    # (it does not fire)
+    st.loaded = False                                  # (no missile on it)
     ship = _Pilot()
     l, t, r, b = st.box()
     f.shots = [sc.Shot(l - 10, (t + b) / 2, 1200.0, 0.0)]
@@ -711,6 +720,7 @@ def test_the_flight_pays_the_stations_and_the_missiles_in_the_real_game(run):
     form, p = g.formation, g.player
     st = _station_ahead(form, "floor", 400.0)
     st.lead = -99.0
+    st.loaded = False
     l, t, r, b = st.box()
     form.shots = [sc.Shot(l - 5, (t + b) / 2, 1200.0, 0.0)]
     p.invulnerable = 30.0
@@ -807,6 +817,7 @@ def test_a_leaning_missile_is_drawn_leaning():
 
 # ------------------------------------------------------------------ the birds and the comets (step 3)
 import scramble_birds as sb  # noqa: E402
+import scramble_base as scb  # noqa: E402
 
 
 class _BirdGame(_Game):
@@ -1041,3 +1052,254 @@ def test_the_birds_the_shots_and_the_comets_are_drawn():
     for stage in (1, 2):
         pic = sv.bird_frames(stage)[0]
         assert pic.get_width() >= pic.get_height() - 2      # (turned to face the left: wider than... at least as wide)
+
+
+# ------------------------------------------------------------------ step 4: the missile on its rail, the comets
+@pytest.mark.parametrize("side", ("floor", "ceil"))
+def test_a_shot_on_the_missile_standing_on_a_station_blows_up_both(side):
+    f = _form("rock", 2)
+    st = _station_ahead(f, side, 400.0)
+    st.lead = -99.0
+    assert st.loaded
+    mx, my = st.mouth()
+    l, t, r, b = st.box()
+    assert not (t <= my <= b)                            # (the height of the missile only: above or below the station)
+    ship = _Pilot()
+    f.shots = [sc.Shot(mx - 40, my, 1200.0, 0.0)]
+    g = _Game(f, ship)
+    sc.tick(g)
+    assert not st.alive and not st.loaded
+    assert g.score == 20 + sc.MISSILE_POINTS and f.kills == dict(f.kills, station=1, missile=1)
+
+
+def test_an_empty_station_is_only_its_box():
+    f = _form("rock", 2)
+    st = _station_ahead(f, "floor", 400.0)
+    st.loaded = False
+    assert st.full_box() == st.box()
+    st.loaded = True
+    l, t, r, b = st.full_box()
+    assert t < st.box()[1]                               # (the missile stands above a station of the ground)
+
+
+def test_twice_as_many_comets():
+    assert sb.COMET_GAP == (0.375, 0.675)
+    f = _sky_form("comets", 400.0)
+    ship = _Pilot()
+    ship.invulnerable = 1e9
+    ship.y = 60.0
+    g = _BirdGame(f, ship)
+    counts = []
+    for _ in range(60 * 8):
+        sc.tick(g)
+        ship.y = 60.0
+        counts.append(len(f.sky.comets))
+    assert max(counts) >= 3
+
+
+# ------------------------------------------------------------------ the enemy base (step 4)
+def _arena(started=True):
+    f = _form("rock", 2)
+    f.stations = []
+    f.cam = f.course.stop
+    f.phase = "arena"
+    if started:
+        f.base.start()
+    ship = _Pilot()
+    ship.invulnerable = 1e9
+    f.recentre(ship)
+    g = _Game(f, ship)
+    f.sky.wave_in = 1e9
+    return f, ship, g
+
+
+def test_the_base_has_a_wall_of_four_columns_from_the_ceiling_to_the_ground():
+    f = _form("rock", 2)
+    base = f.base
+    assert base.rows >= 30 and len(base.bricks) == base.rows * scb.COLUMNS == base.standing()
+    assert {b.col for b in base.bricks} == set(range(scb.COLUMNS))
+    tops = min(b.box()[1] for b in base.bricks)
+    bottoms = max(b.box()[3] for b in base.bricks)
+    assert tops >= base.top - 1e-6 and bottoms <= base.bottom + 1e-6
+    assert base.bottom - bottoms < scb.BRICK_H and tops - base.top < scb.BRICK_H
+    # on the screen once the scroll has stopped: the face at WALL_FROM_RIGHT, the boss behind, the ship cannot reach it
+    assert abs(base.face - f.course.stop - (sc.W - scb.WALL_FROM_RIGHT)) < 1e-6
+    assert base.boss.x > base.back and base.boss.x - f.course.stop < sc.W
+    assert sc.X_MAX + sc.SHIP_BOX[0] < base.face - f.course.stop - scb.TURRET_W
+
+
+def test_a_shot_breaks_the_first_brick_of_its_row_for_one_point():
+    f, ship, g = _arena()
+    base = f.base
+    y = base.y0 + 7.5 * scb.BRICK_H
+    row = base.row_of(y)
+    f.shots = [sc.Shot(base.face - 20, y, 1200.0, 0.0)]
+    g.dt = 1 / 30
+    sc.tick(g)
+    gone = [b for b in base.bricks if not b.alive]
+    assert len(gone) == 1 and gone[0].row == row and gone[0].col == 0 and g.score == 1
+    assert base.front_brick(row).col == 1                # the next one is now the face of that row
+
+
+def test_the_boss_is_only_hit_through_a_hole_and_one_hit_kills_it():
+    f, ship, g = _arena()
+    base = f.base
+    boss = base.boss
+    boss.t = 0.0
+    boss.y = boss.y0                                     # (in the middle)
+    y = boss.y
+    row = base.row_of(y)
+    g.dt = 1 / 30
+    f.shots = [sc.Shot(base.face - 30, y, 1200.0, 0.0)]
+    sc.tick(g)
+    assert not boss.dying                                # a brick took it
+    for b in base.bricks:
+        if b.row == row:
+            b.alive = False                              # (the tunnel is cut)
+    score = g.score
+    boss.t = 0.0
+    f.shots = [sc.Shot(boss.box()[0] - 20, boss.y, 1200.0, 0.0)]
+    sc.tick(g)
+    assert boss.dying and g.score - score == 200 and base.dead_for is not None
+
+
+def test_the_base_shields_are_up_until_the_scroll_stops():
+    f, ship, g = _arena(started=False)
+    f.cam = f.course.stop - 300.0
+    f.phase = "flying"
+    base = f.base
+    y = base.y0 + 3.5 * scb.BRICK_H
+    f.shots = [sc.Shot(base.face - 30, y, 1200.0, 0.0)]
+    g.dt = 1 / 30
+    sc.tick(g)
+    assert base.standing() == len(base.bricks) and g.score == 0 and not f.shots
+    assert not base.bullets and not base.missiles       # it does not fire either
+
+
+def test_the_boss_fires_from_the_face_of_the_wall_like_the_saucer():
+    f, ship, g = _arena()
+    base = f.base
+    for _ in range(60 * 6):
+        f.recentre(ship)
+        sc.tick(g)
+        assert len(base.bullets) <= scb.BULLET_MAX
+    assert base.bullets
+    for b in base.bullets:
+        assert b.x < base.face + 1e-6                    # from the face, to the left
+    x0 = base.bullets[0].x
+    sc.tick(g)
+    assert abs((x0 - base.bullets[0].x) - scb.BULLET_SPEED / 60) < 1e-6 if base.bullets and base.bullets[0].x < x0 else True
+
+
+def test_the_shots_of_the_boss_leave_from_a_row_near_the_ship():
+    f, ship, g = _arena()
+    base = f.base
+    ship.y = 200.0
+    for _ in range(40):
+        x, y = base._bullet_source(ship.y)
+        assert abs(y - ship.y) <= scb.BULLET_NEAR * scb.BRICK_H + scb.BRICK_H
+
+
+def test_the_turrets_fire_homing_missiles_and_a_shot_destroys_them():
+    f, ship, g = _arena()
+    base = f.base
+    assert len(base.turrets) == scb.TURRETS
+    ship.y = 150.0
+    for _ in range(60 * 5):
+        sc.tick(g)
+        ship.y = 150.0
+        assert len(base.missiles) <= scb.TURRET_MISSILES
+        if base.missiles and base.missiles[0].age > 0.6:
+            break
+    assert base.missiles
+    m = base.missiles[0]
+    assert m.speed > scb.MISSILE_SPEED[0] and m.x < base.face
+    assert (m.vy < 0) == (ship.y < m.y) or m.vy == 0       # it leans towards the height of the ship
+    assert abs(m.vy) <= scb.MISSILE_HOMING[1] + 1e-6
+    score = g.score
+    f.shots = [sc.Shot(m.x - 40, m.y, 1200.0, 0.0)]
+    g.dt = 1 / 30
+    sc.tick(g)
+    assert not m.alive and g.score - score >= sc.MISSILE_POINTS
+
+
+def test_a_turret_is_destroyed_for_the_points_of_a_station():
+    f, ship, g = _arena()
+    base = f.base
+    t = base.turrets[0]
+    t.fire_in = 1e9
+    f.shots = [sc.Shot(t.box()[0] - 30, t.y, 1200.0, 0.0)]
+    g.dt = 1 / 30
+    sc.tick(g)
+    assert not t.alive and g.score == 20 and base.kills["turret"] == 1
+
+
+def test_the_base_shots_and_missiles_cost_a_life_but_not_through_the_dome():
+    f, ship, g = _arena()
+    ship.invulnerable = 0.0
+    base = f.base
+    base.bullet_in = 1e9
+    for t in base.turrets:
+        t.fire_in = 1e9
+    base.bullets = [scb.BaseBullet(f.cam + ship.x + 4, ship.y)]
+    sc.tick(g)
+    assert ship.lives == 2
+    ship.invulnerable = 0.0
+    base.missiles = [scb.BaseMissile(f.cam + ship.x + 4, ship.y)]
+    sc.tick(g)
+    assert ship.lives == 1
+    ship.invulnerable = 0.0
+    ship.is_phenix = ship.uses_shield = True
+    base.bullets = [scb.BaseBullet(f.cam + ship.x + 4, ship.y)]
+    base.missiles = [scb.BaseMissile(f.cam + ship.x + 4, ship.y)]
+    sc.tick(g)
+    assert ship.lives == 1 and not base.bullets and not base.missiles
+
+
+def test_the_base_blows_up_brick_after_brick_then_the_mission_ends():
+    f, ship, g = _arena()
+    base = f.base
+    base._kill_boss(g)
+    standing = [base.standing()]
+    for _ in range(int(60 * scb.DONE_AFTER) + 5):
+        sc.tick(g)
+        standing.append(base.standing())
+    assert standing[-1] == 0 and all(b <= a for a, b in zip(standing, standing[1:]))
+    assert len(set(standing)) > 10                        # (not all at once ...)
+    last = standing.index(0)
+    assert last >= 60 * 1.2                               # (... but over more than a second, the nearest to the boss first)
+    assert base.done and f.won and f.phase == "won"
+    assert not base.bullets and not base.missiles
+
+
+def test_no_wave_and_no_station_fire_in_the_arena():
+    f, ship, g = _arena()
+    assert not f.sky.can_send_wave()
+    assert all(st.x < f.course.brake_from for st in _form("rock", 2).stations)
+
+
+def test_the_base_is_drawn_with_its_metal_bricks_and_its_red_boss():
+    f, ship, g = _arena()
+    surf = pygame.Surface((sc.W, sc.H))
+    surf.fill((0, 0, 0))
+    sv.draw_items(surf, f)
+    b = f.base.bricks[len(f.base.bricks) // 2]
+    l, t, r, bt = b.box()
+    assert surf.get_at((int((l + r) / 2 - f.cam), int((t + bt) / 2)))[:3] != (0, 0, 0)
+    tiles = sv.brick_tiles()
+    assert len(tiles) == 16 and tiles[0].get_size() == (scb.BRICK_W, scb.BRICK_H)
+    frames, whites = sv.boss_frames()
+    assert frames and len(frames) == len(whites)
+    arr = pygame.surfarray.array3d(frames[0]).reshape(-1, 3).astype(int)
+    alpha = pygame.surfarray.array_alpha(frames[0]).reshape(-1)
+    seen = arr[alpha > 128]
+    assert (seen[:, 0] >= seen[:, 1]).mean() > 0.95       # red, not green
+
+
+def test_the_texts_of_the_base():
+    import i18n
+    for code in ("fr", "en"):
+        i18n.set_lang(code)
+        for k in ("scramble_arena", "scramble_won"):
+            assert i18n.t(k) != k
+    i18n.set_lang("fr")

@@ -382,8 +382,219 @@ def _draw_sky(surface, form):
         pygame.draw.circle(surface, (255, 190, 255), (int(s.x), int(s.y)), 4)
 
 
+# ------------------------------------------------------------------ the enemy base (src/scramble_base.py)
+_BASE = {}
+
+
+def _saucer_metal():
+    """The photograph of the boss saucer's hull, as arrays: (rgb [x, y], alpha [x, y]), or None."""
+    got = _BASE.get("metal")
+    if got is None:
+        from settings import asset_path
+        try:
+            img = pygame.image.load(asset_path("sprites", "boss_saucer.png")).convert_alpha()
+            got = (pygame.surfarray.array3d(img).astype(np.float32), pygame.surfarray.array_alpha(img))
+        except Exception:
+            got = False
+        _BASE["metal"] = got
+    return got or None
+
+
+def _metal_spots(rgb, alpha, w, h, count, seed):
+    """`count` places of the photograph where a w x h piece is all metal (opaque, not the red light of the band)."""
+    rng = np.random.default_rng(seed)
+    red = (rgb[..., 0] > 110) & (rgb[..., 0] > rgb[..., 1] * 1.6)
+    spots = []
+    W0, H0 = alpha.shape
+    for x in range(0, W0 - w, 5):
+        for y in range(0, H0 - h, 5):
+            if alpha[x:x + w, y:y + h].min() > 235 and not red[x:x + w, y:y + h].any():
+                spots.append((x, y))
+    if not spots:
+        return []
+    picks = rng.choice(len(spots), size=min(count, len(spots)), replace=False)
+    return [spots[int(i)] for i in picks]
+
+
+def _bevel(col, k=1.0):
+    """A plate of metal: lit on its upper left edge, in the shade on its lower right one, a dark outline, two rivets."""
+    w, h = col.shape[:2]
+    out = col.copy()
+    out[:2, :, :] = out[:2, :, :] * 0.6 + 255 * 0.4 * k
+    out[:, :2, :] = out[:, :2, :] * 0.6 + 255 * 0.4 * k
+    out[-2:, :, :] *= 0.45
+    out[:, -2:, :] *= 0.45
+    out[0, :, :] *= 0.5
+    out[:, 0, :] *= 0.5
+    out[-1, :, :] *= 0.25
+    out[:, -1, :] *= 0.25
+    for rx, ry in ((4, 4), (w - 5, h - 5)):
+        out[rx - 1:rx + 1, ry - 1:ry + 1, :] = (40, 38, 44)
+        out[rx - 1, ry - 1, :] = (210, 210, 220)
+    return out
+
+
+def brick_tiles():
+    """The 16 pictures of the bricks of the wall: pieces of the saucer's hull, bevelled and riveted (made once)."""
+    got = _BASE.get("bricks")
+    if got is None:
+        import scramble_base as sb
+        metal = _saucer_metal()
+        w, h = sb.BRICK_W, sb.BRICK_H
+        got = []
+        if metal is not None:
+            rgb, alpha = metal
+            for x, y in _metal_spots(rgb, alpha, w, h, 16, 3):
+                col = rgb[x:x + w, y:y + h, :]
+                grey = col.mean(axis=2, keepdims=True)
+                col = col * 0.55 + grey * 0.45                     # (a little less colour: steel)
+                col = np.clip((col - 70.0) * 1.1 + 72.0, 0, 255)   # (the gunmetal of the saucer, a little more contrast)
+                pic = pygame.Surface((w, h))
+                pygame.surfarray.blit_array(pic, np.clip(_bevel(col), 0, 255).astype(np.uint8))
+                got.append(pic)
+        while len(got) < 16:                                       # (no photograph: plain steel)
+            pic = pygame.Surface((w, h))
+            g = 110 + 8 * (len(got) % 4)
+            pic.fill((g, g, g + 8))
+            arr = pygame.surfarray.array3d(pic).astype(np.float32)
+            pygame.surfarray.blit_array(pic, np.clip(_bevel(arr), 0, 255).astype(np.uint8))
+            got.append(pic)
+        _BASE["bricks"] = got
+    return got
+
+
+def base_panel(width, height):
+    """The plates behind the boss: big dark pieces of the hull (made once per size)."""
+    key = ("panel", int(width), int(height))
+    got = _BASE.get(key)
+    if got is None:
+        pw, ph = 52, 40
+        pic = pygame.Surface((max(1, int(width)), max(1, int(height))))
+        pic.fill((22, 22, 28))
+        metal = _saucer_metal()
+        spots = _metal_spots(*metal, pw // 2, ph // 2, 12, 8) if metal is not None else []
+        for i, x in enumerate(range(0, int(width), pw)):
+            for j, y in enumerate(range(0, int(height), ph)):
+                if spots:
+                    sx, sy = spots[(i * 7 + j * 3) % len(spots)]
+                    piece = metal[0][sx:sx + pw // 2, sy:sy + ph // 2, :]
+                    col = np.repeat(np.repeat(piece, 2, axis=0), 2, axis=1) * 0.45     # (a piece of the hull, twice as big)
+                else:
+                    col = np.full((pw, ph, 3), 48.0)
+                plate = pygame.Surface((pw, ph))
+                pygame.surfarray.blit_array(plate, np.clip(_bevel(col, 0.25), 0, 255).astype(np.uint8))
+                pic.blit(plate, (x, y))
+        got = _BASE[key] = pic
+    return got
+
+
+def boss_frames():
+    """The alien of the boss saucer, in red (its greens turned to reds), at the size of the base: (frames, white frames)."""
+    got = _BASE.get("boss")
+    if got is None:
+        import scramble_base as sb
+        from boss import BossCore
+        BossCore._load_images()
+        frames, whites = [], []
+        size = (sb.BOSS_SIZE, sb.BOSS_SIZE)
+        for fr in (BossCore._frames or []):
+            pic = pygame.transform.smoothscale(fr, size)
+            rgb = pygame.surfarray.array3d(pic).astype(np.float32)
+            r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+            hi, lo = np.maximum(r, g), np.minimum(r, g)
+            red = np.stack([np.minimum(255, hi * 1.7 + 25), lo * 0.5, b * 0.55], axis=2)
+            pixels = pygame.surfarray.pixels3d(pic)
+            pixels[:] = np.clip(red, 0, 255).astype(np.uint8)
+            del pixels
+            frames.append(pic)
+            white = pic.copy()
+            white.fill((255, 255, 255, 0), special_flags=pygame.BLEND_RGBA_MAX)
+            whites.append(white)
+        got = _BASE["boss"] = (frames, whites)
+    return got
+
+
+def _turret_sprite():
+    got = _BASE.get("turret")
+    if got is None:
+        import scramble_base as sb
+
+        def draw(pic, k):
+            w, h = pic.get_size()
+            steel, dark, edge = (90, 94, 108), (40, 42, 52), (170, 176, 192)
+            body = pygame.Rect(w // 3, 2 * k, w - w // 3, h - 4 * k)
+            pygame.draw.rect(pic, steel, body, border_radius=3 * k)
+            pygame.draw.rect(pic, edge, body, max(1, k), border_radius=3 * k)
+            tube = pygame.Rect(0, h // 2 - 4 * k, w // 2, 8 * k)
+            pygame.draw.rect(pic, dark, tube)
+            pygame.draw.rect(pic, edge, tube, max(1, k))
+            pygame.draw.circle(pic, (255, 70, 50), (w - 7 * k, h // 2), int(2.5 * k))
+        got = _BASE["turret"] = _aa(draw, (30, 26), (sb.TURRET_W, sb.TURRET_H))
+    return got
+
+
+def _base_missile(lean):
+    """A missile of a turret, its nose to the left, leaning by `lean` (steps of 3 degrees)."""
+    deg = int(round(math.degrees(lean) / 3.0)) * 3
+    key = ("bm", deg)
+    got = _BASE.get(key)
+    if got is None:
+        got = _BASE[key] = pygame.transform.rotozoom(sprite("missile", False), 90 - deg, 1.0)
+    return got
+
+
+def _draw_base(surface, form, cam_i):
+    import asteroids
+    base = getattr(form, "base", None)
+    if base is None:
+        return
+    left = base.face - 60 - cam_i
+    if left > W:
+        return                                                     # (not on the screen yet)
+    # the plates behind the boss, and its chamber
+    px = int(base.panel_x - cam_i)
+    if px < W:
+        surface.blit(base_panel(W - px + 40, base.bottom - base.top), (px, int(base.top)))
+    boss = base.boss
+    if boss.alive:
+        bx, by = boss.x - cam_i, boss.y
+        frames, whites = boss_frames()
+        if boss.dying:
+            k = 1.0 - min(1.0, boss.death / 1.2)
+            asteroids._add_glow(surface, (255, 120, 60), (bx, by), int(60 + 200 * (1 - k)))
+        elif frames:
+            asteroids._add_glow(surface, (180, 30, 30), (bx, by), 190)
+            i = int(boss.t * 8.0) % len(frames)
+            pic = whites[i] if boss.hit_flash > 0 else frames[i]
+            surface.blit(pic, (round(bx - pic.get_width() / 2), round(by - pic.get_height() / 2)))
+    # the wall
+    tiles = brick_tiles()
+    for b in base.bricks:
+        if b.alive:
+            l, t, r, bt = b.box()
+            surface.blit(tiles[b.tile % len(tiles)], (round(l - cam_i), round(t)))
+    tur = _turret_sprite()
+    for t in base.turrets:
+        if t.alive:
+            l, tp, r, b = t.box()
+            surface.blit(tur, (round(l - cam_i), round(tp)))
+    for m in base.missiles:
+        sx = m.x - cam_i
+        flick = 0.75 + 0.25 * math.sin(m.age * 60.0)
+        asteroids._add_glow(surface, (255, 150, 50), (sx + 22, m.y), int(26 * flick))
+        pic = _base_missile(m.tilt())
+        surface.blit(pic, (round(sx - pic.get_width() / 2), round(m.y - pic.get_height() / 2)))
+    for b in base.bullets:
+        x, y = int(b.x - cam_i), int(b.y)
+        asteroids._add_glow(surface, (255, 80, 200), (x + 7, y), 24)
+        pygame.draw.rect(surface, (255, 80, 200), (x, y - 3, 14, 7))
+        pygame.draw.rect(surface, (255, 180, 255), (x, y - 1, 14, 3))
+
+
 def warm_sky():
     """Make the pictures of the birds and of the comets (at the start of the mission, not when the first one comes)."""
+    brick_tiles()
+    boss_frames()
     for stage in (1, 2):
         bird_frames(stage)
     for down in (True, False):
@@ -395,6 +606,7 @@ def draw_items(surface, form):
     import asteroids
     cam_i = int(round(form.cam))
     _draw_stations(surface, form, cam_i)
+    _draw_base(surface, form, cam_i)
     _draw_sky(surface, form)
     for sp in form.sparks:
         a = max(0.0, sp.life / sp.max)
@@ -433,8 +645,11 @@ def draw_hud(game, form):
     pygame.draw.polygon(surface, (255, 255, 255), [(mark, y + h + 2), (mark - 5, y + h + 9), (mark + 5, y + h + 9)])
     name = game._txt(font, t("scramble_sec_" + here), HUD_COLOR)
     surface.blit(name, (x + w - name.get_width(), y - name.get_height() - 4))
-    if form.phase in ("arena", "won"):
-        announce.draw(game, surface, t("scramble_arena"), "success", "major", (BASE_WIDTH // 2, BASE_HEIGHT // 2 - 150))
+    base = getattr(form, "base", None)
+    if base is not None and base.dead_for is not None:
+        announce.draw(game, surface, t("scramble_won"), "success", "major", (BASE_WIDTH // 2, BASE_HEIGHT // 2 - 150))
+    elif form.phase == "arena" and form.arena_time < 3.0:
+        announce.draw(game, surface, t("scramble_arena"), "danger", "major", (BASE_WIDTH // 2, BASE_HEIGHT // 2 - 150))
 
 
 # ------------------------------------------------------------------ the menu of the test
