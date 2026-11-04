@@ -21,6 +21,8 @@ LYRA = {
     "lyra_what_we_lost": ("What We Lost", 288.0),
     "lyra_no_mercy_left": ("No Mercy Left", 226.4),
     "lyra_oldest_fear": ("Oldest Fear", 251.2),
+    "lyra_when_we_looked_up": ("When We Looked Up", 271.5),
+    "lyra_when_we_looked_up_unplugged": ("When We Looked Up (Unplugged)", 269.1),
 }
 
 
@@ -109,13 +111,14 @@ def test_the_concert_songs_are_the_sound_of_the_films():
     from sounds import LYRA_MUSIC
     for fid, key in (("lyra_1", "lyra_eternal_dawn"), ("lyra_2", "lyra_what_we_lost"), ("lyra_3", "lyra_no_mercy_left")):
         assert ss.film_files(fid)[1] == asset_path(*LYRA_MUSIC[key][:2])
+    assert ss.film_bg("vn_concert_1")["files"][1] == asset_path(*LYRA_MUSIC["lyra_when_we_looked_up"][:2])
 
 
 # ------------------------------------------------------------------ the list
 def test_the_four_songs_come_after_the_soundtrack_before_the_video(run):
     g = run.game
     keys = [k for k, _t, _kind in g._juke_catalog()]
-    assert keys[-5:] == list(LYRA) + ["intro"]
+    assert keys[-len(LYRA) - 1:] == list(LYRA) + ["intro"]
     for key in LYRA:
         assert os.path.isfile(g.sounds._music_paths[key])
         assert abs(g.sounds.music_duration(key) - LYRA[key][1]) < 1.0
@@ -128,10 +131,14 @@ def test_their_titles(run, lang):
     assert g._juke_title("lyra_what_we_lost") == "Lyra Voss - What We Lost (Aventure)"
     assert g._juke_title("lyra_no_mercy_left") == "Lyra Voss - No Mercy Left (Aventure)"
     assert g._juke_title("lyra_oldest_fear") == "Lyra Voss - Oldest Fear"
+    assert g._juke_title("lyra_when_we_looked_up") == "Lyra Voss - When We Looked Up"
+    assert g._juke_title("lyra_when_we_looked_up_unplugged") == "Lyra Voss - When We Looked Up (Unplugged)"
     lang("en")
     assert g._juke_title("lyra_no_mercy_left") == "Lyra Voss - No Mercy Left (Adventure)"
     from mp3_title import title_from_path
     assert title_from_path(asset_path("music", "Lyra-Voss-Oldest-Fear.mp3")) == "Lyra Voss - Oldest Fear"   # its tag
+    assert (title_from_path(asset_path("music", "Lyra-Voss-When-We-Looked-Up-Unplugged.mp3"))
+            == "Lyra Voss - When We Looked Up (Unplugged)")
 
 
 def test_the_list_scrolls_to_keep_the_cursor_on_screen(run):

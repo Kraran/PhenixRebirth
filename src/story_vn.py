@@ -35,12 +35,14 @@ VN_SCENES = {
     },
     "vn_3": {
         "film": None, "after": "vn_2", "wins": 1, "panel": "right", "image": "vn_3_pont", "title": "story_vn3_t",
+        "music": "lyra_when_we_looked_up_unplugged",
         "journal": "story_vn3_j", "speaker": "story_vn_lyra", "text": "story_vn3_q", "shuffle": True,
         "answers": [("story_vn3_a1", 1, "story_vn3_r1"), ("story_vn3_a2", 3, "story_vn3_r2"),
                     ("story_vn3_a3", 4, "story_vn3_r3"), ("story_vn3_a4", 2, "story_vn3_r4")],
     },
     "vn_4": {                                      # (Lyra is on the right of the picture: the text is on the left)
         "film": None, "after": "vn_3", "wins": 1, "image": "vn_4_refuge", "title": "story_vn4_t",
+        "music": "lyra_when_we_looked_up_unplugged",
         "journal": "story_vn4_j", "speaker": "story_vn_lyra", "text": "story_vn4_q", "shuffle": True,
         "answers": [("story_vn4_a1", 2, "story_vn4_r1"), ("story_vn4_a2", 3, "story_vn4_r2"),
                     ("story_vn4_a3", 4, "story_vn4_r3"), ("story_vn4_a4", 1, "story_vn4_r4")],
@@ -54,6 +56,15 @@ VN_SCENES = {
                     ("story_vn5_a3", 3, "story_vn5_r3"), ("story_vn5_a4", 4, "story_vn5_r4")],
     },
 }
+VN_MUSIC_LEVEL = 0.6           # "music" of a scene: its share of the normal music volume while the scene is on screen
+
+
+def scene_music(scene_id):
+    """(track, level) played under a scene of the visual novel (its key "music"), or None: the music of the menus."""
+    key = (VN_SCENES.get(scene_id) or {}).get("music")
+    return (key, VN_MUSIC_LEVEL) if key else None
+
+
 VN_ORDER = ["vn_1", "vn_2", "vn_3", "vn_4", "vn_5"]    # the scenes in the order of the story
 
 

@@ -17,7 +17,8 @@ from settings import asset_path
 from sounds import SoundManager
 from test_smoke import run  # noqa: F401  (fixture)
 
-LYRA = ("lyra_eternal_dawn", "lyra_what_we_lost", "lyra_no_mercy_left", "lyra_oldest_fear")
+LYRA = ("lyra_eternal_dawn", "lyra_what_we_lost", "lyra_no_mercy_left", "lyra_oldest_fear", "lyra_when_we_looked_up",
+        "lyra_when_we_looked_up_unplugged")
 THEMES = ("none", "menu", "gameover", "credits", "nostalgie_start", "nostalgie_elise")
 
 
@@ -68,14 +69,14 @@ def test_the_arrows_go_through_every_choice_and_wrap_around(folder):
         cur = ingame_music.cycle(cur, 1)
     assert tuple(seen) == THEMES + LYRA
     assert cur == "none"                                           # all the way round
-    assert ingame_music.cycle("none", -1) == "lyra_oldest_fear"     # and backwards from the start
+    assert ingame_music.cycle("none", -1) == "lyra_when_we_looked_up_unplugged"     # and backwards from the start
 
 
 def test_the_files_of_the_folder_come_after_the_game_tracks(folder):
     _drop(folder, "b_track.ogg")
     _drop(folder, "C_track.mp3")                                    # (sorted without regard to case: b before C)
     assert ingame_music.choices() == THEMES + LYRA + ("custom:b_track.ogg", "custom:C_track.mp3")
-    assert ingame_music.cycle("lyra_oldest_fear", 1) == "custom:b_track.ogg"
+    assert ingame_music.cycle("lyra_when_we_looked_up_unplugged", 1) == "custom:b_track.ogg"
     assert ingame_music.cycle("custom:C_track.mp3", 1) == "none"
     assert ingame_music.cycle("none", -1) == "custom:C_track.mp3"
 

@@ -349,6 +349,8 @@ class Game:
             ("lyra_what_we_lost", "juke_lyra_what_we_lost", "music"),
             ("lyra_no_mercy_left", "juke_lyra_no_mercy_left", "music"),
             ("lyra_oldest_fear", "juke_lyra_oldest_fear", "music"),
+            ("lyra_when_we_looked_up", "juke_lyra_when_we_looked_up", "music"),
+            ("lyra_when_we_looked_up_unplugged", "juke_lyra_when_we_looked_up_unplugged", "music"),
             ("intro", "juke_intro", "video"),
         )
 

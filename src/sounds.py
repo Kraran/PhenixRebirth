@@ -21,12 +21,16 @@ SOUND_DIR = asset_path("sounds")
 MUSIC_DIR = asset_path("music")
 
 # Lyra Voss in the jukebox: the three songs of her private concert in the Adventure (the sound of its films, kept in
-# assets/video, so they are not twice in the game) and Oldest Fear. key: (folder, file, length in seconds)
+# assets/video, so they are not twice in the game), Oldest Fear and When We Looked Up. key: (folder, file, length in seconds)
 LYRA_MUSIC = {
     "lyra_eternal_dawn": ("video", "lyra_1_eternal_dawn.ogg", 307.52),
     "lyra_what_we_lost": ("video", "lyra_2_what_we_lost.ogg", 287.98),
     "lyra_no_mercy_left": ("video", "lyra_3_no_mercy_left.ogg", 226.41),
     "lyra_oldest_fear": ("music", "Lyra-Voss-Oldest-Fear.mp3", 251.18),
+    # When We Looked Up: the song of her concert after the visual novel (the sound of its film); its Unplugged version
+    # plays under scenes 3 and 4 of the visual novel
+    "lyra_when_we_looked_up": ("video", "concertmars.ogg", 271.55),
+    "lyra_when_we_looked_up_unplugged": ("music", "Lyra-Voss-When-We-Looked-Up-Unplugged.mp3", 269.14),
 }
 
 
