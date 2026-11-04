@@ -144,6 +144,11 @@ class SoundManager:
                 ("lander_beep", 0.60),            # ... the fuel runs low
                 ("lander_land", 0.80),            # ... a gentle landing
                 ("lander_rough", 0.80),           # ... a hard landing
+                ("scramble_launch", 0.55),        # the Scramble test: a missile leaves (tools/make_scramble_sounds.py)
+                ("scramble_comet", 0.45),         # ... a comet streaks by
+                ("scramble_brick", 0.50),         # ... a brick of the base breaks
+                ("scramble_alarm", 0.70),         # ... the base wakes up
+                ("scramble_shield", 0.45),        # ... a shot sparks off its shields
             ]:
                 self._load(name, f"{name}.wav", vol)
             self.enabled = len(self.sounds) > 0

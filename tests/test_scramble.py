@@ -1303,3 +1303,118 @@ def test_the_texts_of_the_base():
         for k in ("scramble_arena", "scramble_won"):
             assert i18n.t(k) != k
     i18n.set_lang("fr")
+
+
+# ------------------------------------------------------------------ step 5: the sounds, the HUD of the base, the picture of the wall
+class _Ears:
+    """Records what is played."""
+
+    def __init__(self):
+        self.heard = []
+
+    def play(self, name, **kw):
+        self.heard.append(name)
+
+
+SCRAMBLE_SOUNDS = ("scramble_launch", "scramble_comet", "scramble_brick", "scramble_alarm", "scramble_shield")
+
+
+def test_the_sounds_of_the_level_are_made_and_loaded():
+    import os
+    import inspect
+    import sounds
+    from settings import asset_path
+    src = inspect.getsource(sounds)
+    for name in SCRAMBLE_SOUNDS:
+        assert os.path.isfile(asset_path("sounds", name + ".wav")), name
+        assert '("%s",' % name in src
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("mss", os.path.join(os.path.dirname(asset_path("x")), "..", "tools",
+                                                                      "make_scramble_sounds.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    for name, make in mod.SOUNDS:
+        sig = make()
+        assert len(sig) > 1000 and np.abs(sig).max() <= 1.0 and np.abs(sig).max() > 0.2, name
+
+
+def test_a_station_missile_is_heard_leaving():
+    f = _form("rock", 2)
+    st = _station_ahead(f, "floor", 300.0)
+    st.lead = 99.0
+    ship = _Pilot()
+    ship.invulnerable = 1e9
+    g = _Game(f, ship)
+    g.sounds = _Ears()
+    sc.tick(g)
+    assert f.missiles and "scramble_launch" in g.sounds.heard
+
+
+def test_a_comet_is_heard_coming():
+    f = _sky_form("comets", 400.0)
+    ship = _Pilot()
+    ship.invulnerable = 1e9
+    ship.y = 60.0
+    g = _BirdGame(f, ship)
+    f.sounds = g.sounds = _Ears()
+    for _ in range(60):
+        sc.tick(g)
+        ship.y = 60.0
+    assert "scramble_comet" in g.sounds.heard
+
+
+def test_the_base_is_heard_waking_breaking_and_sparking():
+    f, ship, g = _arena(started=False)
+    g.sounds = _Ears()
+    f.phase = "flying"
+    f.cam = f.course.stop - 0.01
+    base = f.base
+    y = base.y0 + 3.5 * scb.BRICK_H
+    f.shots = [sc.Shot(base.face - 30, y, 1200.0, 0.0)]
+    g.dt = 1 / 120
+    for _ in range(2):
+        sc.tick(g)
+    assert "scramble_shield" in g.sounds.heard or "scramble_alarm" in g.sounds.heard
+    for _ in range(30):
+        sc.tick(g)
+    assert f.phase == "arena" and "scramble_alarm" in g.sounds.heard
+    f.shots = [sc.Shot(base.face - 20, y, 1200.0, 0.0)]
+    g.dt = 1 / 30
+    sc.tick(g)
+    assert "scramble_brick" in g.sounds.heard
+
+
+def test_the_hud_of_the_arena_shows_what_is_left_of_the_wall(run):
+    _launch_scramble(run)
+    g = run.game
+    form = g.formation
+    form.cam = form.course.stop
+    form.phase = "arena"
+    form.arena_time = 5.0
+    for b in form.base.bricks[: len(form.base.bricks) // 2]:
+        b.alive = False
+    import i18n
+    texts = []
+    real = g._txt
+    g._txt = lambda font, text, colour: (texts.append(text), real(font, text, colour))[1]
+    try:
+        sv.draw_hud(g, form)
+    finally:
+        g._txt = real
+    assert i18n.t("scramble_wall").format(p=50) in texts
+    assert not any(text == i18n.t("scramble_sec_approach") for text in texts)   # (the bar of the sections is gone)
+
+
+def test_the_picture_of_the_wall_is_made_again_only_when_a_brick_goes():
+    f, ship, g = _arena()
+    base = f.base
+    pic1, x, y = sv._wall_picture(base)
+    pic2, _, _ = sv._wall_picture(base)
+    assert pic1 is pic2 and base._wall_pic[0] == base.standing()
+    b = base.bricks[5]
+    l, t, r, bt = b.box()
+    px, py = int((l + r) / 2 - x), int((t + bt) / 2 - y)
+    assert pic1.get_at((px, py))[3] > 0
+    b.alive = False
+    pic3, _, _ = sv._wall_picture(base)
+    assert base._wall_pic[0] == base.standing() and pic3.get_at((px, py))[3] == 0

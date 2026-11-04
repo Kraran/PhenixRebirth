@@ -732,6 +732,13 @@ def tick(game):
     if form.phase == "flying" and form.cam >= course.stop:
         form.phase = "arena"
         form.base.start()
+        _play(getattr(game, "sounds", None), "scramble_alarm", volume=0.7)
+        cry = getattr(game, "_play_boss_cry", None)
+        if cry is not None:
+            try:
+                cry("boss_ready", volume=0.9, x=W * 0.85)          # (the alien of the base, as the boss of a saucer)
+            except Exception:
+                log_exc("scramble.tick")
     if form.phase == "arena":
         form.arena_time += dt
         if form.base.done:
@@ -747,7 +754,12 @@ def _shot_target(form, x0, x1, y):
             l, t, r, b = m.box()
             if t - 3 <= y <= b + 3 and l - 3 <= x1 and x0 <= r + 3 and (best_x is None or l < best_x):
                 best, best_x = m, l
+    reach = STATION_W
     for st in form.stations:
+        if st.x < x0 - reach:
+            continue
+        if st.x > x1 + reach:
+            break                                         # (sorted by x: none further on can be met)
         if st.alive:
             l, t, r, b = st.full_box()
             if t <= y <= b and l <= x1 and x0 <= r and (best_x is None or l < best_x):
@@ -818,7 +830,7 @@ def _stations(game, form, dt, alive):
             st.missiles -= 1
             st.loaded = False
             st.reload = STATION_RELOAD
-            _play(getattr(game, "sounds", None), "enemy_shoot", volume=0.6, x=sx)
+            _play(getattr(game, "sounds", None), "scramble_launch", volume=0.5, x=sx)
 
 
 def rise_time(distance):
