@@ -34,6 +34,11 @@ Current release: **v1.6.0**
   behind them (with the steel help bar, and a little more room in the Jukebox list); from the main menu they are unchanged.
   Tests: `tests/test_phobos_ui.py`.
 
+- **Menus of the Adventure, finishing (step 8).** The blurb under the mission under the cursor is no longer squeezed into one shrunk
+  line: it is written in up to four lines and the row grows to hold them (long texts in the 13 languages were shrunk to 35 %). A new
+  test (`tests/test_phobos_fit.py`) draws every pane of the hub and every screen before it in the 13 languages and fails when a text is
+  shrunk below 70 %, goes out of the screen or touches another text. Drawing a pane takes about 2 ms (the budget of 60 FPS is 16.7 ms).
+
 - **Lunar Lander test: five settings and a menu to choose one.** Europa (bright ice with long red-brown fractures, Jupiter in the sky),
   Deimos (dark dusty rock with worn craters, Mars in the sky; almost no gravity) and Triton (pinkish "cantaloupe" ice with dark
   streaks, Neptune in the sky) join Titan (Saturn in the sky) and the asteroid (other asteroids in the sky). The mother planets

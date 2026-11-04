@@ -147,7 +147,8 @@ def test_map_draws_group_heads_and_the_hint(run, monkeypatch):
         hub._draw_map(surf, small, small, small)
         hint = ss.unlock_hint(hub.state, m)
         want = i18n.t("story_unlock_after").format(name=i18n.t(hint["title"])) if hint else None
-        assert (want in seen) if want else not any(x.startswith(i18n.t("story_unlock_after")[:8]) for x in seen), m["id"]
+        note = hub._map_note(m)[0]                           # the note under the cursor (written in lines, not through _text_fit)
+        assert (note == want) if want else not note.startswith(i18n.t("story_unlock_after")[:8]), m["id"]
     seen.clear()
     hub.map_index = 0
     hub._draw_map(surf, small, small, small)

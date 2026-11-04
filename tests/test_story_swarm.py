@@ -414,13 +414,14 @@ def test_the_selected_row_never_leaves_the_frame(run):
     hub = _open(bestiary_s4=True)
     hub.pane = "map"
     ys = []
-    real = story._text_fit
+    real = story._text
 
-    def spy(surface, font, text, color, cy, left, max_w, scale=1.0):
-        ys.append(cy)
-        return real(surface, font, text, color, cy, left, max_w, scale)
+    def spy(surface, font, text, color, cy, *a, **k):
+        if font is hub._note_font():                           # the lines of the blurb of the selected row
+            ys.append(cy)
+        return real(surface, font, text, color, cy, *a, **k)
 
-    story._text_fit = spy
+    story._text = spy
     g = run.game
     try:
         for i in range(len(hub.missions())):
@@ -429,7 +430,7 @@ def test_the_selected_row_never_leaves_the_frame(run):
             hub.draw(pygame.Surface((1280, 720)), g.font, g.medium_font, g.font)
             assert ys and max(ys) < 78 + (720 - 168), (i, ys)   # the blurb of the selected row is inside the box
     finally:
-        story._text_fit = real
+        story._text = real
 
 
 def test_the_hud_shows_the_wave_number_of_a_multi_wave_mission(run):
