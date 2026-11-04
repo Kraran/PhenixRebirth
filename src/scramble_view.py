@@ -255,6 +255,21 @@ def sprite(name, down):
     return pic
 
 
+_TILTS = {}
+
+
+def _tilted(down, lean):
+    """The missile leaning by `lean` radians (by steps of 3 degrees, each made once)."""
+    deg = int(round(math.degrees(lean) / 3.0)) * 3
+    if deg == 0:
+        return sprite("missile", down)
+    key = (down, deg)
+    pic = _TILTS.get(key)
+    if pic is None:
+        pic = _TILTS[key] = pygame.transform.rotozoom(sprite("missile", down), -deg, 1.0)
+    return pic
+
+
 def _draw_stations(surface, form, cam_i):
     import asteroids
     for st in form.stations:
@@ -280,7 +295,7 @@ def _draw_stations(surface, form, cam_i):
         flick = 0.75 + 0.25 * math.sin(m.age * 60.0)
         asteroids._add_glow(surface, (255, 150, 50), (sx, tail_y), int(26 * flick))
         asteroids._add_glow(surface, (255, 240, 190), (sx, tail_y), int(11 * flick))
-        pic = sprite("missile", down)
+        pic = _tilted(down, m.tilt() * (-1 if down else 1))
         surface.blit(pic, (round(sx - pic.get_width() / 2), round(m.y - pic.get_height() / 2)))
 
 

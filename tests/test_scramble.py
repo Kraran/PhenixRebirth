@@ -435,14 +435,18 @@ def test_the_texts_are_there_in_french_and_english():
 def test_the_stations_stand_on_flat_rock_where_the_passage_stays_wide(seed):
     f = _form("rock", seed)
     c = f.course
-    assert len(f.stations) >= 15
+    assert len(f.stations) >= 30
     assert [s.x for s in f.stations] == sorted(s.x for s in f.stations)
     for st in f.stations:
         assert sc.STATION_FIRST <= st.x < c.brake_from
         assert c.section_at(st.x) != "comets"
         xs = np.linspace(st.x - sc.STATION_W / 2, st.x + sc.STATION_W / 2, 7)
         edge = c.ground(xs) if st.side == "floor" else c.ceiling(xs)
-        assert edge.max() - edge.min() <= sc.STATION_FLAT + 1e-6
+        # it stands on its pad: no rock comes into it, and the rock is never far from its foot
+        if st.side == "floor":
+            assert edge.min() >= st.base - 1e-6 and edge.max() - st.base <= 8.0
+        else:
+            assert edge.max() <= st.base + 1e-6 and st.base - edge.min() <= 8.0
         # with the station standing out of the rock, the ship still fits
         span = np.linspace(st.x - sc.GAP_WINDOW, st.x + sc.GAP_WINDOW, 13)
         assert np.min(c.ground(span)) - np.max(c.ceiling(span)) >= sc.GAP_MIN + sc.STATION_H
@@ -543,7 +547,7 @@ def test_a_station_fires_straight_at_the_height_of_the_ship_as_it_comes():
             break
     assert fired_at is not None and sc.STATION_RANGE[0] <= fired_at <= sc.STATION_RANGE[1]
     m = f.missiles[0]
-    assert m.dir == -1 and abs(m.x - st.x) < 1e-6 and st.missiles == sc.STATION_MISSILES - 1 and not st.loaded
+    assert m.dir == -1 and abs(m.x - st.x) < 3.0 and st.missiles == sc.STATION_MISSILES - 1 and not st.loaded
     # its timing: it crosses the height of the ship about when the ship gets to it
     expected = fired_at / sc.SCROLL
     assert abs(expected - (sc.rise_time(abs(ship.y - st.mouth()[1])) + st.lead)) < 0.1
@@ -590,6 +594,7 @@ def test_a_missile_bursts_on_the_rock_over_it():
     x = f.course.starts[1] + 900.0                     # (the cavern: a ceiling)
     f.cam = x - 600
     ceil = f.course.ceiling(x)
+    f.stations = []
     f.missiles = [sc.Missile(x, ceil + 40, -1)]
     f.missiles[0].age = 1.0
     ship = _Pilot()
@@ -725,3 +730,73 @@ def test_the_stations_and_the_missiles_are_drawn():
     for name in ("station", "missile"):
         up, down = sv.sprite(name, False), sv.sprite(name, True)
         assert up.get_size() == down.get_size()
+
+
+# ------------------------------------------------------------------ more stations, homing missiles
+@pytest.mark.parametrize("seed", range(4))
+def test_the_pads_cut_under_the_stations_keep_the_rock_rules(seed):
+    c = _form("rock", seed).course
+    half = int(math.ceil(sc.GAP_WINDOW / 2 / sc.STEP))
+    for i in range(c.n):
+        a, b = max(0, i - half), min(c.n, i + half + 1)
+        assert c.floor[a:b].min() - c.ceil[a:b].max() >= sc.GAP_MIN - 0.01
+    assert np.abs(np.diff(c.floor)).max() / sc.STEP <= sc.SLOPE_MAX + 1e-6
+    assert np.abs(np.diff(c.ceil)).max() / sc.STEP <= sc.SLOPE_MAX + 1e-6
+
+
+def test_a_pad_only_takes_rock_away():
+    a = _course("rock", 5)
+    b = _course("rock", 5)
+    x = a.starts[1] + 1200.0
+    b.cut_pad(x, "floor", float(b.ground(x)) + 20.0)
+    b.cut_pad(x, "ceil", float(b.ceiling(x)) - 20.0)
+    assert np.all(b.floor >= a.floor) and np.all(b.ceil <= a.ceil)
+    assert abs(b.ground(x) - (a.ground(x) + 20.0)) < 1e-6
+
+
+def _homing_run(ship_y, dx):
+    """A missile fired from the ground `dx` px ahead of a still ship (in the world): its x when it reaches the ship's
+    height, or None."""
+    f = _form("rock", 2)
+    f.stations = []
+    ship = _Pilot()
+    ship.y = ship_y
+    ship.invulnerable = 1e9
+    wx = f.cam + ship.x
+    m = sc.Missile(wx + dx, float(f.course.ground(wx + dx)) - 30.0, -1)
+    f.course.ceil[:] = 0.0                                # (an open sky: it flies until it is over the ship)
+    f.missiles = [m]
+    g = _Game(f, ship)
+    f.speed = 0.0
+    for _ in range(240):
+        sc._missiles(g, f, 1 / 60, ship)
+        if m.y <= ship_y:
+            return m.x - wx, m
+    return None, m
+
+
+def test_a_missile_slides_towards_the_ship_but_only_a_little():
+    off, m = _homing_run(300.0, 160.0)
+    assert off is not None and 0 < off < 160.0            # it came nearer ...
+    assert abs(m.vx) <= sc.HOMING_VX + 1e-6               # ... no faster sideways than HOMING_VX
+    far, _ = _homing_run(300.0, 600.0)
+    assert far > 600.0 - sc.HOMING_VX * sc.HOMING_TIME - 1.0   # a station far away cannot catch it
+
+
+def test_a_missile_goes_straight_on_once_past_the_ship():
+    f = _form("rock", 2)
+    f.stations = []
+    ship = _Pilot()
+    ship.y = 500.0
+    m = sc.Missile(f.cam + ship.x + 100, 400.0, -1)       # already over the ship
+    f.missiles = [m]
+    g = _Game(f, ship)
+    sc._missiles(g, f, 1 / 60, ship)
+    assert m.vx == 0.0 and not m.homing
+
+
+def test_a_leaning_missile_is_drawn_leaning():
+    a = sv._tilted(False, 0.0)
+    b = sv._tilted(False, 0.3)
+    assert a is sv.sprite("missile", False) and b.get_width() > a.get_width()
+    assert sv._tilted(False, 0.3) is b                     # (made once)
