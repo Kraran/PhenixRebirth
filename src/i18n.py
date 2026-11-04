@@ -7039,6 +7039,27 @@ _SCRAMBLE_TEXTS = {
     "scramble_arena": ("BASE ENNEMIE : détruis son chef !", "ENEMY BASE: destroy its master!"),
     "scramble_won": ("BASE DÉTRUITE !", "BASE DESTROYED!"),
     "scramble_wall": ("MUR {p} %", "WALL {p}%"),
+    "scramble_boss_hp": ("CHEF", "MASTER"),
+    "story_m_scramble_bonus": ("BONUS - Scramble", "BONUS - Scramble"),
+    "story_m_scramble_bonus_b": (
+        "Le Scramble du test, pour de vrai : traverse la roche jusqu'à la base ennemie et abats son chef rouge. Les points "
+        "rapportent des crédits ; un échec coûte ce que coûte un échec. Les lance-missiles et le chef rouge entrent au "
+        "Bestiaire. Tu choisis le décor au départ. Ouverte une fois le jeu terminé.",
+        "The test's Scramble, for real: fly through the rock to the enemy base and shoot down its red master. The points "
+        "pay in credits; a failure costs what a failure costs. The missile launchers and the red master go into the "
+        "Bestiary. You choose the setting at the start. Open once the game is finished."),
+    "story_b_station": ("LANCE-MISSILE", "MISSILE LAUNCHER"),
+    "story_b_station_t": (
+        "Un lanceur blindé, posé sur la roche ou accroché au plafond. Ses missiles partent tout droit, calés pour "
+        "croiser ta route. Celui dressé sur son rail est son point faible.",
+        "An armoured launcher, on the rock or hanging from the ceiling. Its missiles fly straight on, timed to cross "
+        "your course. The one standing on its rail is its weak point."),
+    "story_b_redboss": ("CHEF ROUGE", "RED MASTER"),
+    "story_b_redboss_t": (
+        "Un parent rouge du commandant avioïde, terré derrière le mur de sa base. Perce le mur brique par brique, puis "
+        "touche-le trois fois.",
+        "A red kin of the Avioid commander, hidden behind the wall of its base. Cut the wall down brick by brick, then "
+        "hit it three times."),
     "story_scramble_clear": ("Base ennemie détruite ! Tu peux recommencer à volonté.",
                              "Enemy base destroyed! Replay whenever you like."),
     "story_scramble_retry": ("Le vaisseau a été détruit. Aucun progrès perdu : tu peux réessayer.",

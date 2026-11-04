@@ -24,6 +24,8 @@ _KINDS = {
     "garg3": ("garg", "garg3"),
     "garg4": ("garg", "garg4"),
     "boss": ("core", "boss_core"),          # the alien that commands the saucer (not the saucer itself)
+    "station": ("scramble", "station"),     # the missile launcher of the Scramble level (src/scramble_view.py)
+    "redboss": ("scramble", "redboss"),     # the red commander of its base (the saucer's alien, in red)
 }
 _cache = {}
 
@@ -81,6 +83,14 @@ def _frames(kind):
         elif family == "core":
             frames = _core_frames(prefix)
             hit = {"family": family, "frames": frames, "still": frames[0]}
+        elif family == "scramble":
+            import scramble_view
+            if prefix == "station":
+                frames = [scramble_view.station_portrait()]
+            else:
+                side = _core_frames("boss_core")[0].get_width()           # (the size of the saucer's commander)
+                frames = scramble_view.boss_frames(side)[0] or [_load("boss_core")]
+            hit = {"family": "core", "frames": frames, "still": frames[0]}
         else:
             down, up = _gargoyle(prefix, False), _gargoyle(prefix, True)
             hit = {"family": family, "frames": [down, up], "still": down}
