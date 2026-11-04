@@ -7038,6 +7038,7 @@ _SCRAMBLE_TEXTS = {
     "scramble_sec_approach": ("BASE", "BASE"),
     "scramble_arena": ("BASE ENNEMIE : détruis son chef !", "ENEMY BASE: destroy its master!"),
     "scramble_won": ("BASE DÉTRUITE !", "BASE DESTROYED!"),
+    "scramble_wall": ("MUR {p} %", "WALL {p}%"),
     "story_scramble_clear": ("Base ennemie détruite ! Tu peux recommencer à volonté.",
                              "Enemy base destroyed! Replay whenever you like."),
     "story_scramble_retry": ("Le vaisseau a été détruit. Aucun progrès perdu : tu peux réessayer.",

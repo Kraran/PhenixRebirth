@@ -187,7 +187,7 @@ class Base:
             if t.fire_in <= 0 and ship_alive and len(self.missiles) < TURRET_MISSILES:
                 t.fire_in = f.rng.uniform(*TURRET_GAP)
                 self.missiles.append(BaseMissile(t.x - TURRET_W / 2 - 8, t.y))
-                sc._play(getattr(game, "sounds", None), "enemy_shoot", volume=0.6, x=t.x - f.cam)
+                sc._play(getattr(game, "sounds", None), "scramble_launch", volume=0.55, x=t.x - f.cam)
         # the boss fires, as in the saucer, from the face of the wall
         self.bullet_in -= dt
         if self.bullet_in <= 0 and ship_alive and boss.alive and not boss.dying:
@@ -279,13 +279,18 @@ class Base:
                 a = f.rng.uniform(math.pi * 0.6, math.pi * 1.4)
                 v = f.rng.uniform(80, 220)
                 f.sparks.append(sc.Spark(l, (t + b) / 2, math.cos(a) * v, math.sin(a) * v, 0.25, 2.0))
+            sc._play(snd, "scramble_shield", volume=0.35, x=l - f.cam)
             return
         if isinstance(thing, Brick):
             thing.alive = False
             self.kills["brick"] += 1
             game._add_score(p, 1)
-            self._boom(game, thing.x, thing.y, "enemy")
-            sc._play(snd, "enemy_explosion", volume=0.4, x=thing.x - f.cam)
+            for _ in range(7):                       # (bits of metal: light, a full explosion per brick is too much)
+                a = f.rng.uniform(math.pi * 0.55, math.pi * 1.45)
+                v = f.rng.uniform(90, 260)
+                f.sparks.append(sc.Spark(thing.x - BRICK_W / 2, thing.y, math.cos(a) * v, math.sin(a) * v,
+                                         f.rng.uniform(0.2, 0.45), f.rng.uniform(1.5, 3.0)))
+            sc._play(snd, "scramble_brick", volume=0.5, x=thing.x - f.cam)
             game.shake_amount = max(getattr(game, "shake_amount", 0.0), 3.0)
         elif isinstance(thing, Turret):
             thing.alive = False
@@ -313,6 +318,7 @@ class Base:
         self._boom(game, boss.x, boss.y, "gameover")
         game.shake_amount = 22.0
         sc._play(getattr(game, "sounds", None), "explosion_big", x=boss.x - f.cam)
+        sc._play(getattr(game, "sounds", None), "boss_yell", volume=0.9, x=boss.x - f.cam)
         self.dead_for = 0.0
         self.missiles, self.bullets = [], []
         # the base blows up from the boss outwards: the nearer a brick, the sooner

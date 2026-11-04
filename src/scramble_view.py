@@ -543,6 +543,26 @@ def _base_missile(lean):
     return got
 
 
+def _wall_picture(base):
+    """The wall as one picture (made again only when a brick has gone: bricks only ever go, so the number standing tells),
+    with where its top left corner is in the world."""
+    standing = base.standing()
+    cached = getattr(base, "_wall_pic", None)
+    x0, y0 = base.face, base.y0
+    if cached is None or cached[0] != standing:
+        tiles = brick_tiles()
+        import scramble_base as sb
+        pic = cached[1] if cached is not None else pygame.Surface(
+            (sb.COLUMNS * sb.BRICK_W, base.rows * sb.BRICK_H), pygame.SRCALPHA)
+        pic.fill((0, 0, 0, 0))
+        for b in base.bricks:
+            if b.alive:
+                l, t, r, bt = b.box()
+                pic.blit(tiles[b.tile % len(tiles)], (round(l - x0), round(t - y0)))
+        base._wall_pic = cached = (standing, pic)
+    return cached[1], x0, y0
+
+
 def _draw_base(surface, form, cam_i):
     import asteroids
     base = getattr(form, "base", None)
@@ -568,11 +588,8 @@ def _draw_base(surface, form, cam_i):
             pic = whites[i] if boss.hit_flash > 0 else frames[i]
             surface.blit(pic, (round(bx - pic.get_width() / 2), round(by - pic.get_height() / 2)))
     # the wall
-    tiles = brick_tiles()
-    for b in base.bricks:
-        if b.alive:
-            l, t, r, bt = b.box()
-            surface.blit(tiles[b.tile % len(tiles)], (round(l - cam_i), round(t)))
+    wall, wx, wy = _wall_picture(base)
+    surface.blit(wall, (round(wx - cam_i), round(wy)))
     tur = _turret_sprite()
     for t in base.turrets:
         if t.alive:
@@ -630,6 +647,34 @@ def draw_hud(game, form):
     where the ship is; and the message of the end."""
     from i18n import t
     surface, font = game.game_surface, game.font
+    base = getattr(form, "base", None)
+    if base is not None and form.phase in ("arena", "won"):
+        _draw_wall_hud(game, surface, font, base)
+    else:
+        _draw_sections(game, surface, font, form)
+    if base is not None and base.dead_for is not None:
+        announce.draw(game, surface, t("scramble_won"), "success", "major", (BASE_WIDTH // 2, BASE_HEIGHT // 2 - 150))
+    elif form.phase == "arena" and form.arena_time < 3.0:
+        announce.draw(game, surface, t("scramble_arena"), "danger", "major", (BASE_WIDTH // 2, BASE_HEIGHT // 2 - 150))
+
+
+WALL_BAR = (BASE_WIDTH - 340 - 10 - 190, 50, 190, 10)     # (in front of the wall, clear of the lives in the middle)
+
+
+def _draw_wall_hud(game, surface, font, base):
+    """In the arena: what is left of the wall (a gauge and its share)."""
+    from i18n import t
+    x, y, w, h = WALL_BAR
+    share = base.standing() / float(max(1, len(base.bricks)))
+    pygame.draw.rect(surface, (30, 40, 60), (x, y, w, h))
+    pygame.draw.rect(surface, (255, 120, 90) if share > 0.25 else (255, 200, 90), (x, y, int(w * share), h))
+    pygame.draw.rect(surface, HUD_COLOR, (x, y, w, h), 1)
+    label = game._txt(font, t("scramble_wall").format(p=int(round(share * 100))), HUD_COLOR)
+    surface.blit(label, (x + w - label.get_width(), y - label.get_height() - 4))
+
+
+def _draw_sections(game, surface, font, form):
+    from i18n import t
     x, y, w, h = SECTION_BAR
     course = form.course
     total = course.stop
@@ -645,11 +690,6 @@ def draw_hud(game, form):
     pygame.draw.polygon(surface, (255, 255, 255), [(mark, y + h + 2), (mark - 5, y + h + 9), (mark + 5, y + h + 9)])
     name = game._txt(font, t("scramble_sec_" + here), HUD_COLOR)
     surface.blit(name, (x + w - name.get_width(), y - name.get_height() - 4))
-    base = getattr(form, "base", None)
-    if base is not None and base.dead_for is not None:
-        announce.draw(game, surface, t("scramble_won"), "success", "major", (BASE_WIDTH // 2, BASE_HEIGHT // 2 - 150))
-    elif form.phase == "arena" and form.arena_time < 3.0:
-        announce.draw(game, surface, t("scramble_arena"), "danger", "major", (BASE_WIDTH // 2, BASE_HEIGHT // 2 - 150))
 
 
 # ------------------------------------------------------------------ the menu of the test

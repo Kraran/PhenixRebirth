@@ -214,6 +214,7 @@ class Sky:
         span = W * 0.6 * COMET_SLANT
         y = f.rng.uniform(top, max(top, bottom - span)) if down else f.rng.uniform(min(bottom, top + span), bottom)
         self.comets.append(Comet(W + 30, y, speed, down))
+        sc._play(getattr(f, "sounds", None), "scramble_comet", volume=0.35, x=W * 0.8)
 
     def _keep_in(self, b):
         """A bird never goes into the rock."""
