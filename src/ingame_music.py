@@ -1,6 +1,6 @@
 """In-game soundtrack picker (Options > Audio > In-game music).
 
-The choices, in the order of the arrows: None, the five themes of the jukebox, the four songs of Lyra Voss, then the
+The choices, in the order of the arrows: None, the five themes of the jukebox, the six songs of Lyra Voss, then the
 files the player dropped in the folder `musique_perso` (src/custom_music.py). Labels = the ID3 title of the track, as in
 the jukebox; the songs of Lyra Voss carry the translated titles of the jukebox (their files have no tag).
 """
@@ -21,6 +21,8 @@ LYRA = (
     "lyra_what_we_lost",
     "lyra_no_mercy_left",
     "lyra_oldest_fear",
+    "lyra_when_we_looked_up",
+    "lyra_when_we_looked_up_unplugged",
 )
 CYCLE = THEMES + LYRA           # the tracks of the game; the files of the player come after (see choices())
 

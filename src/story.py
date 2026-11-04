@@ -431,7 +431,10 @@ class StoryHub:
 
     def scene_music(self):
         """(theme, level) of the music kept under the scene being read, or None. The level is a share of the normal
-        volume: low while the text goes by, back to normal when the scene is closed."""
+        volume: low while the text goes by, back to normal when the scene is closed. A scene of the visual novel may
+        have its own too (story_vn.scene_music: When We Looked Up (Unplugged) under scenes 3 and 4)."""
+        if self.screen == "vn" and self.vn_id:
+            return story_vn.scene_music(self.vn_id)
         if self.screen != "intro" or not self.scene_id:
             return None
         key = (ss.scene_of(self.scene_id) or {}).get("music")

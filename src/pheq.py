@@ -30,6 +30,8 @@ PHEQ_FILES = {
     "lyra_what_we_lost": "Lyra-Voss-What-We-Lost.pheq",
     "lyra_no_mercy_left": "Lyra-Voss-No-Mercy-Left.pheq",
     "lyra_oldest_fear": "Lyra-Voss-Oldest-Fear.pheq",
+    "lyra_when_we_looked_up": "Lyra-Voss-When-We-Looked-Up.pheq",
+    "lyra_when_we_looked_up_unplugged": "Lyra-Voss-When-We-Looked-Up-Unplugged.pheq",
 }
 
 

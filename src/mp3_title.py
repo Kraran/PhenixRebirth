@@ -16,6 +16,8 @@ KNOWN_TIT2 = {
     "lyra_what_we_lost": "Lyra Voss - What We Lost (Aventure)",
     "lyra_no_mercy_left": "Lyra Voss - No Mercy Left (Aventure)",
     "lyra_oldest_fear": "Lyra Voss - Oldest Fear",
+    "lyra_when_we_looked_up": "Lyra Voss - When We Looked Up",
+    "lyra_when_we_looked_up_unplugged": "Lyra Voss - When We Looked Up (Unplugged)",
 }
 
 KEY_FILES = {
@@ -34,6 +36,8 @@ KEY_FILES = {
     "lyra_what_we_lost": ("lyra_2_what_we_lost.ogg",),
     "lyra_no_mercy_left": ("lyra_3_no_mercy_left.ogg",),
     "lyra_oldest_fear": ("Lyra-Voss-Oldest-Fear.mp3",),
+    "lyra_when_we_looked_up": ("concertmars.ogg",),
+    "lyra_when_we_looked_up_unplugged": ("Lyra-Voss-When-We-Looked-Up-Unplugged.mp3",),
 }
 
 _cache = {}
