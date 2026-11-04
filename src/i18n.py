@@ -7036,9 +7036,10 @@ _SCRAMBLE_TEXTS = {
     "scramble_sec_peaks": ("PICS", "PEAKS"),
     "scramble_sec_narrows": ("DÉFILÉS", "NARROWS"),
     "scramble_sec_approach": ("BASE", "BASE"),
-    "scramble_arena": ("PARCOURS RÉUSSI !", "COURSE CLEARED!"),
-    "story_scramble_clear": ("Parcours réussi ! Tu peux recommencer à volonté.",
-                             "Course cleared! Replay whenever you like."),
+    "scramble_arena": ("BASE ENNEMIE : détruis son chef !", "ENEMY BASE: destroy its master!"),
+    "scramble_won": ("BASE DÉTRUITE !", "BASE DESTROYED!"),
+    "story_scramble_clear": ("Base ennemie détruite ! Tu peux recommencer à volonté.",
+                             "Enemy base destroyed! Replay whenever you like."),
     "story_scramble_retry": ("Le vaisseau a été détruit. Aucun progrès perdu : tu peux réessayer.",
                              "The ship was destroyed. No progress lost: you can try again."),
 }

@@ -10,7 +10,7 @@ The rules:
   comets of the original, later), mountain peaks, narrows with steps. A passage at least GAP_MIN px high (three times the
   height of the turned ship) always runs between the ceiling and the ground, as wide as the ship is long.
 - At the end the rock thins out, the scroll slows down and stops (a uniform braking over BRAKE px): the arena of the enemy
-  base (src/scramble_base, later). Until it is there, reaching the arena wins the mission.
+  base (src/scramble_base.py). Its boss killed and the base blown up, the mission is won.
 - Any touch of the rock costs a life; the ship then goes on from where it was, put back in the middle of the passage, and
   blinks for a while (it passes through nothing: the rock pushes it out). The Phenix form and the dome of the Shield are
   not hurt by the rock either: it pushes them out.
@@ -51,7 +51,6 @@ TRANSITION = 420.0                # px over which one section melts into the nex
 BRAKE = 1500.0                    # px of the course over which the scroll brakes to a stop (2 * BRAKE / SCROLL seconds)
 ARENA_BAND = (34.0, 40.0)         # the ceiling and the ground of the arena of the base (px)
 SOFT_REACH = 160.0                # px: how far the rock may come back over the edge of a carving, at its far end
-ARENA_WAIT = 2.0                 # seconds in the arena before the mission is won (until the base is there)
 # The sections of the course, in order: (name, seconds at full speed, the depth of the ceiling and of the ground: (base, waves,
 # rough), and what stands out of them: "drips" = stalactites, "peaks" = sharp mountains, "steps" = terraces).
 SECTIONS = (
@@ -474,6 +473,8 @@ class ScrambleFormation:
         self.kills = {"station": 0, "missile": 0}
         import scramble_birds
         self.sky = scramble_birds.Sky(self)          # the waves of birds and the comets
+        import scramble_base
+        self.base = scramble_base.Base(self)         # the enemy base at the end
 
     # --- what the rest of the game asks of a formation ---
     def update(self, dt, player_x):
@@ -648,17 +649,28 @@ def tick(game):
         before = s.x
         s.x += s.vx * dt
         s.y += s.vy * dt
+        # what it meets first: a station or a missile, a bird or a comet, the base
+        met = []
         target = _shot_target(form, before, s.x, s.y)
+        if target is not None:
+            met.append((target.full_box()[0], "rock", target))
         aloft = form.sky.shot_target(before, s.x, s.y, form.cam)
-        if aloft is not None and (target is None or aloft[1] < target.full_box()[0]):
+        if aloft is not None:
+            met.append((aloft[1], "sky", aloft[0]))
+        at_base = form.base.shot_target(before, s.x, s.y)
+        if at_base is not None:
+            met.append((at_base[1], "base", at_base[0]))
+        if met:
+            hit_x, where, thing = min(met, key=lambda m: m[0])
             s.alive = False
-            if isinstance(aloft[0], scramble_birds.Bird):
-                form.sky.kill_bird(game, aloft[0])
+            if where == "rock":
+                _destroy(game, form, thing)
+            elif where == "base":
+                form.base.hit(game, thing)
+            elif isinstance(thing, scramble_birds.Bird):
+                form.sky.kill_bird(game, thing)
             else:
-                _blast(game, form, aloft[1], s.y, small=True)        # (a comet: nothing destroys it)
-        elif target is not None:
-            s.alive = False
-            _destroy(game, form, target)
+                _blast(game, form, hit_x, s.y, small=True)           # (a comet: nothing destroys it)
         elif s.x > form.cam + W + 40:
             s.alive = False
         elif s.y <= course.ceiling(s.x) or s.y >= course.ground(s.x):
@@ -679,6 +691,7 @@ def tick(game):
     _stations(game, form, dt, alive)
     _missiles(game, form, dt, p if alive else None)
     form.sky.tick(game, dt, alive)
+    form.base.tick(game, dt, alive)
     # --- the missiles and the stations against the ship
     if alive and p.alive and not p.dying:
         ship = (form.cam + p.x - SHIP_BOX[0], p.y - SHIP_BOX[1], form.cam + p.x + SHIP_BOX[0], p.y + SHIP_BOX[1])
@@ -704,6 +717,8 @@ def tick(game):
         form.missiles = [m for m in form.missiles if m.alive]
         if p.alive and not p.dying:
             form.sky.touch_ship(game, p)
+        if p.alive and not p.dying:
+            form.base.touch_ship(game, p)
     alive = p.alive and not p.dying
     # --- the rock
     if alive:
@@ -713,12 +728,13 @@ def tick(game):
                 form.push_out(p)
             else:
                 _ship_hit(game, form)
-    # --- the end: the scroll has stopped in the arena (the base comes in a later step)
+    # --- the end: the scroll has stopped in the arena, the base fights; its boss dead and the base blown up, it is won
     if form.phase == "flying" and form.cam >= course.stop:
         form.phase = "arena"
-    if form.phase == "arena" and alive:
+        form.base.start()
+    if form.phase == "arena":
         form.arena_time += dt
-        if form.arena_time >= ARENA_WAIT:
+        if form.base.done:
             form.phase = "won"
             form.won = True
 
