@@ -348,6 +348,15 @@ class Station:
             return self.x - STATION_W / 2, self.base - STATION_H, self.x + STATION_W / 2, self.base
         return self.x - STATION_W / 2, self.base, self.x + STATION_W / 2, self.base + STATION_H
 
+    def full_box(self):
+        """Its box with the missile standing on it, while it is loaded: a shot on that missile blows the station up too."""
+        l, t, r, b = self.box()
+        if not self.loaded:
+            return l, t, r, b
+        mx, my = self.mouth()
+        return (min(l, mx - MISSILE_W / 2), min(t, my - MISSILE_H / 2), max(r, mx + MISSILE_W / 2),
+                max(b, my + MISSILE_H / 2))
+
     def mouth(self):
         """Where a missile leaves it (the middle of the missile)."""
         return self.x, self.base + self.dir * (STATION_H + MISSILE_H / 2 - 8)
@@ -368,6 +377,8 @@ class Missile:
 
     def box(self):
         return self.x - MISSILE_W / 2, self.y - MISSILE_H / 2, self.x + MISSILE_W / 2, self.y + MISSILE_H / 2
+
+    full_box = box
 
     def nose(self):
         return self.x, self.y + self.dir * MISSILE_H / 2
@@ -639,7 +650,7 @@ def tick(game):
         s.y += s.vy * dt
         target = _shot_target(form, before, s.x, s.y)
         aloft = form.sky.shot_target(before, s.x, s.y, form.cam)
-        if aloft is not None and (target is None or aloft[1] < target.box()[0]):
+        if aloft is not None and (target is None or aloft[1] < target.full_box()[0]):
             s.alive = False
             if isinstance(aloft[0], scramble_birds.Bird):
                 form.sky.kill_bird(game, aloft[0])
@@ -684,7 +695,7 @@ def tick(game):
                 _ship_hit(game, form)
                 break
         for st in form.stations:
-            if st.alive and _overlap(ship, st.box()):
+            if st.alive and _overlap(ship, st.full_box()):
                 if fire_bird:
                     _destroy(game, form, st)
                 elif not _immune(p):
@@ -722,7 +733,7 @@ def _shot_target(form, x0, x1, y):
                 best, best_x = m, l
     for st in form.stations:
         if st.alive:
-            l, t, r, b = st.box()
+            l, t, r, b = st.full_box()
             if t <= y <= b and l <= x1 and x0 <= r and (best_x is None or l < best_x):
                 best, best_x = st, l
     return best
@@ -741,6 +752,12 @@ def _destroy(game, form, target):
         target.alive = False
         form.kills["station"] += 1
         game._add_score(p, game._enemy_points(STATION_KIND))
+        if target.loaded:                                  # (the missile standing on it goes up with it)
+            target.loaded = False
+            form.kills["missile"] += 1
+            game._add_score(p, MISSILE_POINTS)
+            mx, my = target.mouth()
+            _blast(game, form, mx, my, small=True)
         l, t, r, b = target.box()
         _blast(game, form, target.x, (t + b) / 2.0, small=False)
 

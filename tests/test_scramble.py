@@ -629,6 +629,7 @@ def test_a_shot_destroys_a_station_for_the_points_of_a_green_bird():
     f = _form("rock", 2)
     st = _station_ahead(f, "floor", 400.0)
     st.lead = -99.0                                    # (it does not fire)
+    st.loaded = False                                  # (no missile on it)
     ship = _Pilot()
     l, t, r, b = st.box()
     f.shots = [sc.Shot(l - 10, (t + b) / 2, 1200.0, 0.0)]
@@ -711,6 +712,7 @@ def test_the_flight_pays_the_stations_and_the_missiles_in_the_real_game(run):
     form, p = g.formation, g.player
     st = _station_ahead(form, "floor", 400.0)
     st.lead = -99.0
+    st.loaded = False
     l, t, r, b = st.box()
     form.shots = [sc.Shot(l - 5, (t + b) / 2, 1200.0, 0.0)]
     p.invulnerable = 30.0
@@ -1041,3 +1043,46 @@ def test_the_birds_the_shots_and_the_comets_are_drawn():
     for stage in (1, 2):
         pic = sv.bird_frames(stage)[0]
         assert pic.get_width() >= pic.get_height() - 2      # (turned to face the left: wider than... at least as wide)
+
+
+# ------------------------------------------------------------------ step 4: the missile on its rail, the comets
+@pytest.mark.parametrize("side", ("floor", "ceil"))
+def test_a_shot_on_the_missile_standing_on_a_station_blows_up_both(side):
+    f = _form("rock", 2)
+    st = _station_ahead(f, side, 400.0)
+    st.lead = -99.0
+    assert st.loaded
+    mx, my = st.mouth()
+    l, t, r, b = st.box()
+    assert not (t <= my <= b)                            # (the height of the missile only: above or below the station)
+    ship = _Pilot()
+    f.shots = [sc.Shot(mx - 40, my, 1200.0, 0.0)]
+    g = _Game(f, ship)
+    sc.tick(g)
+    assert not st.alive and not st.loaded
+    assert g.score == 20 + sc.MISSILE_POINTS and f.kills == dict(f.kills, station=1, missile=1)
+
+
+def test_an_empty_station_is_only_its_box():
+    f = _form("rock", 2)
+    st = _station_ahead(f, "floor", 400.0)
+    st.loaded = False
+    assert st.full_box() == st.box()
+    st.loaded = True
+    l, t, r, b = st.full_box()
+    assert t < st.box()[1]                               # (the missile stands above a station of the ground)
+
+
+def test_twice_as_many_comets():
+    assert sb.COMET_GAP == (0.375, 0.675)
+    f = _sky_form("comets", 400.0)
+    ship = _Pilot()
+    ship.invulnerable = 1e9
+    ship.y = 60.0
+    g = _BirdGame(f, ship)
+    counts = []
+    for _ in range(60 * 8):
+        sc.tick(g)
+        ship.y = 60.0
+        counts.append(len(f.sky.comets))
+    assert max(counts) >= 3
