@@ -1517,6 +1517,37 @@ ADDON_SCENES = {
     BAR_SCENE: {"title": "story_scene_bar_t", "slides": [("bar_phobos", "story_scene_bar")],
                 "door": "addon", "music": "nostalgie_elise"},
 }
+# The concert of Lyra Voss, told after the two best endings of the visual novel (story_vn.ENDINGS: "romance" and "amitie"):
+# its picture alone for `still` seconds, then the film of the concert once, with its sound (assets/video/<video>.mp4 and
+# .ogg), then the picture again; the text goes by over it as in every scene. Watched again with the ending, from the journal.
+CONCERT_SCENES = {
+    "vn_concert_1": {"title": "story_vn_concert_t", "slides": [("concertmars", "story_vn_concert_1")],
+                     "film_bg": {"video": "concertmars", "still": 2.0}},
+    "vn_concert_2": {"title": "story_vn_concert_t", "slides": [("concertmars_ecran", "story_vn_concert_2")],
+                     "film_bg": {"video": "concertmars_ecran", "still": 2.0}},
+}
+VN_CONCERTS = {"romance": "vn_concert_1", "amitie": "vn_concert_2"}   # the ending -> its concert (the other two: none)
+
+
+def concert_of_ending(ending):
+    """The scene of the concert told after this ending of the visual novel, or None."""
+    return VN_CONCERTS.get(ending)
+
+
+def film_bg(scene_id):
+    """{"video", "still", "files": (picture, sound)} of a scene whose picture is a film played once, or None (no such
+    scene, or its files are missing: the still picture alone then)."""
+    scene = scene_of(scene_id) or {}
+    spec = scene.get("film_bg")
+    if not spec:
+        return None
+    video = asset_path("video", spec["video"] + ".mp4")
+    sound = asset_path("video", spec["video"] + ".ogg")
+    if not os.path.isfile(video) or not os.path.isfile(sound):
+        return None
+    return {"video": spec["video"], "still": float(spec.get("still") or 0.0), "files": (video, sound)}
+
+
 BAR_MUSIC_LEVEL = 0.34         # share of the normal music volume while the scene is read over it
 
 
@@ -1530,7 +1561,8 @@ def clip_path(name):
 
 
 def scene_of(mission_id):
-    return SCENES.get(mission_id) or STORY_SCENES.get(mission_id) or ADDON_SCENES.get(mission_id)
+    return (SCENES.get(mission_id) or STORY_SCENES.get(mission_id) or ADDON_SCENES.get(mission_id)
+            or CONCERT_SCENES.get(mission_id))
 
 
 def scene_slides(scene_id, mode="normal"):

@@ -18,6 +18,15 @@ SCENE = "vn_1"
 REAL_ORDER = story_vn.order
 EMPTY = {"picks": {}, "marks": {}}
 
+def _after_concert(hub):
+    """The two best endings (Amitie, Romance) go on with the concert of Lyra Voss (story_state.CONCERT_SCENES): it is
+    read to its end and closed, then the screen is the one the visual novel goes back to."""
+    if hub.screen == "intro":
+        assert hub.scene_id in ss.VN_CONCERTS.values()
+        hub.intro_t = 99.0
+        hub.confirm()
+
+
 
 @pytest.fixture(scope="module", autouse=True)
 def _screen():
@@ -1754,6 +1763,7 @@ def test_scene_five_answer_gives_its_points_and_lyra_reacts_to_it(monkeypatch, f
     assert story_vn.pick(hub.state, SCENE5) == 2 and story_vn.points(hub.state) == before + 3
     assert hub.vn_pages() == story_vn.pages(i18n.t("story_vn5_r3")) and len(hub.vn_pages()) == 2
     _finish(hub)
+    _after_concert(hub)
     assert hub.screen == "hub"
 
 
@@ -1773,6 +1783,7 @@ def test_the_longest_reaction_of_scene_five_is_told_page_by_page_to_the_end(fren
         hub.confirm()
     assert hub.screen == "vn" and hub.vn_phase == "end"      # (the ending of the visual novel follows: tests/test_vn_endings.py)
     _finish(hub)
+    _after_concert(hub)
     assert hub.screen == "hub"
 
 
@@ -1842,6 +1853,7 @@ def test_scene_five_is_listed_in_the_journal_when_answered_and_watched_again_fro
     hub.confirm()
     assert hub.vn_phase == "react" and hub.vn_pages() == story_vn.pages(i18n.t("story_vn5_r4"))
     _finish(hub)
+    _after_concert(hub)
     assert hub.screen == "hub" and hub.pane == "log"
 
 

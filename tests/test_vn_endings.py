@@ -17,6 +17,15 @@ PICKS_BY_TOTAL = {                       # answers (index in the list of each sc
     9: [0, 2, 1, 3, 1],                  # 2+2+3+1+2 = 10 -> see test below for exact values
 }
 
+def _after_concert(hub):
+    """The two best endings (Amitie, Romance) go on with the concert of Lyra Voss (story_state.CONCERT_SCENES): it is
+    read to its end and closed, then the screen is the one the visual novel goes back to."""
+    if hub.screen == "intro":
+        assert hub.scene_id in ss.VN_CONCERTS.values()
+        hub.intro_t = 99.0
+        hub.confirm()
+
+
 
 @pytest.fixture(scope="module", autouse=True)
 def _screen():
@@ -229,6 +238,7 @@ def test_the_ending_follows_the_reaction_of_the_last_scene():
     assert hub.vn_pages() == story_vn.ending_pages(hub.state, hub.state.get("name"))
     assert hub.state["credits"] == 6500 and story_vn.ending_told(hub.state)
     _skip_pages(hub)
+    _after_concert(hub)
     assert hub.screen == "hub"
 
 
@@ -322,6 +332,7 @@ def test_watched_again_from_the_journal_the_ending_pays_nothing_more():
     hub.state["credits"] = 10
     assert hub.start_vn("vn_5", back_to="log")
     _skip_pages(hub)
+    _after_concert(hub)
     assert hub.screen == "hub" and hub.state["credits"] == 10
 
 
@@ -338,6 +349,7 @@ def test_a_save_made_before_the_endings_gets_its_ending_after_the_next_story_mis
     assert story_vn.ending_told(hub.state) and hub.state["credits"] == 17 * 500
     _skip_pages(hub)
     hub._maybe_vn()
+    _after_concert(hub)
     assert hub.screen == "hub"               # told once
 
 
@@ -356,6 +368,7 @@ def test_the_cheat_vnov_tells_the_ending_without_gift_nor_sale():
     assert story_vn.sale_price(hub.state, 2000) == 2000
     assert story_vn.pick(hub.state, "vn_5") is None            # (nothing kept)
     _skip_pages(hub)
+    _after_concert(hub)
     assert hub.screen == "hub"
 
 

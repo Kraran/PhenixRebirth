@@ -7069,6 +7069,73 @@ for _k, (_fr, _en) in _SCRAMBLE_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}
     T[_k]["fr"] = _fr
 
+# The concert of Lyra Voss after the two best endings of the visual novel (story_state.CONCERT_SCENES): French and
+# English; the other languages show the English text. {name} = the pilot's name.
+_CONCERT_TEXTS = {
+    "story_vn_concert_t": ("Le concert de Lyra Voss à Eloncity", "Lyra Voss's concert in Eloncity"),
+    "story_vn_concert_1": (
+        "Le soir du concert, Eloncity tout entière semblait retenir son souffle. Sous le dôme du Grand Arena, des "
+        "dizaines de milliers de visages levés vers la scène, et au-dessus d'eux, à travers le verre, le ciel rouille de "
+        "Mars et la petite lueur pâle de Phobos.\n"
+        "\n"
+        "Les lumières se sont éteintes. Une seule note de guitare a fendu le silence, puis Lyra Voss est apparue, seule "
+        "dans un halo d'or, comme si la guerre n'avait jamais existé.\n"
+        "\n"
+        "Avant de chanter, elle s'est approchée du micro et a cherché quelqu'un des yeux dans la foule.\n"
+        "\n"
+        "« Cette chanson, je la dédie à la personne qui m'a ramenée vivante quand tout était perdu. Celui qui veille sur "
+        "Phobos... et sur moi. {name}, celle-ci est pour toi. »\n"
+        "\n"
+        "Et quand les premiers accords de « When We Looked Up » ont résonné sous le dôme, plus personne à Eloncity n'a "
+        "regardé le ciel avec peur.",
+        "On the night of the concert, all of Eloncity seemed to hold its breath. Under the dome of the Grand Arena, tens "
+        "of thousands of faces turned up towards the stage, and above them, through the glass, the rust-red sky of Mars "
+        "and the small pale glow of Phobos.\n"
+        "\n"
+        "The lights went out. A single guitar note cut through the silence, then Lyra Voss appeared, alone in a halo of "
+        "gold, as if the war had never happened.\n"
+        "\n"
+        "Before singing, she stepped up to the microphone and searched the crowd for someone.\n"
+        "\n"
+        "“I dedicate this song to the one who brought me back alive when all was lost. The one who watches over "
+        "Phobos... and over me. {name}, this one is for you.”\n"
+        "\n"
+        "And when the first chords of “When We Looked Up” rang out under the dome, no one in Eloncity looked at the sky "
+        "in fear any more."),
+    "story_vn_concert_2": (
+        "Le soir du concert, Eloncity tout entière semblait retenir son souffle. Sous le dôme du Grand Arena, des "
+        "dizaines de milliers de visages levés vers la scène, et au-dessus d'eux, à travers le verre, le ciel rouille de "
+        "Mars et la petite lueur pâle de Phobos.\n"
+        "\n"
+        "Les lumières se sont éteintes. Une seule note de guitare a fendu le silence, puis Lyra Voss est apparue, seule "
+        "dans un halo d'or, comme si la guerre n'avait jamais existé.\n"
+        "\n"
+        "Avant de chanter, elle a levé les yeux vers la lune minuscule qui passait au-dessus du dôme.\n"
+        "\n"
+        "« Cette chanson, je la dédie à mes amis de la station Phobos. Les pilotes, les mécanos, tous ceux qui tiennent "
+        "la ligne là-haut pour que nous puissions être ici ce soir. Elle est pour vous. »\n"
+        "\n"
+        "Et quand les premiers accords de « When We Looked Up » ont résonné sous le dôme, plus personne à Eloncity n'a "
+        "regardé le ciel avec peur.",
+        "On the night of the concert, all of Eloncity seemed to hold its breath. Under the dome of the Grand Arena, tens "
+        "of thousands of faces turned up towards the stage, and above them, through the glass, the rust-red sky of Mars "
+        "and the small pale glow of Phobos.\n"
+        "\n"
+        "The lights went out. A single guitar note cut through the silence, then Lyra Voss appeared, alone in a halo of "
+        "gold, as if the war had never happened.\n"
+        "\n"
+        "Before singing, she looked up at the tiny moon passing over the dome.\n"
+        "\n"
+        "“I dedicate this song to my friends on Phobos station. The pilots, the mechanics, everyone who holds the line up "
+        "there so that we can be here tonight. This one is for you.”\n"
+        "\n"
+        "And when the first chords of “When We Looked Up” rang out under the dome, no one in Eloncity looked at the sky "
+        "in fear any more."),
+}
+for _k, (_fr, _en) in _CONCERT_TEXTS.items():
+    T[_k] = {_code: _en for _code in LANG_CODES}
+    T[_k]["fr"] = _fr
+
 _lang = "fr"
 
 def set_lang(code):
