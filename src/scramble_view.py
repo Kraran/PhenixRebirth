@@ -202,10 +202,93 @@ class View:
         self._rock(surface, form.cam)
 
 
+_SPRITES = {}
+
+
+def _aa(draw, logical, size):
+    """A small picture drawn by `draw(surface, k)` on a canvas of twice its `logical` size (k = 2), then scaled down to
+    `size`: smooth edges."""
+    big = pygame.Surface((int(logical[0] * 2), int(logical[1] * 2)), pygame.SRCALPHA)
+    draw(big, 2)
+    return pygame.transform.smoothscale(big, (int(size[0]), int(size[1])))
+
+
+def _draw_station(pic, k):
+    """A launcher standing on the ground: an armoured bunker, a rail in the middle, two red lights."""
+    w, h = pic.get_size()
+    steel, dark, edge = (78, 84, 98), (40, 42, 52), (150, 158, 176)
+    body = [(2 * k, h), (6 * k, h - 17 * k), (w - 6 * k, h - 17 * k), (w - 2 * k, h)]
+    pygame.draw.polygon(pic, steel, body)
+    pygame.draw.polygon(pic, edge, body, max(1, k))
+    pygame.draw.rect(pic, dark, (8 * k, h - 13 * k, w - 16 * k, 5 * k))
+    for lx in (10 * k, w - 10 * k):
+        pygame.draw.circle(pic, (255, 70, 50), (lx, h - 21 * k + 10 * k), int(2.2 * k))
+    rail = pygame.Rect(w // 2 - 6 * k, h - 30 * k, 12 * k, 14 * k)
+    pygame.draw.rect(pic, dark, rail)
+    pygame.draw.rect(pic, edge, rail, max(1, k))
+    pygame.draw.line(pic, (255, 190, 80), (w // 2 - 7 * k, h - 17 * k), (w // 2 + 7 * k, h - 17 * k), max(1, k))
+
+
+def _draw_missile(pic, k):
+    """A missile, nose up: a white body, a red nose cone, fins."""
+    w, h = pic.get_size()
+    cx = w // 2
+    pygame.draw.rect(pic, (225, 228, 236), (cx - 3 * k, 8 * k, 6 * k, h - 14 * k))
+    pygame.draw.polygon(pic, (230, 60, 50), [(cx, 0), (cx - 3 * k, 9 * k), (cx + 3 * k, 9 * k)])
+    pygame.draw.polygon(pic, (200, 50, 45), [(cx - 3 * k, h - 12 * k), (0, h - 2 * k), (cx - 3 * k, h - 4 * k)])
+    pygame.draw.polygon(pic, (200, 50, 45), [(cx + 3 * k, h - 12 * k), (w - 1, h - 2 * k), (cx + 3 * k, h - 4 * k)])
+    pygame.draw.rect(pic, (120, 124, 136), (cx - 3 * k, h - 6 * k, 6 * k, 6 * k))
+
+
+def sprite(name, down):
+    """The picture of a station or a missile ("station", "missile"), upside down for the ceiling (made once)."""
+    key = (name, bool(down))
+    pic = _SPRITES.get(key)
+    if pic is None:
+        if name == "station":
+            pic = _aa(_draw_station, (44, 30), (scramble.STATION_W, scramble.STATION_H))
+        else:
+            pic = _aa(_draw_missile, (10, 30), (scramble.MISSILE_W, scramble.MISSILE_H))
+        if down:
+            pic = pygame.transform.flip(pic, False, True)
+        _SPRITES[key] = pic
+    return pic
+
+
+def _draw_stations(surface, form, cam_i):
+    import asteroids
+    for st in form.stations:
+        sx = st.x - cam_i
+        if sx < -60:
+            continue
+        if sx > W + 60:
+            break
+        if not st.alive:
+            continue
+        down = st.side == "ceil"
+        if st.loaded:                                  # (the next missile stands on its rail)
+            mx, my = st.mouth()
+            pic = sprite("missile", down)
+            surface.blit(pic, (round(sx - pic.get_width() / 2), round(my - pic.get_height() / 2)))
+        pic = sprite("station", down)
+        l, t, r, b = st.box()
+        surface.blit(pic, (round(l - cam_i), round(t)))
+    for m in form.missiles:
+        sx = m.x - cam_i
+        down = m.dir > 0
+        tail_y = m.y - m.dir * (scramble.MISSILE_H / 2 + 4)
+        flick = 0.75 + 0.25 * math.sin(m.age * 60.0)
+        asteroids._add_glow(surface, (255, 150, 50), (sx, tail_y), int(26 * flick))
+        asteroids._add_glow(surface, (255, 240, 190), (sx, tail_y), int(11 * flick))
+        pic = sprite("missile", down)
+        surface.blit(pic, (round(sx - pic.get_width() / 2), round(m.y - pic.get_height() / 2)))
+
+
 def draw_items(surface, form):
-    """The shots of the ship and the sparks, over the rock."""
+    """The stations and their missiles, the shots of the ship and the sparks, over the rock."""
     import asteroids
     cam_i = int(round(form.cam))
+    _draw_stations(surface, form, cam_i)
     for sp in form.sparks:
         a = max(0.0, sp.life / sp.max)
         x, y = sp.x - cam_i, sp.y

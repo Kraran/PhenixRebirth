@@ -15,6 +15,10 @@ The rules:
   blinks for a while (it passes through nothing: the rock pushes it out). The Phenix form and the dome of the Shield are
   not hurt by the rock either: it pushes them out.
 - The lives are those of the workshop; the dome and the Phenix form work as in every mission.
+- Missile stations stand on the rock (place_stations): each one fires its missiles straight up (or down from the ceiling)
+  when the ship comes, timed to cross its height about when it gets there. A shot destroys a missile (MISSILE_POINTS) or a
+  station (the points of a green bird); a missile or a station that touches the ship costs a life (the dome takes a
+  missile, the Phenix form burns both).
 
 The player flies the real Player of the game (`Player.asteroid_mode` with `Player.scramble` set to the formation below). The
 formation looks like one without enemies to the rest of the game; `tick(game)` runs it every frame; the view is in
@@ -50,19 +54,45 @@ ARENA_WAIT = 2.0                 # seconds in the arena before the mission is wo
 # The sections of the course, in order: (name, seconds at full speed, the depth of the ceiling and of the ground: (base, waves,
 # rough), and what stands out of them: "drips" = stalactites, "peaks" = sharp mountains, "steps" = terraces).
 SECTIONS = (
-    ("hills", 26.0, {"ceil": (24, 6, 3), "floor": (150, 95, 10), "peaks": 0, "drips": 0, "steps": 0}),
-    ("cavern", 30.0, {"ceil": (150, 85, 10), "floor": (150, 70, 10), "peaks": 0, "drips": 14, "steps": 0}),
-    ("comets", 20.0, {"ceil": (26, 6, 3), "floor": (48, 14, 6), "peaks": 0, "drips": 0, "steps": 0}),
-    ("peaks", 28.0, {"ceil": (60, 30, 6), "floor": (150, 60, 12), "peaks": 13, "drips": 0, "steps": 0}),
-    ("narrows", 26.0, {"ceil": (210, 70, 4), "floor": (220, 70, 4), "peaks": 0, "drips": 0, "steps": 46}),
-    ("approach", 12.0, {"ceil": (70, 20, 4), "floor": (80, 22, 4), "peaks": 0, "drips": 0, "steps": 0}),
+    ("hills", 26.0, {"ceil": (24, 6, 3), "floor": (150, 95, 10), "peaks": 0, "drips": 0, "steps": 0,
+                     "stations": (300, 600, 0.0)}),
+    ("cavern", 30.0, {"ceil": (150, 85, 10), "floor": (150, 70, 10), "peaks": 0, "drips": 14, "steps": 0,
+                      "stations": (300, 620, 0.45)}),
+    ("comets", 20.0, {"ceil": (26, 6, 3), "floor": (48, 14, 6), "peaks": 0, "drips": 0, "steps": 0,
+                      "stations": None}),
+    ("peaks", 28.0, {"ceil": (60, 30, 6), "floor": (150, 60, 12), "peaks": 13, "drips": 0, "steps": 0,
+                     "stations": (300, 640, 0.2)}),
+    ("narrows", 26.0, {"ceil": (210, 70, 4), "floor": (220, 70, 4), "peaks": 0, "drips": 0, "steps": 46,
+                       "stations": (280, 560, 0.5)}),
+    ("approach", 12.0, {"ceil": (70, 20, 4), "floor": (80, 22, 4), "peaks": 0, "drips": 0, "steps": 0,
+                        "stations": (500, 900, 0.4)}),
 )
+# "stations": (the gap between two missile stations, from .. to, in px of the course; the share of them hanging from the
+# ceiling), None: no station in that section.
 SECTION_KEYS = tuple(s[0] for s in SECTIONS)
 MENU_ORDER = lander.MENU_ORDER    # the choice of the test (story.py, screen "lander_pick" for the Scramble)
 BODY_KEYS = lander.BODY_KEYS
 MAX_SHOTS = 3                     # the ship's shots on the screen
 SHOT_GAP = 0.14                   # seconds between two shots
 SHOT_SPEED = BULLET_SPEED         # px/s on the screen (to the right)
+# The missile stations (src/scramble_view.py draws them): small launchers standing on the ground or hanging from the ceiling.
+# Each one holds STATION_MISSILES missiles; when the ship comes near (the station a little ahead of it on the screen) it fires
+# them one by one, straight up (or down from the ceiling): the missile speeds up and flies on until it meets the rock or
+# leaves the screen. Stations and missiles are destroyed by a shot.
+STATION_W, STATION_H = 55.0, 37.0 # its footprint on the rock and how far it stands out of it
+STATION_FLAT = 18.0               # the rock under it may not vary more than this (px)
+STATION_FIRST = CALM + 600.0      # no station before this (world px)
+STATION_MISSILES = 2
+STATION_RELOAD = 2.6              # seconds between two missiles of a station
+STATION_RANGE = (40.0, 900.0)     # it only fires while it is this far ahead of the ship on the screen (px) ...
+STATION_LEAD = (-0.12, 0.45)      # ... at the moment its missile would cross the ship's height when the ship gets there, give
+                                  # or take this (s, drawn for each station: some fire a little late, most a little early)
+MISSILE_W, MISSILE_H = 12.0, 36.0
+MISSILE_SPEED = (70.0, 470.0)     # px/s: at the launch and at the most
+MISSILE_ACCEL = 560.0             # px/s^2
+MISSILE_POINTS = 10
+STATION_KIND = 2                  # a station is worth a green bird (game._enemy_points of the stage 2)
+SHIP_BOX = (36.0, 22.0)           # half the size of the box of the ship against the missiles and the stations
 # the outline of the turned ship (nose to the right), for the touch of the rock: (x along the hull, half its height there)
 HULL = ((-40.0, 10.0), (-30.0, 22.0), (-14.0, 29.0), (2.0, 26.0), (18.0, 15.0), (32.0, 8.0), (42.0, 2.0))
 
@@ -266,6 +296,94 @@ class Shot:
         self.alive = True
 
 
+class Station:
+    """A missile launcher on the rock: its world x, the y of the rock under it, "floor" or "ceil"."""
+
+    def __init__(self, x, base, side):
+        self.x, self.base, self.side = float(x), float(base), side
+        self.alive = True
+        self.missiles = STATION_MISSILES
+        self.reload = 0.0
+        self.loaded = True                       # a missile stands on it, ready
+        self.lead = 0.0                          # (STATION_LEAD: set by place_stations)
+
+    @property
+    def dir(self):
+        """Where its missiles fly: -1 = up (a station on the ground), +1 = down (one on the ceiling)."""
+        return -1 if self.side == "floor" else 1
+
+    def box(self):
+        """(left, top, right, bottom) in the world."""
+        if self.side == "floor":
+            return self.x - STATION_W / 2, self.base - STATION_H, self.x + STATION_W / 2, self.base
+        return self.x - STATION_W / 2, self.base, self.x + STATION_W / 2, self.base + STATION_H
+
+    def mouth(self):
+        """Where a missile leaves it (the middle of the missile)."""
+        return self.x, self.base + self.dir * (STATION_H + MISSILE_H / 2 - 8)
+
+
+class Missile:
+    def __init__(self, x, y, direction):
+        self.x, self.y, self.dir = float(x), float(y), int(direction)
+        self.speed = MISSILE_SPEED[0]
+        self.alive = True
+        self.age = 0.0
+
+    def box(self):
+        return self.x - MISSILE_W / 2, self.y - MISSILE_H / 2, self.x + MISSILE_W / 2, self.y + MISSILE_H / 2
+
+    def nose(self):
+        return self.x, self.y + self.dir * MISSILE_H / 2
+
+
+def place_stations(course, rng):
+    """The stations of the course (sorted by x): in each section with stations, one every so often where the rock is flat
+    enough and where it does not take the passage below GAP_MIN (it stands out of the rock)."""
+    out = []
+    for k, (name, _, look) in enumerate(SECTIONS):
+        plan = look.get("stations")
+        if not plan:
+            continue
+        lo, hi = course._span(k)
+        gap_lo, gap_hi, ceil_share = plan
+        x = max(lo, STATION_FIRST) + rng.uniform(0, gap_lo)
+        while x < min(hi, course.brake_from):
+            side = "ceil" if rng.random() < ceil_share else "floor"
+            spot = _station_spot(course, x, side)
+            if spot is None and side == "ceil":
+                side = "floor"
+                spot = _station_spot(course, x, side)
+            if spot is not None:
+                st = Station(x, spot, side)
+                st.lead = rng.uniform(*STATION_LEAD)
+                out.append(st)
+                x += rng.uniform(gap_lo, gap_hi)
+            else:
+                x += 24.0                              # (not here: a little further)
+    return out
+
+
+def _station_spot(course, x, side):
+    """The y of the rock under a station at x on that side, or None when it cannot stand there."""
+    xs = np.linspace(x - STATION_W / 2, x + STATION_W / 2, 7)
+    edge = course.ground(xs) if side == "floor" else course.ceiling(xs)
+    if float(edge.max() - edge.min()) > STATION_FLAT:
+        return None
+    base = float(edge.max()) if side == "floor" else float(edge.min())        # (its foot goes into the rock)
+    span = np.linspace(x - GAP_WINDOW, x + GAP_WINDOW, 13)
+    room = float(np.min(course.ground(span)) - np.max(course.ceiling(span)))
+    if room < GAP_MIN + STATION_H + 12:
+        return None
+    if side == "ceil" and base < BAND_MIN + 20:
+        return None                                    # (a ceiling that is only a thin band: nothing hangs from it)
+    return base
+
+
+def _overlap(a, b):
+    return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
+
+
 class Spark:
     """A bit of debris (cosmetic), in world coordinates."""
 
@@ -302,6 +420,10 @@ class ScrambleFormation:
         self.started = False
         self.won = False
         self.deaths = 0
+        self.stations = place_stations(self.course, random.Random(self.course.seed ^ 0x5C7A))
+        self.missiles = []
+        self.booms = []                     # the explosions of the game that belong to the world (they scroll with it)
+        self.kills = {"station": 0, "missile": 0}
 
     # --- what the rest of the game asks of a formation ---
     def update(self, dt, player_x):
@@ -453,7 +575,12 @@ def tick(game):
     form.started = True
     import asteroids
     form.tip = asteroids.tip_color(p)
-    form.advance(dt)
+    moved = form.advance(dt)
+    if moved:
+        live = getattr(game, "explosions", [])
+        form.booms = [b for b in form.booms if b in live]
+        for b in form.booms:
+            b.x -= moved                                  # (an explosion on the rock goes with the rock)
     alive = p.alive and not p.dying
     # --- the ship fires (to the right)
     form.fire_cd = max(0.0, form.fire_cd - dt)
@@ -467,9 +594,14 @@ def tick(game):
     # --- the shots: they fly on, die in the rock or out of the screen
     course = form.course
     for s in form.shots:
+        before = s.x
         s.x += s.vx * dt
         s.y += s.vy * dt
-        if s.x > form.cam + W + 40:
+        target = _shot_target(form, before, s.x, s.y)
+        if target is not None:
+            s.alive = False
+            _destroy(game, form, target)
+        elif s.x > form.cam + W + 40:
             s.alive = False
         elif s.y <= course.ceiling(s.x) or s.y >= course.ground(s.x):
             s.alive = False
@@ -485,6 +617,33 @@ def tick(game):
         sp.vy += 220.0 * dt
         sp.life -= dt
     form.sparks = [sp for sp in form.sparks if sp.life > 0]
+    # --- the stations fire, the missiles fly
+    _stations(game, form, dt, alive)
+    _missiles(game, form, dt)
+    # --- the missiles and the stations against the ship
+    if alive and p.alive and not p.dying:
+        ship = (form.cam + p.x - SHIP_BOX[0], p.y - SHIP_BOX[1], form.cam + p.x + SHIP_BOX[0], p.y + SHIP_BOX[1])
+        fire_bird = bool(p.is_phenix) and not getattr(p, "uses_shield", False)     # (the Phenix form burns what it meets)
+        for m in form.missiles:
+            if m.alive and _overlap(ship, m.box()):
+                if fire_bird:
+                    _destroy(game, form, m)
+                    continue
+                m.alive = False
+                _blast(game, form, m.x, m.y, small=True)
+                if p.is_phenix:
+                    game._shield_absorb(p, m.x - form.cam, m.y)        # (the dome of the Shield takes it)
+                _ship_hit(game, form)
+                break
+        for st in form.stations:
+            if st.alive and _overlap(ship, st.box()):
+                if fire_bird:
+                    _destroy(game, form, st)
+                elif not _immune(p):
+                    _ship_hit(game, form)
+                break
+        form.missiles = [m for m in form.missiles if m.alive]
+    alive = p.alive and not p.dying
     # --- the rock
     if alive:
         up, down = form.rock_overlap(p)
@@ -501,6 +660,108 @@ def tick(game):
         if form.arena_time >= ARENA_WAIT:
             form.phase = "won"
             form.won = True
+
+
+def _shot_target(form, x0, x1, y):
+    """The missile or the station a shot meets as it goes from x0 to x1 (at the height y), the nearest first; or None."""
+    best, best_x = None, None
+    for m in form.missiles:
+        if m.alive:
+            l, t, r, b = m.box()
+            if t - 3 <= y <= b + 3 and l - 3 <= x1 and x0 <= r + 3 and (best_x is None or l < best_x):
+                best, best_x = m, l
+    for st in form.stations:
+        if st.alive:
+            l, t, r, b = st.box()
+            if t <= y <= b and l <= x1 and x0 <= r and (best_x is None or l < best_x):
+                best, best_x = st, l
+    return best
+
+
+def _destroy(game, form, target):
+    """A shot (or the Phenix form) destroyed a station or a missile: its points, its explosion."""
+    p = game.player
+    if isinstance(target, Missile):
+        target.alive = False
+        form.missiles = [m for m in form.missiles if m.alive]
+        form.kills["missile"] += 1
+        game._add_score(p, MISSILE_POINTS)
+        _blast(game, form, target.x, target.y, small=True)
+    else:
+        target.alive = False
+        form.kills["station"] += 1
+        game._add_score(p, game._enemy_points(STATION_KIND))
+        l, t, r, b = target.box()
+        _blast(game, form, target.x, (t + b) / 2.0, small=False)
+
+
+def _blast(game, form, wx, wy, small):
+    """An explosion at a point of the world (it scrolls with the rock) and its sound."""
+    try:
+        boom = game._boom(wx - form.cam, wy, kind="enemy")
+        game.explosions.append(boom)
+        form.booms.append(boom)
+    except Exception:
+        log_exc("scramble._blast")
+    for _ in range(8 if small else 18):
+        a = form.rng.uniform(0, 2 * math.pi)
+        v = form.rng.uniform(60, 260)
+        form.sparks.append(Spark(wx, wy, math.cos(a) * v, math.sin(a) * v, form.rng.uniform(0.2, 0.6),
+                                 form.rng.uniform(1.5, 3.5)))
+    _play(getattr(game, "sounds", None), "explosion", volume=0.55 if small else 0.85, x=wx - form.cam)
+
+
+def _stations(game, form, dt, alive):
+    """The stations ahead of the ship fire their missiles, one by one, now and then."""
+    p = game.player
+    for st in form.stations:
+        if not st.alive:
+            continue
+        sx = st.x - form.cam
+        if sx < -80:
+            continue
+        if sx > W + 80:
+            break                                         # (sorted by x: the others are further still)
+        if not st.loaded:
+            st.reload -= dt
+            if st.reload <= 0 and st.missiles > 0:
+                st.loaded = True
+            continue
+        ahead = sx - p.x
+        if alive and STATION_RANGE[0] <= ahead <= STATION_RANGE[1] and \
+                ahead / max(1.0, form.speed) <= rise_time(abs(p.y - st.mouth()[1])) + st.lead:
+            x, y = st.mouth()
+            form.missiles.append(Missile(x, y, st.dir))
+            st.missiles -= 1
+            st.loaded = False
+            st.reload = STATION_RELOAD
+            _play(getattr(game, "sounds", None), "enemy_shoot", volume=0.6, x=sx)
+
+
+def rise_time(distance):
+    """Seconds a missile takes to fly `distance` px from its station (it speeds up, to its top speed)."""
+    v0, top = MISSILE_SPEED
+    a = MISSILE_ACCEL
+    d_top = (top * top - v0 * v0) / (2 * a)                   # (the distance over which it speeds up)
+    if distance <= d_top:
+        return (-v0 + math.sqrt(v0 * v0 + 2 * a * distance)) / a
+    return (top - v0) / a + (distance - d_top) / top
+
+
+def _missiles(game, form, dt):
+    """The missiles speed up, straight on, and burst on the rock or leave the screen."""
+    course = form.course
+    for m in form.missiles:
+        m.age += dt
+        m.speed = min(MISSILE_SPEED[1], m.speed + MISSILE_ACCEL * dt)
+        m.y += m.dir * m.speed * dt
+        nx, ny = m.nose()
+        if m.x - form.cam < -60 or ny < -40 or ny > H + 40:
+            m.alive = False
+        elif m.age > 0.15 and (ny <= course.ceiling(nx) or ny >= course.ground(nx)):
+            m.alive = False
+            _blast(game, form, nx, ny, small=True)
+    form.missiles = [m for m in form.missiles if m.alive]
 
 
 def _play(snd, name, **kw):
