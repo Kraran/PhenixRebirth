@@ -8,7 +8,7 @@ Play modes: solo, hot-seat (alternating), coop (simultaneous). Options cover
 controls, autofire, volumes, session audio mix, rumble, display, GPU present,
 VSync, refresh cap, bezels, FPS counter, CRT scanlines and language.
 Cheats on the high-score menu: LV02–LV99, LIVE, PHEN, VNOV.
-v1.6.0 — Adventure: visual novel, open ending (Act IV), SpaceWar / Lander / Guardians, missile launcher, AZERTY codes.
+v1.6.1 — menus of the Adventure as the station of Phobos, the four endings, Lunar Lander settings. v1.6.0 — Adventure: visual novel, open ending (Act IV), SpaceWar / Lander / Guardians, missile launcher, AZERTY codes.
 v1.5.0 — Adventure (beta): Acts 1-3, rebindable controls, music, announcer to level 31.
 v1.4.5 — 144 Hz option, smoother fullscreen, safer saves, errors.log.
 v1.4.4 — Adventure chapter 1 (Shield, broken dome, bestiary, hangar credits).
