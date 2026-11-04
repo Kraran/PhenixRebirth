@@ -598,8 +598,8 @@ def _ship_hit(game, form):
         return False
     old = (p.x, p.y)
     p.hit()
-    if not p.just_lost_life and not p.dying:
-        return False
+    if p.invulnerable <= 0 and not p.dying:
+        return False                                      # (nothing happened: the hit did not count)
     form.deaths += 1
     game._ship_boom(p, "gameover" if p.dying else "bullet")
     game.shake_amount = 22.0 if p.dying else 12.0

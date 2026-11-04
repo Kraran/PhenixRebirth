@@ -2017,11 +2017,32 @@ class Game:
             if not dome:
                 self.player.phenix_gauge = 0.0
                 self.player.phenix_cooldown = 9999.0
+        self._apply_adventure_cheats()
         self.input_grace = 0.35
         self.shake_amount = 0.0
         self._setup_stage(1)
         self._rebuild_life_icon()
         self._start_arrive_intro()
+
+    def _apply_adventure_cheats(self):
+        """The codes LIVE and PHEN (story.StoryHub.cheat_live / cheat_phen, typed on the map, in the hangar or on the high
+        scores) in a mission of the Adventure: infinite lives; the Phenix gauge always full (the Shield gets its dome, ready).
+        The Adventure is then a cheated one: nothing is saved (StoryHub.cheating) and the banner says so."""
+        story = getattr(self, "story", None)
+        if story is None:
+            return
+        if getattr(story, "cheat_live", False):
+            self.player.infinite_lives = True
+            self.player.lives = 99
+            self.used_cheat = True
+        if getattr(story, "cheat_phen", False):
+            self.player.phenix_auto_refill = True
+            self.player.adventure_dome = True
+            self.player.phenix_cooldown = 0.0
+            self.player.phenix_gauge = 10.0
+            if self.adventure is not None:
+                self.adventure["dome"] = True
+            self.used_cheat = True
 
     def _next_adventure_wave(self):
         """A won wave of a multi-wave mission: set up the next one. False when it was the last."""

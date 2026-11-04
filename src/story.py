@@ -51,6 +51,8 @@ CHEAT_NIX = "NIX2"             # typed in the hangar: all the Phenix missions wo
 CHEAT_ACT2 = "2222"            # typed on the mission map: go straight to Act 2, save nothing
 CHEAT_ACT3 = "3333"            # typed on the mission map: Acts 1 and 2 won, the attack on Phobos and the choice, save nothing
 CHEAT_FINE = "FINE"            # typed on the mission map: the open ending (Act IV) from its first scene, save nothing
+CHEAT_LIVE = "LIVE"            # typed on the mission map or in the hangar (or on the high scores): infinite lives, save nothing
+CHEAT_PHEN = "PHEN"            # ... the Phenix gauge (or the dome of the Shield) always full, save nothing
 LOG_REPLAY_ROWS = 4            # journal: scenes to watch again, shown at once (the cursor moves in them)
 LOG_STORY_ROWS = 6             # journal: lines of what happened, shown at once (they scroll)
 MODE_COLORS = {"novice": (120, 200, 255), "normal": (140, 220, 160), "veteran": (255, 110, 100)}   # title of each mode card
@@ -320,6 +322,8 @@ class StoryHub:
         self.cheat_act2 = False        # ACT2: the save jumped to Act 2, nothing is saved any more
         self.cheat_vn = False          # VNOV (typed on the high scores): every scene of the visual novel, nothing saved
         self.cheat_end = False         # FINE: the ending was started by the code, nothing is saved any more
+        self.cheat_live = False        # LIVE: the missions are flown with infinite lives, nothing is saved any more
+        self.cheat_phen = False        # PHEN: the Phenix gauge (the dome of the Shield) is always full, nothing saved
         self.pending_cheats = []       # the story codes typed on the high scores: they work on the next slot opened
         self.ending = False            # the open ending is under way: scene, film, credits (its music plays on throughout)
         self.ending_credits = False    # ... and its credits are on screen (the game opened them)
@@ -1007,6 +1011,8 @@ class StoryHub:
         self.cheat_unlock = False                 # loading a save always starts clean
         self.cheat_act2 = False
         self.cheat_end = False
+        self.cheat_live = False
+        self.cheat_phen = False
         self.ending = False
         self.cheat_buf = ""
         self.log_scroll = 0
@@ -1079,7 +1085,8 @@ class StoryHub:
     @property
     def cheating(self):
         """A cheat code is on: nothing is written to the save until it is loaded again."""
-        return bool(self.cheat_unlock or self.cheat_act2 or self.cheat_vn or self.cheat_end)
+        return bool(self.cheat_unlock or self.cheat_act2 or self.cheat_vn or self.cheat_end or self.cheat_live
+                    or self.cheat_phen)
 
     def missions(self):
         """The missions of the map: those of the current act (every one under the UNLK cheat)."""
@@ -1141,7 +1148,8 @@ class StoryHub:
             return True
         return False
 
-    CHEAT_PANE = {CHEAT_UNLOCK: "map", CHEAT_ACT2: "map", CHEAT_ACT3: "map", CHEAT_FINE: "map", CHEAT_NIX: "hangar"}
+    CHEAT_PANE = {CHEAT_UNLOCK: "map", CHEAT_ACT2: "map", CHEAT_ACT3: "map", CHEAT_FINE: "map", CHEAT_NIX: "hangar",
+                  CHEAT_LIVE: "map", CHEAT_PHEN: "map"}
 
     def _apply_pending_cheats(self):
         """The story codes typed on the high-score screen (see Game._feed_cheat) take effect once a slot is open, as if they
@@ -1160,6 +1168,16 @@ class StoryHub:
         """Secret code typed on the mission map. Returns True when UNLK was just completed."""
         self.cheat_buf = (self.cheat_buf + str(ch).upper())[-max(len(CHEAT_UNLOCK), len(CHEAT_ACT2), len(CHEAT_NIX),
                                                                     len(CHEAT_FINE)):]
+        if self.cheat_buf in (CHEAT_LIVE, CHEAT_PHEN) and self.pane in ("map", "hangar"):
+            live = self.cheat_buf == CHEAT_LIVE
+            self.cheat_buf = ""
+            if live:
+                self.cheat_live = True            # (src/game.py, _begin_adventure: every mission flown from now on)
+            else:
+                self.cheat_phen = True
+            self.toast = t("cheat_live" if live else "cheat_phen")
+            self.toast_kind = "special"
+            return True
         if self.cheat_buf == CHEAT_FINE and self.pane == "map" and self.screen == "hub":
             self.cheat_buf = ""
             self.cheat_end = True                 # nothing is saved any more
