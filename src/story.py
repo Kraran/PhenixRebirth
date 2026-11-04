@@ -53,7 +53,8 @@ CHEAT_FINE = "FINE"            # typed on the mission map: the open ending (Act 
 LOG_REPLAY_ROWS = 4            # journal: scenes to watch again, shown at once (the cursor moves in them)
 LOG_STORY_ROWS = 6             # journal: lines of what happened, shown at once (they scroll)
 MODE_COLORS = {"novice": (120, 200, 255), "normal": (140, 220, 160), "veteran": (255, 110, 100)}   # title of each mode card
-MAP_ROW_H, MAP_FOCUS_H = 44, 84    # a row of the map, and the row under the cursor (it carries a line of blurb)
+MAP_ROW_H, MAP_FOCUS_H = 44, 84    # a row of the map, and the row under the cursor with one line of blurb
+MAP_NOTE_LINE, MAP_NOTE_MAX = 24, 4  # the blurb under the cursor is written in up to four lines of this height
 MAP_HEAD_H = 30                # a group heading of the map (story, hunts, BONUS)
 SHOP_WINDOW = 6                # workshop rows shown at once (the line under them describes a loot item)
 
@@ -2627,8 +2628,12 @@ class StoryHub:
             entries.append(("row", i))
         height = lambda e: MAP_HEAD_H if e[0] in ("head", "act") else MAP_ROW_H
         focus_e = entries.index(("row", focus_i)) if missions else 0
+        focus_h = MAP_FOCUS_H
+        if missions:                                       # the row under the cursor grows with the lines of its blurb
+            note, _col = self._map_note(missions[focus_i])
+            focus_h = MAP_ROW_H + 16 + MAP_NOTE_LINE * len(self._map_note_lines(note, box.w - 32 - 72))
         first = 0
-        while first < focus_e and sum(height(e) + 4 for e in entries[first:focus_e]) + MAP_FOCUS_H + 4 > room:
+        while first < focus_e and sum(height(e) + 4 for e in entries[first:focus_e]) + focus_h + 4 > room:
             first += 1
         if first > 0:
             _text(surface, small, "^", (180, 180, 200), box.y + 38, right=box.right - 28)
@@ -2648,7 +2653,7 @@ class StoryHub:
                 y += MAP_HEAD_H + 4
                 continue
             i, mission = ref, missions[ref]
-            if y + (MAP_FOCUS_H if i == focus_i else MAP_ROW_H) > low:
+            if y + (focus_h if i == focus_i else MAP_ROW_H) > low:
                 _text(surface, small, "v", (180, 180, 200), low - 12, right=box.right - 20)
                 break
             self.map_page += 1
@@ -2657,7 +2662,7 @@ class StoryHub:
             done = ss.mission_done(self.state, mission)
             focus = i == self.map_index
             # the focused row is taller: title line + one line for the blurb
-            row = pygame.Rect(box.x + 16, y, box.w - 32, MAP_FOCUS_H if focus else MAP_ROW_H)
+            row = pygame.Rect(box.x + 16, y, box.w - 32, focus_h if focus else MAP_ROW_H)
             if focus:
                 phobos_ui.lit(surface, row)
             if not open_:
@@ -2682,15 +2687,33 @@ class StoryHub:
             _text(surface, small, name, col, cy, left=row.x + 24)
             _text(surface, small, state, col, cy, right=row.right - 24)
             if focus:
-                before = None if open_ else ss.unlock_hint(self.state, mission)
-                if before is not None:
-                    _text_fit(surface, small, t("story_unlock_after").format(name=t(before["title"])), (225, 185, 120),
-                              cy + 36, row.x + 36, row.w - 72)       # what opens it, in place of its blurb
-                else:
-                    _text_fit(surface, small, mission_blurb(mission), (170, 175, 195), cy + 36, row.x + 36, row.w - 72)
+                note, note_col = self._map_note(mission)       # what opens it, in place of its blurb, or its blurb
+                for j, line in enumerate(self._map_note_lines(note, row.w - 72)):
+                    _text(surface, self._note_font(), line, note_col, cy + 36 + MAP_NOTE_LINE * j, left=row.x + 36)
             y += row.h + 4
         if self.toast:
             self._draw_toast(surface, medium, small, box)
+
+    def _map_note(self, mission):
+        """The text under the mission under the cursor and its colour: what it needs when it is shut, else its blurb."""
+        before = None if self.mission_open(mission) else ss.unlock_hint(self.state, mission)
+        if before is not None:
+            return t("story_unlock_after").format(name=t(before["title"])), (225, 185, 120)
+        return mission_blurb(mission), (170, 175, 195)
+
+    @staticmethod
+    def _note_font():
+        import fonts
+        return fonts.body(20)
+
+    def _map_note_lines(self, text, width):
+        """The note in the lines it needs (three at the most), measured once per text, language and width."""
+        cache = self.__dict__.setdefault("_note_wrap", {})
+        key = (text, width, get_lang())
+        lines = cache.get(key)
+        if lines is None:
+            lines = cache[key] = _wrap(self._note_font(), text, width)[:MAP_NOTE_MAX] or [""]
+        return lines
 
     def _toast_level(self):
         """'standard' for the result of a mission (won / failed), 'discreet' for the rest; '' without a toast."""

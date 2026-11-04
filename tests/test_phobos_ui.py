@@ -621,7 +621,9 @@ def test_the_map_rows_have_room_around_their_text(run, monkeypatch):
     calls = _spy(monkeypatch, "lit")
     _draw(g, hub)
     row = [c[1] for c in calls if c[0] == "lit"][0]
-    assert row.h == story.MAP_FOCUS_H == 84 and story.MAP_ROW_H == 44
+    assert story.MAP_ROW_H == 44
+    lines = (row.h - story.MAP_ROW_H - 16) / story.MAP_NOTE_LINE                   # the row grows with the lines of its blurb
+    assert lines == int(lines) and 1 <= lines <= story.MAP_NOTE_MAX
     assert row.x >= 70 + 16 and row.right <= 1280 - 70 - 16                       # the row is inside the plate with a margin
 
 
