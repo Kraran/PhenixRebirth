@@ -19,6 +19,7 @@ The rules:
   when the ship comes, timed to cross its height about when it gets there. A shot destroys a missile (MISSILE_POINTS) or a
   station (the points of a green bird); a missile or a station that touches the ship costs a life (the dome takes a
   missile, the Phenix form burns both).
+- Waves of birds and, in the comets section, comets (src/scramble_birds.py).
 
 The player flies the real Player of the game (`Player.asteroid_mode` with `Player.scramble` set to the formation below). The
 formation looks like one without enemies to the rest of the game; `tick(game)` runs it every frame; the view is in
@@ -460,6 +461,8 @@ class ScrambleFormation:
         self.missiles = []
         self.booms = []                     # the explosions of the game that belong to the world (they scroll with it)
         self.kills = {"station": 0, "missile": 0}
+        import scramble_birds
+        self.sky = scramble_birds.Sky(self)          # the waves of birds and the comets
 
     # --- what the rest of the game asks of a formation ---
     def update(self, dt, player_x):
@@ -610,6 +613,7 @@ def tick(game):
     form.time += dt
     form.started = True
     import asteroids
+    import scramble_birds
     form.tip = asteroids.tip_color(p)
     moved = form.advance(dt)
     if moved:
@@ -634,7 +638,14 @@ def tick(game):
         s.x += s.vx * dt
         s.y += s.vy * dt
         target = _shot_target(form, before, s.x, s.y)
-        if target is not None:
+        aloft = form.sky.shot_target(before, s.x, s.y, form.cam)
+        if aloft is not None and (target is None or aloft[1] < target.box()[0]):
+            s.alive = False
+            if isinstance(aloft[0], scramble_birds.Bird):
+                form.sky.kill_bird(game, aloft[0])
+            else:
+                _blast(game, form, aloft[1], s.y, small=True)        # (a comet: nothing destroys it)
+        elif target is not None:
             s.alive = False
             _destroy(game, form, target)
         elif s.x > form.cam + W + 40:
@@ -656,6 +667,7 @@ def tick(game):
     # --- the stations fire, the missiles fly
     _stations(game, form, dt, alive)
     _missiles(game, form, dt, p if alive else None)
+    form.sky.tick(game, dt, alive)
     # --- the missiles and the stations against the ship
     if alive and p.alive and not p.dying:
         ship = (form.cam + p.x - SHIP_BOX[0], p.y - SHIP_BOX[1], form.cam + p.x + SHIP_BOX[0], p.y + SHIP_BOX[1])
@@ -679,6 +691,8 @@ def tick(game):
                     _ship_hit(game, form)
                 break
         form.missiles = [m for m in form.missiles if m.alive]
+        if p.alive and not p.dying:
+            form.sky.touch_ship(game, p)
     alive = p.alive and not p.dying
     # --- the rock
     if alive:

@@ -60,7 +60,12 @@ class View:
         self.worker = None
         self.wanted = set()
         self.near = self._near_stars()
+        self.far_rocks = [(self._dim(pic), x, y, amp) for pic, x, y, amp in self.assets["rocks"]]
         self.fonts = {}
+        try:
+            warm_sky()
+        except Exception:                                # (no display yet: they are made when first drawn)
+            pass
 
     # --- the rock
     def _colour(self, wx, wy):
@@ -161,6 +166,15 @@ class View:
 
     # --- the sky
     @staticmethod
+    def _dim(pic):
+        """The other asteroids of the sky, darker: here they are far behind, not in the way of the ship."""
+        out = pic.copy()
+        shade = pygame.Surface(out.get_size(), pygame.SRCALPHA)
+        shade.fill((105, 105, 115, 255))
+        out.blit(shade, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
+        return out
+
+    @staticmethod
     def _near_stars():
         """A few nearer stars, on a transparent layer (a colour key: a quick blit)."""
         rng = np.random.default_rng(9)
@@ -189,7 +203,7 @@ class View:
             if stars is not None:
                 surface.blit(back, where)
             surface.blit(pic, where, special_flags=pygame.BLEND_ADD)
-        for pic, x, y, amp in self.assets["rocks"]:
+        for pic, x, y, amp in self.far_rocks:
             sx = (x - cam * PLANET_SKY * amp / 40.0) % (W + 300) - 150
             surface.blit(pic, (round(sx - pic.get_width() / 2), round(y - 60 - pic.get_height() / 2)))
         if stars is not None:
@@ -256,6 +270,48 @@ def sprite(name, down):
 
 
 _TILTS = {}
+_BIRDS = {}
+_COMETS = {}
+
+
+def bird_frames(stage):
+    """The four pictures of a bird of the game (two wing beats, with and without the glow of its eyes), turned to face the
+    left (made once per kind)."""
+    got = _BIRDS.get(stage)
+    if got is None:
+        import os
+        from settings import asset_path
+        prefix = "bird2" if stage >= 2 else "bird1"
+        got = []
+        for name in ("flap0", "flap1", "flap0_glow", "flap1_glow"):
+            path = asset_path("sprites", "%s_%s.png" % (prefix, name))
+            if os.path.exists(path):
+                got.append(pygame.transform.rotate(pygame.image.load(path).convert_alpha(), -90))
+        if not got:                                    # (no picture: a plain disc)
+            pic = pygame.Surface((36, 36), pygame.SRCALPHA)
+            pygame.draw.circle(pic, (120, 170, 255) if stage == 1 else (130, 220, 110), (18, 18), 14)
+            got = [pic]
+        _BIRDS[stage] = got
+    return got
+
+
+def comet_frames(down):
+    """The comet of the game's sky, smaller, heading left (and down, or up): (its pictures, where its head is in them)."""
+    got = _COMETS.get(bool(down))
+    if got is None:
+        import scramble_birds as sb
+        from starfield import Comet
+        frames = []
+        hx, hy = sb.COMET_HEAD
+        size = (480, 270)
+        for fr in Comet._load():
+            size = fr.get_size()
+            w, h = max(8, int(size[0] * sb.COMET_SCALE)), max(8, int(size[1] * sb.COMET_SCALE))
+            img = pygame.transform.flip(pygame.transform.smoothscale(fr, (w, h)), True, not down)
+            frames.append(img)
+        head = ((size[0] - hx) * sb.COMET_SCALE, (hy if down else size[1] - hy) * sb.COMET_SCALE)
+        got = _COMETS[bool(down)] = (frames, head)
+    return got
 
 
 def _tilted(down, lean):
@@ -299,11 +355,47 @@ def _draw_stations(surface, form, cam_i):
         surface.blit(pic, (round(sx - pic.get_width() / 2), round(m.y - pic.get_height() / 2)))
 
 
+def _draw_sky(surface, form):
+    """The comets, the birds and their shots (all in the coordinates of the screen)."""
+    import asteroids
+    sky = getattr(form, "sky", None)
+    if sky is None:
+        return
+    for c in sky.comets:
+        frames, (hx, hy) = comet_frames(c.down)
+        if frames:
+            pic = frames[int(c.age * 10.0) % len(frames)]
+            surface.blit(pic, (round(c.x - hx), round(c.y - hy)))
+        else:
+            asteroids._add_glow(surface, (90, 230, 255), (c.x, c.y), 40)
+    for b in sky.birds:
+        if b.waiting:
+            continue
+        frames = bird_frames(b.stage)
+        k = int(b.flap * 5.2) % 2
+        if len(frames) >= 4 and (b.flap % 2.2) < 0.35:
+            k += 2                                     # (the glow of the eyes now and then)
+        pic = frames[k % len(frames)]
+        surface.blit(pic, (round(b.x - pic.get_width() / 2), round(b.y - pic.get_height() / 2)))
+    for s in sky.shots:
+        asteroids._add_glow(surface, (255, 80, 200), (s.x, s.y), 22)
+        pygame.draw.circle(surface, (255, 190, 255), (int(s.x), int(s.y)), 4)
+
+
+def warm_sky():
+    """Make the pictures of the birds and of the comets (at the start of the mission, not when the first one comes)."""
+    for stage in (1, 2):
+        bird_frames(stage)
+    for down in (True, False):
+        comet_frames(down)
+
+
 def draw_items(surface, form):
-    """The stations and their missiles, the shots of the ship and the sparks, over the rock."""
+    """The stations and their missiles, the birds, the comets, the shots and the sparks, over the rock."""
     import asteroids
     cam_i = int(round(form.cam))
     _draw_stations(surface, form, cam_i)
+    _draw_sky(surface, form)
     for sp in form.sparks:
         a = max(0.0, sp.life / sp.max)
         x, y = sp.x - cam_i, sp.y
