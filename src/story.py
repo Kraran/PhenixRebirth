@@ -1648,7 +1648,7 @@ class StoryHub:
                 spec["training"] = True                             # the test: nothing won, nothing lost
             if body in lander.BODIES:
                 spec["body"] = body                   # the setting chosen in the menu (else drawn at random)
-        if ss.missile_ready(self.state) and not mission.get("training"):
+        if ss.missile_ready(self.state) and not mission.get("training") and not mission.get("scramble"):
             spec["antimatter"] = True                 # the launcher is bought and a missile is held: one in this mission
         if ship:
             spec["ship"] = ship                       # a mission that imposes its hull

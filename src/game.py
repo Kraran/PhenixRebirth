@@ -1977,6 +1977,9 @@ class Game:
             self.player.vertical_range = None
             self.player.ast_angle = 0.0
             self.player.lives = int(loadout.get("lives") or 1)
+            if spec.get("training") and not dome:
+                dome = True                                       # the test: the Shield has its dome even if not yet bought
+                self.player.adventure_dome = True
         if spec.get("spacewar"):
             # SpaceWar (src/spacewar.py): the ship flies free by the pull of a star, with ONE life (pixel dust at its end)
             spacewar.set_planet(spec.get("planet"))                 # (Jupiter, Saturn, Uranus or Neptune: its pull and its disc)

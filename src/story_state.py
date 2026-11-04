@@ -581,6 +581,14 @@ MISSIONS = [
         "title": "story_m_scramble", "hud_title": "story_m_scramble_hud", "blurb": "story_m_scramble_b",
         "need": None, "content": 1, "speed": 1.0,
     },
+    # BONUS: Scramble, the same level as the test (the menu of the five settings included) but for real: its points pay in
+    # credits, a failure costs what a failure always costs, its launchers and its red commander go into the Bestiary.
+    # Secret until the game is finished (the open ending of Act IV has been told); then on the map of every act.
+    {
+        "id": "bonus_scramble", "acts": (1, 2, 3), "secret": True, "extra": True, "scramble": True,
+        "title": "story_m_scramble_bonus", "hud_title": "story_m_scramble_hud", "blurb": "story_m_scramble_bonus_b",
+        "need": ENDING_DONE, "content": 1, "speed": 1.0,
+    },
     # BONUS: Lunar Lander, the same level as the test (the menu of the five settings included) but for real: the landing pays its
     # points (+ the fuel left) in credits, a crash costs what a failure always costs. Secret until the game is finished (the open
     # ending of Act IV has been told); then on the map of every act, replayable at will.
@@ -631,6 +639,10 @@ BESTIARY = [
     {"id": "garg4", "stage": 4, "name": "story_b_garg4", "text": "story_b_garg4_t"},
     # the saucer that ends level 5 (and every fifth level): it shows up once the pilot has destroyed it
     {"id": "boss", "stage": 5, "name": "story_b_boss", "text": "story_b_boss_t", "boss": True},
+    # the Scramble level (src/scramble.py): its missile launchers (the stations and the turrets of the base) and the red
+    # commander of the base; they show up once destroyed in a mission that counts (BONUS - Scramble)
+    {"id": "station", "stage": 0, "name": "story_b_station", "text": "story_b_station_t"},
+    {"id": "redboss", "stage": 0, "name": "story_b_redboss", "text": "story_b_redboss_t", "boss": True},
 ]
 # What each tier shows, by number of enemies of that kind destroyed:
 # (picture, picture twice as big, animation, presentation text, bonus points).

@@ -673,8 +673,10 @@ def tick(game):
                 _blast(game, form, hit_x, s.y, small=True)           # (a comet: nothing destroys it)
         elif s.x > form.cam + W + 40:
             s.alive = False
+            miss(p)                                       # (it met nothing: the Phenix gauge goes down, as in the game)
         elif s.y <= course.ceiling(s.x) or s.y >= course.ground(s.x):
             s.alive = False
+            miss(p)
             for _ in range(5):
                 a = form.rng.uniform(math.pi * 0.5, math.pi * 1.5)
                 v = form.rng.uniform(60, 200)
@@ -767,9 +769,42 @@ def _shot_target(form, x0, x1, y):
     return best
 
 
+STATION_BESTIARY = "station"      # the Bestiary of the Adventure: the missile launchers (stations and turrets of the base)
+BOSS_BESTIARY = "redboss"         # ... the red commander of the base
+
+
+def bestiary_points(game, kind, points):
+    """`points` for an enemy of `kind` destroyed; in the Adventure it also counts for the Bestiary (once destroyed, the
+    kind shows up there) and pays its bonus once the last tier is reached, like the enemies of the game."""
+    adv = getattr(game, "adventure", None)
+    story = getattr(game, "story", None)
+    state = getattr(story, "state", None) if story is not None else None
+    if not isinstance(adv, dict) or not isinstance(state, dict):
+        return points
+    kills = adv.setdefault("kills", {})
+    kills[kind] = kills.get(kind, 0) + 1
+    import story_state
+    return points + story_state.kill_bonus(state, kind, kills[kind])
+
+
+def charge(ship):
+    """A valid hit (a bird, a missile, a launcher): the Phenix gauge goes up, as in the game (Player.register_valid_hit)."""
+    hit = getattr(ship, "register_valid_hit", None)
+    if hit is not None:
+        hit()
+
+
+def miss(ship):
+    """A shot that met nothing: the Phenix gauge goes down, as in the game (Player.register_miss)."""
+    lost = getattr(ship, "register_miss", None)
+    if lost is not None:
+        lost()
+
+
 def _destroy(game, form, target):
-    """A shot (or the Phenix form) destroyed a station or a missile: its points, its explosion."""
+    """A shot (or the Phenix form) destroyed a station or a missile: its points, its explosion (and the Phenix gauge)."""
     p = game.player
+    charge(p)
     if isinstance(target, Missile):
         target.alive = False
         form.missiles = [m for m in form.missiles if m.alive]
@@ -779,7 +814,7 @@ def _destroy(game, form, target):
     else:
         target.alive = False
         form.kills["station"] += 1
-        game._add_score(p, game._enemy_points(STATION_KIND))
+        game._add_score(p, bestiary_points(game, STATION_BESTIARY, game._enemy_points(STATION_KIND)))
         if target.loaded:                                  # (the missile standing on it goes up with it)
             target.loaded = False
             form.kills["missile"] += 1

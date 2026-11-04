@@ -297,6 +297,7 @@ class Sky:
         if not b.alive:
             return
         b.alive = False
+        sc.charge(game.player)
         game._add_score(game.player, game._enemy_kill_points(b))
         self.form.kills["bird%d" % b.stage] = self.form.kills.get("bird%d" % b.stage, 0) + 1
         try:

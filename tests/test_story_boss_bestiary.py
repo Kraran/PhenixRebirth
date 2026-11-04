@@ -27,11 +27,14 @@ def _start(g, mission_id="act2_gate", **counts):
 
 
 # --- the entry ---
-def test_the_boss_is_a_boss_entry_listed_last():
-    entry = ss.BESTIARY[-1]
-    assert entry["id"] == "boss" and entry["boss"] is True and ss.is_boss("boss")
+def test_the_boss_is_a_boss_entry_listed_after_the_birds_and_gargoyles():
+    ids = [e["id"] for e in ss.BESTIARY]
+    entry = ss.BESTIARY[ids.index("boss")]
+    assert entry["boss"] is True and ss.is_boss("boss")
     assert ss.bestiary_bonus("boss") == ss.BOSS_BONUS == 1000
-    assert not any(ss.is_boss(e["id"]) for e in ss.BESTIARY[:-1])
+    assert ids.index("boss") > max(ids.index(k) for k in ("bird1", "bird2", "garg3", "garg4"))
+    # the only other boss is the red master of the Scramble base
+    assert [e["id"] for e in ss.BESTIARY if ss.is_boss(e["id"])] == ["boss", "redboss"]
 
 
 def test_the_boss_is_hidden_until_it_is_destroyed():

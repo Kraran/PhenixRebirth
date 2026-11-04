@@ -504,6 +504,9 @@ class _Game:
     def _boss_kill_points(self):
         return 200
 
+    def _boss_points(self):
+        return 200
+
     def _boom(self, x, y, kind="enemy"):
         class _B:
             pass
@@ -1141,7 +1144,7 @@ def test_a_shot_breaks_the_first_brick_of_its_row_for_one_point():
     assert base.front_brick(row).col == 1                # the next one is now the face of that row
 
 
-def test_the_boss_is_only_hit_through_a_hole_and_one_hit_kills_it():
+def test_the_boss_is_only_hit_through_a_hole_and_three_hits_kill_it():
     f, ship, g = _arena()
     base = f.base
     boss = base.boss
@@ -1157,10 +1160,13 @@ def test_the_boss_is_only_hit_through_a_hole_and_one_hit_kills_it():
         if b.row == row:
             b.alive = False                              # (the tunnel is cut)
     score = g.score
-    boss.t = 0.0
-    f.shots = [sc.Shot(boss.box()[0] - 20, boss.y, 1200.0, 0.0)]
-    sc.tick(g)
-    assert boss.dying and g.score - score == 200 and base.dead_for is not None
+    for hit in range(scb.BOSS_HP):
+        assert not boss.dying and boss.hp == scb.BOSS_HP - hit
+        boss.t = 0.0
+        boss.hit_flash = 0.0                             # (the pause after a hit is tested on its own)
+        f.shots = [sc.Shot(boss.box()[0] - 20, boss.y, 1200.0, 0.0)]
+        sc.tick(g)
+    assert boss.dying and boss.hp == 0 and g.score - score == 200 and base.dead_for is not None
 
 
 def test_the_base_shields_are_up_until_the_scroll_stops():
@@ -1418,3 +1424,217 @@ def test_the_picture_of_the_wall_is_made_again_only_when_a_brick_goes():
     b.alive = False
     pic3, _, _ = sv._wall_picture(base)
     assert base._wall_pic[0] == base.standing() and pic3.get_at((px, py))[3] == 0
+
+
+# ------------------------------------------------------------------ the boss's 3 points, the Phenix gauge, the Bestiary, the BONUS
+def test_the_boss_takes_no_second_hit_while_it_flashes():
+    f, ship, g = _arena()
+    base = f.base
+    boss = base.boss
+    for b in base.bricks:
+        if base.row_of(boss.y) == b.row:
+            b.alive = False
+    boss.t = 0.0
+    base._hurt_boss(g)
+    assert boss.hp == scb.BOSS_HP - 1 and boss.hit_flash > 0
+    base._hurt_boss(g)                                   # (a second shot right behind the first)
+    assert boss.hp == scb.BOSS_HP - 1
+    boss.hit_flash = 0.0
+    base._hurt_boss(g)
+    assert boss.hp == scb.BOSS_HP - 2 and not boss.dying
+
+
+def test_the_hud_shows_the_life_of_the_boss(run):
+    _launch_scramble(run)
+    g = run.game
+    form = g.formation
+    form.cam = form.course.stop
+    form.phase = "arena"
+    form.arena_time = 5.0
+    form.base.boss.hp = 2
+    surf = g.game_surface
+    surf.fill((0, 0, 0))
+    sv.draw_hud(g, form)
+    x, y, w, h = sv.WALL_BAR
+    by = y + h + 10
+    seg = (w - 2 * (scb.BOSS_HP - 1)) / scb.BOSS_HP
+    lit = [surf.get_at((int(x + i * (seg + 2) + seg / 2), by + 5))[:3] for i in range(scb.BOSS_HP)]
+    assert lit[0] == lit[1] == (220, 40, 40) and lit[2] != (220, 40, 40)
+
+
+class _Gauge(_Pilot):
+    def __init__(self, *a):
+        super().__init__(*a)
+        self.gauge = 5
+
+    def register_valid_hit(self):
+        self.gauge += 1
+
+    def register_miss(self):
+        self.gauge -= 1
+
+
+def test_birds_missiles_and_launchers_charge_the_phenix_bricks_do_not_misses_drain_it():
+    f, ship, g = _arena()
+    ship = _Gauge()
+    ship.invulnerable = 1e9
+    g.player = ship
+    f.recentre(ship)
+    base = f.base
+    g.dt = 1 / 30
+    # a brick: neutral
+    y = base.y0 + 3.5 * scb.BRICK_H
+    f.shots = [sc.Shot(base.face - 20, y, 1200.0, 0.0)]
+    sc.tick(g)
+    assert ship.gauge == 5
+    # a turret and one of its missiles: +1 each
+    t = base.turrets[1]
+    t.fire_in = 1e9
+    f.shots = [sc.Shot(t.box()[0] - 20, t.y, 1200.0, 0.0)]
+    sc.tick(g)
+    assert not t.alive and ship.gauge == 6
+    m = scb.BaseMissile(base.face - 200, 300.0)
+    base.missiles = [m]
+    f.shots = [sc.Shot(m.x - 30, m.y, 1200.0, 0.0)]
+    sc.tick(g)
+    assert not m.alive and ship.gauge == 7
+    # a shot that meets nothing: -1
+    for b in base.bricks:
+        b.alive = False
+    base.boss.alive = False
+    f.shots = [sc.Shot(f.cam + sc.W - 10, 300.0, 1200.0, 0.0)]
+    sc.tick(g)
+    sc.tick(g)
+    assert not f.shots and ship.gauge == 6
+
+
+def test_a_bird_and_a_station_charge_the_phenix():
+    f = _sky_form()
+    ship = _Gauge()
+    f.recentre(ship)
+    g = _BirdGame(f, ship)
+    f.sky.wave_in = 1e9
+    b = sb.Bird(1, "snake", ship.x + 300, ship.y)
+    b.base_y = b.y
+    f.sky.birds = [b]
+    f.shots = [sc.Shot(f.cam + ship.x + 250, ship.y, 1200.0, 0.0)]
+    g.dt = 1 / 20
+    sc.tick(g)
+    assert not b.alive and ship.gauge == 6
+    f2 = _form("rock", 2)
+    st = _station_ahead(f2, "floor", 400.0)
+    st.lead = -99.0
+    ship2 = _Gauge()
+    l, t, r, bt = st.box()
+    f2.shots = [sc.Shot(l - 10, (t + bt) / 2, 1200.0, 0.0)]
+    sc.tick(_Game(f2, ship2))
+    assert not st.alive and ship2.gauge == 6
+
+
+def test_in_the_real_game_a_kill_fills_the_gauge_of_the_phenix(run):
+    _launch_scramble(run)
+    g = run.game
+    p, form = g.player, g.formation
+    p.invulnerable = 30.0
+    before = float(p.phenix_gauge)
+    p.phenix_gauge = 2.0
+    b = sb.Bird(1, "snake", p.x + 300, p.y)
+    b.base_y = b.y
+    form.sky.birds = [b]
+    form.sky.wave_in = 1e9
+    form.shots = [sc.Shot(form.cam + p.x + 250, p.y, 1200.0, 0.0)]
+    run.frames(2)
+    assert not b.alive
+    assert p.uses_shield or p.phenix_gauge >= 3.0 or before is None
+
+
+def test_the_test_mission_gives_the_shield_its_dome(run):
+    _launch_scramble(run)                                 # (the pilot of the tests has not bought the dome)
+    g = run.game
+    p = g.player
+    assert p.uses_shield and p.adventure_dome and g.adventure["dome"]
+    assert p.can_activate_phenix()
+
+
+def test_the_launchers_and_the_red_master_are_in_the_bestiary():
+    ids = {e["id"]: e for e in ss.BESTIARY}
+    assert "station" in ids and "redboss" in ids and ids["redboss"].get("boss") and not ids["station"].get("boss")
+    st = ss.default_state()
+    assert not any(e["id"] in ("station", "redboss") for e, n in ss.bestiary_entries(st))
+    ss.record_kills(st, {"station": 1})
+    assert [e["id"] for e, n in ss.bestiary_entries(st)] == ["station"]   # after its first destruction
+    ss.record_kills(st, {"redboss": 1})
+    assert [e["id"] for e, n in ss.bestiary_entries(st)] == ["station", "redboss"]
+
+
+def test_their_pictures_for_the_bestiary():
+    import bestiary_art
+    for kind in ("station", "redboss"):
+        assert kind in bestiary_art.known_kinds()
+        pic = bestiary_art.still(kind)
+        assert pic.get_width() > 20 and pic.get_height() > 20
+        assert bestiary_art.animated(kind, 0.3).get_size() == pic.get_size()
+    core = bestiary_art.still("boss")
+    assert bestiary_art.still("redboss").get_size() == core.get_size()  # (at the size of the saucer's commander)
+
+
+def test_the_bestiary_texts():
+    import i18n
+    for code in ("fr", "en"):
+        i18n.set_lang(code)
+        for k in ("story_b_station", "story_b_station_t", "story_b_redboss", "story_b_redboss_t", "scramble_boss_hp",
+                  "story_m_scramble_bonus", "story_m_scramble_bonus_b"):
+            assert i18n.t(k) != k
+    i18n.set_lang("fr")
+
+
+def test_a_mission_that_counts_records_the_launchers_and_the_master(run):
+    g = run.game
+    from test_spacewar import _state
+    st = _state()
+    st.setdefault("flags", {})[ss.ENDING_DONE] = True
+    ss.save_state(ss.story_path(1), st)
+    g.story.open_slot(1)
+    g.story.pane = "map"
+    g.story.map_index = [m["id"] for m in g.story.missions()].index("bonus_scramble")
+    g.story.lander_index = 0
+    g.story.screen = "lander_pick"
+    g.story.pick_for = "scramble"
+    spec = g.story.confirm()
+    assert spec and spec["scramble"] and not spec.get("training") and not spec.get("antimatter")
+    g._begin_adventure(spec)
+    g.input_grace = 0.0
+    run.frames(2)
+    form = g.formation
+    pts = sc.bestiary_points(g, sc.STATION_BESTIARY, 20)
+    assert pts == 20 and g.adventure["kills"]["station"] == 1
+    sc.bestiary_points(g, sc.BOSS_BESTIARY, 500)
+    kills = dict(g.adventure["kills"])
+    g._end_adventure(True)
+    after = ss.load_state(ss.story_path(1))
+    assert ss.encounters(after, "station") == kills["station"] and ss.encounters(after, "redboss") == 1
+
+
+def test_the_bonus_is_secret_until_the_game_is_finished():
+    from test_spacewar import _state
+    m = ss.mission_by_id("bonus_scramble")
+    assert m and m["scramble"] and m["secret"] and m["extra"] and not m.get("training")
+    assert tuple(m["acts"]) == (1, 2, 3) and m["need"] == ss.ENDING_DONE
+    st = _state()
+    assert not ss.mission_open(st, m)
+    st.setdefault("flags", {})[ss.ENDING_DONE] = True
+    assert ss.mission_open(st, m)
+
+
+def test_the_bonus_opens_the_menu_of_the_setting(run):
+    g = run.game
+    from test_spacewar import _state
+    st = _state()
+    st.setdefault("flags", {})[ss.ENDING_DONE] = True
+    ss.save_state(ss.story_path(1), st)
+    g.story.open_slot(1)
+    g.story.pane = "map"
+    g.story.screen = "hub"
+    g.story.map_index = [m["id"] for m in g.story.missions()].index("bonus_scramble")
+    assert g.story.confirm() is None
+    assert g.story.screen == "lander_pick" and g.story.pick_for == "scramble"

@@ -44,6 +44,8 @@ BULLET_MAX = 5
 BULLET_SPEED = 280.0
 BULLET_NEAR = 4                   # ... from one of the rows this close to the height of the ship
 BULLET_START = 1.6                # seconds after the scroll has stopped
+BOSS_HP = 3                       # shots through a hole to kill it (its bar: scramble_view)
+BOSS_HIT_PAUSE = 0.5              # seconds after a hit when it takes no other (it flashes): three shots in a row are not three hits
 BOSS_SIZE = 140                   # px (the picture of the saucer's alien, scaled)
 BOSS_SWING = (190.0, 7.0)         # how far it rises and sinks (px) and in how long (s)
 BOSS_HIT = 0.8                    # the share of its picture a shot must touch
@@ -109,6 +111,7 @@ class Boss:
         self.dying = False
         self.death = 0.0
         self.hit_flash = 0.0
+        self.hp = BOSS_HP
 
     def box(self):
         half = BOSS_SIZE * BOSS_HIT / 2
@@ -295,16 +298,35 @@ class Base:
         elif isinstance(thing, Turret):
             thing.alive = False
             self.kills["turret"] += 1
-            game._add_score(p, game._enemy_points(sc.STATION_KIND))
+            sc.charge(p)
+            game._add_score(p, sc.bestiary_points(game, sc.STATION_BESTIARY, game._enemy_points(sc.STATION_KIND)))
             sc._blast(game, f, thing.x, thing.y, small=False)
         elif isinstance(thing, BaseMissile):
             thing.alive = False
             self.missiles = [m for m in self.missiles if m.alive]
             self.kills["missile"] += 1
+            sc.charge(p)
             game._add_score(p, sc.MISSILE_POINTS)
             sc._blast(game, f, thing.x, thing.y, small=True)
         elif isinstance(thing, Boss):
+            self._hurt_boss(game)
+
+    def _hurt_boss(self, game):
+        """A shot through a hole struck the boss: one of its BOSS_HP points goes (not while it flashes from the last one);
+        the last one kills it."""
+        f = self.form
+        boss = self.boss
+        if boss.dying or not boss.alive or boss.hit_flash > 0:
+            return
+        boss.hp -= 1
+        if boss.hp <= 0:
+            boss.hp = 0
             self._kill_boss(game)
+            return
+        boss.hit_flash = BOSS_HIT_PAUSE
+        self._boom(game, boss.x - BOSS_SIZE * 0.3, boss.y, "enemy")
+        game.shake_amount = max(getattr(game, "shake_amount", 0.0), 8.0)
+        sc._play(getattr(game, "sounds", None), "boss_angry", volume=0.85, x=boss.x - f.cam)
 
     def _kill_boss(self, game):
         f = self.form
@@ -314,7 +336,7 @@ class Base:
         boss.dying = True
         boss.hit_flash = 0.4
         self.kills["boss"] += 1
-        game._add_score(game.player, game._boss_kill_points())
+        game._add_score(game.player, sc.bestiary_points(game, sc.BOSS_BESTIARY, game._boss_points()))
         self._boom(game, boss.x, boss.y, "gameover")
         game.shake_amount = 22.0
         sc._play(getattr(game, "sounds", None), "explosion_big", x=boss.x - f.cam)

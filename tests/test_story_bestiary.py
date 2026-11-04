@@ -20,8 +20,8 @@ def _state(**counts):
 def test_enemy_kind_follows_the_content_stage():
     assert [ss.enemy_kind(s) for s in (1, 2, 3, 4)] == ["bird1", "bird2", "garg3", "garg4"]
     assert ss.enemy_kind(9) == "garg4" and ss.enemy_kind(0) == "bird1" and ss.enemy_kind("x") == "bird1"
-    assert {e["stage"]: e["id"] for e in ss.BESTIARY if not e.get("boss")} == {
-        1: "bird1", 2: "bird2", 3: "garg3", 4: "garg4"}
+    assert {e["stage"]: e["id"] for e in ss.BESTIARY if not e.get("boss") and e["stage"]} == {
+        1: "bird1", 2: "bird2", 3: "garg3", 4: "garg4"}             # (stage 0: the enemies of the Scramble level)
 
 
 def _shown(n, boss=False):

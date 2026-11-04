@@ -488,15 +488,18 @@ def base_panel(width, height):
     return got
 
 
-def boss_frames():
-    """The alien of the boss saucer, in red (its greens turned to reds), at the size of the base: (frames, white frames)."""
-    got = _BASE.get("boss")
+def boss_frames(size=None):
+    """The alien of the boss saucer, in red (its greens turned to reds), at the size of the base (or `size` px: the
+    Bestiary shows it at the size of the saucer's): (frames, white frames)."""
+    import scramble_base as sb
+    side = int(size or sb.BOSS_SIZE)
+    key = "boss" if side == sb.BOSS_SIZE else ("boss", side)
+    got = _BASE.get(key)
     if got is None:
-        import scramble_base as sb
         from boss import BossCore
         BossCore._load_images()
         frames, whites = [], []
-        size = (sb.BOSS_SIZE, sb.BOSS_SIZE)
+        size = (side, side)
         for fr in (BossCore._frames or []):
             pic = pygame.transform.smoothscale(fr, size)
             rgb = pygame.surfarray.array3d(pic).astype(np.float32)
@@ -510,7 +513,27 @@ def boss_frames():
             white = pic.copy()
             white.fill((255, 255, 255, 0), special_flags=pygame.BLEND_RGBA_MAX)
             whites.append(white)
-        got = _BASE["boss"] = (frames, whites)
+        got = _BASE[key] = (frames, whites)
+    return got
+
+
+def station_portrait():
+    """A missile launcher with its missile on the rail, standing on a bit of ground: its picture in the Bestiary."""
+    got = _BASE.get("portrait")
+    if got is None:
+        import scramble
+        st = sprite("station", False)
+        mi = sprite("missile", False)
+        w = max(st.get_width(), mi.get_width()) + 8
+        rise = scramble.STATION_H + scramble.MISSILE_H / 2 - 8          # (Station.mouth: the middle of the missile)
+        top = int(rise + scramble.MISSILE_H / 2)
+        h = top + 6
+        pic = pygame.Surface((w, h), pygame.SRCALPHA)
+        cx = w // 2
+        pic.blit(mi, (cx - mi.get_width() // 2, int(top - rise - mi.get_height() / 2)))
+        pic.blit(st, (cx - st.get_width() // 2, top - st.get_height()))
+        pygame.draw.rect(pic, (90, 86, 82), (0, top, w, 6))
+        got = _BASE["portrait"] = pic
     return got
 
 
@@ -662,9 +685,21 @@ WALL_BAR = (BASE_WIDTH - 340 - 10 - 190, 50, 190, 10)     # (in front of the wal
 
 
 def _draw_wall_hud(game, surface, font, base):
-    """In the arena: what is left of the wall (a gauge and its share)."""
+    """In the arena: what is left of the wall (a gauge and its share), and under it the life of the boss (its bar)."""
     from i18n import t
+    import scramble_base as sb
     x, y, w, h = WALL_BAR
+    boss = base.boss
+    by = y + h + 10
+    label = game._txt(font, t("scramble_boss_hp"), (255, 120, 110))
+    surface.blit(label, (x + w - label.get_width(), by + 14))
+    seg = (w - 2 * (sb.BOSS_HP - 1)) / float(sb.BOSS_HP)
+    flash = boss.hit_flash > 0 and int(boss.hit_flash * 16) % 2 == 0
+    for i in range(sb.BOSS_HP):
+        r = pygame.Rect(int(x + i * (seg + 2)), by, int(seg), 10)
+        on = i < boss.hp
+        pygame.draw.rect(surface, ((255, 255, 255) if flash else (220, 40, 40)) if on else (50, 20, 24), r)
+        pygame.draw.rect(surface, (255, 140, 130), r, 1)
     share = base.standing() / float(max(1, len(base.bricks)))
     pygame.draw.rect(surface, (30, 40, 60), (x, y, w, h))
     pygame.draw.rect(surface, (255, 120, 90) if share > 0.25 else (255, 200, 90), (x, y, int(w * share), h))
