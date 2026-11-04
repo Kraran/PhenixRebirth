@@ -148,6 +148,7 @@ class Player:
         self.ast_fire = False            # a shot is asked for this frame (the mission makes it)
         self.sw_physics = False          # the SpaceWar level (src/spacewar.py): the pull of a star, no friction
         self.lander = None               # the Lunar Lander level (src/lander.py): its formation, which flies the ship
+        self.scramble = None             # the Scramble level (src/scramble.py): its formation (the scroll, the nose to the right)
         self.sw_crash = False            # ... and the ship has touched the star
         self._ast_held = False
         self._ast_canvas = None
@@ -597,6 +598,8 @@ class Player:
         self._ast_keys = keys
         self.vertical_range = None
         self.climbing = False
+        if self.scramble is not None:
+            return self._update_scramble(dt, input_mode, joystick, allow_shoot)
         turn, push, fire = self._read_asteroid_input(input_mode, joystick)
         if self.lander is not None:
             push = self.lander.fly(self, dt, turn, push)             # (the gravity, the fuel, the ground: the ship stays in the middle)
@@ -629,6 +632,67 @@ class Player:
         if self.uses_shield and self.is_phenix:
             self.engine_intensity = 0.0
         self.boost_engines(dt, bool(push))               # pushing: the long jets of the flight up a stage
+        want = bool(allow_shoot and fire and not self.dying)
+        self.ast_fire = want and (getattr(self, "autofire", True) or not self._ast_held)
+        self._ast_held = bool(fire)
+        return False
+
+    def _read_scramble_input(self, input_mode, joystick):
+        """(dx -1..1, dy -1..1, fire) from the keys or the pad: the Scramble level flies in the four directions."""
+        dx, dy, fire = 0.0, 0.0, False
+        self._joy = joystick
+        if input_mode == "gamepad" and joystick is None:
+            return dx, dy, fire                      # a ship on a pad that is unplugged: no input at all
+        if input_mode == "gamepad":
+            try:
+                ax, ay = joystick.get_axis(0), joystick.get_axis(1)
+                if abs(ax) > 0.25:
+                    dx = 1.0 if ax > 0 else -1.0
+                if abs(ay) > 0.25:
+                    dy = 1.0 if ay > 0 else -1.0
+                if joystick.get_numhats() > 0:
+                    hat = joystick.get_hat(0)
+                    if hat[0] != 0:
+                        dx = 1.0 if hat[0] > 0 else -1.0
+                    if hat[1] != 0:
+                        dy = -1.0 if hat[1] > 0 else 1.0
+                for b in bindings.current.pad_buttons(int(getattr(self, "pad_slot", 0) or 0), "fire"):
+                    if joystick.get_numbuttons() > b and joystick.get_button(b):
+                        fire = True
+                        break
+            except Exception:
+                log_exc("player._read_scramble_input")
+            return dx, dy, fire
+        profile = bindings.KB1 if getattr(self, "input_scheme", "solo") == "kb1" else bindings.KB2
+        keys_now = self._ast_keys
+
+        def held(action):
+            return any(keys_now[k] for k in bindings.current.keys(profile, action))
+
+        dx = float(held("right")) - float(held("left"))
+        dy = float(held("down")) - float(held("up"))
+        return dx, dy, bool(held("fire"))
+
+    def _update_scramble(self, dt, input_mode, joystick, allow_shoot):
+        """One frame of the Scramble level: the ship moves on the screen at the speed of the workshop (the Phenix form a
+        little faster, the dome of the Shield holds it still, as everywhere), nose to the right; the formation fires."""
+        dx, dy, fire = self._read_scramble_input(input_mode, joystick)
+        if self.uses_shield and self.is_phenix:
+            dx = dy = 0.0
+        mult = self.SLOWDOWN_FACTOR if self.slowdown_timer > 0 else 1.0
+        if self.slowdown_timer > 0:
+            self.slowdown_timer = max(0.0, self.slowdown_timer - dt)
+        if self.is_phenix and not self.uses_shield:
+            mult *= self.PHENIX_SPEED_MULT
+        forward = self.scramble.fly(self, dt, dx, dy, self.speed * mult)
+        self.rect.center = (int(self.x), int(self.y))
+        self.moving = dx != 0.0 or dy != 0.0
+        self.engine_time += dt
+        target = 1.0 if forward else 0.55
+        self.engine_intensity += (target - self.engine_intensity) * min(1.0, 8.0 * dt)
+        if self.uses_shield and self.is_phenix:
+            self.engine_intensity = 0.0
+        self.boost_engines(dt, forward)
         want = bool(allow_shoot and fire and not self.dying)
         self.ast_fire = want and (getattr(self, "autofire", True) or not self._ast_held)
         self._ast_held = bool(fire)
@@ -667,6 +731,9 @@ class Player:
         else:
             img = pygame.transform.rotate(canvas, -math.degrees(self.ast_angle) - 90.0)
         w, h = img.get_size()
+        if self.scramble is not None:            # (Scramble: the screen does not wrap)
+            surface.blit(img, (int(self.x - w / 2), int(self.y - h / 2)))
+            return
         xs, ys = [0], [0]
         if self.x > BASE_WIDTH - w / 2:
             xs.append(-BASE_WIDTH)

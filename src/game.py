@@ -50,6 +50,7 @@ import controls
 import asteroids
 import spacewar
 import lander
+import scramble
 import antimatter
 import escort
 import galaga
@@ -1454,6 +1455,17 @@ class Game:
             self.stage_transition = None
             self.input_grace = 0.5
             return
+        if (getattr(self, "adventure", None) or {}).get("scramble"):
+            # Scramble (src/scramble.py): no flight in from below, the ship starts on the left, nose to the right, in the passage
+            self.player.x, self.player.y = scramble.START_X, BASE_HEIGHT / 2.0
+            self.player.ast_angle = 0.0
+            form = scramble.active(self)
+            if form is not None:
+                form.recentre(self.player)
+            self.player.invulnerable = max(self.player.invulnerable, 1.5)
+            self.stage_transition = None
+            self.input_grace = 0.5
+            return
         if (getattr(self, "adventure", None) or {}).get("asteroids"):
             # the Asteroids mission: no flight in from below, the ship is in the middle of the field, nose up
             self.player.x, self.player.y = BASE_WIDTH / 2.0, BASE_HEIGHT / 2.0
@@ -1959,6 +1971,12 @@ class Game:
             self.player.asteroid_mode = True
             self.player.vertical_range = None
             self.player.lives = 1
+        if spec.get("scramble"):
+            # Scramble (src/scramble.py): the ship flies on the screen while the rock scrolls, with the lives of the workshop
+            self.player.asteroid_mode = True
+            self.player.vertical_range = None
+            self.player.ast_angle = 0.0
+            self.player.lives = int(loadout.get("lives") or 1)
         if spec.get("spacewar"):
             # SpaceWar (src/spacewar.py): the ship flies free by the pull of a star, with ONE life (pixel dust at its end)
             spacewar.set_planet(spec.get("planet"))                 # (Jupiter, Saturn, Uranus or Neptune: its pull and its disc)
@@ -1979,7 +1997,8 @@ class Game:
         # never carry one, and do not count in the gap between two drops; the items bought still work in them.
         story = getattr(self, "story", None)
         can_loot = (story is not None and not spec.get("invaders") and not spec.get("asteroids")
-                    and not spec.get("training") and not spec.get("spacewar") and not spec.get("lander"))
+                    and not spec.get("training") and not spec.get("spacewar") and not spec.get("lander")
+                    and not spec.get("scramble"))
         if can_loot and spec.get("reactor"):
             # a BONUS mission: the reactor of its hull falls once, whenever in the waves (the random loot is off)
             self.adventure["loot_plan"] = story_items.reactor_plan(story.state, spec["reactor"], random)
@@ -2153,6 +2172,16 @@ class Game:
             self.player.lander = self.formation
             self.boss_saucer = None
             return
+        elif adv and adv.get("scramble"):
+            # Scramble (src/scramble.py): the course scrolls from right to left, the ship flies through it
+            self.stage = 1
+            self.formation = scramble.ScrambleFormation(style=adv.get("body"), seed=adv.get("seed"))
+            self.formation.sounds = self.sounds
+            self.formation.font = self.font
+            self.formation.text_cache = self.text_cache
+            self.player.scramble = self.formation
+            self.boss_saucer = None
+            return
         elif adv and adv.get("spacewar"):
             # SpaceWar (src/spacewar.py): a star in the middle, three levels of birds that fly like the ship
             spacewar.set_planet(adv.get("planet"))
@@ -2197,7 +2226,8 @@ class Game:
             content = stage_content(stage)
             mult = stage_speed_mult(stage) * self.difficulty_speed_mult()
         if isinstance(self.formation, (InvaderFormation, GalagaFormation, escort.EscortFormation,
-                                       asteroids.AsteroidFormation, spacewar.SpaceWarFormation, GuardianFormation)):
+                                       asteroids.AsteroidFormation, spacewar.SpaceWarFormation, GuardianFormation,
+                                       scramble.ScrambleFormation)):
             self.formation = EnemyFormation()            # back to the ordinary grids
         self.formation.enemies = []
         self.formation.bullets = []
@@ -4488,6 +4518,7 @@ class Game:
         asteroids.tick(self)                      # the Asteroids mission: rocks, saucer, shots (nothing elsewhere)
         spacewar.tick(self)                       # the SpaceWar test: the birds, the torpedoes, the levels (nothing elsewhere)
         lander.tick(self)                         # the Lunar Lander test: the beeps, the touch, the end (nothing elsewhere)
+        scramble.tick(self)                       # the Scramble test: the scroll, the shots, the rock (nothing elsewhere)
         update_play.tick_loot(self)
         self._drain_detach_pops()
         self._check_extra_lives()
@@ -4605,7 +4636,7 @@ class Game:
     def _draw_canvas(self):
         self._announce_done = False
         story = getattr(self, "story", None)
-        lander_covers = (lander.active(self) is not None and self.started
+        lander_covers = ((lander.active(self) is not None or scramble.active(self) is not None) and self.started
                          and (not self.game_over or self.hs_phase == "card"))      # (its sky and ground fill the screen)
         if not lander_covers and self._door_picture() is None and not (
                 not self.started and self.menu_screen == "story_hub" and story is not None and story.covers_screen()):

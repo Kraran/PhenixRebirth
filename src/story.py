@@ -24,6 +24,7 @@ from cheat_keys import cheat_char
 import story_state as ss
 import lander
 import lander_view
+import scramble_view
 import story_vn
 import loot
 from text_cache import TextCache
@@ -346,6 +347,7 @@ class StoryHub:
         self.first_help_spec = None
         self.first_help_t = 0.0
         self.lander_index = 0          # the Lunar Lander test: the setting under the cursor (screen "lander_pick", lander.MENU_ORDER)
+        self.pick_for = "lander"       # ... the same menu chooses the setting of the Scramble test ("scramble")
         self.vn_cheat_picks = {}       # VNOV: the answers given in this session (they decide the ending told, nothing is saved)
         self.vn_page = 0               # the page of the text on screen (an empty line of the text cuts a new page)
         self.vn_order = [0, 1, 2, 3]   # the indexes of the answers in the order they are shown (random in some scenes)
@@ -1489,7 +1491,14 @@ class StoryHub:
             if mission and mission.get("lander") and self.mission_playable(mission):
                 self.lander_index = 0                 # the Lunar Lander test: the setting is chosen first (to be taken out of
                 self.screen = "lander_pick"           # the final missions)
+                self.pick_for = "lander"
                 lander_view.warm(lander.MENU_ORDER)   # (the pictures of the five settings are made in the background)
+                return None
+            if mission and mission.get("scramble") and self.mission_playable(mission):
+                self.lander_index = 0                 # the Scramble test: the same choice of the setting (the same five)
+                self.screen = "lander_pick"
+                self.pick_for = "scramble"
+                scramble_view.warm(lander.MENU_ORDER)
                 return None
             return self._launch_selected()
         if self.pane == "extras":
@@ -1564,6 +1573,9 @@ class StoryHub:
         self.screen = "hub"
         return self._launch_selected(body=lander.MENU_ORDER[self.lander_index % len(lander.MENU_ORDER)])
 
+    def _pick_scramble(self):
+        return self.screen == "lander_pick" and getattr(self, "pick_for", "lander") == "scramble"
+
     def show_first_help(self, spec):
         """A quiet briefing before the first flight; no combat or timers run."""
         self.first_help_spec = dict(spec)
@@ -1612,6 +1624,12 @@ class StoryHub:
                 spec["training"] = True                             # the test: nothing won, nothing lost (the BONUS pays)
             if body in lander.BODIES:
                 spec["body"] = body                   # the setting chosen in the menu of the test (else drawn at random)
+        if mission.get("scramble"):
+            spec.update(scramble=True, items=[])                     # (src/scramble.py)
+            if mission.get("training"):
+                spec["training"] = True                             # the test: nothing won, nothing lost
+            if body in lander.BODIES:
+                spec["body"] = body                   # the setting chosen in the menu (else drawn at random)
         if ss.missile_ready(self.state) and not mission.get("training"):
             spec["antimatter"] = True                 # the launcher is bought and a missile is held: one in this mission
         if ship:
@@ -1659,6 +1677,8 @@ class StoryHub:
         if res.get("training"):
             if (ss.mission_by_id(mission_id) or {}).get("lander"):
                 self.toast = t("story_lander_clear") if cleared else t("story_lander_retry")
+            elif (ss.mission_by_id(mission_id) or {}).get("scramble"):
+                self.toast = t("story_scramble_clear") if cleared else t("story_scramble_retry")
             else:
                 self.toast = t("story_guardians_clear") if cleared else t("story_guardians_retry")
             self.toast_kind = "success" if cleared else "info"
@@ -2238,7 +2258,8 @@ class StoryHub:
         picture = phobos_ui.backdrop("gate")
         if picture is not None:
             surface.blit(picture, (0, 0))
-        phobos_ui.title(surface, medium, t(titles[self.screen]), cx, 10)
+        title = "scramble_pick_title" if self._pick_scramble() else titles[self.screen]
+        phobos_ui.title(surface, medium, t(title), cx, 10)
         getattr(self, "_draw_gate_" + self.screen)(surface, font, medium, small)
 
     def _caption(self, surface, font, text, colour, cy, centerx=BASE_WIDTH // 2):
@@ -2325,13 +2346,14 @@ class StoryHub:
             _text(surface, medium, t("lander_body_" + key), (255, 230, 140) if focus else (220, 220, 235), r.y + 27, left=r.x + 32)
             _text(surface, small, t("lander_planet_" + key), (170, 175, 195), r.y + 55, left=r.x + 32)
         key = lander.MENU_ORDER[self.lander_index % len(lander.MENU_ORDER)]
-        pic = lander_view.preview(key)
+        scr = self._pick_scramble()
+        pic = scramble_view.preview(key) if scr else lander_view.preview(key)
         px = 500
         phobos_ui.holo(surface, pygame.Rect(px - 12, y - 12, pic.get_width() + 24, pic.get_height() + 24), True)
         surface.blit(pic, (px, y))
         ty = y + pic.get_height() + 34
         # the wrapping measures every word: done once per text, language and font, not at each frame
-        info = t("lander_info_" + key)
+        info = t(("scramble_info_" if scr else "lander_info_") + key)
         cache = self.__dict__.setdefault("_lander_wrap", {})
         ck = (info, id(body), BASE_WIDTH - px - 80)
         lines = cache.get(ck)
