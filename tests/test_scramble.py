@@ -428,3 +428,300 @@ def test_the_texts_are_there_in_french_and_english():
         for k in keys:
             assert i18n.t(k) != k
     i18n.set_lang("fr")
+
+
+# ------------------------------------------------------------------ the missile stations (step 2)
+@pytest.mark.parametrize("seed", range(6))
+def test_the_stations_stand_on_flat_rock_where_the_passage_stays_wide(seed):
+    f = _form("rock", seed)
+    c = f.course
+    assert len(f.stations) >= 15
+    assert [s.x for s in f.stations] == sorted(s.x for s in f.stations)
+    for st in f.stations:
+        assert sc.STATION_FIRST <= st.x < c.brake_from
+        assert c.section_at(st.x) != "comets"
+        xs = np.linspace(st.x - sc.STATION_W / 2, st.x + sc.STATION_W / 2, 7)
+        edge = c.ground(xs) if st.side == "floor" else c.ceiling(xs)
+        assert edge.max() - edge.min() <= sc.STATION_FLAT + 1e-6
+        # with the station standing out of the rock, the ship still fits
+        span = np.linspace(st.x - sc.GAP_WINDOW, st.x + sc.GAP_WINDOW, 13)
+        assert np.min(c.ground(span)) - np.max(c.ceiling(span)) >= sc.GAP_MIN + sc.STATION_H
+
+
+def test_there_are_stations_on_the_ground_and_on_the_ceiling():
+    sides = set()
+    for seed in range(4):
+        sides |= {s.side for s in _form("ice", seed).stations}
+    assert sides == {"floor", "ceil"}
+
+
+def test_the_stations_are_the_same_for_a_seed():
+    a, b = _form("rock", 11), _form("rock", 11)
+    assert [(s.x, s.side) for s in a.stations] == [(s.x, s.side) for s in b.stations]
+
+
+def test_rise_time_matches_a_flight():
+    m = sc.Missile(0.0, 0.0, -1)
+    t = 0.0
+    while -m.y < 300.0:
+        m.speed = min(sc.MISSILE_SPEED[1], m.speed + sc.MISSILE_ACCEL * 1e-3)
+        m.y -= m.speed * 1e-3
+        t += 1e-3
+    assert abs(t - sc.rise_time(300.0)) < 0.01
+
+
+class _Game:
+    """Just what scramble.tick asks of the game."""
+
+    def __init__(self, form, ship):
+        self.formation = form
+        self.player = ship
+        self.stage_transition = None
+        self.dt = 1 / 60
+        self.sounds = None
+        self.explosions = []
+        self.score = 0
+        self.shake_amount = 0.0
+
+    def _add_score(self, ship, pts):
+        self.score += pts
+
+    def _enemy_points(self, stage):
+        return {1: 10, 2: 20}[stage]
+
+    def _boom(self, x, y, kind="enemy"):
+        class _B:
+            pass
+        b = _B()
+        b.x, b.y = x, y
+        return b
+
+    def _shield_absorb(self, *a):
+        pass
+
+    def _ship_boom(self, *a):
+        pass
+
+
+class _Pilot(_Ship):
+    def __init__(self, *a):
+        super().__init__(*a)
+        self.alive, self.dying, self.ast_fire = True, False, False
+        self.uses_shield = False
+        self.lives = 3
+        self.just_lost_life = False
+
+    def hit(self):
+        if self.is_phenix or self.invulnerable > 0:
+            return False
+        self.lives -= 1
+        self.just_lost_life = True
+        self.invulnerable = 1.8
+        return False
+
+
+def _station_ahead(f, side="floor", ahead=600.0):
+    """The camera put so that the first station of that side is `ahead` px in front of a ship at START_X."""
+    st = next(s for s in f.stations if s.side == side)
+    f.stations = [st]
+    f.cam = st.x - sc.START_X - ahead
+    return st
+
+
+def test_a_station_fires_straight_at_the_height_of_the_ship_as_it_comes():
+    f = _form("rock", 2)
+    st = _station_ahead(f, "floor", 1000.0)
+    ship = _Pilot()
+    f.recentre(ship)
+    g = _Game(f, ship)
+    fired_at = None
+    for i in range(60 * 8):
+        f.recentre(ship)
+        sc.tick(g)
+        if f.missiles:
+            fired_at = st.x - f.cam - ship.x
+            break
+    assert fired_at is not None and sc.STATION_RANGE[0] <= fired_at <= sc.STATION_RANGE[1]
+    m = f.missiles[0]
+    assert m.dir == -1 and abs(m.x - st.x) < 1e-6 and st.missiles == sc.STATION_MISSILES - 1 and not st.loaded
+    # its timing: it crosses the height of the ship about when the ship gets to it
+    expected = fired_at / sc.SCROLL
+    assert abs(expected - (sc.rise_time(abs(ship.y - st.mouth()[1])) + st.lead)) < 0.1
+    y0 = m.y
+    sc.tick(g)
+    assert m.y < y0                                    # up, faster and faster
+    s1 = m.speed
+    sc.tick(g)
+    assert m.speed > s1
+
+
+def test_a_station_of_the_ceiling_fires_down():
+    f = _form("rock", 2)
+    st = _station_ahead(f, "ceil", 900.0)
+    ship = _Pilot()
+    g = _Game(f, ship)
+    for _ in range(60 * 8):
+        f.recentre(ship)
+        sc.tick(g)
+        if f.missiles:
+            break
+    assert f.missiles and f.missiles[0].dir == 1
+
+
+def test_a_station_fires_its_missiles_one_by_one_then_none():
+    f = _form("rock", 2)
+    st = _station_ahead(f, "floor", 300.0)
+    st.lead = 99.0                                     # (it fires as soon as it may)
+    ship = _Pilot()
+    ship.invulnerable = 1e9
+    g = _Game(f, ship)
+    launches = 0
+    for _ in range(60 * 12):
+        n = len(f.missiles)
+        f.cam = st.x - sc.START_X - 300.0              # (held in front of the ship)
+        f.recentre(ship)
+        sc.tick(g)
+        launches += max(0, len(f.missiles) - n)
+    assert launches == sc.STATION_MISSILES and st.missiles == 0
+
+
+def test_a_missile_bursts_on_the_rock_over_it():
+    f = _form("rock", 2)
+    x = f.course.starts[1] + 900.0                     # (the cavern: a ceiling)
+    f.cam = x - 600
+    ceil = f.course.ceiling(x)
+    f.missiles = [sc.Missile(x, ceil + 40, -1)]
+    f.missiles[0].age = 1.0
+    ship = _Pilot()
+    ship.invulnerable = 1e9
+    g = _Game(f, ship)
+    for _ in range(30):
+        sc.tick(g)
+    assert not f.missiles and g.explosions
+
+
+def test_a_shot_destroys_a_missile_for_10_points_even_a_fast_one():
+    f = _form("rock", 2)
+    f.stations = []
+    ship = _Pilot()
+    f.recentre(ship)
+    m = sc.Missile(f.cam + ship.x + 300, ship.y, -1)
+    m.speed = 0.0
+    f.missiles = [m]
+    g = _Game(f, ship)
+    g.dt = 1 / 20                                       # (a shot moves ~60 px a frame: more than a missile is wide)
+    shot = sc.Shot(f.cam + ship.x + 290 - 8, ship.y, 1200.0, 0.0)
+    f.shots = [shot]
+    sc.tick(g)
+    assert not f.missiles and not f.shots
+    assert g.score == sc.MISSILE_POINTS and f.kills["missile"] == 1
+
+
+def test_a_shot_destroys_a_station_for_the_points_of_a_green_bird():
+    f = _form("rock", 2)
+    st = _station_ahead(f, "floor", 400.0)
+    st.lead = -99.0                                    # (it does not fire)
+    ship = _Pilot()
+    l, t, r, b = st.box()
+    f.shots = [sc.Shot(l - 10, (t + b) / 2, 1200.0, 0.0)]
+    g = _Game(f, ship)
+    sc.tick(g)
+    assert not st.alive and g.score == 20 and f.kills["station"] == 1
+    assert g.explosions and g.explosions[0] in f.booms
+
+
+def test_a_dead_station_fires_no_more():
+    f = _form("rock", 2)
+    st = _station_ahead(f, "floor", 300.0)
+    st.alive = False
+    st.lead = 99.0
+    ship = _Pilot()
+    g = _Game(f, ship)
+    for _ in range(120):
+        sc.tick(g)
+    assert not f.missiles
+
+
+def test_an_explosion_on_the_rock_scrolls_with_it():
+    f = _form("rock", 2)
+    f.stations = []
+    ship = _Pilot()
+    ship.invulnerable = 1e9
+    g = _Game(f, ship)
+    sc._blast(g, f, f.cam + 900.0, 300.0, small=False)
+    boom = g.explosions[0]
+    x0 = boom.x
+    for _ in range(60):
+        sc.tick(g)
+    assert abs((x0 - boom.x) - sc.SCROLL) < 1.0
+
+
+def test_a_missile_on_the_ship_costs_a_life():
+    f = _form("rock", 2)
+    f.stations = []
+    ship = _Pilot()
+    f.recentre(ship)
+    f.missiles = [sc.Missile(f.cam + ship.x, ship.y + 10, -1)]
+    g = _Game(f, ship)
+    sc.tick(g)
+    assert ship.lives == 2 and not f.missiles
+
+
+def test_the_phenix_form_burns_the_missiles_and_the_dome_takes_them(monkeypatch):
+    f = _form("rock", 2)
+    f.stations = []
+    ship = _Pilot()
+    ship.is_phenix = True
+    f.recentre(ship)
+    f.missiles = [sc.Missile(f.cam + ship.x, ship.y + 10, -1)]
+    g = _Game(f, ship)
+    sc.tick(g)
+    assert ship.lives == 3 and not f.missiles and g.score == sc.MISSILE_POINTS       # the Phenix: burnt, paid
+    ship.uses_shield = True
+    f.missiles = [sc.Missile(f.cam + ship.x, ship.y + 10, -1)]
+    sc.tick(g)
+    assert ship.lives == 3 and not f.missiles and g.score == sc.MISSILE_POINTS       # the dome: taken, not paid
+
+
+def test_running_into_a_station_costs_a_life():
+    f = _form("rock", 2)
+    st = _station_ahead(f, "floor", 0.0)
+    st.lead = -99.0
+    ship = _Pilot()
+    l, t, r, b = st.box()
+    ship.y = t - sc.SHIP_BOX[1] + 4
+    f.cam = st.x - ship.x
+    g = _Game(f, ship)
+    g.dt = 1e-4
+    sc.tick(g)
+    assert ship.lives == 2
+
+
+def test_the_flight_pays_the_stations_and_the_missiles_in_the_real_game(run):
+    _launch_scramble(run)
+    g = run.game
+    form, p = g.formation, g.player
+    st = _station_ahead(form, "floor", 400.0)
+    st.lead = -99.0
+    l, t, r, b = st.box()
+    form.shots = [sc.Shot(l - 5, (t + b) / 2, 1200.0, 0.0)]
+    p.invulnerable = 30.0
+    score = g.score
+    run.frames(1)
+    assert not st.alive and g.score - score == g._enemy_points(sc.STATION_KIND)
+
+
+def test_the_stations_and_the_missiles_are_drawn():
+    f = _form("rock", 2)
+    st = _station_ahead(f, "floor", 400.0)
+    f.missiles = [sc.Missile(st.x + 200, 300, -1)]
+    surf = pygame.Surface((sc.W, sc.H))
+    surf.fill((0, 0, 0))
+    sv.draw_items(surf, f)
+    l, t, r, b = st.box()
+    assert surf.get_bounding_rect().w > 0
+    x = int((l + r) / 2 - f.cam)
+    assert any(surf.get_at((x, y))[:3] != (0, 0, 0) for y in range(int(t), int(b)))
+    for name in ("station", "missile"):
+        up, down = sv.sprite(name, False), sv.sprite(name, True)
+        assert up.get_size() == down.get_size()
