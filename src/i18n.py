@@ -4722,11 +4722,13 @@ def get_credits_lines():
         ("blank", ""),
         ("header", t_credits("assist_h")),
         ("body", "Grok  —  xAI"),
+        ("body", "Claude  —  Anthropic"),
         ("blank", ""),
         ("blank", ""),
         ("header", t_credits("original_h")),
-        ("body", "Phoenix (1978 / 1980)"),
+        ("body", "Phoenix (1980 - Taito)"),
         ("body", "Amstar Electronics / Centuri / Taito"),
+        ("body", "Pleiades (1981 - Tehkan)"),
         ("blank", ""),
         ("body", t_credits("original_thanks_1")),
         ("body", t_credits("original_thanks_2")),
@@ -4738,6 +4740,11 @@ def get_credits_lines():
         ("body", "Phenix - Last Coin (Credits)"),
         ("body", "Phoenix - Nostalgie interdite (Start)"),
         ("body", "Phoenix - Nostalgie pour Elise (Final)"),
+        ("body", "Eternal Dawn (Lyra Voss)"),
+        ("body", "What We Lost (Lyra Voss)"),
+        ("body", "Oldest Fear (Lyra Voss)"),
+        ("body", "When We Looked Up (Lyra Voss)"),
+        ("body", "No Mercy Left (Lyra Voss)"),
         ("body", t_credits("music_suno")),
         ("blank", ""),
         ("blank", ""),
@@ -5754,7 +5761,8 @@ _ACT3_TEXTS = {
         "station, un par un. Quand j’ai enfin levé les yeux vers lui, le Phenix brûlait. Il est tombé vers Mars en une "
         "longue traînée de feu, comme l’oiseau dont il porte le nom. Mais celui-là ne renaîtra pas.\n\n"
         "Phobos tient. À peine. Et dans le silence revenu, Grok a parlé : pendant l’attaque, il a suivi les signaux qui "
-        "guidaient la horde. Ils viennent de loin, de là où tout a commencé. Triton, en orbite de Neptune. Huygens.\n\n"
+        "guidaient la horde. Ils viennent de loin, de là où tout a commencé. De Triton, en orbite de Neptune, où la "
+        "station Huygens s’est tue il y a deux ans, emportant ses 91 occupants.\n\n"
         "Il ne me reste qu’un vaisseau. Il faudra qu’il suffise.",
         "The Phenix went out first, straight into the swarm, every weapon open. Grok flew it like no one else: it "
         "dived, turned, came back, and the horde followed it, exactly as planned.\n\n"
@@ -5762,8 +5770,8 @@ _ACT3_TEXTS = {
         "by one. When I finally looked up at it, the Phenix was burning. It fell towards Mars in a long trail of fire, "
         "like the bird it is named after. But this one will not be reborn.\n\n"
         "Phobos holds. Barely. And in the silence that came back, Grok spoke: during the attack, it followed the "
-        "signals that guided the horde. They come from far away, from where it all began. Triton, orbiting Neptune. "
-        "Huygens.\n\n"
+        "signals that guided the horde. They come from far away, from where it all began. From Triton, orbiting "
+        "Neptune, where the Huygens station fell silent two years ago, taking its 91 occupants with it.\n\n"
         "I have only one ship left. It will have to be enough."),
     "story_scene_losts_t": ("La chute du NX01", "The fall of the NX01"),
     "story_scene_losts": (
@@ -5773,7 +5781,8 @@ _ACT3_TEXTS = {
         "station, un par un. Quand j’ai enfin levé les yeux, le dôme du NX01 venait de s’éteindre. Il s’est brisé en "
         "silence, au-dessus de Mars, là où tout avait commencé pour moi.\n\n"
         "Phobos tient. À peine. Et dans le silence revenu, Grok a parlé : pendant l’attaque, il a suivi les signaux qui "
-        "guidaient la horde. Ils viennent de loin, de là où tout a commencé. Triton, en orbite de Neptune. Huygens.\n\n"
+        "guidaient la horde. Ils viennent de loin, de là où tout a commencé. De Triton, en orbite de Neptune, où la "
+        "station Huygens s’est tue il y a deux ans, emportant ses 91 occupants.\n\n"
         "Il ne me reste qu’un vaisseau. Il faudra qu’il suffise.",
         "The Shield went out first. The old NX01, the one that had brought me back so many times. Grok threw it "
         "straight into the swarm, dome open, and the horde rushed at it, exactly as planned.\n\n"
@@ -5781,8 +5790,8 @@ _ACT3_TEXTS = {
         "one by one. When I finally looked up, the NX01’s dome had just gone out. It broke apart in silence, above "
         "Mars, where it had all begun for me.\n\n"
         "Phobos holds. Barely. And in the silence that came back, Grok spoke: during the attack, it followed the "
-        "signals that guided the horde. They come from far away, from where it all began. Triton, orbiting Neptune. "
-        "Huygens.\n\n"
+        "signals that guided the horde. They come from far away, from where it all began. From Triton, orbiting "
+        "Neptune, where the Huygens station fell silent two years ago, taking its 91 occupants with it.\n\n"
         "I have only one ship left. It will have to be enough."),
     "story_scene_ups_t": ("Remise en état : le NX01", "Repairs: the NX01"),
     "story_scene_ups": (
