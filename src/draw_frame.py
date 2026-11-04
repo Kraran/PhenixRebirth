@@ -21,6 +21,8 @@ import main_menu
 import spacewar
 import lander
 import lander_view
+import scramble
+import scramble_view
 import antimatter
 import story_state
 import loot
@@ -98,6 +100,11 @@ def draw_play(game):
         if lander_form.view is None:
             lander_form.view = lander_view.View(lander_form.style)
         lander_form.view.draw(game.game_surface, lander_form)
+    scramble_form = scramble.active(game)
+    if scramble_form is not None:                   # Scramble: the sky and the rock of the course, under everything
+        if scramble_form.view is None:
+            scramble_form.view = scramble_view.View(scramble_form.style, scramble_form.course)
+        scramble_form.view.draw(game.game_surface, scramble_form)
     if game.boss_saucer:
         game.boss_saucer.draw_body(game.game_surface)
     draw_hud(game)
@@ -186,6 +193,8 @@ def draw_hud(game):
         game.game_surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 34))
     elif adv and adv.get("lander"):
         lander_view.draw_hud(game, game.formation)
+    elif adv and adv.get("scramble") and scramble.active(game) is not None:
+        scramble_view.draw_hud(game, game.formation)
     elif adv and adv.get("spacewar"):
         form = game.formation
         label = t("story_spacewar_hud").format(n=int(getattr(form, "level", 1)), m=len(getattr(form, "levels", spacewar.LEVELS)),

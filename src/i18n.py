@@ -7008,6 +7008,44 @@ for _k, (_fr, _en) in _LANDER_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}
     T[_k]["fr"] = _fr
 
+# The Scramble test level (src/scramble.py, src/scramble_view.py): French and English; the other languages show the English text.
+_SCRAMBLE_TEXTS = {
+    "story_m_scramble": ("TEST - Scramble", "TEST - Scramble"),
+    "story_m_scramble_hud": ("Scramble", "Scramble"),
+    "story_m_scramble_b": (
+        "Remake du Scramble de Konami (1981) : le décor défile de droite à gauche, ton vaisseau vole nez à droite entre le "
+        "plafond et le sol jusqu'à la base ennemie. Tout contact avec la roche coûte une vie. Sans gain ni perte. Tu choisis "
+        "le décor au départ : astéroïde, Titan, Europe, Déimos ou Triton.",
+        "Remake of Konami's Scramble (1981): the setting scrolls from right to left, your ship flies nose to the right "
+        "between the ceiling and the ground to the enemy base. Any touch of the rock costs a life. No gain or loss. You "
+        "choose the setting at the start: asteroid, Titan, Europa, Deimos or Triton."),
+    "scramble_pick_title": ("TEST - Scramble : choix du décor", "TEST - Scramble: choose the setting"),
+    "scramble_info_rock": ("Une caverne dans la roche grise d'un astéroïde, au milieu de ses semblables.",
+                           "A cavern in the grey rock of an asteroid, among its kind."),
+    "scramble_info_ice": ("Les falaises de glace et de roche brunâtre de Titan, sous la brume orange et Saturne.",
+                          "The cliffs of ice and brownish rock of Titan, under the orange haze and Saturn."),
+    "scramble_info_europa": ("La glace éclatante d'Europe, striée de fractures brun-rouge, sous Jupiter.",
+                             "The dazzling ice of Europa, streaked with red-brown fractures, under Jupiter."),
+    "scramble_info_deimos": ("La roche sombre et poussiéreuse de Déimos, aux cratères usés, sous Mars.",
+                             "The dark, dusty rock of Deimos, with worn craters, under Mars."),
+    "scramble_info_triton": ("La glace d'azote rosée de Triton, en peau de melon, sous Neptune.",
+                             "The pinkish nitrogen ice of Triton, like a cantaloupe skin, under Neptune."),
+    "scramble_sec_hills": ("COLLINES", "HILLS"),
+    "scramble_sec_cavern": ("CAVERNE", "CAVERN"),
+    "scramble_sec_comets": ("COMÈTES", "COMETS"),
+    "scramble_sec_peaks": ("PICS", "PEAKS"),
+    "scramble_sec_narrows": ("DÉFILÉS", "NARROWS"),
+    "scramble_sec_approach": ("BASE", "BASE"),
+    "scramble_arena": ("PARCOURS RÉUSSI !", "COURSE CLEARED!"),
+    "story_scramble_clear": ("Parcours réussi ! Tu peux recommencer à volonté.",
+                             "Course cleared! Replay whenever you like."),
+    "story_scramble_retry": ("Le vaisseau a été détruit. Aucun progrès perdu : tu peux réessayer.",
+                             "The ship was destroyed. No progress lost: you can try again."),
+}
+for _k, (_fr, _en) in _SCRAMBLE_TEXTS.items():
+    T[_k] = {_code: _en for _code in LANG_CODES}
+    T[_k]["fr"] = _fr
+
 _lang = "fr"
 
 def set_lang(code):

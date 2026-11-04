@@ -573,6 +573,14 @@ MISSIONS = [
         "title": "story_m_lander", "hud_title": "story_m_lander_hud", "blurb": "story_m_lander_b",
         "need": None, "content": 1, "speed": 1.0,
     },
+    # TEST: Scramble (src/scramble.py), a remake of Konami's 1981 arcade game: a side-scrolling shoot'em up through the rock of
+    # one of the five settings of the Lunar Lander (chosen in a menu), to the enemy base. A training mission: the score is shown,
+    # nothing won, nothing lost.
+    {
+        "id": "test_scramble", "acts": (1, 2, 3), "training": True, "test": True, "scramble": True,
+        "title": "story_m_scramble", "hud_title": "story_m_scramble_hud", "blurb": "story_m_scramble_b",
+        "need": None, "content": 1, "speed": 1.0,
+    },
     # BONUS: Lunar Lander, the same level as the test (the menu of the five settings included) but for real: the landing pays its
     # points (+ the fuel left) in credits, a crash costs what a failure always costs. Secret until the game is finished (the open
     # ending of Act IV has been told); then on the map of every act, replayable at will.
