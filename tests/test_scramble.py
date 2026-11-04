@@ -435,14 +435,18 @@ def test_the_texts_are_there_in_french_and_english():
 def test_the_stations_stand_on_flat_rock_where_the_passage_stays_wide(seed):
     f = _form("rock", seed)
     c = f.course
-    assert len(f.stations) >= 15
+    assert len(f.stations) >= 30
     assert [s.x for s in f.stations] == sorted(s.x for s in f.stations)
     for st in f.stations:
         assert sc.STATION_FIRST <= st.x < c.brake_from
         assert c.section_at(st.x) != "comets"
         xs = np.linspace(st.x - sc.STATION_W / 2, st.x + sc.STATION_W / 2, 7)
         edge = c.ground(xs) if st.side == "floor" else c.ceiling(xs)
-        assert edge.max() - edge.min() <= sc.STATION_FLAT + 1e-6
+        # it stands on its pad: no rock comes into it, and the rock is never far from its foot
+        if st.side == "floor":
+            assert edge.min() >= st.base - 1e-6 and edge.max() - st.base <= 8.0
+        else:
+            assert edge.max() <= st.base + 1e-6 and st.base - edge.min() <= 8.0
         # with the station standing out of the rock, the ship still fits
         span = np.linspace(st.x - sc.GAP_WINDOW, st.x + sc.GAP_WINDOW, 13)
         assert np.min(c.ground(span)) - np.max(c.ceiling(span)) >= sc.GAP_MIN + sc.STATION_H
@@ -488,6 +492,9 @@ class _Game:
 
     def _enemy_points(self, stage):
         return {1: 10, 2: 20}[stage]
+
+    def _enemy_kill_points(self, enemy):
+        return self._enemy_points(enemy.stage)
 
     def _boom(self, x, y, kind="enemy"):
         class _B:
@@ -543,7 +550,7 @@ def test_a_station_fires_straight_at_the_height_of_the_ship_as_it_comes():
             break
     assert fired_at is not None and sc.STATION_RANGE[0] <= fired_at <= sc.STATION_RANGE[1]
     m = f.missiles[0]
-    assert m.dir == -1 and abs(m.x - st.x) < 1e-6 and st.missiles == sc.STATION_MISSILES - 1 and not st.loaded
+    assert m.dir == -1 and abs(m.x - st.x) < 3.0 and st.missiles == sc.STATION_MISSILES - 1 and not st.loaded
     # its timing: it crosses the height of the ship about when the ship gets to it
     expected = fired_at / sc.SCROLL
     assert abs(expected - (sc.rise_time(abs(ship.y - st.mouth()[1])) + st.lead)) < 0.1
@@ -590,6 +597,7 @@ def test_a_missile_bursts_on_the_rock_over_it():
     x = f.course.starts[1] + 900.0                     # (the cavern: a ceiling)
     f.cam = x - 600
     ceil = f.course.ceiling(x)
+    f.stations = []
     f.missiles = [sc.Missile(x, ceil + 40, -1)]
     f.missiles[0].age = 1.0
     ship = _Pilot()
@@ -725,3 +733,311 @@ def test_the_stations_and_the_missiles_are_drawn():
     for name in ("station", "missile"):
         up, down = sv.sprite(name, False), sv.sprite(name, True)
         assert up.get_size() == down.get_size()
+
+
+# ------------------------------------------------------------------ more stations, homing missiles
+@pytest.mark.parametrize("seed", range(4))
+def test_the_pads_cut_under_the_stations_keep_the_rock_rules(seed):
+    c = _form("rock", seed).course
+    half = int(math.ceil(sc.GAP_WINDOW / 2 / sc.STEP))
+    for i in range(c.n):
+        a, b = max(0, i - half), min(c.n, i + half + 1)
+        assert c.floor[a:b].min() - c.ceil[a:b].max() >= sc.GAP_MIN - 0.01
+    assert np.abs(np.diff(c.floor)).max() / sc.STEP <= sc.SLOPE_MAX + 1e-6
+    assert np.abs(np.diff(c.ceil)).max() / sc.STEP <= sc.SLOPE_MAX + 1e-6
+
+
+def test_a_pad_only_takes_rock_away():
+    a = _course("rock", 5)
+    b = _course("rock", 5)
+    x = a.starts[1] + 1200.0
+    b.cut_pad(x, "floor", float(b.ground(x)) + 20.0)
+    b.cut_pad(x, "ceil", float(b.ceiling(x)) - 20.0)
+    assert np.all(b.floor >= a.floor) and np.all(b.ceil <= a.ceil)
+    assert abs(b.ground(x) - (a.ground(x) + 20.0)) < 1e-6
+
+
+def _homing_run(ship_y, dx):
+    """A missile fired from the ground `dx` px ahead of a still ship (in the world): its x when it reaches the ship's
+    height, or None."""
+    f = _form("rock", 2)
+    f.stations = []
+    ship = _Pilot()
+    ship.y = ship_y
+    ship.invulnerable = 1e9
+    wx = f.cam + ship.x
+    m = sc.Missile(wx + dx, float(f.course.ground(wx + dx)) - 30.0, -1)
+    f.course.ceil[:] = 0.0                                # (an open sky: it flies until it is over the ship)
+    f.missiles = [m]
+    g = _Game(f, ship)
+    f.speed = 0.0
+    for _ in range(240):
+        sc._missiles(g, f, 1 / 60, ship)
+        if m.y <= ship_y:
+            return m.x - wx, m
+    return None, m
+
+
+def test_a_missile_slides_towards_the_ship_but_only_a_little():
+    off, m = _homing_run(300.0, 160.0)
+    assert off is not None and 0 < off < 160.0            # it came nearer ...
+    assert abs(m.vx) <= sc.HOMING_VX + 1e-6               # ... no faster sideways than HOMING_VX
+    far, _ = _homing_run(300.0, 600.0)
+    assert far > 600.0 - sc.HOMING_VX * sc.HOMING_TIME - 1.0   # a station far away cannot catch it
+
+
+def test_a_missile_goes_straight_on_once_past_the_ship():
+    f = _form("rock", 2)
+    f.stations = []
+    ship = _Pilot()
+    ship.y = 500.0
+    m = sc.Missile(f.cam + ship.x + 100, 400.0, -1)       # already over the ship
+    f.missiles = [m]
+    g = _Game(f, ship)
+    sc._missiles(g, f, 1 / 60, ship)
+    assert m.vx == 0.0 and not m.homing
+
+
+def test_a_leaning_missile_is_drawn_leaning():
+    a = sv._tilted(False, 0.0)
+    b = sv._tilted(False, 0.3)
+    assert a is sv.sprite("missile", False) and b.get_width() > a.get_width()
+    assert sv._tilted(False, 0.3) is b                     # (made once)
+
+
+# ------------------------------------------------------------------ the birds and the comets (step 3)
+import scramble_birds as sb  # noqa: E402
+
+
+class _BirdGame(_Game):
+    """The fake game, with the points and the Bestiary of the birds."""
+
+    def __init__(self, form, ship):
+        super().__init__(form, ship)
+        self.kills = {}
+
+    def _enemy_kill_points(self, enemy):
+        kind = "bird2" if enemy.stage == 2 else "bird1"
+        self.kills[kind] = self.kills.get(kind, 0) + 1
+        return {1: 10, 2: 20}[enemy.stage]
+
+
+def _sky_form(section="cavern", into=900.0):
+    f = _form("rock", 2)
+    f.stations = []
+    f.cam = f.course.starts[sc.SECTION_KEYS.index(section)] + into
+    return f
+
+
+@pytest.mark.parametrize("pattern", ("snake", "vee", "swoop"))
+@pytest.mark.parametrize("stage", (1, 2))
+def test_a_wave_comes_in_from_the_right_keeps_to_the_passage_and_leaves_on_the_left(pattern, stage):
+    f = _sky_form()
+    ship = _Pilot()
+    ship.invulnerable = 1e9
+    f.recentre(ship)
+    g = _BirdGame(f, ship)
+    f.sky.wave_in = 1e9                                  # (no other wave)
+    f.sky.send_wave(pattern=pattern, stage=stage)
+    birds = list(f.sky.birds)
+    assert len(birds) >= 4 and all(b.stage == stage and b.x > sc.W for b in birds)
+    seen = False
+    for _ in range(60 * 20):
+        f.recentre(ship)
+        sc.tick(g)
+        for b in f.sky.birds:
+            if not b.waiting and 0 < b.x < sc.W:
+                seen = True
+                wx = f.cam + b.x
+                assert f.course.ceiling(wx) + sb.BIRD_MARGIN - 1e-6 <= b.y <= f.course.ground(wx) - sb.BIRD_MARGIN + 1e-6
+        if not f.sky.birds:
+            break
+    assert seen and not f.sky.birds                        # they crossed and are gone (or dead on the ship)
+
+
+def test_the_birds_of_a_vee_dive_at_the_ship_one_after_the_other():
+    f = _sky_form()
+    ship = _Pilot()
+    ship.invulnerable = 1e9
+    g = _BirdGame(f, ship)
+    f.sky.wave_in = 1e9
+    f.sky.send_wave(pattern="vee", stage=1)
+    starts = {}
+    for i in range(60 * 6):
+        f.recentre(ship)
+        sc.tick(g)
+        for b in f.sky.birds:
+            if b.state == "dive" and id(b) not in starts:
+                starts[id(b)] = i
+    times = sorted(starts.values())
+    assert len(times) == 5 and all(b - a >= int(sb.VEE_GAP * 60) - 1 for a, b in zip(times, times[1:]))
+
+
+def test_a_shot_kills_a_bird_for_its_points_and_the_bestiary():
+    f = _sky_form()
+    ship = _Pilot()
+    f.recentre(ship)
+    g = _BirdGame(f, ship)
+    b = sb.Bird(2, "snake", ship.x + 300, ship.y)
+    b.base_y = b.y
+    f.sky.birds = [b]
+    f.sky.wave_in = 1e9
+    f.shots = [sc.Shot(f.cam + ship.x + 240, ship.y, 1200.0, 0.0)]
+    g.dt = 1 / 20
+    sc.tick(g)
+    assert not b.alive and g.score == 20 and g.kills == {"bird2": 1} and f.kills["bird2"] == 1
+    assert g.explosions
+
+
+def test_the_real_game_counts_a_bird_for_the_bestiary(run):
+    _launch_scramble(run)
+    g = run.game
+    form, p = g.formation, g.player
+    p.invulnerable = 30.0
+    b = sb.Bird(1, "snake", p.x + 300, p.y)
+    b.base_y = b.y
+    form.sky.birds = [b]
+    form.shots = [sc.Shot(form.cam + p.x + 250, p.y, 1200.0, 0.0)]
+    run.frames(2)
+    assert not b.alive and g.adventure["kills"].get("bird1") == 1
+
+
+def test_the_birds_fire_at_the_ship_while_they_are_in_front_of_it():
+    f = _sky_form()
+    ship = _Pilot()
+    ship.invulnerable = 1e9
+    f.recentre(ship)
+    g = _BirdGame(f, ship)
+    b = sb.Bird(2, "vee", ship.x + 500, ship.y - 80)
+    b.hold_x, b.base_y, b.dive_at = b.x, b.y, 1e9
+    b.shot_in = 0.0
+    f.sky.birds = [b]
+    f.sky.wave_in = 1e9
+    sc.tick(g)
+    assert f.sky.shots
+    s = f.sky.shots[0]
+    assert s.vx < 0 and s.vy > 0                         # towards the ship (to the left, and down to it)
+    assert abs(math.hypot(s.vx, s.vy) - sb.BIRD_SHOT_SPEED) < 1e-6
+    b.x = b.hold_x = ship.x + 100                        # (now too close: no more)
+    b.shot_in = 0.0
+    f.sky.shots = []
+    sc.tick(g)
+    assert not f.sky.shots
+
+
+def test_a_bird_or_its_shot_on_the_ship_costs_a_life():
+    f = _sky_form()
+    ship = _Pilot()
+    f.recentre(ship)
+    g = _BirdGame(f, ship)
+    f.sky.wave_in = 1e9
+    f.sky.birds = [sb.Bird(1, "snake", ship.x + 10, ship.y)]
+    f.sky.birds[0].base_y = ship.y
+    sc.tick(g)
+    assert ship.lives == 2 and not any(b.alive for b in f.sky.birds)
+    ship.invulnerable = 0.0
+    f.sky.shots = [sb.BirdShot(ship.x + 5, ship.y, -300.0, 0.0)]
+    sc.tick(g)
+    assert ship.lives == 1 and not f.sky.shots
+
+
+def test_the_phenix_form_burns_the_birds_and_the_dome_takes_their_shots():
+    f = _sky_form()
+    ship = _Pilot()
+    ship.is_phenix = True
+    f.recentre(ship)
+    g = _BirdGame(f, ship)
+    f.sky.wave_in = 1e9
+    b = sb.Bird(2, "snake", ship.x + 10, ship.y)
+    b.base_y = ship.y
+    f.sky.birds = [b]
+    sc.tick(g)
+    assert ship.lives == 3 and not b.alive and g.score == 20
+    ship.uses_shield = True
+    f.sky.shots = [sb.BirdShot(ship.x + 5, ship.y, -300.0, 0.0)]
+    sc.tick(g)
+    assert ship.lives == 3 and not f.sky.shots
+
+
+def test_no_wave_in_the_comets_section_nor_at_the_start_nor_at_the_braking():
+    f = _sky_form("comets", 600.0)
+    assert not f.sky.can_send_wave()
+    f.cam = 0.0
+    assert not f.sky.can_send_wave()
+    f.cam = f.course.brake_from
+    assert not f.sky.can_send_wave()
+    f.cam = f.course.starts[1] + 900.0
+    assert f.sky.can_send_wave()
+
+
+def test_waves_keep_coming_through_the_course():
+    f = _sky_form("hills", 1400.0)
+    ship = _Pilot()
+    ship.invulnerable = 1e9
+    g = _BirdGame(f, ship)
+    for _ in range(60 * 60):
+        f.recentre(ship)
+        sc.tick(g)
+    assert f.sky.waves >= 5
+
+
+def test_the_comets_come_in_the_comets_section_and_nothing_destroys_them():
+    f = _sky_form("comets", 400.0)
+    ship = _Pilot()
+    ship.invulnerable = 1e9
+    ship.y = 60.0                                       # (out of their way)
+    g = _BirdGame(f, ship)
+    met = 0
+    for _ in range(60 * 6):
+        met = max(met, len(f.sky.comets))
+        sc.tick(g)
+        ship.y = 60.0
+    assert met >= 1
+    c = sb.Comet(700.0, 400.0, 500.0, True)
+    f.sky.comets = [c]
+    f.shots = [sc.Shot(f.cam + 640.0, 400.0, 1200.0, 0.0)]
+    g.dt = 1 / 20
+    score = g.score
+    sc.tick(g)
+    assert not f.shots and c.alive and g.score == score  # the shot died on it, nothing paid
+    assert c.vx < 0 and c.vy > 0
+
+
+def test_a_comet_on_the_ship_costs_a_life_but_not_through_the_dome():
+    f = _sky_form("comets", 400.0)
+    ship = _Pilot()
+    f.recentre(ship)
+    g = _BirdGame(f, ship)
+    f.sky.comet_in = 1e9
+    f.sky.comets = [sb.Comet(ship.x + 5, ship.y, 500.0, True)]
+    sc.tick(g)
+    assert ship.lives == 2
+    ship.invulnerable = 0.0
+    ship.is_phenix = ship.uses_shield = True
+    f.sky.comets = [sb.Comet(ship.x + 5, ship.y, 500.0, True)]
+    sc.tick(g)
+    assert ship.lives == 2 and not f.sky.comets
+
+
+def test_no_comet_outside_the_comets_section():
+    f = _sky_form("cavern", 900.0)
+    assert not f.sky.comets_due()
+    f.cam = f.course.starts[sc.SECTION_KEYS.index("comets")] + 400.0
+    assert f.sky.comets_due()
+
+
+def test_the_birds_the_shots_and_the_comets_are_drawn():
+    f = _sky_form("comets", 400.0)
+    b = sb.Bird(1, "snake", 600, 300)
+    f.sky.birds = [b]
+    f.sky.shots = [sb.BirdShot(400, 200, -300, 0)]
+    f.sky.comets = [sb.Comet(900, 400, 500, False)]
+    surf = pygame.Surface((sc.W, sc.H))
+    surf.fill((0, 0, 0))
+    sv.draw_items(surf, f)
+    assert surf.get_at((600, 300))[:3] != (0, 0, 0) or surf.get_at((598, 300))[:3] != (0, 0, 0)
+    assert surf.get_at((400, 200))[:3] != (0, 0, 0)
+    assert surf.get_at((900, 400))[:3] != (0, 0, 0)
+    for stage in (1, 2):
+        pic = sv.bird_frames(stage)[0]
+        assert pic.get_width() >= pic.get_height() - 2      # (turned to face the left: wider than... at least as wide)

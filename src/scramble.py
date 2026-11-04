@@ -19,6 +19,7 @@ The rules:
   when the ship comes, timed to cross its height about when it gets there. A shot destroys a missile (MISSILE_POINTS) or a
   station (the points of a green bird); a missile or a station that touches the ship costs a life (the dome takes a
   missile, the Phenix form burns both).
+- Waves of birds and, in the comets section, comets (src/scramble_birds.py).
 
 The player flies the real Player of the game (`Player.asteroid_mode` with `Player.scramble` set to the formation below). The
 formation looks like one without enemies to the rest of the game; `tick(game)` runs it every frame; the view is in
@@ -55,17 +56,17 @@ ARENA_WAIT = 2.0                 # seconds in the arena before the mission is wo
 # rough), and what stands out of them: "drips" = stalactites, "peaks" = sharp mountains, "steps" = terraces).
 SECTIONS = (
     ("hills", 26.0, {"ceil": (24, 6, 3), "floor": (150, 95, 10), "peaks": 0, "drips": 0, "steps": 0,
-                     "stations": (300, 600, 0.0)}),
+                     "stations": (230, 470, 0.0)}),
     ("cavern", 30.0, {"ceil": (150, 85, 10), "floor": (150, 70, 10), "peaks": 0, "drips": 14, "steps": 0,
-                      "stations": (300, 620, 0.45)}),
+                      "stations": (220, 460, 0.45)}),
     ("comets", 20.0, {"ceil": (26, 6, 3), "floor": (48, 14, 6), "peaks": 0, "drips": 0, "steps": 0,
                       "stations": None}),
     ("peaks", 28.0, {"ceil": (60, 30, 6), "floor": (150, 60, 12), "peaks": 13, "drips": 0, "steps": 0,
-                     "stations": (300, 640, 0.2)}),
+                     "stations": (230, 480, 0.2)}),
     ("narrows", 26.0, {"ceil": (210, 70, 4), "floor": (220, 70, 4), "peaks": 0, "drips": 0, "steps": 46,
-                       "stations": (280, 560, 0.5)}),
+                       "stations": (210, 430, 0.5)}),
     ("approach", 12.0, {"ceil": (70, 20, 4), "floor": (80, 22, 4), "peaks": 0, "drips": 0, "steps": 0,
-                        "stations": (500, 900, 0.4)}),
+                        "stations": (380, 700, 0.4)}),
 )
 # "stations": (the gap between two missile stations, from .. to, in px of the course; the share of them hanging from the
 # ceiling), None: no station in that section.
@@ -80,7 +81,9 @@ SHOT_SPEED = BULLET_SPEED         # px/s on the screen (to the right)
 # them one by one, straight up (or down from the ceiling): the missile speeds up and flies on until it meets the rock or
 # leaves the screen. Stations and missiles are destroyed by a shot.
 STATION_W, STATION_H = 55.0, 37.0 # its footprint on the rock and how far it stands out of it
-STATION_FLAT = 18.0               # the rock under it may not vary more than this (px)
+STATION_ROUGH = 44.0              # the rock under it may not vary more than this (px): it is then cut flat (a pad) ...
+STATION_FLAT = 1.0                # ... so that, once it stands, the rock under it is flat to this
+PAD_SLOPE = 1.5                   # the slope of the rock cut away on each side of a pad
 STATION_FIRST = CALM + 600.0      # no station before this (world px)
 STATION_MISSILES = 2
 STATION_RELOAD = 2.6              # seconds between two missiles of a station
@@ -91,6 +94,13 @@ MISSILE_W, MISSILE_H = 12.0, 36.0
 MISSILE_SPEED = (70.0, 470.0)     # px/s: at the launch and at the most
 MISSILE_ACCEL = 560.0             # px/s^2
 MISSILE_POINTS = 10
+# The missiles home in a little: for their first HOMING_TIME seconds, and until they have passed the height of the ship, they
+# slide sideways towards it (at most HOMING_VX px/s, reached at HOMING_ACCEL): enough to punish a ship that stays put, not
+# enough to follow one that dodges.
+HOMING_TIME = 1.0
+HOMING_VX = 50.0
+HOMING_ACCEL = 180.0
+HOMING_GAIN = 2.5                 # (the wanted sideways speed for each px of distance, before the limit)
 STATION_KIND = 2                  # a station is worth a green bird (game._enemy_points of the stage 2)
 SHIP_BOX = (36.0, 22.0)           # half the size of the box of the ship against the missiles and the stations
 # the outline of the turned ship (nose to the right), for the touch of the rock: (x along the hull, half its height there)
@@ -253,6 +263,26 @@ class Course:
             if not changed:
                 break
 
+    def cut_pad(self, x, side, level):
+        """Cut the rock flat at `level` under a station at x (a pad as wide as the station), with slopes of PAD_SLOPE on each
+        side. It only ever takes rock away: the passage can only grow."""
+        half = STATION_W / 2 + STEP
+        i0, i1 = max(0, int(math.floor((x - half) / STEP))), min(self.n - 1, int(math.ceil((x + half) / STEP)))
+        arr = self.floor if side == "floor" else self.ceil
+        cut = (lambda v, lim: max(v, lim)) if side == "floor" else (lambda v, lim: min(v, lim))
+        sign = -1.0 if side == "floor" else 1.0
+        for i in range(i0, i1 + 1):
+            arr[i] = cut(arr[i], level)
+        for start, step in ((i0 - 1, -1), (i1 + 1, 1)):        # (outwards, until the slope meets the rock)
+            i, d = start, PAD_SLOPE * STEP
+            while 0 <= i < self.n:
+                lim = level + sign * d
+                if arr[i] == cut(arr[i], lim):
+                    break
+                arr[i] = lim
+                i += step
+                d += PAD_SLOPE * STEP
+
     # --- asking it
     def _at(self, arr, x):
         f = np.clip(np.asarray(x, dtype=float), 0.0, (self.n - 1) * STEP) / STEP
@@ -327,8 +357,14 @@ class Missile:
     def __init__(self, x, y, direction):
         self.x, self.y, self.dir = float(x), float(y), int(direction)
         self.speed = MISSILE_SPEED[0]
+        self.vx = 0.0                            # its sideways speed (it homes in a little)
+        self.homing = True
         self.alive = True
         self.age = 0.0
+
+    def tilt(self):
+        """Its lean from upright (radians, positive = the nose to the right of its course)."""
+        return math.atan2(self.vx, max(1.0, self.speed))
 
     def box(self):
         return self.x - MISSILE_W / 2, self.y - MISSILE_H / 2, self.x + MISSILE_W / 2, self.y + MISSILE_H / 2
@@ -355,6 +391,7 @@ def place_stations(course, rng):
                 side = "floor"
                 spot = _station_spot(course, x, side)
             if spot is not None:
+                course.cut_pad(x, side, spot)
                 st = Station(x, spot, side)
                 st.lead = rng.uniform(*STATION_LEAD)
                 out.append(st)
@@ -368,9 +405,9 @@ def _station_spot(course, x, side):
     """The y of the rock under a station at x on that side, or None when it cannot stand there."""
     xs = np.linspace(x - STATION_W / 2, x + STATION_W / 2, 7)
     edge = course.ground(xs) if side == "floor" else course.ceiling(xs)
-    if float(edge.max() - edge.min()) > STATION_FLAT:
+    if float(edge.max() - edge.min()) > STATION_ROUGH:
         return None
-    base = float(edge.max()) if side == "floor" else float(edge.min())        # (its foot goes into the rock)
+    base = float(edge.max()) if side == "floor" else float(edge.min())        # (the pad: the rock is cut down to its lowest point)
     span = np.linspace(x - GAP_WINDOW, x + GAP_WINDOW, 13)
     room = float(np.min(course.ground(span)) - np.max(course.ceiling(span)))
     if room < GAP_MIN + STATION_H + 12:
@@ -424,6 +461,8 @@ class ScrambleFormation:
         self.missiles = []
         self.booms = []                     # the explosions of the game that belong to the world (they scroll with it)
         self.kills = {"station": 0, "missile": 0}
+        import scramble_birds
+        self.sky = scramble_birds.Sky(self)          # the waves of birds and the comets
 
     # --- what the rest of the game asks of a formation ---
     def update(self, dt, player_x):
@@ -574,6 +613,7 @@ def tick(game):
     form.time += dt
     form.started = True
     import asteroids
+    import scramble_birds
     form.tip = asteroids.tip_color(p)
     moved = form.advance(dt)
     if moved:
@@ -598,7 +638,14 @@ def tick(game):
         s.x += s.vx * dt
         s.y += s.vy * dt
         target = _shot_target(form, before, s.x, s.y)
-        if target is not None:
+        aloft = form.sky.shot_target(before, s.x, s.y, form.cam)
+        if aloft is not None and (target is None or aloft[1] < target.box()[0]):
+            s.alive = False
+            if isinstance(aloft[0], scramble_birds.Bird):
+                form.sky.kill_bird(game, aloft[0])
+            else:
+                _blast(game, form, aloft[1], s.y, small=True)        # (a comet: nothing destroys it)
+        elif target is not None:
             s.alive = False
             _destroy(game, form, target)
         elif s.x > form.cam + W + 40:
@@ -619,7 +666,8 @@ def tick(game):
     form.sparks = [sp for sp in form.sparks if sp.life > 0]
     # --- the stations fire, the missiles fly
     _stations(game, form, dt, alive)
-    _missiles(game, form, dt)
+    _missiles(game, form, dt, p if alive else None)
+    form.sky.tick(game, dt, alive)
     # --- the missiles and the stations against the ship
     if alive and p.alive and not p.dying:
         ship = (form.cam + p.x - SHIP_BOX[0], p.y - SHIP_BOX[1], form.cam + p.x + SHIP_BOX[0], p.y + SHIP_BOX[1])
@@ -643,6 +691,8 @@ def tick(game):
                     _ship_hit(game, form)
                 break
         form.missiles = [m for m in form.missiles if m.alive]
+        if p.alive and not p.dying:
+            form.sky.touch_ship(game, p)
     alive = p.alive and not p.dying
     # --- the rock
     if alive:
@@ -748,12 +798,20 @@ def rise_time(distance):
     return (top - v0) / a + (distance - d_top) / top
 
 
-def _missiles(game, form, dt):
-    """The missiles speed up, straight on, and burst on the rock or leave the screen."""
+def _missiles(game, form, dt, ship=None):
+    """The missiles speed up, home in a little on the ship (`ship`, None when it is gone), and burst on the rock or leave
+    the screen."""
     course = form.course
     for m in form.missiles:
         m.age += dt
         m.speed = min(MISSILE_SPEED[1], m.speed + MISSILE_ACCEL * dt)
+        if m.homing and ship is not None and m.age <= HOMING_TIME and (ship.y - m.y) * m.dir > 0:
+            want = max(-HOMING_VX, min(HOMING_VX, (form.cam + ship.x - m.x) * HOMING_GAIN))
+            step = HOMING_ACCEL * dt
+            m.vx += max(-step, min(step, want - m.vx))
+        else:
+            m.homing = False                      # (once it has passed the ship, or given up: straight on)
+        m.x += m.vx * dt
         m.y += m.dir * m.speed * dt
         nx, ny = m.nose()
         if m.x - form.cam < -60 or ny < -40 or ny > H + 40:
