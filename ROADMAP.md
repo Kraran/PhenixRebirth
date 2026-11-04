@@ -1,6 +1,13 @@
 # Roadmap — Phenix Rebirth
 Current release: **v1.6.1**
 
+## Unreleased (towards 1.6.2)
+
+- **Fixes.** The two scenes after the fall of the NX01 or of the Phenix (Act III) now say what Huygens is: "Triton, in orbit around
+  Neptune, where the Huygens station fell silent two years ago, taking its 91 occupants." The antimatter missile costs 1000 credits
+  (it was 500). Credits: the five songs of Lyra Voss in the music, "Phoenix (1980 - Taito)" (was 1978), "Claude - Anthropic" in the
+  technical assistance, "Pleiades (1981 - Tehkan)" in the inspiration. Tests: `tests/test_credits_and_scenes.py`, `tests/test_missile_shop.py`.
+
 ## Done in 1.6.1
 
 **Adventure** — the menus change clothes, and the story gets its endings.
@@ -24,7 +31,7 @@ Current release: **v1.6.1**
 - Visual novel: five scenes with Lyra Voss between the missions (Phobos bar, hangar, observation deck, refuge, transit terminal), four
   answers each, a reaction to each
 - EDF - Silent Sentinels I-IV (a remake of the 1977 Spacewar, one mission per gas giant) and the antimatter missile: the workshop sells the
-  launcher (5000, permanent) and the missiles (500, consumable)
+  launcher (5000, permanent) and the missiles (500 in 1.6.0, 1000 since 1.6.2, consumable)
 - Asteroid belt as the prelude of the main series of each act; TEST mission "Lunar Lander"
 - The Guardians: 3 HP, a life bar, wings that are shot off and grow back, fire bolt and death in the flames
 - Mission map and workshop ergonomics (next mission marked, "Opens after...", Page up / Page down and LB / RB), journal in two

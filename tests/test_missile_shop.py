@@ -1,4 +1,4 @@
-"""The missile in the workshop: a launcher (permanent, 5000) and missiles (consumable, 500) bought in the list. A missile that is
+"""The missile in the workshop: a launcher (permanent, 5000) and missiles (consumable, 1000) bought in the list. A missile that is
 not fired stays for the next mission."""
 import antimatter as am
 import story_state as ss
@@ -34,10 +34,10 @@ def test_no_missile_rows_before_the_missile_is_unlocked():
 def test_the_launcher_and_the_missile_are_in_the_list_once_unlocked():
     hub = _hub()
     rows = {r[0]: r for r in ss.shop_for(hub.state)}
-    assert rows["missile_launcher"][2] == 5000 and rows["missile_ammo"][2] == 500
+    assert rows["missile_launcher"][2] == 5000 and rows["missile_ammo"][2] == 1000
 
 
-def test_the_launcher_costs_5000_and_is_bought_once():
+def test_the_launcher_costs_10000_and_is_bought_once():
     hub = _hub(credits=4999)
     assert not ss.buy(hub.state, "missile_launcher") and not ss.has_launcher(hub.state)
     hub.state["credits"] = 5600
@@ -48,14 +48,14 @@ def test_the_launcher_costs_5000_and_is_bought_once():
     assert _ids(hub.state)[-1] == "missile_launcher"                 # (a finished row goes last)
 
 
-def test_a_missile_needs_the_launcher_and_costs_500():
-    hub = _hub(credits=2000)
+def test_a_missile_needs_the_launcher_and_costs_1000():
+    hub = _hub(credits=3000)
     assert not ss.buy(hub.state, "missile_ammo") and ss.missile_stock(hub.state) == 0
     assert ss.upgrade_note(hub.state, "missile_ammo") == "story_need_launcher"
     hub.state["flags"][ss.LAUNCHER_FLAG] = True
     assert ss.buy(hub.state, "missile_ammo") and ss.buy(hub.state, "missile_ammo")
     assert ss.missile_stock(hub.state) == 2 and hub.state["credits"] == 1000
-    hub.state["credits"] = 499
+    hub.state["credits"] = 999
     assert not ss.buy(hub.state, "missile_ammo")
 
 

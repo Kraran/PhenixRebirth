@@ -145,7 +145,7 @@ def test_the_launcher_is_bought_at_the_sale_price(monkeypatch):
     st["credits"] = 4500
     assert ss.missile_buyable(st, "missile_launcher") and ss.buy(st, "missile_launcher")
     assert st["credits"] == 0
-    st["credits"] = 450
+    st["credits"] = 900                                                            # a missile is 1000, 10 % less with the Romance
     assert ss.buy(st, "missile_ammo") and st["credits"] == 0
 
 
