@@ -36,6 +36,8 @@ SPIN = 60.0                     # degrees a second: the ring turns slowly
 FRAMES = 24                     # pictures of the ring over half a turn (it has two gaps: half a turn looks the same)
 WALL_X = 8                      # the electric walls (where the lightning of the ship strikes too)
 STRUCK = 0.32                   # s in the lightning before the module blows up
+FLASH = 0.14                    # s of white when a shot hits a module that holds
+SMOKE_EVERY = 0.05              # s between two puffs of smoke of a damaged module
 COUNTS = (1, 2)                 # one module (shots x2), then two (x3)
 ARMOURS = (1, 2)                # the hits a module takes from shots (the bonus "reinforced": 2); a collision always kills
 
@@ -189,6 +191,12 @@ class Module:
         self.alive = True
         self.struck = 0.0                # > 0: in the lightning of the wall, it blows up when it reaches STRUCK
         self.spin = random.uniform(0.0, 180.0)
+        self.flash = 0.0                 # > 0: just hit by a shot (white)
+        self.smoke_t = 0.0
+
+    @property
+    def damaged(self):
+        return self.alive and self.hp < self.armour
 
     def rect(self):
         r = SIZE * 0.42
@@ -210,11 +218,44 @@ class Gyro:
         sx, sy = (ship.x, ship.y) if ship is not None else (BASE_WIDTH / 2, 0.0)
         sides = (-1, 1)[:self.count]                 # one module: on the left; two: one on each side
         self.modules = [Module(s, self.armour, sx + s * ANCHOR[0], sy + ANCHOR[1]) for s in sides]
-        self.lost = []                   # what happened to the modules lost: "wall"...
+        self.lost = []                   # what happened to the modules lost: "wall", "shot", "crash"
+        self.smoke = []                  # puffs of the damaged modules: [x, y, vx, vy, age, life, size]
+        self.sparks = []                 # [x, y, vx, vy, age]
         frames(self.hull)
 
     def alive(self):
         return [m for m in self.modules if m.alive and m.struck <= 0]
+
+    def sheltered(self):
+        """In the dome of the Shield or the Phenix form the modules have moved out and down out of harm's way."""
+        return self.wide >= 0.5
+
+    def targets(self):
+        """The modules the enemies can hit: in working order, not sheltered."""
+        return [] if self.sheltered() else self.alive()
+
+    def hit(self, game, m, kind):
+        """A module is hit: "shot" (an enemy shot: one point of its armour) or "crash" (a bird, the hull of the boss,
+        a laser of the Guardians: destroyed at once). True when it is destroyed."""
+        if not m.alive or m.struck > 0:
+            return False
+        m.hp = 0 if kind == "crash" else m.hp - 1
+        if m.hp <= 0:
+            self._blow_up(game, m, kind)
+            return True
+        m.flash = FLASH
+        try:
+            game.sounds.play("shield_zap", x=m.x)
+        except Exception:
+            log_exc("gyro.hit")
+        for _ in range(8):
+            self._spark(m.x, m.y)
+        return False
+
+    def _spark(self, x, y):
+        a = random.uniform(0, 2 * math.pi)
+        v = random.uniform(80, 220)
+        self.sparks.append([x, y, math.cos(a) * v, math.sin(a) * v, 0.0])
 
     def gun_points(self):
         """Where the shots of the modules leave from: (side, x, y) of the mouth of each cannon (the modules in working
@@ -231,10 +272,20 @@ class Gyro:
         step = dt / WIDE_TIME
         self.wide = min(out, self.wide + step) if out > self.wide else max(out, self.wide - step)
         k = 1.0 - math.exp(-FOLLOW * dt)
+        self._puffs(dt)
         for m in self.modules:
             if not m.alive:
                 continue
             m.spin = (m.spin + SPIN * dt) % 180.0
+            m.flash = max(0.0, m.flash - dt)
+            if m.damaged:                                        # one point of its armour left: it smokes, it crackles
+                m.smoke_t -= dt
+                if m.smoke_t <= 0:
+                    m.smoke_t = SMOKE_EVERY
+                    self.smoke.append([m.x + random.uniform(-6, 6), m.y + random.uniform(-4, 4), random.uniform(-12, 12),
+                                       random.uniform(30, 60), 0.0, random.uniform(0.5, 0.8), random.uniform(4, 7)])
+                    if random.random() < 0.18:
+                        self._spark(m.x + random.uniform(-8, 8), m.y + random.uniform(-8, 8))
             if m.struck > 0:                                     # in the lightning: it stays where it was struck
                 m.struck += dt
                 if m.struck >= STRUCK:
@@ -255,18 +306,43 @@ class Gyro:
                 except Exception:
                     log_exc("gyro.update")
 
+    def _puffs(self, dt):
+        for p in self.smoke:
+            p[0] += p[2] * dt
+            p[1] += p[3] * dt                                    # (the smoke trails behind: the ship flies up the screen)
+            p[4] += dt
+        self.smoke = [p for p in self.smoke if p[4] < p[5]]
+        for s in self.sparks:
+            s[0] += s[2] * dt
+            s[1] += s[3] * dt
+            s[4] += dt
+        self.sparks = [s for s in self.sparks if s[4] < 0.25]
+
     def _blow_up(self, game, m, why):
         m.alive = False
         self.lost.append(why)
+        for _ in range(14):
+            self._spark(m.x, m.y)
         try:
-            game.explosions.append(game._boom(m.x, m.y, kind="collision"))
-            game.sounds.play("enemy_explosion", x=m.x)
+            game.explosions.append(game._boom(m.x, m.y, kind="enemy"))         # (the size of a bird: a module is small)
+            game.sounds.play("explosion", x=m.x)
         except Exception:
             log_exc("gyro._blow_up")
 
     def draw(self, surface, ship):
         if ship is None or not ship.alive or ship.dying or getattr(ship, "blast_hide", 0) > 0:
             return
+        for p in self.smoke:                                     # the smoke and the sparks, even while they blink
+            k = p[4] / p[5]
+            r = int(p[6] * (1 + 1.4 * k))
+            puff = pygame.Surface((r * 2 + 2, r * 2 + 2), pygame.SRCALPHA)
+            grey = int(150 - 70 * k)
+            pygame.draw.circle(puff, (grey, grey, grey + 8, int(150 * (1 - k))), (r + 1, r + 1), r)
+            surface.blit(puff, (int(p[0] - r - 1), int(p[1] - r - 1)))
+        for s in self.sparks:
+            k = s[4] / 0.25
+            colour = (255, 240, 170) if k < 0.5 else (255, 170, 60)
+            pygame.draw.line(surface, colour, (int(s[0]), int(s[1])), (int(s[0] - s[2] * 0.02), int(s[1] - s[3] * 0.02)), 1)
         if ship.invulnerable > 0 and int(ship.invulnerable * 12) % 2 == 0:
             return                                               # (they blink with the ship)
         pics = frames(self.hull)
@@ -275,7 +351,7 @@ class Gyro:
                 continue
             k = int(m.spin / 180.0 * FRAMES) % FRAMES
             img = pics[k]
-            if m.struck > 0 and int(m.struck * 30) % 2 == 0:
+            if (m.struck > 0 and int(m.struck * 30) % 2 == 0) or m.flash > 0:
                 img = whites(self.hull)[k]
             surface.blit(img, (int(m.x - SIZE / 2), int(m.y - SIZE / 2)))
             if m.struck > 0:
@@ -330,6 +406,65 @@ def tick(game):
     g = _on(game)
     if g is not None and getattr(game, "player", None) is not None:
         g.update(game, game.player, float(game.dt or 0.0))
+
+
+def attacks(game):
+    """The enemies against the modules, before they reach the ship (a module stands in the way): the shots of the birds
+    and of the boss take one point of armour; a diving bird (both are destroyed, no points), the hull of the boss and a
+    laser of the Guardians destroy a module at once. Nothing touches them while they shelter (dome, Phenix form)."""
+    g = _on(game)
+    if g is None:
+        return
+    mods = g.targets()
+    if not mods:
+        return
+    try:
+        _attacks(game, g, mods)
+    except Exception:
+        log_exc("gyro.attacks")
+
+
+def _attacks(game, g, mods):
+    from guardian import FireLaser            # (late: the Guardians import a lot)
+    boss = getattr(game, "boss_saucer", None)
+    for m in mods:
+        if not m.alive:
+            continue
+        box = m.rect()
+        if boss is not None and getattr(boss, "alive", False):
+            hull = boss.get_hull_hitbox()
+            if hull.width > 0 and box.colliderect(hull):
+                g.hit(game, m, "crash")
+                continue
+            for b in boss.bullets:
+                if b.alive and b.get_hitbox().colliderect(box):
+                    b.alive = False
+                    if g.hit(game, m, "shot"):
+                        break
+            if not m.alive:
+                continue
+        for b in game.formation.bullets:
+            if b.alive and b.get_hitbox().colliderect(box):
+                if isinstance(b, FireLaser):
+                    g.hit(game, m, "crash")                # the laser goes through, as it goes through the birds
+                    break
+                b.alive = False
+                if g.hit(game, m, "shot"):
+                    break
+        if not m.alive:
+            continue
+        for e in game.formation.get_hittable_enemies():
+            if getattr(e, "diving", False) and e.get_hitbox().colliderect(box):
+                try:
+                    e.kill(flash=False)                    # the bird goes down with the module, worth nothing
+                except TypeError:
+                    e.kill()
+                    e.hit_flash_frames = 0
+                    e.alive = False
+                    e.dying = False
+                game.explosions.append(game._boom(e.x, e.y, kind="collision"))
+                g.hit(game, m, "crash")
+                break
 
 
 def draw(game, surface):

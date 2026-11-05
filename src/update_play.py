@@ -7,6 +7,7 @@ Extracted from game.py (Game.update). Functions take the Game object as `game`
 and behave exactly as before; Game.update() calls them in the same order and
 keeps every early `return` of the original.
 """
+import gyro
 import random
 
 import pygame
@@ -503,6 +504,7 @@ def boss_floor_check(game):
 
 def enemy_attacks_vs_players(game):
     """Boss hull / bullets, enemy bullets and divers against the ship(s)."""
+    gyro.attacks(game)          # the escort modules first: a module in the way stops the shot or the bird (src/gyro.py)
     for ship in game._ships():
         if not ship.alive or ship.dying:
             continue
