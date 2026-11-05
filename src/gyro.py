@@ -10,8 +10,11 @@ wears silver modules lit in blue (the light of its engines), the Shield copper-r
               (even with the Tesla seal: it protects the ship, not the modules)
   the ship    they blink with it while it is untouchable, and are not drawn while its hull blows up or once it is lost
 
-Steps (claude/aventure-modules-plan.md): 1. on screen (this file, the TEST - Modules mission and its menu); 2. their shots;
-3. the harm done to them. The state of a mission is `game.gyro` (a Gyro, or None).
+  the shots  each salvo of the ship gets one more shot from the cannon of each module in working order (x2, then x3);
+              a shot of a module that hits charges the Phenix gauge as the others do, one that misses costs nothing
+
+Steps (claude/aventure-modules-plan.md): 1. on screen (this file, the TEST - Modules mission and its menu); 2. their shots
+(player.py: Player.shoot, gun_points); 3. the harm done to them. The state of a mission is `game.gyro` (a Gyro, or None).
 """
 import math
 import random
@@ -28,12 +31,18 @@ ANCHOR = (52.0, -2.0)           # the point a module follows, from the centre of
 WIDE = (78.0, 26.0)             # ... in the dome or the Phenix form: further out and a little lower
 WIDE_TIME = 0.3                 # s to move out or back
 FOLLOW = 14.0                   # 1/s: how fast a module catches its point up (a light lag, as on a spring)
+GRAZE = 5.0                     # px: how much closer than its point a module may come (it grazes the ship, never touches it)
 SPIN = 60.0                     # degrees a second: the ring turns slowly
 FRAMES = 24                     # pictures of the ring over half a turn (it has two gaps: half a turn looks the same)
 WALL_X = 8                      # the electric walls (where the lightning of the ship strikes too)
 STRUCK = 0.32                   # s in the lightning before the module blows up
 COUNTS = (1, 2)                 # one module (shots x2), then two (x3)
 ARMOURS = (1, 2)                # the hits a module takes from shots (the bonus "reinforced": 2); a collision always kills
+
+SHOT_COLOURS = {                # the shots of the modules: the light of their hull (tip, middle)
+    "phoenix": ((120, 200, 255), (190, 230, 255)),
+    "shield": ((255, 170, 70), (255, 215, 150)),
+}
 
 STYLES = {                      # the hull -> metal, light
     "phoenix": ((0.78, 0.80, 0.86), (0.35, 0.75, 1.0)),
@@ -207,6 +216,11 @@ class Gyro:
     def alive(self):
         return [m for m in self.modules if m.alive and m.struck <= 0]
 
+    def gun_points(self):
+        """Where the shots of the modules leave from: (side, x, y) of the mouth of each cannon (the modules in working
+        order)."""
+        return [(m.side, m.x, m.y - SIZE * 0.48) for m in self.alive()]
+
     def target(self, ship, side):
         ax = ANCHOR[0] + (WIDE[0] - ANCHOR[0]) * self.wide
         ay = ANCHOR[1] + (WIDE[1] - ANCHOR[1]) * self.wide
@@ -229,6 +243,11 @@ class Gyro:
             tx, ty = self.target(ship, m.side)
             m.x += (tx - m.x) * k
             m.y += (ty - m.y) * k
+            # it may lag outwards as much as it likes, but never come in closer than GRAZE: when the ship darts
+            # towards a module, the module is pushed along, it grazes the hull and does not touch it
+            nearest = abs(tx - ship.x) - GRAZE
+            if m.side * (m.x - ship.x) < nearest:
+                m.x = ship.x + m.side * nearest
             if m.touches_wall():
                 m.struck = 1e-6
                 try:
@@ -294,6 +313,8 @@ def start(game, spec):
     try:
         hull = "phoenix" if getattr(game.player, "ship_id", "") == "phoenix" else "shield"
         game.gyro = Gyro(hull, want.get("count", 2), want.get("armour", 1), game.player)
+        game.player.gun_points = game.gyro.gun_points            # each salvo of the ship gets a shot from each module
+        game.player.gun_colours = SHOT_COLOURS[hull]
     except Exception:
         log_exc("gyro.start")
         game.gyro = None

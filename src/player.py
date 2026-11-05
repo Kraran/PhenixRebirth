@@ -119,7 +119,9 @@ class Player:
         self._phenix_src = list(self.phenix_frames)
         self._morph_src = list(self.morph_frames)
 
-        # Active shots: list of {x, y, resolved, flame}
+        # Active shots: list of {x, y, resolved, flame} (+ "module": a shot of an escort module, src/gyro.py)
+        self.gun_points = None           # () -> [(x, y)]: the cannons of the escort modules (src/gyro.py), or None
+        self.gun_colours = None
         # Normal: max 1. Phenix: max 2 (pair from rear wings), one volley on screen.
         self.shots = []
         
@@ -542,11 +544,11 @@ class Player:
             shot["prev_y"] = shot["y"]
             shot["y"] -= BULLET_SPEED * self.bullet_speed_mult * dt
             if shot["y"] < -30:
-                if not shot.get("resolved"):
-                    self.register_miss()
+                if not shot.get("resolved") and not shot.get("module"):
+                    self.register_miss()                 # (a shot of a module that misses costs nothing)
                 self.shots.remove(shot)
         
-        fire = bool(allow_shoot and shoot_pressed and not self.shots)
+        fire = bool(allow_shoot and shoot_pressed and not self.own_shots())
         if fire:
             if getattr(self, "autofire", True) or not getattr(self, "_shoot_held", False):
                 self.shoot()
@@ -766,21 +768,34 @@ class Player:
                 return True  # damage applied
         return False
 
+    def own_shots(self):
+        """The shots of the ship itself (not those of its escort modules)."""
+        return [s for s in self.shots if not s.get("module")]
+
     def shoot(self):
-        if self.dying or self.shots:
+        if self.dying or self.own_shots():
             return
+        modules = [s for s in self.shots if s.get("module")]
         by = self.y - self.height // 2 - 4
         if self.is_phenix and not self.uses_shield:
             # Dual fire from rear wings
             wing = max(12, int(self.width * 0.28))
-            self.shots = [
+            self.shots = modules + [
                 {"x": self.x - wing, "y": by + 4, "resolved": False, "flame": True},
                 {"x": self.x + wing, "y": by + 4, "resolved": False, "flame": True},
             ]
         else:
-            self.shots = [
+            self.shots = modules + [
                 {"x": self.x, "y": by, "resolved": False, "flame": False},
             ]
+        # the escort modules (src/gyro.py): one more shot each, from a module whose last shot is gone (a shot of a module
+        # that flies to the top of the screen never holds back the shots of the ship)
+        guns = getattr(self, "gun_points", None)
+        if guns is not None:
+            flying = {s["module"] for s in modules}
+            for side, gx, gy in guns():
+                if side not in flying:
+                    self.shots.append({"x": gx, "y": gy, "resolved": False, "flame": False, "module": side})
         if getattr(self, "sounds", None):
             self.sounds.play("shoot", volume=0.45, x=self.x)
 
@@ -1304,6 +1319,12 @@ class Player:
                 pygame.draw.rect(surface, layers[2], (bx - 2, by, 4, 13))
                 pygame.draw.rect(surface, layers[3], (bx - 1, by, 2, 10))
                 pygame.draw.circle(surface, layers[4], (bx, by), 3)
+            elif shot.get("module") and getattr(self, "gun_colours", None):
+                tip, mid = self.gun_colours            # a module's shot: the light of the modules of this hull
+                pygame.draw.rect(surface, tip, (bx - 3, by, 6, 5))
+                pygame.draw.rect(surface, mid, (bx - 3, by + 5, 6, 5))
+                pygame.draw.rect(surface, (255, 255, 255), (bx - 2, by + 10, 4, 6))
+                pygame.draw.rect(surface, (255, 255, 255), (bx - 1, by, 2, 16))
             else:
                 pal = getattr(self, "palette", "argent")
                 tip = {

@@ -238,3 +238,146 @@ def test_no_modules_without_them_nor_once_the_mission_is_over(run):
     assert g.gyro is not None
     g.adventure = None
     assert gyro._on(g) is None                                                   # an arcade game never shows them
+
+
+# ------------------------------------------------------------------ step 2: grazing, the shots
+@pytest.mark.parametrize("wide", (False, True))
+def test_a_module_grazes_the_ship_never_touches_it(wide):
+    ship, game = _Ship(x=640), _Game()
+    ship.is_phenix = wide
+    g = gyro.Gyro("shield", 2, 1, ship)
+    _settle(g, game, ship)
+    ax = (gyro.WIDE if wide else gyro.ANCHOR)[0]
+    closest = 1e9
+    for direction in (1, -1, 1, -1):                       # the ship darts left and right, at 4 times its speed
+        for _ in range(30):                                 # (from 640 to 1015 and back: clear of the walls)
+            ship.x += direction * 1500 / 120
+            g.update(game, ship, 1 / 120)
+            for m in g.modules:
+                closest = min(closest, m.side * (m.x - ship.x))
+    assert closest == pytest.approx(ax - gyro.GRAZE, abs=0.01)       # it came in as close as allowed, no closer
+    assert ax - gyro.GRAZE - gyro.SIZE * 0.385 > 30                  # (the ring stays clear of the hull, 30 px each side)
+
+
+def _flying(run, count=2, hull="shield"):
+    g = _hub(run, hull)
+    g.story.confirm()
+    import story
+    while story.MODULE_PICKS[g.story.lander_index] != (count, 1):
+        g.story.nav_v(1)
+    spec = g.story.confirm()
+    g._request_adventure(dict(spec, first_help_read=True))
+    g.input_grace = 0.0
+    g.player.infinite_lives = True
+    run.frames(40)
+    return g
+
+
+@pytest.mark.parametrize("count", (1, 2))
+def test_each_module_adds_a_shot_to_the_salvo(run, count):
+    g = _flying(run, count)
+    p = g.player
+    p.shots = []
+    p.shoot()
+    own = [s for s in p.shots if not s.get("module")]
+    mods = [s for s in p.shots if s.get("module")]
+    assert len(own) == 1 and len(mods) == count                       # x2, x3
+    for s, m in zip(sorted(mods, key=lambda s: s["x"]), sorted(g.gyro.modules, key=lambda m: m.x)):
+        assert s["x"] == pytest.approx(m.x) and s["y"] == pytest.approx(m.y - gyro.SIZE * 0.48)   # from its cannon
+    surf = pygame.Surface((1280, 720))
+    p.draw(surf)
+    s = mods[0]
+    tip = surf.get_at((int(s["x"]) - 2, int(s["y"]) + 1))[:3]
+    assert tip == gyro.SHOT_COLOURS["shield"][0]                      # in the light of the modules of the Shield
+
+
+def test_in_the_phenix_form_the_wings_and_the_modules_fire(run):
+    g = _flying(run, 2, "phoenix")
+    p = g.player
+    p.phenix_gauge = 10
+    p.try_activate_phenix()
+    p.morph_dir = 0
+    p.shots = []
+    p.shoot()
+    assert sum(1 for s in p.shots if s.get("flame")) == 2 and sum(1 for s in p.shots if s.get("module")) == 2
+    assert gyro.SHOT_COLOURS["phoenix"] == p.gun_colours
+
+
+def test_the_shots_of_the_modules_never_hold_back_the_ship(run):
+    g = _flying(run, 2)
+    p = g.player
+    p.shots = []
+    p.shoot()
+    for i in reversed(range(len(p.shots))):
+        if not p.shots[i].get("module"):
+            p.destroy_bullet("valid", i)                              # the ship's shot hit something close
+    assert len(p.shots) == 2 and not p.own_shots()
+    p.shoot()                                                         # the ship fires again at once...
+    assert len(p.own_shots()) == 1
+    assert sum(1 for s in p.shots if s.get("module")) == 2            # ... and the modules, still in flight, do not
+
+
+def test_a_missed_shot_of_a_module_costs_nothing(run):
+    g = _flying(run, 2, "phoenix")                                    # (the gauge of the Phenix: the Shield's is its dome)
+    p = g.player
+    p.phenix_gauge = 5.0
+    p.combo_streak = 3
+    p.shots = [{"x": 300, "y": -25, "resolved": False, "flame": False, "module": -1}]
+    run.frames(3)
+    assert p.phenix_gauge == 5.0 and p.combo_streak == 3 and not p.shots
+    p.shots = [{"x": 300, "y": -25, "resolved": False, "flame": False}]
+    run.frames(3)
+    assert p.phenix_gauge == 4.0                                      # (the ship's own miss costs one, as always)
+
+
+def test_a_shot_of_a_module_that_hits_charges_the_gauge(run):
+    g = _flying(run, 2, "phoenix")
+    p = g.player
+    p.phenix_gauge = 4.0
+    p.shots = [{"x": 300, "y": 300, "resolved": False, "flame": False, "module": 1}]
+    p.destroy_bullet("valid", 0)
+    assert p.phenix_gauge > 4.0
+
+
+def test_no_shot_from_a_module_struck_or_lost(run):
+    g = _flying(run, 2)
+    p = g.player
+    left, right = g.gyro.modules
+    left.struck = 0.1
+    right.alive = False
+    p.shots = []
+    p.shoot()
+    assert not [s for s in p.shots if s.get("module")]
+
+
+def test_a_module_s_shot_brings_a_bird_down(run):
+    """In the mission itself: a bird in front of the left module, and nothing in front of the ship, falls to it."""
+    g = _flying(run, 2)
+    p = g.player
+    birds = [e for e in g.formation.get_hittable_enemies() if not getattr(e, "diving", False)]
+    assert birds
+    bird = birds[0]
+    for e in g.formation.get_hittable_enemies():                      # (only this bird can be hit)
+        if e is not bird:
+            e.alive = False
+    p.x = bird.x + gyro.ANCHOR[0]
+    for m in g.gyro.modules:
+        m.x, m.y = g.gyro.target(p, m.side)
+    before = g.score if hasattr(g, "score") else None
+    p.shots = []
+    p.shoot()
+    for _ in range(90):
+        run.frames(1)
+        if not bird.alive or getattr(bird, "dying", False):
+            break
+    assert not bird.alive or bird.dying
+
+
+def test_holding_fire_the_ship_fires_again_while_the_modules_shots_still_fly(run):
+    g = _flying(run, 2)
+    p = g.player
+    p.shots = [{"x": 300, "y": 400, "resolved": False, "flame": False, "module": -1},
+               {"x": 400, "y": 400, "resolved": False, "flame": False, "module": 1}]
+    p.autofire = True
+    p.update(1 / 120, None, ai_move=0.0, ai_shoot=True)         # (the fire held, as the game reads it each frame)
+    assert len(p.own_shots()) == 1 and len(p.shots) == 3
