@@ -581,6 +581,13 @@ MISSIONS = [
         "title": "story_m_scramble", "hud_title": "story_m_scramble_hud", "blurb": "story_m_scramble_b",
         "need": None, "content": 1, "speed": 1.0,
     },
+    # TEST: the escort modules (src/gyro.py): a run of the arcade levels 6 to 11 with the gyroscope satellites on each side
+    # of the ship (how many, how tough: a menu first). A training mission: the score is shown, nothing won, nothing lost.
+    {
+        "id": "test_modules", "acts": (1, 2, 3), "training": True, "test": True, "modules": True,
+        "title": "story_m_modules", "hud_title": "story_m_modules_hud", "blurb": "story_m_modules_b",
+        "need": None, "content": 6, "waves": [6, 7, 8, 9, 10, 11], "speed": 1.0,
+    },
     # BONUS: Scramble, the same level as the test (the menu of the five settings included) but for real: its points pay in
     # credits, a failure costs what a failure always costs, its launchers and its red commander go into the Bestiary.
     # Secret until the game is finished (the open ending of Act IV has been told); then on the map of every act.

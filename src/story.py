@@ -271,6 +271,9 @@ VOICE_MAX_SPEED = 220.0     # px/s, the fastest the text goes to catch up
 VOICE_VOLUME = 0.92
 
 
+MODULE_PICKS = [(1, 1), (1, 2), (2, 1), (2, 2)]     # the menu of the test of the modules: (how many, hits from shots)
+
+
 class StoryHub:
     """Three-pane hub. Left = log, center = hangar, right = map."""
 
@@ -1588,6 +1591,11 @@ class StoryHub:
                 self.pick_for = "lander"
                 lander_view.warm(lander.MENU_ORDER)   # (the pictures of the five settings are made in the background)
                 return None
+            if mission and mission.get("modules") and self.mission_playable(mission):
+                self.lander_index = MODULE_PICKS.index((2, 1))       # the test of the modules: how many, how tough
+                self.screen = "lander_pick"                         # (the same menu, its own choices)
+                self.pick_for = "modules"
+                return None
             if mission and mission.get("scramble") and self.mission_playable(mission):
                 self.lander_index = 0                 # the Scramble test: the same choice of the setting (the same five)
                 self.screen = "lander_pick"
@@ -1659,16 +1667,27 @@ class StoryHub:
 
     # --- the Lunar Lander test: the choice of the setting (the asteroid, Titan, Europa, Deimos, Triton) ---
     def _lander_move(self, direction):
-        n = len(lander.MENU_ORDER)
+        n = len(MODULE_PICKS) if self._pick_modules() else len(lander.MENU_ORDER)
         self.lander_index = (self.lander_index + (1 if direction > 0 else -1)) % n
 
     def _lander_confirm(self):
-        """The setting is chosen: the launch spec of the test, with it ("body")."""
+        """The setting is chosen: the launch spec of the test, with it ("body"). The test of the modules: with how many and
+        how tough."""
+        modules = self._pick_modules()
         self.screen = "hub"
+        if modules:
+            count, armour = MODULE_PICKS[self.lander_index % len(MODULE_PICKS)]
+            spec = self._launch_selected()
+            if spec:
+                spec["modules"] = {"count": count, "armour": armour}
+            return spec
         return self._launch_selected(body=lander.MENU_ORDER[self.lander_index % len(lander.MENU_ORDER)])
 
     def _pick_scramble(self):
         return self.screen == "lander_pick" and getattr(self, "pick_for", "lander") == "scramble"
+
+    def _pick_modules(self):
+        return self.screen == "lander_pick" and getattr(self, "pick_for", "lander") == "modules"
 
     def show_first_help(self, spec):
         """A quiet briefing before the first flight; no combat or timers run."""
@@ -1724,6 +1743,10 @@ class StoryHub:
                 spec["training"] = True                             # the test: nothing won, nothing lost
             if body in lander.BODIES:
                 spec["body"] = body                   # the setting chosen in the menu (else drawn at random)
+        if mission.get("modules"):
+            spec["modules"] = {"count": 2, "armour": 1}             # (the menu of the test changes them; src/gyro.py)
+            if mission.get("training"):
+                spec.update(training=True, items=[])                # the test: nothing won, nothing lost
         if ss.missile_ready(self.state) and not mission.get("training") and not mission.get("scramble"):
             spec["antimatter"] = True                 # the launcher is bought and a missile is held: one in this mission
         if ship:
@@ -2357,7 +2380,8 @@ class StoryHub:
         picture = phobos_ui.backdrop("gate")
         if picture is not None:
             surface.blit(picture, (0, 0))
-        title = "scramble_pick_title" if self._pick_scramble() else titles[self.screen]
+        title = ("scramble_pick_title" if self._pick_scramble() else "modules_pick_title" if self._pick_modules()
+                 else titles[self.screen])
         phobos_ui.title(surface, medium, t(title), cx, 10)
         getattr(self, "_draw_gate_" + self.screen)(surface, font, medium, small)
 
@@ -2433,6 +2457,8 @@ class StoryHub:
     def _draw_gate_lander_pick(self, surface, font, medium, small):
         """The Lunar Lander test: the five settings in a list, and a picture of the one under the cursor (its sky, its ground, its
         mother planet) with a few words on it."""
+        if self._pick_modules():
+            return self._draw_modules_pick(surface, font, medium, small)
         body = getattr(self, "_body", None) or small
         x, y, w, h, gap = 60, 96, 400, 78, 12
         for i, key in enumerate(lander.MENU_ORDER):
@@ -2462,6 +2488,61 @@ class StoryHub:
         for line in lines:
             _text(surface, body, line, menu_ui.TEXT, ty, left=px + 12)
             ty += 32
+
+    def _draw_modules_pick(self, surface, font, medium, small):
+        """The test of the modules: one or two modules, a normal or a reinforced armour; the ship of the pilot with them."""
+        import gyro
+        body = getattr(self, "_body", None) or small
+        x, y, w, h, gap = 60, 110, 440, 92, 16
+        for i, (count, armour) in enumerate(MODULE_PICKS):
+            r = pygame.Rect(x, y + i * (h + gap), w, h)
+            focus = i == self.lander_index % len(MODULE_PICKS)
+            if focus:
+                phobos_ui.lit(surface, r)
+            else:
+                phobos_ui.plate(surface, r)
+            _text(surface, medium, t("modules_pick_count_%d" % count), (255, 230, 140) if focus else (220, 220, 235),
+                  r.y + 31, left=r.x + 32)
+            _text(surface, small, t("modules_pick_armour_%d" % armour), (170, 175, 195), r.y + 64, left=r.x + 32)
+        count, armour = MODULE_PICKS[self.lander_index % len(MODULE_PICKS)]
+        panel = pygame.Rect(540, y - 12, BASE_WIDTH - 540 - 60, 330)
+        phobos_ui.holo(surface, panel, True)
+        lo = self.loadout(None)
+        hull = "phoenix" if lo.get("ship_id") == "phoenix" else "shield"
+        ship = self._module_ship(hull, lo.get("tint"))
+        cx, cy = panel.centerx, panel.y + panel.h // 2 + 6
+        if ship is not None:
+            surface.blit(ship, (cx - ship.get_width() // 2, cy - ship.get_height() // 2))
+        pics = gyro.frames(hull)
+        k = int((self.anim_t * gyro.SPIN) / 180.0 * gyro.FRAMES) % gyro.FRAMES
+        big = pygame.transform.smoothscale(pics[k], (gyro.SIZE * 3, gyro.SIZE * 3))
+        for side in (-1, 1)[:count]:
+            mx, my = cx + side * gyro.ANCHOR[0] * 3, cy + gyro.ANCHOR[1] * 3
+            surface.blit(big, (int(mx - big.get_width() / 2), int(my - big.get_height() / 2)))
+        info = t("modules_pick_info_%d" % armour).format(shots=count + 1)
+        ty = panel.bottom + 40
+        lines = _wrap_nb(body, info, panel.w - 24)
+        phobos_ui.plate(surface, pygame.Rect(panel.x, ty - 28, panel.w, 32 * len(lines) + 24), rivets=False)
+        for line in lines:
+            _text(surface, body, line, menu_ui.TEXT, ty, left=panel.x + 12)
+            ty += 32
+
+    def _module_ship(self, hull, tint):
+        """The ship of the pilot, three times its size (the picture of the menu of the modules)."""
+        cache = self.__dict__.setdefault("_module_ships", {})
+        key = (hull, tint)
+        if key not in cache:
+            rel = {"shield": "player_ship_shield.png", "phoenix": "player_ship.png"}[hull]
+            if hull == "shield" and tint in ("green", "violet"):
+                rel = "player_ship_shield_%s.png" % tint
+            elif hull == "phoenix" and tint in ("blue", "gold"):
+                rel = "player_ship_%s.png" % tint
+            try:
+                raw = pygame.image.load(asset_path("sprites", rel)).convert_alpha()
+                cache[key] = pygame.transform.scale(raw, (raw.get_width() * 3, raw.get_height() * 3))
+            except Exception:
+                cache[key] = None
+        return cache[key]
 
     def _draw_gate_choice(self, surface, font, medium, small):
         """Act 3: which hull keeps the quantum anchor (Veteran: which one the pilot flies). The two hulls side by
