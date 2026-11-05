@@ -250,6 +250,7 @@ class Game:
             ld.step(0.02, lambda: (game_init.init_input_menu(self), game_init.init_settings(self, soft)), 0.1)
             ld.step(0.42, lambda: game_init.init_audio_and_layout(self, soft), 1.2)
             ld.step(0.08, prepare_background_assets, 0.2)      # decode optional scenery before any combat frames
+        self._invalidate_present_cache()     # (the first frame of the game is laid out as before the bar: on the canvas)
 
     # --- Audio state machine (menu / game-over / in-game silence) ---
     def _apply_audio_mix(self):
