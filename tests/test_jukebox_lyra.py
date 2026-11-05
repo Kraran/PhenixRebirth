@@ -325,3 +325,22 @@ def test_nothing_before_a_track_is_played(run, music, monkeypatch):
     seeks = _seek_spy(monkeypatch)
     g._draw_jukebox(surf)
     assert seeks == []
+
+
+def test_the_lyrics_are_synced_on_the_song():
+    """The time of every sung line (tools/lyrics_align.py: forced alignment on the voice alone, checked by a word
+    transcription): in order, inside the song, and no run of lines spread at the same step (what an interpolation over
+    lines not found leaves behind)."""
+    import json, jukebox_ui
+    from sounds import LYRA_MUSIC
+    for key, (_folder, _name, length) in LYRA_MUSIC.items():
+        d = json.load(open(os.path.join(jukebox_ui.LYRICS_DIR, key + ".json"), encoding="utf-8"))
+        ts = [l["t"] for l in d["lines"] if l["text"]]
+        assert ts == sorted(ts) and 0 < ts[0] and ts[-1] < length, key
+        gaps = [round(b - a, 1) for a, b in zip(ts, ts[1:])]
+        assert min(gaps) >= 0.3, key
+        longest = run = 1
+        for a, b in zip(gaps, gaps[1:]):
+            run = run + 1 if a == b else 1
+            longest = max(longest, run)
+        assert longest < 5, key
