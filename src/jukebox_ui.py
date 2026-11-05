@@ -113,6 +113,12 @@ def cover(key, path, size):
             if os.path.isfile(p):
                 img = pygame.image.load(p)
                 break
+        if img is None and key.startswith("lyra_"):  # the "Eternal Dawn" album, shared by every Lyra track
+            for ext in (".png", ".jpg", ".jpeg", ".webp"):
+                p = os.path.join(COVER_DIR, "lyra_album" + ext)
+                if os.path.isfile(p):
+                    img = pygame.image.load(p)
+                    break
         if img is None and path and path.lower().endswith(".mp3"):
             raw = _apic(path)
             if raw:

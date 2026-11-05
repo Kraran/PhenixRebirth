@@ -1,5 +1,763 @@
 {
-  "_comment": "TEMPLATE - to fill: see src/jukebox_ui.py. lines: [{\"t\": seconds (optional), \"text\": \"sung line\", \"tr\": {\"fr\": \"...\", \"de\": \"...\"}}]",
-  "lang": "en",
-  "lines": []
+ "lang": "en",
+ "lines": [
+  {
+   "text": "We launched into the black with nothing but a prayer",
+   "tr": {
+    "fr": "Nous avons plongé dans le noir avec pour seul bagage une prière",
+    "es": "Nos lanzamos a la oscuridad sin nada más que una plegaria",
+    "de": "Wir stürzten uns ins Schwarze, nur mit einem Gebet",
+    "it": "Ci siamo lanciati nel buio con nient'altro che una preghiera",
+    "pt": "Lançámo-nos no escuro sem nada além de uma prece",
+    "nl": "We stortten ons in het zwart met niets dan een gebed",
+    "pl": "Wystartowaliśmy w czerń, mając tylko modlitwę",
+    "tr": "Bir duadan başka hiçbir şeyimiz olmadan karanlığa fırladık",
+    "sv": "Vi kastade oss ut i mörkret med bara en bön",
+    "no": "Vi kastet oss ut i mørket med bare en bønn",
+    "da": "Vi kastede os ud i mørket med kun en bøn",
+    "ru": "Мы ушли во тьму, и с нами была лишь молитва"
+   }
+  },
+  {
+   "text": "War birds flooding the void, tearing at the air",
+   "tr": {
+    "fr": "Des oiseaux de guerre inondant le vide, déchirant l'air",
+    "es": "Aves de guerra inundando el vacío, desgarrando el aire",
+    "de": "Kriegsvögel fluten die Leere, zerreißen die Luft",
+    "it": "Uccelli da guerra che invadono il vuoto, squarciando l'aria",
+    "pt": "Aves de guerra inundando o vazio, rasgando o ar",
+    "nl": "Oorlogsvogels overspoelen de leegte en scheuren de lucht",
+    "pl": "Ptaki wojny zalewają pustkę, rozdzierają powietrze",
+    "tr": "Savaş kuşları boşluğu dolduruyor, havayı yırtıyor",
+    "sv": "Krigsfåglar översvämmar tomrummet och sliter i luften",
+    "no": "Krigsfugler oversvømmer tomrommet og river i luften",
+    "da": "Krigsfugle oversvømmer tomrummet og river i luften",
+    "ru": "Птицы войны заполняют пустоту, разрывая воздух"
+   }
+  },
+  {
+   "text": "Eggs cracking open in the dark, fire in their eyes",
+   "tr": {
+    "fr": "Des œufs qui s'ouvrent dans l'ombre, le feu dans leurs yeux",
+    "es": "Huevos que se abren en la oscuridad, fuego en sus ojos",
+    "de": "Eier brechen auf im Dunkeln, Feuer in ihren Augen",
+    "it": "Uova che si schiudono nel buio, fuoco nei loro occhi",
+    "pt": "Ovos a abrir no escuro, fogo nos seus olhos",
+    "nl": "Eieren breken open in het donker, vuur in hun ogen",
+    "pl": "Jaja pękają w ciemności, ogień w ich oczach",
+    "tr": "Karanlıkta çatlayan yumurtalar, gözlerinde ateş",
+    "sv": "Ägg som spricker i mörkret, eld i deras ögon",
+    "no": "Egg som sprekker i mørket, ild i øynene deres",
+    "da": "Æg der revner i mørket, ild i deres øjne",
+    "ru": "Яйца трескаются во мраке, огонь в их глазах"
+   }
+  },
+  {
+   "text": "They came for Earth and called it home under alien skies",
+   "tr": {
+    "fr": "Ils sont venus pour la Terre et l'ont faite leur sous des cieux étrangers",
+    "es": "Vinieron por la Tierra y la llamaron hogar bajo cielos extraños",
+    "de": "Sie kamen für die Erde und nannten sie Heimat unter fremdem Himmel",
+    "it": "Sono venuti per la Terra e l'hanno chiamata casa sotto cieli alieni",
+    "pt": "Vieram pela Terra e chamaram-lhe lar sob céus alienígenas",
+    "nl": "Ze kwamen voor de aarde en noemden haar thuis onder vreemde hemels",
+    "pl": "Przyszli po Ziemię i nazwali ją domem pod obcym niebem",
+    "tr": "Dünya için geldiler, yabancı göklerin altında onu yurt bildiler",
+    "sv": "De kom för jorden och kallade den hem under främmande himlar",
+    "no": "De kom for jorden og kalte den hjem under fremmede himler",
+    "da": "De kom for Jorden og kaldte den hjem under fremmede himle",
+    "ru": "Они пришли за Землёй и назвали её домом под чужими небесами"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "text": "We held the line with missiles burning hot and true",
+   "tr": {
+    "fr": "Nous avons tenu la ligne, nos missiles brûlants et sûrs",
+    "es": "Mantuvimos la línea con misiles ardientes y certeros",
+    "de": "Wir hielten die Linie, die Raketen heiß und treffsicher",
+    "it": "Abbiamo tenuto la linea con missili roventi e precisi",
+    "pt": "Mantivemos a linha com mísseis ardentes e certeiros",
+    "nl": "We hielden de linie met raketten heet en raak",
+    "pl": "Utrzymaliśmy linię, pociski płonęły celnie i gorąco",
+    "tr": "Sıcak ve isabetli füzelerle hattı tuttuk",
+    "sv": "Vi höll linjen med robotar heta och träffsäkra",
+    "no": "Vi holdt linjen med raketter varme og treffsikre",
+    "da": "Vi holdt linjen med missiler hede og præcise",
+    "ru": "Мы держали строй, ракеты били жарко и точно"
+   }
+  },
+  {
+   "text": "While the convoy circled, laughing as they flew",
+   "tr": {
+    "fr": "Tandis que le convoi tournoyait, riant dans son vol",
+    "es": "Mientras el convoy giraba, riendo en su vuelo",
+    "de": "Während der Konvoi kreiste und lachend vorüberflog",
+    "it": "Mentre il convoglio girava in tondo, ridendo in volo",
+    "pt": "Enquanto o comboio rodava, rindo enquanto voava",
+    "nl": "Terwijl het konvooi rondcirkelde en lachend voorbijvloog",
+    "pl": "A konwój krążył, śmiejąc się w locie",
+    "tr": "Konvoy etrafımızda dönerken, uçarken gülüyordu",
+    "sv": "Medan konvojen cirklade och skrattade i sin flykt",
+    "no": "Mens konvoien sirklet og lo der den fløy",
+    "da": "Mens konvojen kredsede og lo, mens den fløj",
+    "ru": "А конвой кружил, смеясь на лету"
+   }
+  },
+  {
+   "text": "But somewhere in the silence, past the fear and the pain",
+   "tr": {
+    "fr": "Mais quelque part dans le silence, au-delà de la peur et de la douleur",
+    "es": "Pero en algún lugar del silencio, más allá del miedo y el dolor",
+    "de": "Doch irgendwo in der Stille, jenseits von Angst und Schmerz",
+    "it": "Ma da qualche parte nel silenzio, oltre la paura e il dolore",
+    "pt": "Mas algures no silêncio, além do medo e da dor",
+    "nl": "Maar ergens in de stilte, voorbij de angst en de pijn",
+    "pl": "Lecz gdzieś w ciszy, za strachem i bólem",
+    "tr": "Ama sessizliğin bir yerinde, korkunun ve acının ötesinde",
+    "sv": "Men någonstans i tystnaden, bortom rädslan och smärtan",
+    "no": "Men et sted i stillheten, forbi frykten og smerten",
+    "da": "Men et sted i stilheden, forbi frygten og smerten",
+    "ru": "Но где-то в тишине, за страхом и болью"
+   }
+  },
+  {
+   "text": "We still believed the light could rise and take the night again",
+   "tr": {
+    "fr": "Nous croyions encore que la lumière pourrait se lever et reprendre la nuit",
+    "es": "Aún creíamos que la luz podría alzarse y reconquistar la noche",
+    "de": "Glaubten wir noch, das Licht könnte sich erheben und die Nacht zurückerobern",
+    "it": "Credevamo ancora che la luce potesse sorgere e riprendersi la notte",
+    "pt": "Ainda acreditávamos que a luz podia erguer-se e retomar a noite",
+    "nl": "Geloofden we nog dat het licht kon opstaan en de nacht kon heroveren",
+    "pl": "Wciąż wierzyliśmy, że światło wstanie i odbierze noc",
+    "tr": "Işığın yükselip geceyi geri alabileceğine hâlâ inanıyorduk",
+    "sv": "Trodde vi än att ljuset kunde stiga och ta tillbaka natten",
+    "no": "Trodde vi ennå at lyset kunne stige og ta natten tilbake",
+    "da": "Troede vi stadig, at lyset kunne rejse sig og tage natten tilbage",
+    "ru": "Мы всё ещё верили, что свет поднимется и вернёт себе ночь"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "text": "We are the dawn that never dies",
+   "tr": {
+    "fr": "Nous sommes l'aube qui ne meurt jamais",
+    "es": "Somos el alba que nunca muere",
+    "de": "Wir sind das Morgenrot, das niemals stirbt",
+    "it": "Siamo l'alba che non muore mai",
+    "pt": "Somos a aurora que nunca morre",
+    "nl": "Wij zijn de dageraad die nooit sterft",
+    "pl": "Jesteśmy świtem, który nigdy nie umiera",
+    "tr": "Biz asla ölmeyen şafağız",
+    "sv": "Vi är gryningen som aldrig dör",
+    "no": "Vi er daggryet som aldri dør",
+    "da": "Vi er daggryet, der aldrig dør",
+    "ru": "Мы — рассвет, что никогда не умрёт"
+   }
+  },
+  {
+   "text": "Rising through the fire, burning in the skies",
+   "tr": {
+    "fr": "Qui s'élève à travers le feu, embrasant les cieux",
+    "es": "Alzándonos entre el fuego, ardiendo en los cielos",
+    "de": "Steigen durch das Feuer, brennen am Himmel",
+    "it": "Che sale attraverso il fuoco, ardendo nei cieli",
+    "pt": "Erguendo-nos pelo fogo, ardendo nos céus",
+    "nl": "Stijgend door het vuur, brandend in de lucht",
+    "pl": "Wznosimy się przez ogień, płonąc na niebie",
+    "tr": "Ateşin içinden yükselen, göklerde yanan",
+    "sv": "Som stiger genom elden och brinner på himlen",
+    "no": "Som stiger gjennom ilden og brenner på himmelen",
+    "da": "Der stiger gennem ilden og brænder på himlen",
+    "ru": "Встаём сквозь огонь, пылая в небесах"
+   }
+  },
+  {
+   "text": "They can break our ships, they can claim the stars",
+   "tr": {
+    "fr": "Ils peuvent briser nos vaisseaux, ils peuvent prendre les étoiles",
+    "es": "Pueden romper nuestras naves, pueden reclamar las estrellas",
+    "de": "Sie können unsere Schiffe zerbrechen, sie können die Sterne beanspruchen",
+    "it": "Possono spezzare le nostre navi, possono prendersi le stelle",
+    "pt": "Podem partir as nossas naves, podem tomar as estrelas",
+    "nl": "Ze kunnen onze schepen breken, ze kunnen de sterren opeisen",
+    "pl": "Mogą rozbić nasze statki, mogą zagarnąć gwiazdy",
+    "tr": "Gemilerimizi kırabilirler, yıldızları sahiplenebilirler",
+    "sv": "De kan krossa våra skepp, de kan ta stjärnorna",
+    "no": "De kan knuse skipene våre, de kan ta stjernene",
+    "da": "De kan knuse vores skibe, de kan tage stjernerne",
+    "ru": "Они могут разбить наши корабли, могут забрать звёзды"
+   }
+  },
+  {
+   "text": "But they will never break the hope inside our hearts",
+   "tr": {
+    "fr": "Mais jamais ils ne briseront l'espoir au fond de nos cœurs",
+    "es": "Pero nunca romperán la esperanza en nuestros corazones",
+    "de": "Doch nie zerbrechen sie die Hoffnung in unseren Herzen",
+    "it": "Ma non spezzeranno mai la speranza nei nostri cuori",
+    "pt": "Mas nunca vão partir a esperança nos nossos corações",
+    "nl": "Maar nooit breken ze de hoop in onze harten",
+    "pl": "Lecz nigdy nie złamią nadziei w naszych sercach",
+    "tr": "Ama kalbimizdeki umudu asla kıramayacaklar",
+    "sv": "Men aldrig krossa hoppet i våra hjärtan",
+    "no": "Men aldri knuse håpet i hjertene våre",
+    "da": "Men aldrig knuse håbet i vores hjerter",
+    "ru": "Но им никогда не сломить надежду в наших сердцах"
+   }
+  },
+  {
+   "text": "Eternal dawn, we will not fall",
+   "tr": {
+    "fr": "Aube éternelle, nous ne tomberons pas",
+    "es": "Alba eterna, no caeremos",
+    "de": "Ewiges Morgenrot, wir werden nicht fallen",
+    "it": "Alba eterna, non cadremo",
+    "pt": "Aurora eterna, não vamos cair",
+    "nl": "Eeuwige dageraad, wij vallen niet",
+    "pl": "Wieczny świt, nie upadniemy",
+    "tr": "Sonsuz şafak, düşmeyeceğiz",
+    "sv": "Evig gryning, vi faller inte",
+    "no": "Evig daggry, vi faller ikke",
+    "da": "Evigt daggry, vi falder ikke",
+    "ru": "Вечный рассвет, мы не падём"
+   }
+  },
+  {
+   "text": "Humanity still answers when the heavens call",
+   "tr": {
+    "fr": "L'humanité répond encore quand le ciel l'appelle",
+    "es": "La humanidad aún responde cuando el cielo llama",
+    "de": "Die Menschheit antwortet noch, wenn der Himmel ruft",
+    "it": "L'umanità risponde ancora quando il cielo chiama",
+    "pt": "A humanidade ainda responde quando os céus chamam",
+    "nl": "De mensheid antwoordt nog als de hemel roept",
+    "pl": "Ludzkość wciąż odpowiada, gdy niebo wzywa",
+    "tr": "Gökler çağırdığında insanlık hâlâ cevap veriyor",
+    "sv": "Mänskligheten svarar än när himlen kallar",
+    "no": "Menneskeheten svarer ennå når himmelen kaller",
+    "da": "Menneskeheden svarer stadig, når himlen kalder",
+    "ru": "Человечество всё ещё отвечает, когда зовут небеса"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "text": "Pattern after pattern, we fought them in the dark",
+   "tr": {
+    "fr": "Vague après vague, nous les avons combattus dans le noir",
+    "es": "Oleada tras oleada, los combatimos en la oscuridad",
+    "de": "Welle um Welle bekämpften wir sie im Dunkeln",
+    "it": "Ondata dopo ondata, li abbiamo combattuti nel buio",
+    "pt": "Vaga após vaga, combatemo-los no escuro",
+    "nl": "Golf na golf bevochten we ze in het donker",
+    "pl": "Fala za falą walczyliśmy z nimi w ciemności",
+    "tr": "Dalga dalga, onlarla karanlıkta savaştık",
+    "sv": "Våg efter våg bekämpade vi dem i mörkret",
+    "no": "Bølge etter bølge kjempet vi mot dem i mørket",
+    "da": "Bølge efter bølge kæmpede vi mod dem i mørket",
+    "ru": "Волна за волной мы сражались с ними во тьме"
+   }
+  },
+  {
+   "text": "Quick-firing beams cutting through the battle ship's heart",
+   "tr": {
+    "fr": "Des rayons à tir rapide perçant le cœur du vaisseau amiral",
+    "es": "Rayos de fuego rápido atravesando el corazón del acorazado",
+    "de": "Schnellfeuerstrahlen durchschneiden das Herz des Schlachtschiffs",
+    "it": "Raggi a fuoco rapido che trafiggono il cuore della corazzata",
+    "pt": "Raios de tiro rápido a trespassar o coração do couraçado",
+    "nl": "Snelvuurstralen die door het hart van het slagschip snijden",
+    "pl": "Szybkostrzelne promienie przebijają serce pancernika",
+    "tr": "Hızlı ateşli ışınlar savaş gemisinin kalbini deliyor",
+    "sv": "Snabbskjutande strålar skär genom slagskeppets hjärta",
+    "no": "Hurtigskytende stråler skjærer gjennom slagskipets hjerte",
+    "da": "Hurtigskydende stråler skærer gennem slagskibets hjerte",
+    "ru": "Скорострельные лучи пронзают сердце линкора"
+   }
+  },
+  {
+   "text": "Martians swarming, monsters in the way",
+   "tr": {
+    "fr": "Des Martiens en essaim, des monstres sur la route",
+    "es": "Marcianos en enjambre, monstruos en el camino",
+    "de": "Marsianer im Schwarm, Monster im Weg",
+    "it": "Marziani a sciami, mostri sulla strada",
+    "pt": "Marcianos em enxame, monstros no caminho",
+    "nl": "Marsmannetjes in zwermen, monsters op de weg",
+    "pl": "Roje Marsjan, potwory na drodze",
+    "tr": "Sürü hâlinde Marslılar, yolda canavarlar",
+    "sv": "Marsianer i svärmar, monster i vägen",
+    "no": "Marsboere i sverm, monstre i veien",
+    "da": "Marsboere i sværme, monstre i vejen",
+    "ru": "Рои марсиан, чудовища на пути"
+   }
+  },
+  {
+   "text": "But we still aimed for the center and we would not turn away",
+   "tr": {
+    "fr": "Mais nous visions toujours le centre sans jamais reculer",
+    "es": "Pero seguimos apuntando al centro sin dar la vuelta",
+    "de": "Doch wir zielten weiter auf die Mitte und wichen nicht zurück",
+    "it": "Ma miravamo sempre al centro senza mai voltarci",
+    "pt": "Mas continuámos a apontar ao centro sem nunca recuar",
+    "nl": "Maar we bleven op het midden mikken en keerden niet om",
+    "pl": "Lecz wciąż celowaliśmy w środek i nie zawróciliśmy",
+    "tr": "Ama yine de merkeze nişan aldık ve geri dönmedik",
+    "sv": "Men vi siktade ändå mot mitten och vände aldrig om",
+    "no": "Men vi siktet likevel mot midten og snudde aldri",
+    "da": "Men vi sigtede stadig mod midten og vendte aldrig om",
+    "ru": "Но мы всё равно целились в центр и не сворачивали"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "text": "They dropped their barriers, they tested every soul",
+   "tr": {
+    "fr": "Ils ont baissé leurs barrières, ils ont éprouvé chaque âme",
+    "es": "Bajaron sus barreras, pusieron a prueba cada alma",
+    "de": "Sie senkten ihre Barrieren, sie prüften jede Seele",
+    "it": "Hanno abbassato le barriere, hanno messo alla prova ogni anima",
+    "pt": "Baixaram as barreiras, puseram à prova cada alma",
+    "nl": "Ze lieten hun barrières zakken, ze stelden elke ziel op de proef",
+    "pl": "Opuścili bariery, wystawili na próbę każdą duszę",
+    "tr": "Bariyerlerini indirdiler, her ruhu sınadılar",
+    "sv": "De sänkte sina barriärer, de prövade varje själ",
+    "no": "De senket barrierene sine, de prøvde hver sjel",
+    "da": "De sænkede deres barrierer, de prøvede hver sjæl",
+    "ru": "Они опустили барьеры, испытали каждую душу"
+   }
+  },
+  {
+   "text": "We lost a hundred pilots just to make it to the goal",
+   "tr": {
+    "fr": "Nous avons perdu cent pilotes rien que pour atteindre le but",
+    "es": "Perdimos cien pilotos solo para llegar a la meta",
+    "de": "Wir verloren hundert Piloten, nur um das Ziel zu erreichen",
+    "it": "Abbiamo perso cento piloti solo per raggiungere la meta",
+    "pt": "Perdemos cem pilotos só para chegar à meta",
+    "nl": "We verloren honderd piloten alleen om het doel te halen",
+    "pl": "Straciliśmy stu pilotów, by dotrzeć do celu",
+    "tr": "Hedefe ulaşmak için yüz pilot kaybettik",
+    "sv": "Vi förlorade hundra piloter bara för att nå målet",
+    "no": "Vi mistet hundre piloter bare for å nå målet",
+    "da": "Vi mistede hundrede piloter blot for at nå målet",
+    "ru": "Мы потеряли сотню пилотов, лишь чтобы дойти до цели"
+   }
+  },
+  {
+   "text": "Yet every time we fell, another rose in place",
+   "tr": {
+    "fr": "Pourtant chaque fois que l'un tombait, un autre prenait sa place",
+    "es": "Pero cada vez que uno caía, otro ocupaba su lugar",
+    "de": "Doch jedes Mal, wenn einer fiel, trat ein anderer an seine Stelle",
+    "it": "Eppure ogni volta che uno cadeva, un altro prendeva il suo posto",
+    "pt": "Mas sempre que um caía, outro tomava o seu lugar",
+    "nl": "Toch stond telkens als er een viel een ander op zijn plaats",
+    "pl": "A jednak gdy ktoś padał, inny wstawał na jego miejsce",
+    "tr": "Yine de her düştüğümüzde bir başkası yerimize geçti",
+    "sv": "Ändå tog en annan plats varje gång någon föll",
+    "no": "Likevel tok en annen plassen hver gang noen falt",
+    "da": "Alligevel tog en anden pladsen, hver gang nogen faldt",
+    "ru": "И всё же каждый раз, когда кто-то падал, вставал другой"
+   }
+  },
+  {
+   "text": "Because the light we carry cannot be erased",
+   "tr": {
+    "fr": "Car la lumière que nous portons ne peut pas s'effacer",
+    "es": "Porque la luz que llevamos no se puede borrar",
+    "de": "Denn das Licht, das wir tragen, lässt sich nicht auslöschen",
+    "it": "Perché la luce che portiamo non si può cancellare",
+    "pt": "Porque a luz que levamos não pode ser apagada",
+    "nl": "Want het licht dat we dragen kan niet worden uitgewist",
+    "pl": "Bo światła, które niesiemy, nie da się wymazać",
+    "tr": "Çünkü taşıdığımız ışık silinemez",
+    "sv": "För ljuset vi bär kan aldrig suddas ut",
+    "no": "For lyset vi bærer kan aldri viskes ut",
+    "da": "For lyset, vi bærer, kan ikke slettes",
+    "ru": "Ведь свет, что мы несём, невозможно стереть"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "text": "We are the dawn that never dies",
+   "tr": {
+    "fr": "Nous sommes l'aube qui ne meurt jamais",
+    "es": "Somos el alba que nunca muere",
+    "de": "Wir sind das Morgenrot, das niemals stirbt",
+    "it": "Siamo l'alba che non muore mai",
+    "pt": "Somos a aurora que nunca morre",
+    "nl": "Wij zijn de dageraad die nooit sterft",
+    "pl": "Jesteśmy świtem, który nigdy nie umiera",
+    "tr": "Biz asla ölmeyen şafağız",
+    "sv": "Vi är gryningen som aldrig dör",
+    "no": "Vi er daggryet som aldri dør",
+    "da": "Vi er daggryet, der aldrig dør",
+    "ru": "Мы — рассвет, что никогда не умрёт"
+   }
+  },
+  {
+   "text": "Rising through the fire, burning in the skies",
+   "tr": {
+    "fr": "Qui s'élève à travers le feu, embrasant les cieux",
+    "es": "Alzándonos entre el fuego, ardiendo en los cielos",
+    "de": "Steigen durch das Feuer, brennen am Himmel",
+    "it": "Che sale attraverso il fuoco, ardendo nei cieli",
+    "pt": "Erguendo-nos pelo fogo, ardendo nos céus",
+    "nl": "Stijgend door het vuur, brandend in de lucht",
+    "pl": "Wznosimy się przez ogień, płonąc na niebie",
+    "tr": "Ateşin içinden yükselen, göklerde yanan",
+    "sv": "Som stiger genom elden och brinner på himlen",
+    "no": "Som stiger gjennom ilden og brenner på himmelen",
+    "da": "Der stiger gennem ilden og brænder på himlen",
+    "ru": "Встаём сквозь огонь, пылая в небесах"
+   }
+  },
+  {
+   "text": "They can break our ships, they can claim the stars",
+   "tr": {
+    "fr": "Ils peuvent briser nos vaisseaux, ils peuvent prendre les étoiles",
+    "es": "Pueden romper nuestras naves, pueden reclamar las estrellas",
+    "de": "Sie können unsere Schiffe zerbrechen, sie können die Sterne beanspruchen",
+    "it": "Possono spezzare le nostre navi, possono prendersi le stelle",
+    "pt": "Podem partir as nossas naves, podem tomar as estrelas",
+    "nl": "Ze kunnen onze schepen breken, ze kunnen de sterren opeisen",
+    "pl": "Mogą rozbić nasze statki, mogą zagarnąć gwiazdy",
+    "tr": "Gemilerimizi kırabilirler, yıldızları sahiplenebilirler",
+    "sv": "De kan krossa våra skepp, de kan ta stjärnorna",
+    "no": "De kan knuse skipene våre, de kan ta stjernene",
+    "da": "De kan knuse vores skibe, de kan tage stjernerne",
+    "ru": "Они могут разбить наши корабли, могут забрать звёзды"
+   }
+  },
+  {
+   "text": "But they will never break the hope inside our hearts",
+   "tr": {
+    "fr": "Mais jamais ils ne briseront l'espoir au fond de nos cœurs",
+    "es": "Pero nunca romperán la esperanza en nuestros corazones",
+    "de": "Doch nie zerbrechen sie die Hoffnung in unseren Herzen",
+    "it": "Ma non spezzeranno mai la speranza nei nostri cuori",
+    "pt": "Mas nunca vão partir a esperança nos nossos corações",
+    "nl": "Maar nooit breken ze de hoop in onze harten",
+    "pl": "Lecz nigdy nie złamią nadziei w naszych sercach",
+    "tr": "Ama kalbimizdeki umudu asla kıramayacaklar",
+    "sv": "Men aldrig krossa hoppet i våra hjärtan",
+    "no": "Men aldri knuse håpet i hjertene våre",
+    "da": "Men aldrig knuse håbet i vores hjerter",
+    "ru": "Но им никогда не сломить надежду в наших сердцах"
+   }
+  },
+  {
+   "text": "Eternal dawn, we will not fall",
+   "tr": {
+    "fr": "Aube éternelle, nous ne tomberons pas",
+    "es": "Alba eterna, no caeremos",
+    "de": "Ewiges Morgenrot, wir werden nicht fallen",
+    "it": "Alba eterna, non cadremo",
+    "pt": "Aurora eterna, não vamos cair",
+    "nl": "Eeuwige dageraad, wij vallen niet",
+    "pl": "Wieczny świt, nie upadniemy",
+    "tr": "Sonsuz şafak, düşmeyeceğiz",
+    "sv": "Evig gryning, vi faller inte",
+    "no": "Evig daggry, vi faller ikke",
+    "da": "Evigt daggry, vi falder ikke",
+    "ru": "Вечный рассвет, мы не падём"
+   }
+  },
+  {
+   "text": "Humanity still answers when the heavens call",
+   "tr": {
+    "fr": "L'humanité répond encore quand le ciel l'appelle",
+    "es": "La humanidad aún responde cuando el cielo llama",
+    "de": "Die Menschheit antwortet noch, wenn der Himmel ruft",
+    "it": "L'umanità risponde ancora quando il cielo chiama",
+    "pt": "A humanidade ainda responde quando os céus chamam",
+    "nl": "De mensheid antwoordt nog als de hemel roept",
+    "pl": "Ludzkość wciąż odpowiada, gdy niebo wzywa",
+    "tr": "Gökler çağırdığında insanlık hâlâ cevap veriyor",
+    "sv": "Mänskligheten svarar än när himlen kallar",
+    "no": "Menneskeheten svarer ennå når himmelen kaller",
+    "da": "Menneskeheden svarer stadig, når himlen kalder",
+    "ru": "Человечество всё ещё отвечает, когда зовут небеса"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "text": "So light the runway, dodge the flash and the fear",
+   "tr": {
+    "fr": "Alors éclairez la piste, esquivez l'éclair et la peur",
+    "es": "Así que ilumina la pista, esquiva el destello y el miedo",
+    "de": "Also erleuchtet die Startbahn, weicht dem Blitz und der Angst aus",
+    "it": "Allora illuminate la pista, schivate il lampo e la paura",
+    "pt": "Então iluminem a pista, desviem-se do clarão e do medo",
+    "nl": "Dus verlicht de startbaan, ontwijk de flits en de angst",
+    "pl": "Więc oświetlcie pas, unikajcie błysku i strachu",
+    "tr": "O hâlde pisti aydınlatın, parıltıdan ve korkudan kaçının",
+    "sv": "Så tänd landningsbanan, undvik blixten och rädslan",
+    "no": "Så tenn rullebanen, unngå blinket og frykten",
+    "da": "Så tænd landingsbanen, undvig glimtet og frygten",
+    "ru": "Так освети же полосу, уйди от вспышки и страха"
+   }
+  },
+  {
+   "text": "We're coming home, the arrival target's near",
+   "tr": {
+    "fr": "Nous rentrons à la maison, la cible d'arrivée est proche",
+    "es": "Volvemos a casa, el objetivo de llegada está cerca",
+    "de": "Wir kommen heim, das Ankunftsziel ist nah",
+    "it": "Torniamo a casa, l'obiettivo d'arrivo è vicino",
+    "pt": "Estamos a voltar a casa, o alvo de chegada está perto",
+    "nl": "We komen thuis, het aankomstdoel is dichtbij",
+    "pl": "Wracamy do domu, cel przylotu jest blisko",
+    "tr": "Eve dönüyoruz, varış hedefi yakın",
+    "sv": "Vi kommer hem, ankomstmålet är nära",
+    "no": "Vi kommer hjem, ankomstmålet er nær",
+    "da": "Vi kommer hjem, ankomstmålet er nær",
+    "ru": "Мы летим домой, цель прибытия близка"
+   }
+  },
+  {
+   "text": "Bonus flag or nothing, we still press on",
+   "tr": {
+    "fr": "Drapeau bonus ou rien, nous continuons d'avancer",
+    "es": "Bandera de bonus o nada, seguimos adelante",
+    "de": "Bonusflagge oder nichts, wir machen weiter",
+    "it": "Bandiera bonus o niente, andiamo avanti",
+    "pt": "Bandeira de bónus ou nada, seguimos em frente",
+    "nl": "Bonusvlag of niets, we gaan door",
+    "pl": "Flaga bonusowa albo nic, wciąż idziemy naprzód",
+    "tr": "Bonus bayrağı ya da hiç, yine de ilerliyoruz",
+    "sv": "Bonusflagga eller inget, vi kämpar vidare",
+    "no": "Bonusflagg eller ingenting, vi kjemper videre",
+    "da": "Bonusflag eller intet, vi kæmper videre",
+    "ru": "С бонусным флагом или без — мы идём вперёд"
+   }
+  },
+  {
+   "text": "Because the story of this war is not yet gone",
+   "tr": {
+    "fr": "Car l'histoire de cette guerre n'est pas encore finie",
+    "es": "Porque la historia de esta guerra aún no ha terminado",
+    "de": "Denn die Geschichte dieses Krieges ist noch nicht vorbei",
+    "it": "Perché la storia di questa guerra non è ancora finita",
+    "pt": "Porque a história desta guerra ainda não acabou",
+    "nl": "Want het verhaal van deze oorlog is nog niet voorbij",
+    "pl": "Bo historia tej wojny jeszcze się nie skończyła",
+    "tr": "Çünkü bu savaşın hikâyesi henüz bitmedi",
+    "sv": "För berättelsen om detta krig är inte slut än",
+    "no": "For historien om denne krigen er ikke over ennå",
+    "da": "For historien om denne krig er ikke slut endnu",
+    "ru": "Ведь история этой войны ещё не окончена"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "text": "From the unknown space they came",
+   "tr": {
+    "fr": "Ils sont venus de l'espace inconnu",
+    "es": "Del espacio desconocido vinieron",
+    "de": "Aus dem unbekannten Raum kamen sie",
+    "it": "Dallo spazio ignoto sono venuti",
+    "pt": "Do espaço desconhecido eles vieram",
+    "nl": "Uit de onbekende ruimte kwamen zij",
+    "pl": "Przybyli z nieznanej przestrzeni",
+    "tr": "Bilinmeyen uzaydan geldiler",
+    "sv": "Från den okända rymden kom de",
+    "no": "Fra det ukjente rommet kom de",
+    "da": "Fra det ukendte rum kom de",
+    "ru": "Из неведомого космоса пришли они"
+   }
+  },
+  {
+   "text": "But from the human heart the answer came the same",
+   "tr": {
+    "fr": "Mais du cœur humain la réponse est venue, la même",
+    "es": "Pero del corazón humano la respuesta fue la misma",
+    "de": "Doch aus dem menschlichen Herzen kam dieselbe Antwort",
+    "it": "Ma dal cuore umano la risposta è stata la stessa",
+    "pt": "Mas do coração humano a resposta veio igual",
+    "nl": "Maar uit het menselijk hart kwam hetzelfde antwoord",
+    "pl": "Lecz z ludzkiego serca odpowiedź przyszła ta sama",
+    "tr": "Ama insan kalbinden aynı cevap geldi",
+    "sv": "Men ur människans hjärta kom samma svar",
+    "no": "Men fra menneskehjertet kom det samme svaret",
+    "da": "Men fra menneskets hjerte kom det samme svar",
+    "ru": "Но из сердца человека пришёл всё тот же ответ"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "text": "We are the dawn that never dies",
+   "tr": {
+    "fr": "Nous sommes l'aube qui ne meurt jamais",
+    "es": "Somos el alba que nunca muere",
+    "de": "Wir sind das Morgenrot, das niemals stirbt",
+    "it": "Siamo l'alba che non muore mai",
+    "pt": "Somos a aurora que nunca morre",
+    "nl": "Wij zijn de dageraad die nooit sterft",
+    "pl": "Jesteśmy świtem, który nigdy nie umiera",
+    "tr": "Biz asla ölmeyen şafağız",
+    "sv": "Vi är gryningen som aldrig dör",
+    "no": "Vi er daggryet som aldri dør",
+    "da": "Vi er daggryet, der aldrig dør",
+    "ru": "Мы — рассвет, что никогда не умрёт"
+   }
+  },
+  {
+   "text": "Rising through the fire, burning in the skies",
+   "tr": {
+    "fr": "Qui s'élève à travers le feu, embrasant les cieux",
+    "es": "Alzándonos entre el fuego, ardiendo en los cielos",
+    "de": "Steigen durch das Feuer, brennen am Himmel",
+    "it": "Che sale attraverso il fuoco, ardendo nei cieli",
+    "pt": "Erguendo-nos pelo fogo, ardendo nos céus",
+    "nl": "Stijgend door het vuur, brandend in de lucht",
+    "pl": "Wznosimy się przez ogień, płonąc na niebie",
+    "tr": "Ateşin içinden yükselen, göklerde yanan",
+    "sv": "Som stiger genom elden och brinner på himlen",
+    "no": "Som stiger gjennom ilden og brenner på himmelen",
+    "da": "Der stiger gennem ilden og brænder på himlen",
+    "ru": "Встаём сквозь огонь, пылая в небесах"
+   }
+  },
+  {
+   "text": "They can break our ships, they can claim the stars",
+   "tr": {
+    "fr": "Ils peuvent briser nos vaisseaux, ils peuvent prendre les étoiles",
+    "es": "Pueden romper nuestras naves, pueden reclamar las estrellas",
+    "de": "Sie können unsere Schiffe zerbrechen, sie können die Sterne beanspruchen",
+    "it": "Possono spezzare le nostre navi, possono prendersi le stelle",
+    "pt": "Podem partir as nossas naves, podem tomar as estrelas",
+    "nl": "Ze kunnen onze schepen breken, ze kunnen de sterren opeisen",
+    "pl": "Mogą rozbić nasze statki, mogą zagarnąć gwiazdy",
+    "tr": "Gemilerimizi kırabilirler, yıldızları sahiplenebilirler",
+    "sv": "De kan krossa våra skepp, de kan ta stjärnorna",
+    "no": "De kan knuse skipene våre, de kan ta stjernene",
+    "da": "De kan knuse vores skibe, de kan tage stjernerne",
+    "ru": "Они могут разбить наши корабли, могут забрать звёзды"
+   }
+  },
+  {
+   "text": "But they will never break the hope inside our hearts",
+   "tr": {
+    "fr": "Mais jamais ils ne briseront l'espoir au fond de nos cœurs",
+    "es": "Pero nunca romperán la esperanza en nuestros corazones",
+    "de": "Doch nie zerbrechen sie die Hoffnung in unseren Herzen",
+    "it": "Ma non spezzeranno mai la speranza nei nostri cuori",
+    "pt": "Mas nunca vão partir a esperança nos nossos corações",
+    "nl": "Maar nooit breken ze de hoop in onze harten",
+    "pl": "Lecz nigdy nie złamią nadziei w naszych sercach",
+    "tr": "Ama kalbimizdeki umudu asla kıramayacaklar",
+    "sv": "Men aldrig krossa hoppet i våra hjärtan",
+    "no": "Men aldri knuse håpet i hjertene våre",
+    "da": "Men aldrig knuse håbet i vores hjerter",
+    "ru": "Но им никогда не сломить надежду в наших сердцах"
+   }
+  },
+  {
+   "text": "Eternal dawn, we will not fall",
+   "tr": {
+    "fr": "Aube éternelle, nous ne tomberons pas",
+    "es": "Alba eterna, no caeremos",
+    "de": "Ewiges Morgenrot, wir werden nicht fallen",
+    "it": "Alba eterna, non cadremo",
+    "pt": "Aurora eterna, não vamos cair",
+    "nl": "Eeuwige dageraad, wij vallen niet",
+    "pl": "Wieczny świt, nie upadniemy",
+    "tr": "Sonsuz şafak, düşmeyeceğiz",
+    "sv": "Evig gryning, vi faller inte",
+    "no": "Evig daggry, vi faller ikke",
+    "da": "Evigt daggry, vi falder ikke",
+    "ru": "Вечный рассвет, мы не падём"
+   }
+  },
+  {
+   "text": "Humanity still answers... and we will answer all",
+   "tr": {
+    "fr": "L'humanité répond encore... et nous répondrons à tous",
+    "es": "La humanidad aún responde... y responderemos a todos",
+    "de": "Die Menschheit antwortet noch... und wir antworten allen",
+    "it": "L'umanità risponde ancora... e risponderemo a tutti",
+    "pt": "A humanidade ainda responde... e responderemos a todos",
+    "nl": "De mensheid antwoordt nog... en wij antwoorden iedereen",
+    "pl": "Ludzkość wciąż odpowiada... i odpowiemy wszystkim",
+    "tr": "İnsanlık hâlâ cevap veriyor... ve hepsine cevap vereceğiz",
+    "sv": "Mänskligheten svarar än... och vi ska svara alla",
+    "no": "Menneskeheten svarer ennå... og vi skal svare alle",
+    "da": "Menneskeheden svarer stadig... og vi vil svare alle",
+    "ru": "Человечество всё ещё отвечает... и мы ответим всем"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "text": "The eggs may hatch... the birds may fly...",
+   "tr": {
+    "fr": "Les œufs peuvent éclore... les oiseaux peuvent voler...",
+    "es": "Los huevos pueden eclosionar... las aves pueden volar...",
+    "de": "Die Eier mögen schlüpfen... die Vögel mögen fliegen...",
+    "it": "Le uova possono schiudersi... gli uccelli possono volare...",
+    "pt": "Os ovos podem eclodir... as aves podem voar...",
+    "nl": "De eieren mogen uitkomen... de vogels mogen vliegen...",
+    "pl": "Jaja mogą się wykluć... ptaki mogą latać...",
+    "tr": "Yumurtalar çatlayabilir... kuşlar uçabilir...",
+    "sv": "Äggen må kläckas... fåglarna må flyga...",
+    "no": "Eggene kan klekkes... fuglene kan fly...",
+    "da": "Æggene kan klække... fuglene kan flyve...",
+    "ru": "Пусть вылупятся яйца... пусть летят птицы..."
+   }
+  },
+  {
+   "text": "But so do we.",
+   "tr": {
+    "fr": "Mais nous aussi.",
+    "es": "Pero nosotros también.",
+    "de": "Doch das tun wir auch.",
+    "it": "Ma anche noi.",
+    "pt": "Mas nós também.",
+    "nl": "Maar wij ook.",
+    "pl": "Ale my też.",
+    "tr": "Ama biz de öyle.",
+    "sv": "Men det gör vi också.",
+    "no": "Men det kan vi også.",
+    "da": "Men det kan vi også.",
+    "ru": "Но и мы тоже."
+   }
+  },
+  {
+   "text": "So do we.",
+   "tr": {
+    "fr": "Nous aussi.",
+    "es": "Nosotros también.",
+    "de": "Das tun wir auch.",
+    "it": "Anche noi.",
+    "pt": "Nós também.",
+    "nl": "Wij ook.",
+    "pl": "My też.",
+    "tr": "Biz de öyle.",
+    "sv": "Det gör vi också.",
+    "no": "Det kan vi også.",
+    "da": "Det kan vi også.",
+    "ru": "И мы тоже."
+   }
+  }
+ ]
 }

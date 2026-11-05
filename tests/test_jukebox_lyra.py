@@ -210,6 +210,19 @@ def test_covers_found(run):
     for key, _t, _k in g._juke_catalog():
         assert jukebox_ui.cover(key, paths.get(key), 120).get_size() == (120, 120)
     assert jukebox_ui._apic(paths["menu"])                          # the soundtrack MP3s carry their artwork
+    assert os.path.isfile(os.path.join(jukebox_ui.COVER_DIR, "lyra_album.jpg"))   # the Eternal Dawn album
+
+
+def test_real_lyrics_complete():
+    """Every Lyra song carries its lyrics, translated into the 12 other languages on every sung line."""
+    import json, jukebox_ui
+    for key in ("lyra_eternal_dawn", "lyra_what_we_lost", "lyra_no_mercy_left", "lyra_oldest_fear",
+                "lyra_when_we_looked_up", "lyra_when_we_looked_up_unplugged"):
+        d = json.load(open(os.path.join(jukebox_ui.LYRICS_DIR, key + ".json"), encoding="utf-8"))
+        sung = [l for l in d["lines"] if l["text"]]
+        assert d["lang"] == "en" and len(sung) > 20
+        for l in sung:
+            assert len(l["tr"]) == 12 and all(l["tr"].values())
 
 
 # ------------------------------------------------------------------ the rack stays on the track playing
