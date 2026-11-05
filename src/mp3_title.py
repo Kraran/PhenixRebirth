@@ -12,9 +12,9 @@ KNOWN_TIT2 = {
     "nostalgie_start": "Phoenix - Nostalgie interdite (Start)",
     "nostalgie_elise": "Phoenix - Nostalgie pour Elise (Final)",
     # Lyra Voss: the songs of her concert in the Adventure are .ogg files (no ID3 tag), hence the titles here
-    "lyra_eternal_dawn": "Lyra Voss - Eternal Dawn (Aventure)",
-    "lyra_what_we_lost": "Lyra Voss - What We Lost (Aventure)",
-    "lyra_no_mercy_left": "Lyra Voss - No Mercy Left (Aventure)",
+    "lyra_eternal_dawn": "Lyra Voss - Eternal Dawn",
+    "lyra_what_we_lost": "Lyra Voss - What We Lost",
+    "lyra_no_mercy_left": "Lyra Voss - No Mercy Left",
     "lyra_oldest_fear": "Lyra Voss - Oldest Fear",
     "lyra_when_we_looked_up": "Lyra Voss - When We Looked Up",
     "lyra_when_we_looked_up_unplugged": "Lyra Voss - When We Looked Up (Unplugged)",

@@ -1,12 +1,28 @@
 # Roadmap — Phenix Rebirth
-Current release: **v1.6.1**
+Current release: **v1.6.2**
 
-## Unreleased (towards 1.6.2)
+## Done in 1.6.2
 
-- **Fixes.** The two scenes after the fall of the NX01 or of the Phenix (Act III) now say what Huygens is: "Triton, in orbit around
-  Neptune, where the Huygens station fell silent two years ago, taking its 91 occupants." The antimatter missile costs 1000 credits
-  (it was 500). Credits: the five songs of Lyra Voss in the music, "Phoenix (1980 - Taito)" (was 1978), "Claude - Anthropic" in the
-  technical assistance, "Pleiades (1981 - Tehkan)" in the inspiration. Tests: `tests/test_credits_and_scenes.py`, `tests/test_missile_shop.py`.
+**Adventure** — a Scramble level, and Lyra Voss sings again.
+
+- Scramble, a remake of Konami's 1981 arcade game: TEST - Scramble on the map of every act, and BONUS - Scramble once the game is
+  finished. A flight through the rock of one of the five Lander settings, missile stations, waves of birds and comets, the enemy base and
+  its red Avioid commander (3 hits, a life bar); the Shield dome and the Phenix mode work there, the launchers and the commander join the
+  Bestiary
+- The codes LIVE and PHEN work in the missions of the Adventure
+- Visual novel: the two best endings (Amitié, Romance) go on with the concert of Lyra Voss in Eloncity, a film and its song
+- "When We Looked Up" (and its Unplugged version, under scenes 3 and 4 of the visual novel) in the jukebox and the in-game music
+
+**Jukebox**
+
+- A new layout: the whole list in groups, a card for the track playing, and the lyrics of the six songs of Lyra Voss, synced on her voice
+  and translated in the 13 languages; in the style of the station of Phobos when opened from the Adventure
+
+**Fixes**
+
+- The scenes after the fall of the NX01 or of the Phenix say what Huygens is; the antimatter missile costs 1000 credits; the credits
+  name the songs of Lyra Voss, "Phoenix (1980 - Taito)", "Claude - Anthropic" and "Pleiades (1981 - Tehkan)"
+- Details: [docs/DEV_LOG_1.6.2.md](docs/DEV_LOG_1.6.2.md)
 
 ## Done in 1.6.1
 

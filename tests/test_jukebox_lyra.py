@@ -1,4 +1,4 @@
-"""Lyra Voss in the jukebox: the three songs of her concert in the Adventure ("Lyra Voss - Eternal Dawn (Aventure)"...)
+"""Lyra Voss in the jukebox: the three songs of her concert in the Adventure ("Lyra Voss - Eternal Dawn"...)
 and Oldest Fear, each with its .pheq file (tools/make_pheq.py, the recipe of the original files); the list scrolls;
 the LED rack, the seek bar and the clock stay on the track playing while the cursor moves, until another one is
 played."""
@@ -127,14 +127,18 @@ def test_the_four_songs_come_after_the_soundtrack_before_the_video(run):
 def test_their_titles(run, lang):
     g = run.game
     lang("fr")
-    assert g._juke_title("lyra_eternal_dawn") == "Lyra Voss - Eternal Dawn (Aventure)"
-    assert g._juke_title("lyra_what_we_lost") == "Lyra Voss - What We Lost (Aventure)"
-    assert g._juke_title("lyra_no_mercy_left") == "Lyra Voss - No Mercy Left (Aventure)"
+    assert g._juke_title("lyra_eternal_dawn") == "Lyra Voss - Eternal Dawn"          # (no "(Aventure)" since 1.6.2)
+    assert g._juke_title("lyra_what_we_lost") == "Lyra Voss - What We Lost"
+    assert g._juke_title("lyra_no_mercy_left") == "Lyra Voss - No Mercy Left"
     assert g._juke_title("lyra_oldest_fear") == "Lyra Voss - Oldest Fear"
     assert g._juke_title("lyra_when_we_looked_up") == "Lyra Voss - When We Looked Up"
     assert g._juke_title("lyra_when_we_looked_up_unplugged") == "Lyra Voss - When We Looked Up (Unplugged)"
     lang("en")
-    assert g._juke_title("lyra_no_mercy_left") == "Lyra Voss - No Mercy Left (Adventure)"
+    assert g._juke_title("lyra_no_mercy_left") == "Lyra Voss - No Mercy Left"
+    from i18n import LANG_CODES
+    for code in LANG_CODES:                                       # in no language
+        lang(code)
+        assert all("(" not in g._juke_title(k) for k in ("lyra_eternal_dawn", "lyra_what_we_lost", "lyra_no_mercy_left"))
     from mp3_title import title_from_path
     assert title_from_path(asset_path("music", "Lyra-Voss-Oldest-Fear.mp3")) == "Lyra Voss - Oldest Fear"   # its tag
     assert (title_from_path(asset_path("music", "Lyra-Voss-When-We-Looked-Up-Unplugged.mp3"))
