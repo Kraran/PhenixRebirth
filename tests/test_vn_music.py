@@ -1,5 +1,5 @@
 """The music of the visual novel (story_vn.scene_music): Lyra Voss's "When We Looked Up (Unplugged)" plays under scenes 3
-(the observation deck) and 4 (the refuge), a little lower than normal; the other scenes keep the music of the menus."""
+(the observation deck) and 4 (the refuge), at the usual level of the music; the other scenes keep the music of the menus."""
 import os
 
 import pygame
@@ -26,7 +26,7 @@ def test_scenes_3_and_4_have_the_unplugged_song_the_others_none():
     assert story_vn.scene_music("vn_4") == (UNPLUGGED, story_vn.VN_MUSIC_LEVEL)
     for sid in ("vn_1", "vn_2", "vn_5", "nothing"):
         assert story_vn.scene_music(sid) is None
-    assert 0.3 < story_vn.VN_MUSIC_LEVEL < 1.0
+    assert story_vn.VN_MUSIC_LEVEL == 1.0                         # the usual level of the music, not lowered
     folder, name, _length = LYRA_MUSIC[UNPLUGGED]
     assert os.path.isfile(asset_path(folder, name))
 

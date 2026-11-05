@@ -33,7 +33,7 @@ def test_the_boss_is_a_boss_entry_listed_after_the_birds_and_gargoyles():
     assert entry["boss"] is True and ss.is_boss("boss")
     assert ss.bestiary_bonus("boss") == ss.BOSS_BONUS == 1000
     assert ids.index("boss") > max(ids.index(k) for k in ("bird1", "bird2", "garg3", "garg4"))
-    # the only other boss is the red master of the Scramble base
+    # the only other boss is the red Avioid commander of the Scramble base
     assert [e["id"] for e in ss.BESTIARY if ss.is_boss(e["id"])] == ["boss", "redboss"]
 
 
