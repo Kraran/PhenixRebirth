@@ -173,7 +173,7 @@
    "t": 59.09,
    "text": "We will hunt you down till there's nothing left",
    "tr": {
-    "fr": "Nous vous traquerons jusqu'à ce qu'il ne reste rien",
+    "fr": "Nous vous traquerons jusqu'à ce qu'il ne reste plus rien",
     "es": "Te daremos caza hasta que no quede nada",
     "de": "Wir jagen euch, bis nichts mehr übrig ist",
     "it": "Vi daremo la caccia finché non resterà nulla",
@@ -191,7 +191,7 @@
    "t": 62.55,
    "text": "Tear down your convoy, burn your battle ship down",
    "tr": {
-    "fr": "Nous abattrons votre convoi, brûlerons votre vaisseau amiral",
+    "fr": "Nous abattrons votre convoi, brûlerons votre vaisseau-mère",
     "es": "Derribaremos tu convoy, quemaremos tu acorazado",
     "de": "Wir reißen euren Konvoi nieder, brennen euer Schlachtschiff nieder",
     "it": "Abbatteremo il vostro convoglio, bruceremo la vostra corazzata",
@@ -284,7 +284,7 @@
    "t": 90.16,
    "text": "Avians and monsters, they fall all the same",
    "tr": {
-    "fr": "Aviens et monstres, ils tombent tous pareil",
+    "fr": "Avioïdes et monstres, tous tombent de même",
     "es": "Avianos y monstruos caen todos por igual",
     "de": "Vogelwesen und Monster, sie fallen alle gleich",
     "it": "Aviani e mostri, cadono tutti allo stesso modo",
@@ -302,7 +302,7 @@
    "t": 93.49,
    "text": "You dropped your defenses and we drove straight through them",
    "tr": {
-    "fr": "Vous avez baissé vos défenses et nous les avons traversées",
+    "fr": "Vous avez baissé vos défenses et nous avons foncé droit à travers",
     "es": "Bajaste tus defensas y las cruzamos de frente",
     "de": "Ihr ließt eure Abwehr fallen und wir brachen geradewegs durch",
     "it": "Avete abbassato le difese e le abbiamo sfondate",
@@ -359,7 +359,7 @@
    "t": 103.8,
    "text": "You wanted our children to live on their knees",
    "tr": {
-    "fr": "Vous vouliez nos enfants vivant à genoux",
+    "fr": "Vous vouliez que nos enfants vivent à genoux",
     "es": "Querías a nuestros hijos viviendo de rodillas",
     "de": "Ihr wolltet, dass unsere Kinder auf Knien leben",
     "it": "Volevate i nostri figli in ginocchio",
@@ -395,7 +395,7 @@
    "t": 110.54,
    "text": "And the only thing left is the sound of us free",
    "tr": {
-    "fr": "Et la seule chose qui reste, c'est le bruit de notre liberté",
+    "fr": "Et la seule chose qui reste, c'est le son de notre liberté",
     "es": "Y lo único que queda es el sonido de nuestra libertad",
     "de": "Und das Einzige, was bleibt, ist der Klang unserer Freiheit",
     "it": "E l'unica cosa che resta è il suono della nostra libertà",
@@ -434,7 +434,7 @@
    "t": 117.79,
    "text": "We will hunt you down till there's nothing left",
    "tr": {
-    "fr": "Nous vous traquerons jusqu'à ce qu'il ne reste rien",
+    "fr": "Nous vous traquerons jusqu'à ce qu'il ne reste plus rien",
     "es": "Te daremos caza hasta que no quede nada",
     "de": "Wir jagen euch, bis nichts mehr übrig ist",
     "it": "Vi daremo la caccia finché non resterà nulla",
@@ -452,7 +452,7 @@
    "t": 121.17,
    "text": "Tear down your convoy, burn your battle ship down",
    "tr": {
-    "fr": "Nous abattrons votre convoi, brûlerons votre vaisseau amiral",
+    "fr": "Nous abattrons votre convoi, brûlerons votre vaisseau-mère",
     "es": "Derribaremos tu convoy, quemaremos tu acorazado",
     "de": "Wir reißen euren Konvoi nieder, brennen euer Schlachtschiff nieder",
     "it": "Abbatteremo il vostro convoglio, bruceremo la vostra corazzata",
@@ -620,7 +620,7 @@
    "t": 167.4,
    "text": "We will hunt you down till there's nothing left",
    "tr": {
-    "fr": "Nous vous traquerons jusqu'à ce qu'il ne reste rien",
+    "fr": "Nous vous traquerons jusqu'à ce qu'il ne reste plus rien",
     "es": "Te daremos caza hasta que no quede nada",
     "de": "Wir jagen euch, bis nichts mehr übrig ist",
     "it": "Vi daremo la caccia finché non resterà nulla",
@@ -638,7 +638,7 @@
    "t": 170.8,
    "text": "Tear down your convoy, burn your battle ship down",
    "tr": {
-    "fr": "Nous abattrons votre convoi, brûlerons votre vaisseau amiral",
+    "fr": "Nous abattrons votre convoi, brûlerons votre vaisseau-mère",
     "es": "Derribaremos tu convoy, quemaremos tu acorazado",
     "de": "Wir reißen euren Konvoi nieder, brennen euer Schlachtschiff nieder",
     "it": "Abbatteremo il vostro convoglio, bruceremo la vostra corazzata",
@@ -767,7 +767,7 @@
    "t": 207.98,
    "text": "This war ends",
    "tr": {
-    "fr": "Cette guerre finira",
+    "fr": "Cette guerre s'arrête",
     "es": "Esta guerra termina",
     "de": "Dieser Krieg endet",
     "it": "Questa guerra finisce",
@@ -785,7 +785,7 @@
    "t": 209.24,
    "text": "When we say it ends",
    "tr": {
-    "fr": "Quand nous dirons qu'elle est finie",
+    "fr": "Quand nous le disons",
     "es": "Cuando nosotros digamos que termina",
     "de": "Wenn wir sagen, dass er endet",
     "it": "Quando diciamo noi che finisce",
@@ -803,7 +803,7 @@
    "t": 214.33,
    "text": "And we say it ends right now",
    "tr": {
-    "fr": "Et nous disons qu'elle finit maintenant",
+    "fr": "Et nous disons : maintenant",
     "es": "Y decimos que termina ahora mismo",
     "de": "Und wir sagen, er endet jetzt",
     "it": "E noi diciamo che finisce adesso",
