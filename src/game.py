@@ -95,6 +95,9 @@ import menu_fx
 import hint_bar
 import menu_ui
 import jukebox_ui
+import loading
+import lander_view
+import scramble_view
 import phobos_ui
 import main_menu
 import draw_frame
@@ -230,17 +233,23 @@ class Game:
     _direct_restore = None
     def __init__(self, soft=False):
         """soft=True: reset session state without recreating the window (no desktop flash)."""
-        if not soft:
-            game_init.init_display(self)
-
-        game_init.init_run_state(self)
-        game_init.init_fonts_and_logo(self)
-        game_init.init_effects_state(self)
-        game_init.init_input_menu(self)
-        game_init.init_settings(self, soft)
-        game_init.init_audio_and_layout(self, soft)
-        if not soft:
-            prepare_background_assets()  # decode optional scenery before any combat frames
+        if soft:
+            game_init.init_run_state(self)
+            game_init.init_fonts_and_logo(self)
+            game_init.init_effects_state(self)
+            game_init.init_input_menu(self)
+            game_init.init_settings(self, soft)
+            game_init.init_audio_and_layout(self, soft)
+            return
+        game_init.init_display(self)
+        # the loading bar (src/loading.py), from the first moment the window is open; the shares come from what each step costs
+        with loading.Loading(self, "arcade", lang=game_init.early_language()) as ld:
+            ld.step(0.08, lambda: game_init.init_run_state(self), 0.3)
+            ld.step(0.16, lambda: game_init.init_fonts_and_logo(self), 0.5)
+            ld.step(0.24, lambda: game_init.init_effects_state(self), 0.8)
+            ld.step(0.02, lambda: (game_init.init_input_menu(self), game_init.init_settings(self, soft)), 0.1)
+            ld.step(0.42, lambda: game_init.init_audio_and_layout(self, soft), 1.2)
+            ld.step(0.08, prepare_background_assets, 0.2)      # decode optional scenery before any combat frames
 
     # --- Audio state machine (menu / game-over / in-game silence) ---
     def _apply_audio_mix(self):
@@ -1883,7 +1892,41 @@ class Game:
                 and story_state.first_sortie(self.story.state, spec.get("id"))):
             self.story.show_first_help(spec)
             return
-        self._begin_adventure(spec)
+        self._launch_adventure(spec)
+
+    LOADING_DELAY = 0.25            # a mission ready sooner than this shows no loading bar
+
+    def _launch_adventure(self, spec):
+        """Start a mission behind the loading bar of the Adventure (src/loading.py): the setup (the flames of the Guardians are
+        made there), then a first picture drawn off screen (the textures of the Lander and of Scramble are made there)."""
+        title = t(spec["title"]) if spec.get("title") else None
+        heavy_view = bool(spec.get("lander") or spec.get("scramble"))
+        first, second = (0.15, 0.85) if heavy_view else (0.85, 0.15) if spec.get("guardians") else (0.5, 0.5)
+        with loading.Loading(self, "adventure", title=title, delay=self.LOADING_DELAY) as ld:
+            ld.step(first, lambda: self._begin_adventure(spec), 1.5 if spec.get("guardians") else 0.3)
+            ld.step(second, self._prewarm_mission, 1.0 if heavy_view else 0.2)
+
+    def _prewarm_mission(self):
+        """Draw the first picture of the mission off screen, so what it needs is made now, behind the bar. The warm-ups of the
+        Lander and of Scramble (background threads) are waited for while the bar moves on, then kept away until it is done."""
+        held = []
+        try:
+            for lock in (scramble_view._LOCK, lander_view._LOCK):          # (the order the warm-up of Scramble takes them)
+                while not lock.acquire(timeout=0.03):
+                    loading.report()
+                held.append(lock)
+            canvas = self.game_surface
+            self.game_surface = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+            try:
+                draw_frame.draw_background(self)
+                draw_frame.draw_play(self)
+            finally:
+                self.game_surface = canvas
+        except Exception:
+            log_exc("game._prewarm_mission")
+        finally:
+            for lock in reversed(held):
+                lock.release()
 
     def _begin_adventure(self, spec):
         """Launch a story mission. Arcade ship select and high scores stay out."""

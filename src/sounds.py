@@ -12,6 +12,7 @@ Loop behaviour:
   leaving that screen, not a disk reload every loop.
 """
 import pygame
+import loading
 import os
 import math
 
@@ -155,6 +156,7 @@ class SoundManager:
                 ("scramble_shield", 0.45),        # ... a shot sparks off its shields
             ]:
                 self._load(name, f"{name}.wav", vol)
+                loading.report()
             self.enabled = len(self.sounds) > 0
             self._apply_master()
             self._music_paths = {

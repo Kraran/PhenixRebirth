@@ -11,6 +11,7 @@ import threading
 
 import numpy as np
 import pygame
+import loading
 
 import announce
 import lander
@@ -64,6 +65,7 @@ def _fbm(size, base, octaves, rng):
     total, amp, norm = np.zeros((size, size)), 1.0, 0.0
     for o in range(octaves):
         total += amp * _octave(size, base * (2 ** o), rng)
+        loading.report()
         norm += amp
         amp *= 0.5
     return total / norm
