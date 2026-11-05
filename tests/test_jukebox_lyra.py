@@ -141,41 +141,86 @@ def test_their_titles(run, lang):
             == "Lyra Voss - When We Looked Up (Unplugged)")
 
 
-def test_the_list_scrolls_to_keep_the_cursor_on_screen(run):
+def test_the_whole_list_fits_in_groups(run):
+    """Every track on screen at once, in three groups (Phenix, Lyra Voss, the video), each one a line of the list."""
+    import jukebox_ui
     g = run.game
-    n = len(g._juke_catalog())
-    assert n > g.JUKE_ROWS
-    g._juke_top = 0
-    seen = []
-    for i in range(n):
-        top = g._juke_scroll(i, n)
-        assert top <= i < top + g.JUKE_ROWS
-        seen.append(top)
-    assert seen[0] == 0 and seen[-1] == n - g.JUKE_ROWS
-    assert g._juke_scroll(n - 2, n) == n - g.JUKE_ROWS            # going back up: the list stays where it is
-    assert g._juke_scroll(0, n) == 0                              # wrapping to the top
+    cat = g._juke_catalog()
+    lines = jukebox_ui.list_lines(cat)
+    assert [ln[1] for ln in lines if ln[0] == "head"] == ["phenix", "lyra", "video"]
+    assert [ln[1] for ln in lines if ln[0] == "track"] == list(range(len(cat)))
+    for i in range(len(cat)):
+        assert jukebox_ui.list_window(lines, i, jukebox_ui.LIST_BOX.h - 30) == (0, len(lines))
 
 
-def test_the_panels_fit_above_the_rack(run):
-    """The list, the cover and the lyrics stay above the LED rack, whatever the track under the cursor."""
+def test_a_list_too_long_scrolls_to_keep_the_cursor_on_screen(run):
+    import jukebox_ui
+    cat = run.game._juke_catalog()
+    lines = jukebox_ui.list_lines(cat)
+    height = 6 * jukebox_ui.ROW_H
+    top = 0
+    for i in list(range(len(cat))) + list(range(len(cat) - 1, -1, -1)):
+        top, end = jukebox_ui.list_window(lines, i, height, top)
+        shown = [ln for ln in lines[top:end]]
+        assert ("track", i) in shown
+        assert sum(jukebox_ui.HEAD_H if ln[0] == "head" else jukebox_ui.ROW_H for ln in shown) <= height
+    assert jukebox_ui.list_window(lines, 0, height, top)[0] == 0
+
+
+@pytest.mark.parametrize("door", (False, True))
+def test_the_panels_never_overlap_and_stay_above_the_help_bar(run, door):
+    """The list, the card of the track playing and the lyrics: side by side, above the help bar, in both styles."""
+    import hint_bar
+    import jukebox_ui
+    import phobos_ui
     g = run.game
+    if door:
+        g.story_door = "jukebox"
+        g._door_picture = lambda: pygame.Surface((1280, 720))
     g._open_jukebox()
+    assert jukebox_ui.style_of(g) == ("adventure" if door else "arcade")
     surf = pygame.Surface((1280, 720)).convert()
     boxes = []
-    real = game_mod.menu_ui.panel
+    real = jukebox_ui.panel
 
-    def spy(surface, rect, *a, **k):
-        boxes.append(pygame.Rect(rect))
-        return real(surface, rect, *a, **k)
-    game_mod.menu_ui.panel = spy
+    def spy(surface, rect, which, style):
+        boxes.append((which, pygame.Rect(rect), style))
+        return real(surface, rect, which, style)
+    jukebox_ui.panel = spy
     try:
         for i in range(len(g._juke_catalog())):
             g.juke_index = i
             g._draw_jukebox(surf)
     finally:
-        game_mod.menu_ui.panel = real
-    rack_top = pheq._geometry(1280, 720)[4][1]
-    assert boxes and max(b.bottom for b in boxes) < rack_top
+        jukebox_ui.panel = real
+    rects = {which: r for which, r, _st in boxes}
+    assert set(rects) == {"list", "now", "lyrics"}
+    assert {st for _w, _r, st in boxes} == {"adventure" if door else "arcade"}
+    for a in rects.values():
+        assert a.bottom <= hint_bar.BAND_Y and a.right <= 1280 - 30 and a.top >= 70
+        assert all(not a.colliderect(b) for b in rects.values() if b is not a)
+
+
+def test_long_titles_are_squeezed_never_cut(run, monkeypatch):
+    import jukebox_ui
+    g = run.game
+    drawn = []
+    monkeypatch.setattr(g, "_txt", lambda font, text, col: drawn.append(text) or pygame.Surface((10 * len(text), 10)))
+    surf = pygame.Surface((1280, 720))
+    cat = g._juke_catalog()
+    titles = {k: g._juke_title(k) for k, _t, _kind in cat}
+    jukebox_ui.draw_list(g, surf, jukebox_ui.LIST_BOX, cat, 0, None, False, {}, titles, "arcade")
+    assert "When We Looked Up" in drawn and "(Unplugged)" in drawn and "Eternal Dawn II" in drawn
+    assert not any(text.endswith("…") for text in drawn)
+    assert jukebox_ui.split_title("Lyra Voss - Eternal Dawn (Aventure)") == ("Lyra Voss", "Eternal Dawn", "(Aventure)")
+    # a title too wide for its row (here, very wide letters): squeezed into the room between the number and the length
+    monkeypatch.setattr(g, "_txt", lambda font, text, col: pygame.Surface((30 * len(text), 10)))
+    widths = []
+    real = jukebox_ui._squeeze
+    monkeypatch.setattr(jukebox_ui, "_squeeze", lambda img, w: widths.append(w) or real(img, w))
+    jukebox_ui.draw_list(g, surf, jukebox_ui.LIST_BOX, cat, 0, None, False, {}, titles, "arcade")
+    room = jukebox_ui.LIST_BOX.w - 20 - 42 - 64
+    assert widths and max(widths) <= room
 
 
 def test_lyrics_original_and_translation(run, lang, tmp_path, monkeypatch):
@@ -198,6 +243,7 @@ def test_lyrics_original_and_translation(run, lang, tmp_path, monkeypatch):
         lang(code)
         drawn.clear()
         jukebox_ui.draw_lyrics(g, surf, pygame.Rect(0, 0, 400, 300), "lyra_x", 6.0, 10.0, True)
+        jukebox_ui.draw_lyrics(g, surf, pygame.Rect(0, 0, 400, 300), "lyra_x", 6.0, 10.0, True, "adventure")
         assert "B" in drawn and ("b-fr" in drawn) == want
     jukebox_ui._lyrics.clear()
 
@@ -228,7 +274,8 @@ def test_real_lyrics_complete():
 # ------------------------------------------------------------------ the rack stays on the track playing
 def _seek_spy(monkeypatch):
     calls = []
-    monkeypatch.setattr(game_mod, "pheq_draw_seek", lambda surface, pg, pos, dur, w, h: calls.append(dur))
+    import jukebox_ui
+    monkeypatch.setattr(jukebox_ui, "draw_seek", lambda game, surface, x, y, w, pos, dur, style: calls.append(dur))
     return calls
 
 

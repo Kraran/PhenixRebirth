@@ -1464,6 +1464,24 @@ T = {
         "fr": "PAROLES", "en": "LYRICS", "es": "LETRA", "de": "SONGTEXT", "it": "TESTO", "pt": "LETRA",
         "nl": "SONGTEKST", "pl": "TEKST", "tr": "SÖZLER", "sv": "TEXT", "no": "TEKST", "da": "TEKST", "ru": "ТЕКСТ",
     },
+    "juke_now_playing": {
+        "fr": "EN LECTURE", "en": "NOW PLAYING", "es": "SONANDO", "de": "LÄUFT GERADE", "it": "IN RIPRODUZIONE",
+        "pt": "A TOCAR", "nl": "NU AFGESPEELD", "pl": "TERAZ GRA", "tr": "ÇALIYOR", "sv": "SPELAS NU", "no": "SPILLES NÅ",
+        "da": "AFSPILLES NU", "ru": "СЕЙЧАС ИГРАЕТ",
+    },
+    "juke_paused": {
+        "fr": "EN PAUSE", "en": "PAUSED", "es": "EN PAUSA", "de": "PAUSIERT", "it": "IN PAUSA", "pt": "EM PAUSA",
+        "nl": "GEPAUZEERD", "pl": "WSTRZYMANO", "tr": "DURAKLATILDI", "sv": "PAUSAD", "no": "PAUSET", "da": "PAUSET",
+        "ru": "ПАУЗА",
+    },
+    "juke_selected": {
+        "fr": "SÉLECTION", "en": "SELECTED", "es": "SELECCIÓN", "de": "AUSGEWÄHLT", "it": "SELEZIONE", "pt": "SELEÇÃO",
+        "nl": "GESELECTEERD", "pl": "WYBRANO", "tr": "SEÇİLİ", "sv": "VALD", "no": "VALGT", "da": "VALGT", "ru": "ВЫБРАНО",
+    },
+    "juke_group_video": {
+        "fr": "VIDÉO", "en": "VIDEO", "es": "VÍDEO", "de": "VIDEO", "it": "VIDEO", "pt": "VÍDEO", "nl": "VIDEO",
+        "pl": "WIDEO", "tr": "VİDEO", "sv": "VIDEO", "no": "VIDEO", "da": "VIDEO", "ru": "ВИДЕО",
+    },
     "juke_no_lyrics": {
         "fr": "Paroles à venir", "en": "Lyrics coming soon", "es": "Letra próximamente", "de": "Songtext folgt",
         "it": "Testo in arrivo", "pt": "Letra em breve", "nl": "Songtekst volgt", "pl": "Tekst wkrótce",

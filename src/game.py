@@ -60,7 +60,7 @@ from boss import BossSaucer
 from explosion import Explosion, TeslaCoilFx
 from starfield import Starfield, prepare_assets as prepare_background_assets
 from sounds import SoundManager
-from pheq import load_pheq, resolve_path as pheq_resolve, sample as pheq_sample, tick as pheq_tick, draw as pheq_draw, clock_y as pheq_clock_y, draw_seek as pheq_draw_seek
+from pheq import load_pheq, resolve_path as pheq_resolve, sample as pheq_sample, tick as pheq_tick
 import custom_music
 from ingame_music import cycle as ingame_cycle, label as ingame_label, normalize as ingame_normalize
 from mp3_title import title_from_path, title_for_key
@@ -355,7 +355,6 @@ class Game:
             ("intro", "juke_intro", "video"),
         )
 
-    JUKE_ROWS = 6                   # the tracks shown at once (the list scrolls), above the clock and the LED rack
 
     def _open_jukebox(self):
         self.menu_screen = "jukebox"
@@ -580,15 +579,6 @@ class Game:
         target = pheq_sample(seq, pos) if (playing and seq) else [0.0] * n
         pheq_tick(self._eq_bands, self._eq_peaks, target, playing and bool(seq), dt)
 
-    def _draw_eq(self, surface):
-        """The LED rack of the jukebox (pheq.draw), from the bands of the .pheq file."""
-        pheq_draw(
-            surface, pygame,
-            getattr(self, "_eq_bands", []),
-            getattr(self, "_eq_peaks", []),
-            BASE_WIDTH, BASE_HEIGHT,
-        )
-
     def _update_jukebox(self):
         if getattr(self, "juke_video", False):
             clip = getattr(self, "juke_clip", None)
@@ -626,25 +616,6 @@ class Game:
             # Track finished — stay selected, ready to replay
             pass
 
-    def _juke_scroll(self, index, n):
-        """The first track shown: the list moves only when the cursor leaves the JUKE_ROWS tracks on screen."""
-        top = int(getattr(self, "_juke_top", 0) or 0)
-        if index < top:
-            top = index
-        elif index >= top + self.JUKE_ROWS:
-            top = index - self.JUKE_ROWS + 1
-        top = max(0, min(top, n - self.JUKE_ROWS))
-        self._juke_top = top
-        return top
-
-    def _juke_arrows(self, surface, box, up, down):
-        """Small amber arrows on the edges of the list when there are more tracks above or below."""
-        cx = box.centerx
-        for show, y, way in ((up, box.top, -1), (down, box.bottom - 1, 1)):
-            if show:
-                tip = y + way * 7
-                pygame.draw.polygon(surface, (255, 200, 120), [(cx - 9, y - way * 3), (cx + 9, y - way * 3), (cx, tip)])
-
     def _juke_title(self, key, path=None):
         if key == "intro" or key.startswith("lyra_"):
             return t("juke_" + key)         # translated: "(Aventure)", "(Adventure)"... (the .ogg files have no tag)
@@ -656,8 +627,10 @@ class Game:
 
 
     def _draw_jukebox(self, surface):
-        hdr = self._txt(self.medium_font, t("jukebox"), menu_ui.TITLE)
-        surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, 28))
+        """The jukebox (jukebox_ui): the list on the left, the card of the track playing and its lyrics on the right; the
+        style of the Adventure when it was opened from there."""
+        style = jukebox_ui.style_of(self)
+        jukebox_ui.draw_header(self, surface, style)
         if getattr(self, "juke_video", False):
             clip = getattr(self, "juke_clip", None)
             img = clip.surface if clip is not None else None
@@ -666,86 +639,50 @@ class Game:
             hint_bar.draw_for(self, surface)
             return
         cat = self._juke_catalog()
-        cur = None
         try:
             cur = self.sounds.current_music_key()
         except Exception:
             cur = None
         music = {k for k, _tk, kind in cat if kind == "music"}
         index = int(getattr(self, "juke_index", 0) or 0) % max(1, len(cat))
-        # Left: the track list (a play / pause mark on the track playing)
-        rows_font = fonts.text(22)
-        list_box = pygame.Rect(36, 78, 400, 372)
-        menu_ui.panel(surface, list_box)
-        row_h = 52
-        rows = (list_box.h - 16) // row_h
-        self.JUKE_ROWS = rows
-        top = self._juke_scroll(index, len(cat))
-        for r, i in enumerate(range(top, min(len(cat), top + rows))):
-            key, _tk, kind = cat[i]
-            rect = pygame.Rect(list_box.x + 8, list_box.y + 8 + r * row_h, list_box.w - 16, row_h - 4)
-            sel = i == index
-            if sel:
-                menu_ui.highlight(surface, rect)
-            playing = cur == key and kind == "music" and (self.sounds.music_busy() or self.juke_paused)
-            mark = ("||" if self.juke_paused else ">") if playing else ("[ ]" if kind == "video" else "")
-            if mark:
-                m = self._txt(rows_font, mark, (255, 200, 120))
-                surface.blit(m, (rect.x + 10, rect.centery - m.get_height() // 2))
-            title = self._juke_title(key)
-            artist, _sep, name = title.partition(" - ")
-            if not name:
-                artist, name = "", title
-            f_name, f_art = fonts.text(21), fonts.body(15)
-            while f_name.size(name)[0] > rect.w - 52 and len(name) > 4:
-                name = name[:-2].rstrip() + "…"
-            n_img = self._txt(f_name, name, menu_ui.row_colour(sel))
-            a_img = self._txt(f_art, artist, (120, 120, 150) if not sel else (200, 180, 120))
-            surface.blit(n_img, (rect.x + 44, rect.y + 3))
-            surface.blit(a_img, (rect.x + 44, rect.y + 4 + n_img.get_height() - 2))
-        self._juke_arrows(surface, list_box, top > 0, top + rows < len(cat))
-        # Middle: the cover of the track playing (else the one under the cursor), its title under it
-        shown = cur if cur in music else cat[index][0]
+        paused = bool(getattr(self, "juke_paused", False))
+        active = cur in music and (paused or bool(self.sounds.music_busy()))
+        playing_key = cur if active else None
         paths = getattr(self.sounds, "_music_paths", {}) or {}
-        art = jukebox_ui.cover(shown, paths.get(shown), 300)
-        cx = 610
-        frame = pygame.Rect(cx - 156, 78, 312, 312)
-        menu_ui.panel(surface, frame, radius=8)
-        surface.blit(art, (cx - 150, 84))
-        t_img = self._txt(fonts.text(20), self._juke_title(shown), menu_ui.TEXT_SEL)
-        if t_img.get_width() > 420:
-            t_img = pygame.transform.smoothscale(t_img, (420, int(t_img.get_height() * 420 / t_img.get_width())))
-        surface.blit(t_img, (cx - t_img.get_width() // 2, 396))
-        # Right: the lyrics of the song playing (original + the interface language)
-        pos, dur, playing = 0.0, 0.0, False
-        if cur in music:
-            pos = self.sounds.music_pos_sec() if not self.juke_paused else getattr(self, "_juke_hold_pos", 0.0)
-            playing = bool(self.sounds.music_busy()) and not self.juke_paused
+        durations = {}
+        for key in music:
             try:
-                dur = float(self.sounds.music_duration(cur) or 0.0)
+                durations[key] = float(self.sounds.music_duration(key) or 0.0)
             except Exception:
-                dur = 0.0
-        jukebox_ui.draw_lyrics(self, surface, pygame.Rect(784, 78, 460, 372), shown, pos if shown == cur else 0.0,
-                               dur, playing and shown == cur)
-        # The LED rack, the seek bar and the clock of the track playing (or paused), wherever the cursor is in the
-        # list: they follow the next track only once it is played.
-        if cur in music:
-            key = cur
-            if key not in getattr(self, "_eq_seq", {}):
-                self._eq_ensure(key)
-            if not getattr(self, "juke_paused", False):
-                self._eq_tick(key, pos, playing, float(self.dt or 0.016))
-            self._draw_eq(surface)
-            if not self.juke_paused:
+                durations[key] = 0.0
+        titles = {key: self._juke_title(key) for key, _tk, _kind in cat}
+        jukebox_ui.panel(surface, jukebox_ui.LIST_BOX, "list", style)
+        jukebox_ui.draw_list(self, surface, jukebox_ui.LIST_BOX, cat, index, playing_key, paused, durations, titles,
+                             style)
+        # the track playing (or paused) keeps the card, the rack and the lyrics wherever the cursor is in the list: they
+        # follow the next track only once it is played. Nothing played yet: the card shows the track under the cursor.
+        pos, dur, playing = 0.0, 0.0, False
+        if active:
+            shown = cur
+            pos = self.sounds.music_pos_sec() if not paused else getattr(self, "_juke_hold_pos", 0.0)
+            playing = bool(self.sounds.music_busy()) and not paused
+            dur = durations.get(cur, 0.0)
+            if cur not in getattr(self, "_eq_seq", {}):
+                self._eq_ensure(cur)
+            if not paused:
+                self._eq_tick(cur, pos, playing, float(self.dt or 0.016))
                 self._juke_hold_pos = pos
-            if dur > 1.0:
-                pheq_draw_seek(surface, pygame, pos, dur, BASE_WIDTH, BASE_HEIGHT)
-                clock = self._txt(
-                    self.font,
-                    f"{int(pos)//60}:{int(pos)%60:02d} / {int(dur)//60}:{int(dur)%60:02d}",
-                    (255, 200, 120),
-                )
-                surface.blit(clock, (BASE_WIDTH // 2 - clock.get_width() // 2, pheq_clock_y(BASE_HEIGHT)))
+            state = "pause" if paused else "play"
+            bands, peaks = getattr(self, "_eq_bands", []), getattr(self, "_eq_peaks", [])
+        else:
+            shown = cat[index][0] if cat[index][0] in music else (cur if cur in music else cat[index][0])
+            state, bands, peaks = "idle", [], []
+        jukebox_ui.panel(surface, jukebox_ui.NOW_BOX, "now", style)
+        jukebox_ui.draw_now(self, surface, jukebox_ui.NOW_BOX, shown, paths.get(shown), titles.get(shown) or "", state,
+                            pos, dur, bands, peaks, style)
+        jukebox_ui.panel(surface, jukebox_ui.LYRICS_BOX, "lyrics", style)
+        jukebox_ui.draw_lyrics(self, surface, jukebox_ui.LYRICS_BOX, shown, pos if active else 0.0, dur,
+                               playing, style)
         hint_bar.draw_for(self, surface)
 
     # --- Difficulty & scoring helpers ---
