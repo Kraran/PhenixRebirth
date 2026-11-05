@@ -118,7 +118,17 @@ def test_a_mission_starts_behind_the_bar(run, mid, monkeypatch):
         made.append(self)
     monkeypatch.setattr(loading.Loading, "__init__", spy)
     monkeypatch.setattr(type(g), "LOADING_DELAY", 0.0)
-    g._request_adventure(dict(spec, first_help_read=True))
+    # as at the first launch of a run: nothing made yet by an earlier test (the flames, the textures)
+    import guardian, lander_view, scramble_view, ship_burn
+    saved = [(c, dict(c)) for c in (guardian._BURN_ART, ship_burn._CACHE, lander_view._CACHE, scramble_view._TEX)]
+    for c, _old in saved:
+        c.clear()
+    try:
+        g._request_adventure(dict(spec, first_help_read=True))
+    finally:
+        for c, old in saved:
+            for k, v in old.items():
+                c.setdefault(k, v)
     assert g.started and g.adventure and g.adventure["id"] == mid
     assert len(made) == 1 and made[0].style == "adventure" and made[0].title
     assert made[0].done == pytest.approx(1.0)
