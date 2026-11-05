@@ -12,6 +12,7 @@ import announce
 import credits_screen
 import crt
 import escort
+import gyro
 import fonts
 import highscores_screen
 import hint_bar
@@ -122,6 +123,7 @@ def draw_play(game):
     if game.tesla_fx is not None:
         game.tesla_fx.draw(game.game_surface)
 
+    gyro.draw(game, game.game_surface)              # the escort modules, beside the ship (under it, out of its animation)
     for ship in game._ships():
         ship.draw(game.game_surface)
 

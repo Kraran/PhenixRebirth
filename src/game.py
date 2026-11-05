@@ -54,6 +54,7 @@ import lander
 import scramble
 import antimatter
 import escort
+import gyro
 import galaga
 from guardian import GuardianFormation
 from galaga import GalagaFormation
@@ -2002,6 +2003,9 @@ class Game:
             self.player.sw_physics = True
             self.player.vertical_range = None
             self.player.lives = 1
+        if spec.get("modules") and spec.get("training") and not dome:
+            dome = True                                           # the test of the modules: the Shield has its dome (to see them
+            self.player.adventure_dome = True                     # move out of its way) even if not yet bought
         self.adventure["dome"] = dome
         # the loot items bought in the hangar for this mission (they are used up when it ends, see _end_adventure)
         items = [] if spec.get("training") else list(spec.get("items") or [])
@@ -2035,6 +2039,7 @@ class Game:
             if not dome:
                 self.player.phenix_gauge = 0.0
                 self.player.phenix_cooldown = 9999.0
+        gyro.start(self, spec)                    # the escort modules of the ship (src/gyro.py), when the mission has them
         self._apply_adventure_cheats()
         self.input_grace = 0.35
         self.shake_amount = 0.0
@@ -4539,6 +4544,7 @@ class Game:
                 self._duo_latched = False
         
         antimatter.tick(self)                     # the antimatter missile in flight (nothing in a mission without one)
+        gyro.tick(self)                           # the escort modules follow the ship (also while it flies up a stage)
 
         # Stage transition: ship flies off top
         if self.stage_transition == "fly_up":

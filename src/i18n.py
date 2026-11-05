@@ -7088,6 +7088,30 @@ _SCRAMBLE_TEXTS = {
         "between the ceiling and the ground to the enemy base. Any touch of the rock costs a life. No gain or loss. You "
         "choose the setting at the start: asteroid, Titan, Europa, Deimos or Triton."),
     "scramble_pick_title": ("TEST - Scramble : choix du décor", "TEST - Scramble: choose the setting"),
+    "story_m_modules": ("TEST - Modules", "TEST - Modules"),
+    "story_m_modules_hud": ("Modules", "Modules"),
+    "story_m_modules_b": (
+        "Les modules d'escorte : deux petits satellites gyroscopes de part et d'autre du vaisseau. Un run des niveaux 6 "
+        "à 11. Ils s'écartent dans le dôme et en forme Phenix ; le mur électrique les détruit. Rien n'est gagné ni "
+        "perdu. Au départ, tu choisis combien de modules et leur résistance.",
+        "The escort modules: two small gyroscope satellites on each side of the ship. A run of levels 6 to 11. They "
+        "move out in the dome and in the Phenix form; the electric wall destroys them. No gain or loss. At the start, "
+        "you choose how many modules and how tough they are."),
+    "modules_pick_title": ("TEST - Modules : l'escorte", "TEST - Modules: the escort"),
+    "modules_pick_count_1": ("1 MODULE", "1 MODULE"),
+    "modules_pick_count_2": ("2 MODULES", "2 MODULES"),
+    "modules_pick_armour_1": ("Normale : détruit au 1er tir", "Normal: lost to the 1st shot"),
+    "modules_pick_armour_2": ("Accrue : détruit au 2e tir", "Reinforced: lost to the 2nd shot"),
+    "modules_pick_info_1": (
+        "Tirs ×{shots}. Un tir ennemi détruit un module ; une collision ou le mur électrique aussi. (Les tirs et les "
+        "dégâts des modules arrivent dans les prochaines étapes.)",
+        "Shots ×{shots}. One enemy shot destroys a module; so does a collision or the electric wall. (The shots and the "
+        "harm of the modules come in the next steps.)"),
+    "modules_pick_info_2": (
+        "Tirs ×{shots}. Il faut deux tirs ennemis pour détruire un module ; une collision ou le mur électrique le "
+        "détruit toujours du premier coup. (Les tirs et les dégâts des modules arrivent dans les prochaines étapes.)",
+        "Shots ×{shots}. It takes two enemy shots to destroy a module; a collision or the electric wall always destroys "
+        "it at once. (The shots and the harm of the modules come in the next steps.)"),
     "scramble_info_rock": ("Une caverne dans la roche grise d'un astéroïde, au milieu de ses semblables.",
                            "A cavern in the grey rock of an asteroid, among its kind."),
     "scramble_info_ice": ("Les falaises de glace et de roche brunâtre de Titan, sous la brume orange et Saturne.",
