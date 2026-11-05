@@ -1,0 +1,5 @@
+{
+  "_comment": "TEMPLATE - to fill: see src/jukebox_ui.py. lines: [{\"t\": seconds (optional), \"text\": \"sung line\", \"tr\": {\"fr\": \"...\", \"de\": \"...\"}}]",
+  "lang": "en",
+  "lines": []
+}

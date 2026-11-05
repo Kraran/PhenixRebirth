@@ -156,25 +156,60 @@ def test_the_list_scrolls_to_keep_the_cursor_on_screen(run):
     assert g._juke_scroll(0, n) == 0                              # wrapping to the top
 
 
-def test_the_list_fits_above_the_clock(run):
+def test_the_panels_fit_above_the_rack(run):
+    """The list, the cover and the lyrics stay above the LED rack, whatever the track under the cursor."""
     g = run.game
     g._open_jukebox()
     surf = pygame.Surface((1280, 720)).convert()
     boxes = []
-    real = game_mod.menu_ui.draw_rows
+    real = game_mod.menu_ui.panel
 
-    def spy(*a, **k):
-        boxes.append(real(*a, **k))
-        return boxes[-1]
-    game_mod.menu_ui.draw_rows = spy
+    def spy(surface, rect, *a, **k):
+        boxes.append(pygame.Rect(rect))
+        return real(surface, rect, *a, **k)
+    game_mod.menu_ui.panel = spy
     try:
         for i in range(len(g._juke_catalog())):
             g.juke_index = i
             g._draw_jukebox(surf)
     finally:
-        game_mod.menu_ui.draw_rows = real
-    assert max(b.bottom for b in boxes) + 20 < pheq.clock_y(720)
-    assert len({b.width for b in boxes}) == 1                     # the panel keeps its width while it scrolls
+        game_mod.menu_ui.panel = real
+    rack_top = pheq._geometry(1280, 720)[4][1]
+    assert boxes and max(b.bottom for b in boxes) < rack_top
+
+
+def test_lyrics_original_and_translation(run, lang, tmp_path, monkeypatch):
+    """A lyrics file: the line sung, and under it its translation in the interface language (not when the song is
+    already in that language); an empty template counts as no lyrics."""
+    import json
+    import jukebox_ui
+    monkeypatch.setattr(jukebox_ui, "LYRICS_DIR", str(tmp_path))
+    jukebox_ui._lyrics.clear()
+    (tmp_path / "lyra_x.json").write_text(json.dumps({"lang": "en", "lines": [
+        {"t": 0, "text": "A", "tr": {"fr": "a-fr"}}, {"t": 5, "text": "B", "tr": {"fr": "b-fr"}}]}))
+    (tmp_path / "lyra_empty.json").write_text(json.dumps({"lang": "en", "lines": []}))
+    assert jukebox_ui.lyrics("lyra_empty") is None
+    assert jukebox_ui._current_line(jukebox_ui.lyrics("lyra_x")["lines"], 6.0, 10.0)[0] == 1
+    drawn = []
+    g = run.game
+    monkeypatch.setattr(g, "_txt", lambda font, text, col: drawn.append(text) or pygame.Surface((10, 10)))
+    surf = pygame.Surface((1280, 720))
+    for code, want in (("fr", True), ("en", False)):
+        lang(code)
+        drawn.clear()
+        jukebox_ui.draw_lyrics(g, surf, pygame.Rect(0, 0, 400, 300), "lyra_x", 6.0, 10.0, True)
+        assert "B" in drawn and ("b-fr" in drawn) == want
+    jukebox_ui._lyrics.clear()
+
+
+def test_covers_found(run):
+    """Every track has a cover: its own file, the picture inside the MP3, Lyra's picture, or the drawn disc."""
+    import jukebox_ui
+    g = run.game
+    paths = g.sounds._music_paths
+    for key, _t, _k in g._juke_catalog():
+        assert jukebox_ui.cover(key, paths.get(key), 120).get_size() == (120, 120)
+    assert jukebox_ui._apic(paths["menu"])                          # the soundtrack MP3s carry their artwork
 
 
 # ------------------------------------------------------------------ the rack stays on the track playing
