@@ -2,7 +2,7 @@
  "lang": "en",
  "lines": [
   {
-   "t": 24.54,
+   "t": 25.6,
    "text": "You came from the dark with your war birds screaming",
    "tr": {
     "fr": "Vous êtes venus du noir, vos oiseaux de guerre hurlant",
@@ -20,7 +20,7 @@
    }
   },
   {
-   "t": 28.94,
+   "t": 29.12,
    "text": "You hatched from your eggs and you painted the sky",
    "tr": {
     "fr": "Vous êtes sortis de vos œufs et vous avez peint le ciel",
@@ -38,7 +38,7 @@
    }
   },
   {
-   "t": 32.42,
+   "t": 32.64,
    "text": "You thought we would break when the barriers fell",
    "tr": {
     "fr": "Vous pensiez qu'on craquerait quand les barrières tomberaient",
@@ -56,7 +56,7 @@
    }
   },
   {
-   "t": 35.92,
+   "t": 36.17,
    "text": "You thought we would kneel when our pilots died",
    "tr": {
     "fr": "Vous pensiez qu'on plierait le genou quand nos pilotes mourraient",
@@ -77,7 +77,7 @@
    "text": ""
   },
   {
-   "t": 39.52,
+   "t": 39.47,
    "text": "But the dead don't sleep and the living remember",
    "tr": {
     "fr": "Mais les morts ne dorment pas et les vivants se souviennent",
@@ -95,7 +95,7 @@
    }
   },
   {
-   "t": 42.92,
+   "t": 43.01,
    "text": "Every name you took, every ship you burned",
    "tr": {
     "fr": "De chaque nom que vous avez pris, de chaque vaisseau brûlé",
@@ -113,7 +113,7 @@
    }
   },
   {
-   "t": 46.52,
+   "t": 46.64,
    "text": "We loaded the missiles and we aimed for the center",
    "tr": {
     "fr": "Nous avons chargé les missiles et visé le centre",
@@ -131,7 +131,7 @@
    }
   },
   {
-   "t": 49.78,
+   "t": 50.0,
    "text": "And we swore on the ashes that you'd never return",
    "tr": {
     "fr": "Et juré sur les cendres que vous ne reviendriez jamais",
@@ -152,7 +152,7 @@
    "text": ""
   },
   {
-   "t": 69.76,
+   "t": 55.63,
    "text": "No mercy left, no mercy left",
    "tr": {
     "fr": "Plus de pitié, plus de pitié",
@@ -170,7 +170,7 @@
    }
   },
   {
-   "t": 117.54,
+   "t": 59.09,
    "text": "We will hunt you down till there's nothing left",
    "tr": {
     "fr": "Nous vous traquerons jusqu'à ce qu'il ne reste rien",
@@ -188,7 +188,7 @@
    }
   },
   {
-   "t": 120.12,
+   "t": 62.55,
    "text": "Tear down your convoy, burn your battle ship down",
    "tr": {
     "fr": "Nous abattrons votre convoi, brûlerons votre vaisseau amiral",
@@ -206,7 +206,7 @@
    }
   },
   {
-   "t": 124.38,
+   "t": 66.04,
    "text": "This is our sky and we're taking it now",
    "tr": {
     "fr": "Ce ciel est le nôtre et nous le reprenons maintenant",
@@ -224,7 +224,7 @@
    }
   },
   {
-   "t": 127.78,
+   "t": 69.52,
    "text": "No mercy left, no mercy left",
    "tr": {
     "fr": "Plus de pitié, plus de pitié",
@@ -242,7 +242,7 @@
    }
   },
   {
-   "t": 134.48,
+   "t": 76.9,
    "text": "Humanity answers with fire and death",
    "tr": {
     "fr": "L'humanité répond par le feu et la mort",
@@ -263,7 +263,7 @@
    "text": ""
   },
   {
-   "t": 137.77,
+   "t": 86.58,
    "text": "Pattern after pattern, we cut through your swarm",
    "tr": {
     "fr": "Vague après vague, nous tranchons dans votre essaim",
@@ -281,7 +281,7 @@
    }
   },
   {
-   "t": 141.07,
+   "t": 90.16,
    "text": "Avians and monsters, they fall all the same",
    "tr": {
     "fr": "Aviens et monstres, ils tombent tous pareil",
@@ -299,7 +299,7 @@
    }
   },
   {
-   "t": 144.36,
+   "t": 93.49,
    "text": "You dropped your defenses and we drove straight through them",
    "tr": {
     "fr": "Vous avez baissé vos défenses et nous les avons traversées",
@@ -317,7 +317,7 @@
    }
   },
   {
-   "t": 147.65,
+   "t": 96.79,
    "text": "And we carved our revenge in the wreckage and flame",
    "tr": {
     "fr": "Et gravé notre vengeance dans les débris et les flammes",
@@ -338,7 +338,7 @@
    "text": ""
   },
   {
-   "t": 150.95,
+   "t": 100.33,
    "text": "You wanted our world, you wanted our silence",
    "tr": {
     "fr": "Vous vouliez notre monde, vous vouliez notre silence",
@@ -356,7 +356,7 @@
    }
   },
   {
-   "t": 154.24,
+   "t": 103.8,
    "text": "You wanted our children to live on their knees",
    "tr": {
     "fr": "Vous vouliez nos enfants vivant à genoux",
@@ -374,7 +374,7 @@
    }
   },
   {
-   "t": 157.53,
+   "t": 107.04,
    "text": "But the runway is clear and the guns are still loaded",
    "tr": {
     "fr": "Mais la piste est dégagée et les canons sont encore chargés",
@@ -392,7 +392,7 @@
    }
   },
   {
-   "t": 160.83,
+   "t": 110.54,
    "text": "And the only thing left is the sound of us free",
    "tr": {
     "fr": "Et la seule chose qui reste, c'est le bruit de notre liberté",
@@ -413,7 +413,7 @@
    "text": ""
   },
   {
-   "t": 164.12,
+   "t": 114.35,
    "text": "No mercy left, no mercy left",
    "tr": {
     "fr": "Plus de pitié, plus de pitié",
@@ -431,7 +431,7 @@
    }
   },
   {
-   "t": 167.5,
+   "t": 117.79,
    "text": "We will hunt you down till there's nothing left",
    "tr": {
     "fr": "Nous vous traquerons jusqu'à ce qu'il ne reste rien",
@@ -449,7 +449,7 @@
    }
   },
   {
-   "t": 169.78,
+   "t": 121.17,
    "text": "Tear down your convoy, burn your battle ship down",
    "tr": {
     "fr": "Nous abattrons votre convoi, brûlerons votre vaisseau amiral",
@@ -467,7 +467,7 @@
    }
   },
   {
-   "t": 173.4,
+   "t": 124.6,
    "text": "This is our sky and we're taking it now",
    "tr": {
     "fr": "Ce ciel est le nôtre et nous le reprenons maintenant",
@@ -485,7 +485,7 @@
    }
   },
   {
-   "t": 180.99,
+   "t": 128.02,
    "text": "No mercy left, no mercy left",
    "tr": {
     "fr": "Plus de pitié, plus de pitié",
@@ -503,7 +503,7 @@
    }
   },
   {
-   "t": 182.63,
+   "t": 135.12,
    "text": "Humanity answers with fire and death",
    "tr": {
     "fr": "L'humanité répond par le feu et la mort",
@@ -524,7 +524,7 @@
    "text": ""
   },
   {
-   "t": 184.28,
+   "t": 146.32,
    "text": "From the unknown space you came",
    "tr": {
     "fr": "De l'espace inconnu vous êtes venus",
@@ -542,7 +542,7 @@
    }
   },
   {
-   "t": 185.92,
+   "t": 149.8,
    "text": "With your eggs and your birds and your pride",
    "tr": {
     "fr": "Avec vos œufs, vos oiseaux et votre orgueil",
@@ -560,7 +560,7 @@
    }
   },
   {
-   "t": 187.57,
+   "t": 153.31,
    "text": "But the dawn that you feared is already here",
    "tr": {
     "fr": "Mais l'aube que vous redoutiez est déjà là",
@@ -578,7 +578,7 @@
    }
   },
   {
-   "t": 189.21,
+   "t": 156.77,
    "text": "And there's nowhere left for you to hide",
    "tr": {
     "fr": "Et il ne vous reste nulle part où vous cacher",
@@ -599,7 +599,7 @@
    "text": ""
   },
   {
-   "t": 190.85,
+   "t": 164.0,
    "text": "No mercy left, no mercy left",
    "tr": {
     "fr": "Plus de pitié, plus de pitié",
@@ -617,7 +617,7 @@
    }
   },
   {
-   "t": 192.5,
+   "t": 167.4,
    "text": "We will hunt you down till there's nothing left",
    "tr": {
     "fr": "Nous vous traquerons jusqu'à ce qu'il ne reste rien",
@@ -635,7 +635,7 @@
    }
   },
   {
-   "t": 194.14,
+   "t": 170.8,
    "text": "Tear down your convoy, burn your battle ship down",
    "tr": {
     "fr": "Nous abattrons votre convoi, brûlerons votre vaisseau amiral",
@@ -653,7 +653,7 @@
    }
   },
   {
-   "t": 195.79,
+   "t": 174.23,
    "text": "This is our sky and we're taking it now",
    "tr": {
     "fr": "Ce ciel est le nôtre et nous le reprenons maintenant",
@@ -671,7 +671,7 @@
    }
   },
   {
-   "t": 197.43,
+   "t": 180.84,
    "text": "No mercy left, no mercy left",
    "tr": {
     "fr": "Plus de pitié, plus de pitié",
@@ -689,7 +689,7 @@
    }
   },
   {
-   "t": 199.08,
+   "t": 192.59,
    "text": "Humanity answers — and we answer with death",
    "tr": {
     "fr": "L'humanité répond — et nous répondons par la mort",
@@ -710,7 +710,7 @@
    "text": ""
   },
   {
-   "t": 200.72,
+   "t": 201.26,
    "text": "Count your dead",
    "tr": {
     "fr": "Comptez vos morts",
@@ -728,7 +728,7 @@
    }
   },
   {
-   "t": 203.16,
+   "t": 202.96,
    "text": "Count your ships",
    "tr": {
     "fr": "Comptez vos vaisseaux",
@@ -746,7 +746,7 @@
    }
   },
   {
-   "t": 204.84,
+   "t": 204.6,
    "text": "Count the stars that we still own",
    "tr": {
     "fr": "Comptez les étoiles qui sont encore à nous",
@@ -764,7 +764,7 @@
    }
   },
   {
-   "t": 208.26,
+   "t": 207.98,
    "text": "This war ends",
    "tr": {
     "fr": "Cette guerre finira",
@@ -782,7 +782,7 @@
    }
   },
   {
-   "t": 209.38,
+   "t": 209.24,
    "text": "When we say it ends",
    "tr": {
     "fr": "Quand nous dirons qu'elle est finie",
@@ -800,7 +800,7 @@
    }
   },
   {
-   "t": 214.24,
+   "t": 214.33,
    "text": "And we say it ends right now",
    "tr": {
     "fr": "Et nous disons qu'elle finit maintenant",
