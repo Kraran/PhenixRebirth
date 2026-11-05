@@ -155,7 +155,7 @@ def test_labels_are_the_jukebox_titles(folder):
                 assert ingame_music.label(key, t, asset_path) == t("juke_" + key)
                 assert "Lyra Voss" in ingame_music.label(key, t, asset_path)
         set_lang("en")
-        assert ingame_music.label("lyra_eternal_dawn", t, asset_path) == "Lyra Voss - Eternal Dawn (Adventure)"
+        assert ingame_music.label("lyra_eternal_dawn", t, asset_path) == "Lyra Voss - Eternal Dawn"
     finally:
         set_lang(before)
 

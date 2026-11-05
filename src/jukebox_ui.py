@@ -238,7 +238,7 @@ def style_of(game):
 
 
 def split_title(title):
-    """("Lyra Voss", "Eternal Dawn", "(Aventure)") from "Lyra Voss - Eternal Dawn (Aventure)"."""
+    """("Lyra Voss", "When We Looked Up", "(Unplugged)") from "Lyra Voss - When We Looked Up (Unplugged)"."""
     artist, _sep, name = title.partition(" - ")
     if not name:
         artist, name = "", title
