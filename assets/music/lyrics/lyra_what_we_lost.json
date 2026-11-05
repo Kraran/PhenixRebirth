@@ -1,0 +1,893 @@
+{
+ "lang": "en",
+ "lines": [
+  {
+   "t": 13.7,
+   "text": "They told us it would only take a season",
+   "tr": {
+    "fr": "Ils nous avaient dit que ça ne durerait qu'une saison",
+    "es": "Nos dijeron que solo duraría una estación",
+    "de": "Sie sagten uns, es dauere nur eine Saison",
+    "it": "Ci avevano detto che sarebbe durata una stagione",
+    "pt": "Disseram-nos que só ia durar uma estação",
+    "nl": "Ze zeiden dat het maar een seizoen zou duren",
+    "pl": "Mówili nam, że to potrwa tylko jeden sezon",
+    "tr": "Bize bunun sadece bir mevsim süreceğini söylediler",
+    "sv": "De sa att det bara skulle ta en säsong",
+    "no": "De sa at det bare skulle ta en sesong",
+    "da": "De sagde, det kun ville tage en sæson",
+    "ru": "Нам говорили, что это займёт лишь один сезон"
+   }
+  },
+  {
+   "t": 20.56,
+   "text": "That the war birds couldn't hold the sky",
+   "tr": {
+    "fr": "Que les oiseaux de guerre ne tiendraient pas le ciel",
+    "es": "Que las aves de guerra no podrían dominar el cielo",
+    "de": "Die Kriegsvögel könnten den Himmel nicht halten",
+    "it": "Che gli uccelli da guerra non avrebbero tenuto il cielo",
+    "pt": "Que as aves de guerra não iam segurar o céu",
+    "nl": "Dat de oorlogsvogels de lucht niet konden houden",
+    "pl": "Że ptaki wojny nie utrzymają nieba",
+    "tr": "Savaş kuşlarının gökyüzünü tutamayacağını",
+    "sv": "Att krigsfåglarna inte kunde hålla himlen",
+    "no": "At krigsfuglene ikke kunne holde himmelen",
+    "da": "At krigsfuglene ikke kunne holde himlen",
+    "ru": "Что птицам войны не удержать небо"
+   }
+  },
+  {
+   "t": 26.68,
+   "text": "But the eggs kept hatching in the darkness",
+   "tr": {
+    "fr": "Mais les œufs n'ont cessé d'éclore dans les ténèbres",
+    "es": "Pero los huevos siguieron eclosionando en la oscuridad",
+    "de": "Doch die Eier schlüpften weiter in der Dunkelheit",
+    "it": "Ma le uova continuavano a schiudersi nell'oscurità",
+    "pt": "Mas os ovos continuaram a eclodir na escuridão",
+    "nl": "Maar de eieren bleven uitkomen in het donker",
+    "pl": "Lecz jaja wciąż wykluwały się w ciemności",
+    "tr": "Ama yumurtalar karanlıkta çatlamaya devam etti",
+    "sv": "Men äggen fortsatte kläckas i mörkret",
+    "no": "Men eggene fortsatte å klekkes i mørket",
+    "da": "Men æggene blev ved med at klække i mørket",
+    "ru": "Но яйца всё вылуплялись во тьме"
+   }
+  },
+  {
+   "t": 33.96,
+   "text": "And the names kept falling as they died",
+   "tr": {
+    "fr": "Et les noms n'ont cessé de tomber avec les morts",
+    "es": "Y los nombres siguieron cayendo mientras morían",
+    "de": "Und die Namen fielen weiter, als sie starben",
+    "it": "E i nomi continuavano a cadere mentre morivano",
+    "pt": "E os nomes continuaram a cair à medida que morriam",
+    "nl": "En de namen bleven vallen terwijl ze stierven",
+    "pl": "A imiona wciąż padały, gdy ginęli",
+    "tr": "Ve isimler, onlar öldükçe düşmeye devam etti",
+    "sv": "Och namnen fortsatte falla när de dog",
+    "no": "Og navnene fortsatte å falle da de døde",
+    "da": "Og navnene blev ved med at falde, da de døde",
+    "ru": "И имена всё падали, когда они погибали"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 41.9,
+   "text": "I still see the faces on the runway",
+   "tr": {
+    "fr": "Je revois encore les visages sur la piste",
+    "es": "Todavía veo los rostros en la pista",
+    "de": "Ich sehe noch die Gesichter auf der Startbahn",
+    "it": "Vedo ancora i volti sulla pista",
+    "pt": "Ainda vejo os rostos na pista",
+    "nl": "Ik zie de gezichten nog op de startbaan",
+    "pl": "Wciąż widzę twarze na pasie startowym",
+    "tr": "Pistteki yüzleri hâlâ görüyorum",
+    "sv": "Jag ser fortfarande ansiktena på startbanan",
+    "no": "Jeg ser fortsatt ansiktene på rullebanen",
+    "da": "Jeg ser stadig ansigterne på landingsbanen",
+    "ru": "Я всё ещё вижу лица на взлётной полосе"
+   }
+  },
+  {
+   "t": 46.4,
+   "text": "Young and laughing just before they flew",
+   "tr": {
+    "fr": "Jeunes et riants, juste avant l'envol",
+    "es": "Jóvenes y riendo justo antes de despegar",
+    "de": "Jung und lachend, kurz bevor sie flogen",
+    "it": "Giovani e sorridenti appena prima di partire",
+    "pt": "Jovens e a rir mesmo antes de voar",
+    "nl": "Jong en lachend, vlak voordat ze vlogen",
+    "pl": "Młode i roześmiane tuż przed lotem",
+    "tr": "Gençler, uçmadan hemen önce gülüyorlardı",
+    "sv": "Unga och skrattande precis innan de flög",
+    "no": "Unge og lattermilde rett før de fløy",
+    "da": "Unge og leende lige før de fløj",
+    "ru": "Юные, смеющиеся перед самым вылетом"
+   }
+  },
+  {
+   "t": 50.4,
+   "text": "Now the lights flash red and no one answers",
+   "tr": {
+    "fr": "Maintenant les voyants clignotent en rouge et personne ne répond",
+    "es": "Ahora las luces parpadean en rojo y nadie responde",
+    "de": "Jetzt blinken die Lichter rot und niemand antwortet",
+    "it": "Ora le spie lampeggiano rosse e nessuno risponde",
+    "pt": "Agora as luzes piscam a vermelho e ninguém responde",
+    "nl": "Nu knipperen de lampjes rood en niemand antwoordt",
+    "pl": "Teraz kontrolki migają na czerwono i nikt nie odpowiada",
+    "tr": "Şimdi ışıklar kırmızı yanıp sönüyor ve kimse cevap vermiyor",
+    "sv": "Nu blinkar lamporna rött och ingen svarar",
+    "no": "Nå blinker lysene rødt og ingen svarer",
+    "da": "Nu blinker lysene rødt, og ingen svarer",
+    "ru": "Теперь огни мигают красным, и никто не отвечает"
+   }
+  },
+  {
+   "t": 54.4,
+   "text": "And the silence is the only thing that's true",
+   "tr": {
+    "fr": "Et le silence est la seule chose vraie",
+    "es": "Y el silencio es lo único verdadero",
+    "de": "Und die Stille ist das Einzige, was wahr ist",
+    "it": "E il silenzio è l'unica cosa vera",
+    "pt": "E o silêncio é a única coisa verdadeira",
+    "nl": "En de stilte is het enige wat waar is",
+    "pl": "A cisza jest jedyną prawdą",
+    "tr": "Ve sessizlik tek gerçek olan şey",
+    "sv": "Och tystnaden är det enda som är sant",
+    "no": "Og stillheten er det eneste som er sant",
+    "da": "Og stilheden er det eneste, der er sandt",
+    "ru": "И тишина — единственная правда"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 66.26,
+   "text": "What we lost is more than ships and numbers",
+   "tr": {
+    "fr": "Ce que nous avons perdu, c'est plus que des vaisseaux et des chiffres",
+    "es": "Lo que perdimos es más que naves y números",
+    "de": "Was wir verloren haben, ist mehr als Schiffe und Zahlen",
+    "it": "Ciò che abbiamo perso è più di navi e numeri",
+    "pt": "O que perdemos é mais do que naves e números",
+    "nl": "Wat we verloren is meer dan schepen en cijfers",
+    "pl": "To, co straciliśmy, to więcej niż statki i liczby",
+    "tr": "Kaybettiğimiz şey gemilerden ve sayılardan fazlası",
+    "sv": "Det vi förlorat är mer än skepp och siffror",
+    "no": "Det vi mistet er mer enn skip og tall",
+    "da": "Det, vi mistede, er mere end skibe og tal",
+    "ru": "То, что мы потеряли, — больше, чем корабли и цифры"
+   }
+  },
+  {
+   "t": 69.94,
+   "text": "More than bases buried in the dust",
+   "tr": {
+    "fr": "Plus que des bases ensevelies sous la poussière",
+    "es": "Más que bases enterradas en el polvo",
+    "de": "Mehr als Basen, begraben im Staub",
+    "it": "Più di basi sepolte nella polvere",
+    "pt": "Mais do que bases enterradas no pó",
+    "nl": "Meer dan bases begraven in het stof",
+    "pl": "Więcej niż bazy pogrzebane w pyle",
+    "tr": "Toza gömülmüş üslerden fazlası",
+    "sv": "Mer än baser begravda i stoftet",
+    "no": "Mer enn baser begravd i støvet",
+    "da": "Mere end baser begravet i støvet",
+    "ru": "Больше, чем базы, погребённые в пыли"
+   }
+  },
+  {
+   "t": 73.38,
+   "text": "It's the ones who never made it homeward",
+   "tr": {
+    "fr": "Ce sont ceux qui ne sont jamais rentrés",
+    "es": "Son los que nunca volvieron a casa",
+    "de": "Es sind die, die nie nach Hause kamen",
+    "it": "Sono quelli che non sono mai tornati a casa",
+    "pt": "São os que nunca voltaram para casa",
+    "nl": "Het zijn zij die nooit thuiskwamen",
+    "pl": "To ci, którzy nigdy nie wrócili do domu",
+    "tr": "Eve hiç dönemeyenler",
+    "sv": "Det är de som aldrig kom hem",
+    "no": "Det er de som aldri kom hjem",
+    "da": "Det er dem, der aldrig kom hjem",
+    "ru": "Это те, кто так и не вернулся домой"
+   }
+  },
+  {
+   "t": 77.54,
+   "text": "It's the futures turned to ash and rust",
+   "tr": {
+    "fr": "Ce sont des avenirs changés en cendre et en rouille",
+    "es": "Son los futuros convertidos en ceniza y óxido",
+    "de": "Es sind Zukünfte, zu Asche und Rost geworden",
+    "it": "Sono futuri ridotti in cenere e ruggine",
+    "pt": "São futuros feitos cinza e ferrugem",
+    "nl": "Het zijn toekomsten verworden tot as en roest",
+    "pl": "To przyszłość obrócona w popiół i rdzę",
+    "tr": "Küle ve pasa dönen gelecekler",
+    "sv": "Det är framtider som blev aska och rost",
+    "no": "Det er fremtider som ble aske og rust",
+    "da": "Det er fremtider, der blev til aske og rust",
+    "ru": "Это будущее, ставшее пеплом и ржавчиной"
+   }
+  },
+  {
+   "t": 80.62,
+   "text": "We still fight because we have to",
+   "tr": {
+    "fr": "Nous nous battons encore parce qu'il le faut",
+    "es": "Seguimos luchando porque no queda otra",
+    "de": "Wir kämpfen weiter, weil wir müssen",
+    "it": "Combattiamo ancora perché dobbiamo",
+    "pt": "Ainda lutamos porque temos de lutar",
+    "nl": "We vechten nog omdat het moet",
+    "pl": "Wciąż walczymy, bo musimy",
+    "tr": "Hâlâ savaşıyoruz çünkü mecburuz",
+    "sv": "Vi kämpar än för att vi måste",
+    "no": "Vi kjemper fortsatt fordi vi må",
+    "da": "Vi kæmper stadig, fordi vi må",
+    "ru": "Мы всё ещё сражаемся, потому что должны"
+   }
+  },
+  {
+   "t": 84.48,
+   "text": "But the cost is written on our skin",
+   "tr": {
+    "fr": "Mais le prix est gravé sur notre peau",
+    "es": "Pero el precio está escrito en nuestra piel",
+    "de": "Doch der Preis steht auf unserer Haut geschrieben",
+    "it": "Ma il prezzo è scritto sulla nostra pelle",
+    "pt": "Mas o preço está escrito na nossa pele",
+    "nl": "Maar de prijs staat op onze huid geschreven",
+    "pl": "Lecz cena wypisana jest na naszej skórze",
+    "tr": "Ama bedeli tenimize yazılı",
+    "sv": "Men priset står skrivet på vår hud",
+    "no": "Men prisen står skrevet på huden vår",
+    "da": "Men prisen står skrevet på vores hud",
+    "ru": "Но цена написана на нашей коже"
+   }
+  },
+  {
+   "t": 88.14,
+   "text": "Every dawn we win is just a reminder",
+   "tr": {
+    "fr": "Chaque aube gagnée n'est qu'un rappel",
+    "es": "Cada amanecer que ganamos es solo un recuerdo",
+    "de": "Jedes Morgenrot, das wir gewinnen, ist nur eine Erinnerung",
+    "it": "Ogni alba che vinciamo è solo un ricordo",
+    "pt": "Cada aurora que ganhamos é só uma lembrança",
+    "nl": "Elke dageraad die we winnen is slechts een herinnering",
+    "pl": "Każdy wygrany świt to tylko przypomnienie",
+    "tr": "Kazandığımız her şafak sadece bir hatırlatma",
+    "sv": "Varje gryning vi vinner är bara en påminnelse",
+    "no": "Hvert daggry vi vinner er bare en påminnelse",
+    "da": "Hvert daggry, vi vinder, er blot en påmindelse",
+    "ru": "Каждый отвоёванный рассвет — лишь напоминание"
+   }
+  },
+  {
+   "t": 91.34,
+   "text": "Of the light that never comes again",
+   "tr": {
+    "fr": "De la lumière qui ne reviendra jamais",
+    "es": "De la luz que nunca volverá",
+    "de": "An das Licht, das nie wiederkommt",
+    "it": "Della luce che non tornerà mai più",
+    "pt": "Da luz que nunca mais volta",
+    "nl": "Aan het licht dat nooit meer terugkomt",
+    "pl": "Światła, które już nigdy nie wróci",
+    "tr": "Bir daha asla gelmeyecek ışığın",
+    "sv": "Om ljuset som aldrig kommer igen",
+    "no": "Om lyset som aldri kommer igjen",
+    "da": "Om lyset, der aldrig kommer igen",
+    "ru": "О свете, что больше никогда не придёт"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 108.26,
+   "text": "Pattern after pattern, we keep sending them",
+   "tr": {
+    "fr": "Vague après vague, nous continuons de les envoyer",
+    "es": "Oleada tras oleada, los seguimos enviando",
+    "de": "Welle um Welle schicken wir sie weiter",
+    "it": "Ondata dopo ondata, continuiamo a mandarli",
+    "pt": "Vaga após vaga, continuamos a enviá-los",
+    "nl": "Golf na golf blijven we ze sturen",
+    "pl": "Fala za falą wciąż ich wysyłamy",
+    "tr": "Dalga dalga onları göndermeye devam ediyoruz",
+    "sv": "Våg efter våg fortsätter vi skicka dem",
+    "no": "Bølge etter bølge fortsetter vi å sende dem",
+    "da": "Bølge efter bølge bliver vi ved med at sende dem",
+    "ru": "Волна за волной мы снова отправляем их"
+   }
+  },
+  {
+   "t": 110.82,
+   "text": "Into the convoy and the battle ship's fire",
+   "tr": {
+    "fr": "Dans le convoi et le feu du vaisseau amiral",
+    "es": "Al convoy y al fuego del acorazado",
+    "de": "In den Konvoi und das Feuer des Schlachtschiffs",
+    "it": "Nel convoglio e nel fuoco della corazzata",
+    "pt": "Para o comboio e o fogo do couraçado",
+    "nl": "Het konvooi in en het vuur van het slagschip",
+    "pl": "W konwój i ogień pancernika",
+    "tr": "Konvoyun ve savaş gemisinin ateşine",
+    "sv": "In i konvojen och slagskeppets eld",
+    "no": "Inn i konvoien og slagskipets ild",
+    "da": "Ind i konvojen og slagskibets ild",
+    "ru": "В конвой и в огонь линкора"
+   }
+  },
+  {
+   "t": 115.44,
+   "text": "Some come back with stories and with medals",
+   "tr": {
+    "fr": "Certains reviennent avec des récits et des médailles",
+    "es": "Algunos vuelven con historias y medallas",
+    "de": "Manche kehren mit Geschichten und Orden zurück",
+    "it": "Alcuni tornano con storie e medaglie",
+    "pt": "Alguns voltam com histórias e medalhas",
+    "nl": "Sommigen komen terug met verhalen en medailles",
+    "pl": "Niektórzy wracają z opowieściami i medalami",
+    "tr": "Bazıları hikâyelerle ve madalyalarla dönüyor",
+    "sv": "Några kommer tillbaka med historier och medaljer",
+    "no": "Noen kommer tilbake med historier og medaljer",
+    "da": "Nogle kommer tilbage med historier og medaljer",
+    "ru": "Кто-то возвращается с историями и медалями"
+   }
+  },
+  {
+   "t": 118.48,
+   "text": "Most come back as nothing but a wire",
+   "tr": {
+    "fr": "La plupart ne reviennent qu'en un simple télégramme",
+    "es": "La mayoría vuelve solo como un telegrama",
+    "de": "Die meisten kehren nur als Telegramm zurück",
+    "it": "I più tornano soltanto come un telegramma",
+    "pt": "A maioria volta apenas como um telegrama",
+    "nl": "De meesten komen terug als niets dan een telegram",
+    "pl": "Większość wraca tylko jako telegram",
+    "tr": "Çoğu sadece bir telgraf olarak dönüyor",
+    "sv": "De flesta kommer tillbaka som bara ett telegram",
+    "no": "De fleste kommer tilbake som bare et telegram",
+    "da": "De fleste kommer tilbage som blot et telegram",
+    "ru": "Большинство возвращается лишь телеграммой"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 124.3,
+   "text": "I keep a list of every pilot missing",
+   "tr": {
+    "fr": "Je garde la liste de chaque pilote disparu",
+    "es": "Guardo una lista de cada piloto desaparecido",
+    "de": "Ich führe eine Liste jedes vermissten Piloten",
+    "it": "Tengo una lista di ogni pilota disperso",
+    "pt": "Guardo uma lista de cada piloto desaparecido",
+    "nl": "Ik houd een lijst bij van elke vermiste piloot",
+    "pl": "Trzymam listę każdego zaginionego pilota",
+    "tr": "Kayıp her pilotun listesini tutuyorum",
+    "sv": "Jag har en lista över varje saknad pilot",
+    "no": "Jeg har en liste over hver savnet pilot",
+    "da": "Jeg har en liste over hver savnet pilot",
+    "ru": "Я храню список всех пропавших пилотов"
+   }
+  },
+  {
+   "t": 126.3,
+   "text": "Folded in the pocket of my coat",
+   "tr": {
+    "fr": "Pliée dans la poche de mon manteau",
+    "es": "Doblada en el bolsillo de mi abrigo",
+    "de": "Gefaltet in der Tasche meines Mantels",
+    "it": "Piegata nella tasca del mio cappotto",
+    "pt": "Dobrada no bolso do meu casaco",
+    "nl": "Opgevouwen in de zak van mijn jas",
+    "pl": "Złożoną w kieszeni płaszcza",
+    "tr": "Paltomun cebinde katlanmış",
+    "sv": "Vikt i fickan på min rock",
+    "no": "Brettet i lommen på frakken min",
+    "da": "Foldet i lommen på min frakke",
+    "ru": "Сложенный в кармане моего пальто"
+   }
+  },
+  {
+   "t": 128.3,
+   "text": "Some of them were barely out of training",
+   "tr": {
+    "fr": "Certains sortaient à peine de l'entraînement",
+    "es": "Algunos apenas habían terminado el entrenamiento",
+    "de": "Manche waren kaum aus der Ausbildung",
+    "it": "Alcuni erano appena usciti dall'addestramento",
+    "pt": "Alguns mal tinham saído do treino",
+    "nl": "Sommigen kwamen nog maar net van de opleiding",
+    "pl": "Niektórzy ledwo skończyli szkolenie",
+    "tr": "Bazıları eğitimden yeni çıkmıştı",
+    "sv": "Några hade knappt gått ut utbildningen",
+    "no": "Noen var knapt ferdige med opplæringen",
+    "da": "Nogle var knap færdige med uddannelsen",
+    "ru": "Некоторые едва закончили обучение"
+   }
+  },
+  {
+   "t": 132.39,
+   "text": "Some of them had kids they never wrote",
+   "tr": {
+    "fr": "Certains avaient des enfants à qui ils n'ont jamais écrit",
+    "es": "Algunos tenían hijos a los que nunca escribieron",
+    "de": "Manche hatten Kinder, denen sie nie schrieben",
+    "it": "Alcuni avevano figli a cui non hanno mai scritto",
+    "pt": "Alguns tinham filhos a quem nunca escreveram",
+    "nl": "Sommigen hadden kinderen aan wie ze nooit schreven",
+    "pl": "Niektórzy mieli dzieci, do których nigdy nie napisali",
+    "tr": "Bazılarının hiç mektup yazmadıkları çocukları vardı",
+    "sv": "Några hade barn de aldrig skrev till",
+    "no": "Noen hadde barn de aldri skrev til",
+    "da": "Nogle havde børn, de aldrig skrev til",
+    "ru": "У некоторых были дети, которым они так и не написали"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 208.72,
+   "text": "What we lost is more than ships and numbers",
+   "tr": {
+    "fr": "Ce que nous avons perdu, c'est plus que des vaisseaux et des chiffres",
+    "es": "Lo que perdimos es más que naves y números",
+    "de": "Was wir verloren haben, ist mehr als Schiffe und Zahlen",
+    "it": "Ciò che abbiamo perso è più di navi e numeri",
+    "pt": "O que perdemos é mais do que naves e números",
+    "nl": "Wat we verloren is meer dan schepen en cijfers",
+    "pl": "To, co straciliśmy, to więcej niż statki i liczby",
+    "tr": "Kaybettiğimiz şey gemilerden ve sayılardan fazlası",
+    "sv": "Det vi förlorat är mer än skepp och siffror",
+    "no": "Det vi mistet er mer enn skip og tall",
+    "da": "Det, vi mistede, er mere end skibe og tal",
+    "ru": "То, что мы потеряли, — больше, чем корабли и цифры"
+   }
+  },
+  {
+   "t": 212.94,
+   "text": "More than bases buried in the dust",
+   "tr": {
+    "fr": "Plus que des bases ensevelies sous la poussière",
+    "es": "Más que bases enterradas en el polvo",
+    "de": "Mehr als Basen, begraben im Staub",
+    "it": "Più di basi sepolte nella polvere",
+    "pt": "Mais do que bases enterradas no pó",
+    "nl": "Meer dan bases begraven in het stof",
+    "pl": "Więcej niż bazy pogrzebane w pyle",
+    "tr": "Toza gömülmüş üslerden fazlası",
+    "sv": "Mer än baser begravda i stoftet",
+    "no": "Mer enn baser begravd i støvet",
+    "da": "Mere end baser begravet i støvet",
+    "ru": "Больше, чем базы, погребённые в пыли"
+   }
+  },
+  {
+   "t": 215.42,
+   "text": "It's the ones who never made it homeward",
+   "tr": {
+    "fr": "Ce sont ceux qui ne sont jamais rentrés",
+    "es": "Son los que nunca volvieron a casa",
+    "de": "Es sind die, die nie nach Hause kamen",
+    "it": "Sono quelli che non sono mai tornati a casa",
+    "pt": "São os que nunca voltaram para casa",
+    "nl": "Het zijn zij die nooit thuiskwamen",
+    "pl": "To ci, którzy nigdy nie wrócili do domu",
+    "tr": "Eve hiç dönemeyenler",
+    "sv": "Det är de som aldrig kom hem",
+    "no": "Det er de som aldri kom hjem",
+    "da": "Det er dem, der aldrig kom hjem",
+    "ru": "Это те, кто так и не вернулся домой"
+   }
+  },
+  {
+   "t": 219.94,
+   "text": "It's the futures turned to ash and rust",
+   "tr": {
+    "fr": "Ce sont des avenirs changés en cendre et en rouille",
+    "es": "Son los futuros convertidos en ceniza y óxido",
+    "de": "Es sind Zukünfte, zu Asche und Rost geworden",
+    "it": "Sono futuri ridotti in cenere e ruggine",
+    "pt": "São futuros feitos cinza e ferrugem",
+    "nl": "Het zijn toekomsten verworden tot as en roest",
+    "pl": "To przyszłość obrócona w popiół i rdzę",
+    "tr": "Küle ve pasa dönen gelecekler",
+    "sv": "Det är framtider som blev aska och rost",
+    "no": "Det er fremtider som ble aske og rust",
+    "da": "Det er fremtider, der blev til aske og rust",
+    "ru": "Это будущее, ставшее пеплом и ржавчиной"
+   }
+  },
+  {
+   "t": 223.36,
+   "text": "We still fight because we have to",
+   "tr": {
+    "fr": "Nous nous battons encore parce qu'il le faut",
+    "es": "Seguimos luchando porque no queda otra",
+    "de": "Wir kämpfen weiter, weil wir müssen",
+    "it": "Combattiamo ancora perché dobbiamo",
+    "pt": "Ainda lutamos porque temos de lutar",
+    "nl": "We vechten nog omdat het moet",
+    "pl": "Wciąż walczymy, bo musimy",
+    "tr": "Hâlâ savaşıyoruz çünkü mecburuz",
+    "sv": "Vi kämpar än för att vi måste",
+    "no": "Vi kjemper fortsatt fordi vi må",
+    "da": "Vi kæmper stadig, fordi vi må",
+    "ru": "Мы всё ещё сражаемся, потому что должны"
+   }
+  },
+  {
+   "t": 227.1,
+   "text": "But the cost is written on our skin",
+   "tr": {
+    "fr": "Mais le prix est gravé sur notre peau",
+    "es": "Pero el precio está escrito en nuestra piel",
+    "de": "Doch der Preis steht auf unserer Haut geschrieben",
+    "it": "Ma il prezzo è scritto sulla nostra pelle",
+    "pt": "Mas o preço está escrito na nossa pele",
+    "nl": "Maar de prijs staat op onze huid geschreven",
+    "pl": "Lecz cena wypisana jest na naszej skórze",
+    "tr": "Ama bedeli tenimize yazılı",
+    "sv": "Men priset står skrivet på vår hud",
+    "no": "Men prisen står skrevet på huden vår",
+    "da": "Men prisen står skrevet på vores hud",
+    "ru": "Но цена написана на нашей коже"
+   }
+  },
+  {
+   "t": 230.16,
+   "text": "Every dawn we win is just a reminder",
+   "tr": {
+    "fr": "Chaque aube gagnée n'est qu'un rappel",
+    "es": "Cada amanecer que ganamos es solo un recuerdo",
+    "de": "Jedes Morgenrot, das wir gewinnen, ist nur eine Erinnerung",
+    "it": "Ogni alba che vinciamo è solo un ricordo",
+    "pt": "Cada aurora que ganhamos é só uma lembrança",
+    "nl": "Elke dageraad die we winnen is slechts een herinnering",
+    "pl": "Każdy wygrany świt to tylko przypomnienie",
+    "tr": "Kazandığımız her şafak sadece bir hatırlatma",
+    "sv": "Varje gryning vi vinner är bara en påminnelse",
+    "no": "Hvert daggry vi vinner er bare en påminnelse",
+    "da": "Hvert daggry, vi vinder, er blot en påmindelse",
+    "ru": "Каждый отвоёванный рассвет — лишь напоминание"
+   }
+  },
+  {
+   "t": 233.74,
+   "text": "Of the light that never comes again",
+   "tr": {
+    "fr": "De la lumière qui ne reviendra jamais",
+    "es": "De la luz que nunca volverá",
+    "de": "An das Licht, das nie wiederkommt",
+    "it": "Della luce che non tornerà mai più",
+    "pt": "Da luz que nunca mais volta",
+    "nl": "Aan het licht dat nooit meer terugkomt",
+    "pl": "Światła, które już nigdy nie wróci",
+    "tr": "Bir daha asla gelmeyecek ışığın",
+    "sv": "Om ljuset som aldrig kommer igen",
+    "no": "Om lyset som aldri kommer igjen",
+    "da": "Om lyset, der aldrig kommer igen",
+    "ru": "О свете, что больше никогда не придёт"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 234.92,
+   "text": "They say the arrival target's still ahead",
+   "tr": {
+    "fr": "On dit que la cible d'arrivée est encore devant",
+    "es": "Dicen que el objetivo de llegada sigue adelante",
+    "de": "Sie sagen, das Ankunftsziel liege noch vor uns",
+    "it": "Dicono che l'obiettivo d'arrivo è ancora avanti",
+    "pt": "Dizem que o alvo de chegada ainda está à frente",
+    "nl": "Ze zeggen dat het aankomstdoel nog voor ons ligt",
+    "pl": "Mówią, że cel przylotu wciąż przed nami",
+    "tr": "Varış hedefinin hâlâ ileride olduğunu söylüyorlar",
+    "sv": "De säger att ankomstmålet ligger framför oss än",
+    "no": "De sier at ankomstmålet fortsatt ligger foran",
+    "da": "De siger, ankomstmålet stadig ligger forude",
+    "ru": "Говорят, цель прибытия всё ещё впереди"
+   }
+  },
+  {
+   "t": 236.09,
+   "text": "That the bonus flag is waiting in the dark",
+   "tr": {
+    "fr": "Que le drapeau bonus attend dans le noir",
+    "es": "Que la bandera de bonus espera en la oscuridad",
+    "de": "Die Bonusflagge warte im Dunkeln",
+    "it": "Che la bandiera bonus aspetta nel buio",
+    "pt": "Que a bandeira de bónus espera no escuro",
+    "nl": "Dat de bonusvlag wacht in het donker",
+    "pl": "Że flaga bonusowa czeka w ciemności",
+    "tr": "Bonus bayrağının karanlıkta beklediğini",
+    "sv": "Att bonusflaggan väntar i mörkret",
+    "no": "At bonusflagget venter i mørket",
+    "da": "At bonusflaget venter i mørket",
+    "ru": "Что бонусный флаг ждёт во тьме"
+   }
+  },
+  {
+   "t": 237.27,
+   "text": "But I don't care about the points or glory",
+   "tr": {
+    "fr": "Mais je me fiche des points et de la gloire",
+    "es": "Pero no me importan los puntos ni la gloria",
+    "de": "Doch Punkte und Ruhm sind mir egal",
+    "it": "Ma non m'importa dei punti o della gloria",
+    "pt": "Mas não me importam os pontos nem a glória",
+    "nl": "Maar ik geef niets om punten of glorie",
+    "pl": "Lecz nie obchodzą mnie punkty ani chwała",
+    "tr": "Ama puanlar ya da şan umurumda değil",
+    "sv": "Men jag bryr mig inte om poäng eller ära",
+    "no": "Men jeg bryr meg ikke om poeng eller ære",
+    "da": "Men jeg er ligeglad med point og ære",
+    "ru": "Но мне нет дела до очков и славы"
+   }
+  },
+  {
+   "t": 238.44,
+   "text": "I just want the ones we buried in the stars",
+   "tr": {
+    "fr": "Je veux juste ceux que nous avons enterrés dans les étoiles",
+    "es": "Solo quiero a los que enterramos en las estrellas",
+    "de": "Ich will nur die zurück, die wir in den Sternen begruben",
+    "it": "Voglio solo quelli che abbiamo sepolto tra le stelle",
+    "pt": "Só quero os que enterrámos nas estrelas",
+    "nl": "Ik wil alleen hen die we in de sterren begroeven",
+    "pl": "Chcę tylko tych, których pochowaliśmy w gwiazdach",
+    "tr": "Sadece yıldızlara gömdüklerimizi istiyorum",
+    "sv": "Jag vill bara ha dem vi begravde bland stjärnorna",
+    "no": "Jeg vil bare ha dem vi begravde blant stjernene",
+    "da": "Jeg vil bare have dem, vi begravede blandt stjernerne",
+    "ru": "Я хочу лишь тех, кого мы похоронили среди звёзд"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 239.62,
+   "text": "What we lost is more than ships and numbers",
+   "tr": {
+    "fr": "Ce que nous avons perdu, c'est plus que des vaisseaux et des chiffres",
+    "es": "Lo que perdimos es más que naves y números",
+    "de": "Was wir verloren haben, ist mehr als Schiffe und Zahlen",
+    "it": "Ciò che abbiamo perso è più di navi e numeri",
+    "pt": "O que perdemos é mais do que naves e números",
+    "nl": "Wat we verloren is meer dan schepen en cijfers",
+    "pl": "To, co straciliśmy, to więcej niż statki i liczby",
+    "tr": "Kaybettiğimiz şey gemilerden ve sayılardan fazlası",
+    "sv": "Det vi förlorat är mer än skepp och siffror",
+    "no": "Det vi mistet er mer enn skip og tall",
+    "da": "Det, vi mistede, er mere end skibe og tal",
+    "ru": "То, что мы потеряли, — больше, чем корабли и цифры"
+   }
+  },
+  {
+   "t": 240.79,
+   "text": "More than bases buried in the dust",
+   "tr": {
+    "fr": "Plus que des bases ensevelies sous la poussière",
+    "es": "Más que bases enterradas en el polvo",
+    "de": "Mehr als Basen, begraben im Staub",
+    "it": "Più di basi sepolte nella polvere",
+    "pt": "Mais do que bases enterradas no pó",
+    "nl": "Meer dan bases begraven in het stof",
+    "pl": "Więcej niż bazy pogrzebane w pyle",
+    "tr": "Toza gömülmüş üslerden fazlası",
+    "sv": "Mer än baser begravda i stoftet",
+    "no": "Mer enn baser begravd i støvet",
+    "da": "Mere end baser begravet i støvet",
+    "ru": "Больше, чем базы, погребённые в пыли"
+   }
+  },
+  {
+   "t": 241.97,
+   "text": "It's the ones who never made it homeward",
+   "tr": {
+    "fr": "Ce sont ceux qui ne sont jamais rentrés",
+    "es": "Son los que nunca volvieron a casa",
+    "de": "Es sind die, die nie nach Hause kamen",
+    "it": "Sono quelli che non sono mai tornati a casa",
+    "pt": "São os que nunca voltaram para casa",
+    "nl": "Het zijn zij die nooit thuiskwamen",
+    "pl": "To ci, którzy nigdy nie wrócili do domu",
+    "tr": "Eve hiç dönemeyenler",
+    "sv": "Det är de som aldrig kom hem",
+    "no": "Det er de som aldri kom hjem",
+    "da": "Det er dem, der aldrig kom hjem",
+    "ru": "Это те, кто так и не вернулся домой"
+   }
+  },
+  {
+   "t": 243.14,
+   "text": "It's the futures turned to ash and rust",
+   "tr": {
+    "fr": "Ce sont des avenirs changés en cendre et en rouille",
+    "es": "Son los futuros convertidos en ceniza y óxido",
+    "de": "Es sind Zukünfte, zu Asche und Rost geworden",
+    "it": "Sono futuri ridotti in cenere e ruggine",
+    "pt": "São futuros feitos cinza e ferrugem",
+    "nl": "Het zijn toekomsten verworden tot as en roest",
+    "pl": "To przyszłość obrócona w popiół i rdzę",
+    "tr": "Küle ve pasa dönen gelecekler",
+    "sv": "Det är framtider som blev aska och rost",
+    "no": "Det er fremtider som ble aske og rust",
+    "da": "Det er fremtider, der blev til aske og rust",
+    "ru": "Это будущее, ставшее пеплом и ржавчиной"
+   }
+  },
+  {
+   "t": 244.32,
+   "text": "We still fight because we have to",
+   "tr": {
+    "fr": "Nous nous battons encore parce qu'il le faut",
+    "es": "Seguimos luchando porque no queda otra",
+    "de": "Wir kämpfen weiter, weil wir müssen",
+    "it": "Combattiamo ancora perché dobbiamo",
+    "pt": "Ainda lutamos porque temos de lutar",
+    "nl": "We vechten nog omdat het moet",
+    "pl": "Wciąż walczymy, bo musimy",
+    "tr": "Hâlâ savaşıyoruz çünkü mecburuz",
+    "sv": "Vi kämpar än för att vi måste",
+    "no": "Vi kjemper fortsatt fordi vi må",
+    "da": "Vi kæmper stadig, fordi vi må",
+    "ru": "Мы всё ещё сражаемся, потому что должны"
+   }
+  },
+  {
+   "t": 245.49,
+   "text": "But the cost is written on our skin",
+   "tr": {
+    "fr": "Mais le prix est gravé sur notre peau",
+    "es": "Pero el precio está escrito en nuestra piel",
+    "de": "Doch der Preis steht auf unserer Haut geschrieben",
+    "it": "Ma il prezzo è scritto sulla nostra pelle",
+    "pt": "Mas o preço está escrito na nossa pele",
+    "nl": "Maar de prijs staat op onze huid geschreven",
+    "pl": "Lecz cena wypisana jest na naszej skórze",
+    "tr": "Ama bedeli tenimize yazılı",
+    "sv": "Men priset står skrivet på vår hud",
+    "no": "Men prisen står skrevet på huden vår",
+    "da": "Men prisen står skrevet på vores hud",
+    "ru": "Но цена написана на нашей коже"
+   }
+  },
+  {
+   "t": 246.67,
+   "text": "Every dawn we win is just a reminder",
+   "tr": {
+    "fr": "Chaque aube gagnée n'est qu'un rappel",
+    "es": "Cada amanecer que ganamos es solo un recuerdo",
+    "de": "Jedes Morgenrot, das wir gewinnen, ist nur eine Erinnerung",
+    "it": "Ogni alba che vinciamo è solo un ricordo",
+    "pt": "Cada aurora que ganhamos é só uma lembrança",
+    "nl": "Elke dageraad die we winnen is slechts een herinnering",
+    "pl": "Każdy wygrany świt to tylko przypomnienie",
+    "tr": "Kazandığımız her şafak sadece bir hatırlatma",
+    "sv": "Varje gryning vi vinner är bara en påminnelse",
+    "no": "Hvert daggry vi vinner er bare en påminnelse",
+    "da": "Hvert daggry, vi vinder, er blot en påmindelse",
+    "ru": "Каждый отвоёванный рассвет — лишь напоминание"
+   }
+  },
+  {
+   "t": 247.84,
+   "text": "Of the light that never comes again",
+   "tr": {
+    "fr": "De la lumière qui ne reviendra jamais",
+    "es": "De la luz que nunca volverá",
+    "de": "An das Licht, das nie wiederkommt",
+    "it": "Della luce che non tornerà mai più",
+    "pt": "Da luz que nunca mais volta",
+    "nl": "Aan het licht dat nooit meer terugkomt",
+    "pl": "Światła, które już nigdy nie wróci",
+    "tr": "Bir daha asla gelmeyecek ışığın",
+    "sv": "Om ljuset som aldrig kommer igen",
+    "no": "Om lyset som aldri kommer igjen",
+    "da": "Om lyset, der aldrig kommer igen",
+    "ru": "О свете, что больше никогда не придёт"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 249.02,
+   "text": "So we keep their names",
+   "tr": {
+    "fr": "Alors nous gardons leurs noms",
+    "es": "Así que guardamos sus nombres",
+    "de": "Also bewahren wir ihre Namen",
+    "it": "Così custodiamo i loro nomi",
+    "pt": "Por isso guardamos os seus nomes",
+    "nl": "Dus bewaren we hun namen",
+    "pl": "Więc zachowujemy ich imiona",
+    "tr": "Bu yüzden isimlerini yaşatıyoruz",
+    "sv": "Så vi bevarar deras namn",
+    "no": "Så vi tar vare på navnene deres",
+    "da": "Så vi bevarer deres navne",
+    "ru": "Так что мы храним их имена"
+   }
+  },
+  {
+   "t": 251.76,
+   "text": "And we keep the fight",
+   "tr": {
+    "fr": "Et nous continuons le combat",
+    "es": "Y seguimos la lucha",
+    "de": "Und führen den Kampf weiter",
+    "it": "E portiamo avanti la lotta",
+    "pt": "E mantemos a luta",
+    "nl": "En zetten we de strijd voort",
+    "pl": "I prowadzimy dalej walkę",
+    "tr": "Ve savaşı sürdürüyoruz",
+    "sv": "Och vi fortsätter kampen",
+    "no": "Og vi fortsetter kampen",
+    "da": "Og vi fortsætter kampen",
+    "ru": "И продолжаем бой"
+   }
+  },
+  {
+   "t": 255.1,
+   "text": "And we try not to count",
+   "tr": {
+    "fr": "Et nous essayons de ne pas compter",
+    "es": "E intentamos no contar",
+    "de": "Und versuchen nicht zu zählen",
+    "it": "E cerchiamo di non contare",
+    "pt": "E tentamos não contar",
+    "nl": "En proberen we niet te tellen",
+    "pl": "I staramy się nie liczyć",
+    "tr": "Ve saymamaya çalışıyoruz",
+    "sv": "Och vi försöker att inte räkna",
+    "no": "Og vi prøver å ikke telle",
+    "da": "Og vi prøver ikke at tælle",
+    "ru": "И стараемся не считать"
+   }
+  },
+  {
+   "t": 259.1,
+   "text": "What the night has taken",
+   "tr": {
+    "fr": "Ce que la nuit nous a pris",
+    "es": "Lo que la noche se ha llevado",
+    "de": "Was die Nacht genommen hat",
+    "it": "Ciò che la notte ci ha preso",
+    "pt": "O que a noite levou",
+    "nl": "Wat de nacht heeft genomen",
+    "pl": "Tego, co zabrała noc",
+    "tr": "Gecenin aldıklarını",
+    "sv": "Det natten har tagit",
+    "no": "Det natten har tatt",
+    "da": "Det, natten har taget",
+    "ru": "Того, что забрала ночь"
+   }
+  }
+ ]
+}

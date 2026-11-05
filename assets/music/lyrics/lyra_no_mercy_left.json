@@ -1,0 +1,821 @@
+{
+ "lang": "en",
+ "lines": [
+  {
+   "t": 24.54,
+   "text": "You came from the dark with your war birds screaming",
+   "tr": {
+    "fr": "Vous êtes venus du noir, vos oiseaux de guerre hurlant",
+    "es": "Viniste de la oscuridad con tus aves de guerra chillando",
+    "de": "Ihr kamt aus dem Dunkel mit kreischenden Kriegsvögeln",
+    "it": "Siete venuti dal buio con i vostri uccelli da guerra urlanti",
+    "pt": "Vieram do escuro com as vossas aves de guerra a gritar",
+    "nl": "Jullie kwamen uit het donker met krijsende oorlogsvogels",
+    "pl": "Przyszliście z ciemności z wrzeszczącymi ptakami wojny",
+    "tr": "Karanlıktan çığlık atan savaş kuşlarınla geldin",
+    "sv": "Ni kom ur mörkret med era skriande krigsfåglar",
+    "no": "Dere kom fra mørket med skrikende krigsfugler",
+    "da": "I kom fra mørket med jeres skrigende krigsfugle",
+    "ru": "Вы пришли из тьмы с визжащими птицами войны"
+   }
+  },
+  {
+   "t": 28.94,
+   "text": "You hatched from your eggs and you painted the sky",
+   "tr": {
+    "fr": "Vous êtes sortis de vos œufs et vous avez peint le ciel",
+    "es": "Saliste de tus huevos y pintaste el cielo",
+    "de": "Ihr schlüpftet aus euren Eiern und färbtet den Himmel",
+    "it": "Siete usciti dalle uova e avete dipinto il cielo",
+    "pt": "Saíram dos vossos ovos e pintaram o céu",
+    "nl": "Jullie kropen uit je eieren en kleurden de lucht",
+    "pl": "Wykluliście się z jaj i pomalowaliście niebo",
+    "tr": "Yumurtalarından çıktın ve gökyüzünü boyadın",
+    "sv": "Ni kläcktes ur era ägg och målade himlen",
+    "no": "Dere klekket ut av eggene og malte himmelen",
+    "da": "I klækkede ud af jeres æg og malede himlen",
+    "ru": "Вы вылупились из яиц и раскрасили небо"
+   }
+  },
+  {
+   "t": 32.42,
+   "text": "You thought we would break when the barriers fell",
+   "tr": {
+    "fr": "Vous pensiez qu'on craquerait quand les barrières tomberaient",
+    "es": "Creíste que nos romperíamos cuando cayeran las barreras",
+    "de": "Ihr dachtet, wir zerbrechen, wenn die Barrieren fallen",
+    "it": "Pensavate che ci saremmo spezzati quando cadevano le barriere",
+    "pt": "Pensaram que íamos quebrar quando as barreiras caíssem",
+    "nl": "Jullie dachten dat we zouden breken toen de barrières vielen",
+    "pl": "Myśleliście, że pękniemy, gdy padną bariery",
+    "tr": "Bariyerler düşünce kırılacağımızı sandın",
+    "sv": "Ni trodde att vi skulle brytas när barriärerna föll",
+    "no": "Dere trodde vi ville knekke når barrierene falt",
+    "da": "I troede, vi ville knække, da barriererne faldt",
+    "ru": "Вы думали, мы сломаемся, когда падут барьеры"
+   }
+  },
+  {
+   "t": 35.92,
+   "text": "You thought we would kneel when our pilots died",
+   "tr": {
+    "fr": "Vous pensiez qu'on plierait le genou quand nos pilotes mourraient",
+    "es": "Creíste que nos arrodillaríamos cuando murieran nuestros pilotos",
+    "de": "Ihr dachtet, wir knien, wenn unsere Piloten sterben",
+    "it": "Pensavate che ci saremmo inginocchiati quando morivano i nostri piloti",
+    "pt": "Pensaram que íamos ajoelhar quando os nossos pilotos morressem",
+    "nl": "Jullie dachten dat we zouden knielen toen onze piloten stierven",
+    "pl": "Myśleliście, że uklękniemy, gdy zginą nasi piloci",
+    "tr": "Pilotlarımız ölünce diz çökeceğimizi sandın",
+    "sv": "Ni trodde att vi skulle knäböja när våra piloter dog",
+    "no": "Dere trodde vi ville knele når pilotene våre døde",
+    "da": "I troede, vi ville knæle, da vores piloter døde",
+    "ru": "Вы думали, мы встанем на колени, когда погибнут пилоты"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 39.52,
+   "text": "But the dead don't sleep and the living remember",
+   "tr": {
+    "fr": "Mais les morts ne dorment pas et les vivants se souviennent",
+    "es": "Pero los muertos no duermen y los vivos recuerdan",
+    "de": "Doch die Toten schlafen nicht und die Lebenden erinnern sich",
+    "it": "Ma i morti non dormono e i vivi ricordano",
+    "pt": "Mas os mortos não dormem e os vivos lembram-se",
+    "nl": "Maar de doden slapen niet en de levenden herinneren zich",
+    "pl": "Lecz umarli nie śpią, a żywi pamiętają",
+    "tr": "Ama ölüler uyumaz ve yaşayanlar hatırlar",
+    "sv": "Men de döda sover inte och de levande minns",
+    "no": "Men de døde sover ikke, og de levende husker",
+    "da": "Men de døde sover ikke, og de levende husker",
+    "ru": "Но мёртвые не спят, а живые помнят"
+   }
+  },
+  {
+   "t": 42.92,
+   "text": "Every name you took, every ship you burned",
+   "tr": {
+    "fr": "De chaque nom que vous avez pris, de chaque vaisseau brûlé",
+    "es": "Cada nombre que tomaste, cada nave que quemaste",
+    "de": "An jeden Namen, den ihr nahmt, jedes Schiff, das ihr verbranntet",
+    "it": "Ogni nome che avete preso, ogni nave che avete bruciato",
+    "pt": "De cada nome que levaram, de cada nave que queimaram",
+    "nl": "Elke naam die jullie namen, elk schip dat jullie verbrandden",
+    "pl": "Każde imię, które zabraliście, każdy statek, który spaliliście",
+    "tr": "Aldığın her ismi, yaktığın her gemiyi",
+    "sv": "Varje namn ni tog, varje skepp ni brände",
+    "no": "Hvert navn dere tok, hvert skip dere brente",
+    "da": "Hvert navn, I tog, hvert skib, I brændte",
+    "ru": "Каждое имя, что вы забрали, каждый корабль, что вы сожгли"
+   }
+  },
+  {
+   "t": 46.52,
+   "text": "We loaded the missiles and we aimed for the center",
+   "tr": {
+    "fr": "Nous avons chargé les missiles et visé le centre",
+    "es": "Cargamos los misiles y apuntamos al centro",
+    "de": "Wir luden die Raketen und zielten auf die Mitte",
+    "it": "Abbiamo caricato i missili e mirato al centro",
+    "pt": "Carregámos os mísseis e apontámos ao centro",
+    "nl": "We laadden de raketten en mikten op het midden",
+    "pl": "Załadowaliśmy pociski i wycelowaliśmy w środek",
+    "tr": "Füzeleri doldurduk ve merkeze nişan aldık",
+    "sv": "Vi laddade robotarna och siktade mot mitten",
+    "no": "Vi ladet rakettene og siktet mot midten",
+    "da": "Vi ladede missilerne og sigtede mod midten",
+    "ru": "Мы зарядили ракеты и целились в центр"
+   }
+  },
+  {
+   "t": 49.78,
+   "text": "And we swore on the ashes that you'd never return",
+   "tr": {
+    "fr": "Et juré sur les cendres que vous ne reviendriez jamais",
+    "es": "Y juramos sobre las cenizas que nunca volverías",
+    "de": "Und schworen auf die Asche, dass ihr nie zurückkehrt",
+    "it": "E giurato sulle ceneri che non sareste mai tornati",
+    "pt": "E jurámos sobre as cinzas que nunca voltariam",
+    "nl": "En zwoeren op de as dat jullie nooit terug zouden keren",
+    "pl": "I przysięgliśmy na prochy, że nigdy nie wrócicie",
+    "tr": "Ve küller üzerine yemin ettik, asla geri dönmeyeceksin",
+    "sv": "Och svor på askan att ni aldrig skulle återvända",
+    "no": "Og sverget på asken at dere aldri skulle vende tilbake",
+    "da": "Og svor på asken, at I aldrig skulle vende tilbage",
+    "ru": "И поклялись на пепле, что вы не вернётесь"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 69.76,
+   "text": "No mercy left, no mercy left",
+   "tr": {
+    "fr": "Plus de pitié, plus de pitié",
+    "es": "Sin piedad, sin piedad",
+    "de": "Kein Erbarmen mehr, kein Erbarmen mehr",
+    "it": "Niente più pietà, niente più pietà",
+    "pt": "Sem piedade, sem piedade",
+    "nl": "Geen genade meer, geen genade meer",
+    "pl": "Koniec litości, koniec litości",
+    "tr": "Merhamet kalmadı, merhamet kalmadı",
+    "sv": "Ingen nåd kvar, ingen nåd kvar",
+    "no": "Ingen nåde igjen, ingen nåde igjen",
+    "da": "Ingen nåde tilbage, ingen nåde tilbage",
+    "ru": "Пощады нет, пощады нет"
+   }
+  },
+  {
+   "t": 117.54,
+   "text": "We will hunt you down till there's nothing left",
+   "tr": {
+    "fr": "Nous vous traquerons jusqu'à ce qu'il ne reste rien",
+    "es": "Te daremos caza hasta que no quede nada",
+    "de": "Wir jagen euch, bis nichts mehr übrig ist",
+    "it": "Vi daremo la caccia finché non resterà nulla",
+    "pt": "Vamos caçar-vos até não restar nada",
+    "nl": "We jagen jullie op tot er niets meer over is",
+    "pl": "Będziemy was ścigać, aż nic nie zostanie",
+    "tr": "Hiçbir şey kalmayana dek seni avlayacağız",
+    "sv": "Vi ska jaga er tills ingenting finns kvar",
+    "no": "Vi skal jakte på dere til ingenting er igjen",
+    "da": "Vi jager jer, til der intet er tilbage",
+    "ru": "Мы будем гнать вас, пока ничего не останется"
+   }
+  },
+  {
+   "t": 120.12,
+   "text": "Tear down your convoy, burn your battle ship down",
+   "tr": {
+    "fr": "Nous abattrons votre convoi, brûlerons votre vaisseau amiral",
+    "es": "Derribaremos tu convoy, quemaremos tu acorazado",
+    "de": "Wir reißen euren Konvoi nieder, brennen euer Schlachtschiff nieder",
+    "it": "Abbatteremo il vostro convoglio, bruceremo la vostra corazzata",
+    "pt": "Derrubamos o vosso comboio, queimamos o vosso couraçado",
+    "nl": "We halen jullie konvooi neer, branden jullie slagschip plat",
+    "pl": "Rozbijemy wasz konwój, spalimy wasz pancernik",
+    "tr": "Konvoyunu yıkacağız, savaş gemini yakacağız",
+    "sv": "Vi river er konvoj, bränner ert slagskepp",
+    "no": "Vi river konvoien deres, brenner slagskipet deres",
+    "da": "Vi river jeres konvoj ned, brænder jeres slagskib",
+    "ru": "Сокрушим ваш конвой, сожжём ваш линкор"
+   }
+  },
+  {
+   "t": 124.38,
+   "text": "This is our sky and we're taking it now",
+   "tr": {
+    "fr": "Ce ciel est le nôtre et nous le reprenons maintenant",
+    "es": "Este es nuestro cielo y lo recuperamos ahora",
+    "de": "Das ist unser Himmel und wir holen ihn uns jetzt",
+    "it": "Questo è il nostro cielo e ce lo riprendiamo ora",
+    "pt": "Este céu é nosso e vamos tomá-lo agora",
+    "nl": "Dit is onze lucht en we nemen hem nu terug",
+    "pl": "To nasze niebo i odbieramy je teraz",
+    "tr": "Bu bizim gökyüzümüz ve onu şimdi geri alıyoruz",
+    "sv": "Det här är vår himmel och vi tar den nu",
+    "no": "Dette er vår himmel og vi tar den nå",
+    "da": "Dette er vores himmel, og vi tager den nu",
+    "ru": "Это наше небо, и мы возвращаем его сейчас"
+   }
+  },
+  {
+   "t": 127.78,
+   "text": "No mercy left, no mercy left",
+   "tr": {
+    "fr": "Plus de pitié, plus de pitié",
+    "es": "Sin piedad, sin piedad",
+    "de": "Kein Erbarmen mehr, kein Erbarmen mehr",
+    "it": "Niente più pietà, niente più pietà",
+    "pt": "Sem piedade, sem piedade",
+    "nl": "Geen genade meer, geen genade meer",
+    "pl": "Koniec litości, koniec litości",
+    "tr": "Merhamet kalmadı, merhamet kalmadı",
+    "sv": "Ingen nåd kvar, ingen nåd kvar",
+    "no": "Ingen nåde igjen, ingen nåde igjen",
+    "da": "Ingen nåde tilbage, ingen nåde tilbage",
+    "ru": "Пощады нет, пощады нет"
+   }
+  },
+  {
+   "t": 134.48,
+   "text": "Humanity answers with fire and death",
+   "tr": {
+    "fr": "L'humanité répond par le feu et la mort",
+    "es": "La humanidad responde con fuego y muerte",
+    "de": "Die Menschheit antwortet mit Feuer und Tod",
+    "it": "L'umanità risponde con fuoco e morte",
+    "pt": "A humanidade responde com fogo e morte",
+    "nl": "De mensheid antwoordt met vuur en dood",
+    "pl": "Ludzkość odpowiada ogniem i śmiercią",
+    "tr": "İnsanlık ateş ve ölümle cevap veriyor",
+    "sv": "Mänskligheten svarar med eld och död",
+    "no": "Menneskeheten svarer med ild og død",
+    "da": "Menneskeheden svarer med ild og død",
+    "ru": "Человечество отвечает огнём и смертью"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 137.77,
+   "text": "Pattern after pattern, we cut through your swarm",
+   "tr": {
+    "fr": "Vague après vague, nous tranchons dans votre essaim",
+    "es": "Oleada tras oleada, atravesamos tu enjambre",
+    "de": "Welle um Welle schneiden wir durch euren Schwarm",
+    "it": "Ondata dopo ondata, squarciamo il vostro sciame",
+    "pt": "Vaga após vaga, cortamos o vosso enxame",
+    "nl": "Golf na golf snijden we door jullie zwerm",
+    "pl": "Fala za falą przecinamy wasz rój",
+    "tr": "Dalga dalga sürünü yarıp geçiyoruz",
+    "sv": "Våg efter våg skär vi genom er svärm",
+    "no": "Bølge etter bølge skjærer vi gjennom svermen",
+    "da": "Bølge efter bølge skærer vi gennem jeres sværm",
+    "ru": "Волна за волной мы рассекаем ваш рой"
+   }
+  },
+  {
+   "t": 141.07,
+   "text": "Avians and monsters, they fall all the same",
+   "tr": {
+    "fr": "Aviens et monstres, ils tombent tous pareil",
+    "es": "Avianos y monstruos caen todos por igual",
+    "de": "Vogelwesen und Monster, sie fallen alle gleich",
+    "it": "Aviani e mostri, cadono tutti allo stesso modo",
+    "pt": "Avianos e monstros caem todos por igual",
+    "nl": "Vogelwezens en monsters, ze vallen allemaal gelijk",
+    "pl": "Ptakopodobni i potwory padają tak samo",
+    "tr": "Kuş yaratıklar ve canavarlar, hepsi aynı düşüyor",
+    "sv": "Fågelvarelser och monster, alla faller de lika",
+    "no": "Fuglevesener og monstre, alle faller likt",
+    "da": "Fuglevæsener og monstre, de falder alle ens",
+    "ru": "Птицеподобные и чудовища — все падают одинаково"
+   }
+  },
+  {
+   "t": 144.36,
+   "text": "You dropped your defenses and we drove straight through them",
+   "tr": {
+    "fr": "Vous avez baissé vos défenses et nous les avons traversées",
+    "es": "Bajaste tus defensas y las cruzamos de frente",
+    "de": "Ihr ließt eure Abwehr fallen und wir brachen geradewegs durch",
+    "it": "Avete abbassato le difese e le abbiamo sfondate",
+    "pt": "Baixaram as defesas e atravessámo-las de frente",
+    "nl": "Jullie lieten je verdediging zakken en wij reden er dwars doorheen",
+    "pl": "Opuściliście obronę, a my przebiliśmy się na wylot",
+    "tr": "Savunmanı indirdin, biz de dosdoğru içinden geçtik",
+    "sv": "Ni sänkte ert försvar och vi körde rakt igenom",
+    "no": "Dere senket forsvaret og vi kjørte rett gjennom",
+    "da": "I sænkede jeres forsvar, og vi kørte lige igennem",
+    "ru": "Вы опустили защиту, и мы прошли насквозь"
+   }
+  },
+  {
+   "t": 147.65,
+   "text": "And we carved our revenge in the wreckage and flame",
+   "tr": {
+    "fr": "Et gravé notre vengeance dans les débris et les flammes",
+    "es": "Y tallamos nuestra venganza entre restos y llamas",
+    "de": "Und meißelten unsere Rache in Trümmer und Flammen",
+    "it": "E inciso la nostra vendetta tra rottami e fiamme",
+    "pt": "E gravámos a nossa vingança nos destroços e nas chamas",
+    "nl": "En kerfden onze wraak in de wrakken en de vlammen",
+    "pl": "I wyryliśmy naszą zemstę we wrakach i płomieniach",
+    "tr": "Ve intikamımızı enkaza ve aleve kazıdık",
+    "sv": "Och ristade vår hämnd i vrakdelar och lågor",
+    "no": "Og risset vår hevn i vrakrestene og flammene",
+    "da": "Og huggede vores hævn i vragdele og flammer",
+    "ru": "И высекли нашу месть в обломках и пламени"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 150.95,
+   "text": "You wanted our world, you wanted our silence",
+   "tr": {
+    "fr": "Vous vouliez notre monde, vous vouliez notre silence",
+    "es": "Querías nuestro mundo, querías nuestro silencio",
+    "de": "Ihr wolltet unsere Welt, ihr wolltet unser Schweigen",
+    "it": "Volevate il nostro mondo, volevate il nostro silenzio",
+    "pt": "Queriam o nosso mundo, queriam o nosso silêncio",
+    "nl": "Jullie wilden onze wereld, jullie wilden onze stilte",
+    "pl": "Chcieliście naszego świata, chcieliście naszej ciszy",
+    "tr": "Dünyamızı istedin, sessizliğimizi istedin",
+    "sv": "Ni ville ha vår värld, ni ville ha vår tystnad",
+    "no": "Dere ville ha vår verden, dere ville ha vår stillhet",
+    "da": "I ville have vores verden, I ville have vores tavshed",
+    "ru": "Вы хотели наш мир, вы хотели нашей тишины"
+   }
+  },
+  {
+   "t": 154.24,
+   "text": "You wanted our children to live on their knees",
+   "tr": {
+    "fr": "Vous vouliez nos enfants vivant à genoux",
+    "es": "Querías a nuestros hijos viviendo de rodillas",
+    "de": "Ihr wolltet, dass unsere Kinder auf Knien leben",
+    "it": "Volevate i nostri figli in ginocchio",
+    "pt": "Queriam os nossos filhos a viver de joelhos",
+    "nl": "Jullie wilden onze kinderen op hun knieën zien leven",
+    "pl": "Chcieliście, by nasze dzieci żyły na kolanach",
+    "tr": "Çocuklarımızın diz çökerek yaşamasını istedin",
+    "sv": "Ni ville att våra barn skulle leva på knä",
+    "no": "Dere ville at barna våre skulle leve på knærne",
+    "da": "I ville have vores børn til at leve på knæ",
+    "ru": "Вы хотели, чтобы наши дети жили на коленях"
+   }
+  },
+  {
+   "t": 157.53,
+   "text": "But the runway is clear and the guns are still loaded",
+   "tr": {
+    "fr": "Mais la piste est dégagée et les canons sont encore chargés",
+    "es": "Pero la pista está despejada y las armas siguen cargadas",
+    "de": "Doch die Startbahn ist frei und die Waffen sind noch geladen",
+    "it": "Ma la pista è libera e le armi sono ancora cariche",
+    "pt": "Mas a pista está livre e as armas ainda carregadas",
+    "nl": "Maar de startbaan is vrij en de kanonnen zijn nog geladen",
+    "pl": "Lecz pas jest wolny, a działa wciąż nabite",
+    "tr": "Ama pist açık ve silahlar hâlâ dolu",
+    "sv": "Men landningsbanan är fri och vapnen är fortfarande laddade",
+    "no": "Men rullebanen er klar og våpnene er fortsatt ladd",
+    "da": "Men landingsbanen er fri, og kanonerne er stadig ladte",
+    "ru": "Но полоса свободна, и пушки всё ещё заряжены"
+   }
+  },
+  {
+   "t": 160.83,
+   "text": "And the only thing left is the sound of us free",
+   "tr": {
+    "fr": "Et la seule chose qui reste, c'est le bruit de notre liberté",
+    "es": "Y lo único que queda es el sonido de nuestra libertad",
+    "de": "Und das Einzige, was bleibt, ist der Klang unserer Freiheit",
+    "it": "E l'unica cosa che resta è il suono della nostra libertà",
+    "pt": "E a única coisa que resta é o som da nossa liberdade",
+    "nl": "En het enige wat overblijft is het geluid van onze vrijheid",
+    "pl": "I zostaje tylko dźwięk naszej wolności",
+    "tr": "Ve geriye kalan tek şey özgürlüğümüzün sesi",
+    "sv": "Och det enda som finns kvar är ljudet av vår frihet",
+    "no": "Og det eneste som er igjen er lyden av vår frihet",
+    "da": "Og det eneste, der er tilbage, er lyden af vores frihed",
+    "ru": "И осталось лишь одно — звук нашей свободы"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 164.12,
+   "text": "No mercy left, no mercy left",
+   "tr": {
+    "fr": "Plus de pitié, plus de pitié",
+    "es": "Sin piedad, sin piedad",
+    "de": "Kein Erbarmen mehr, kein Erbarmen mehr",
+    "it": "Niente più pietà, niente più pietà",
+    "pt": "Sem piedade, sem piedade",
+    "nl": "Geen genade meer, geen genade meer",
+    "pl": "Koniec litości, koniec litości",
+    "tr": "Merhamet kalmadı, merhamet kalmadı",
+    "sv": "Ingen nåd kvar, ingen nåd kvar",
+    "no": "Ingen nåde igjen, ingen nåde igjen",
+    "da": "Ingen nåde tilbage, ingen nåde tilbage",
+    "ru": "Пощады нет, пощады нет"
+   }
+  },
+  {
+   "t": 167.5,
+   "text": "We will hunt you down till there's nothing left",
+   "tr": {
+    "fr": "Nous vous traquerons jusqu'à ce qu'il ne reste rien",
+    "es": "Te daremos caza hasta que no quede nada",
+    "de": "Wir jagen euch, bis nichts mehr übrig ist",
+    "it": "Vi daremo la caccia finché non resterà nulla",
+    "pt": "Vamos caçar-vos até não restar nada",
+    "nl": "We jagen jullie op tot er niets meer over is",
+    "pl": "Będziemy was ścigać, aż nic nie zostanie",
+    "tr": "Hiçbir şey kalmayana dek seni avlayacağız",
+    "sv": "Vi ska jaga er tills ingenting finns kvar",
+    "no": "Vi skal jakte på dere til ingenting er igjen",
+    "da": "Vi jager jer, til der intet er tilbage",
+    "ru": "Мы будем гнать вас, пока ничего не останется"
+   }
+  },
+  {
+   "t": 169.78,
+   "text": "Tear down your convoy, burn your battle ship down",
+   "tr": {
+    "fr": "Nous abattrons votre convoi, brûlerons votre vaisseau amiral",
+    "es": "Derribaremos tu convoy, quemaremos tu acorazado",
+    "de": "Wir reißen euren Konvoi nieder, brennen euer Schlachtschiff nieder",
+    "it": "Abbatteremo il vostro convoglio, bruceremo la vostra corazzata",
+    "pt": "Derrubamos o vosso comboio, queimamos o vosso couraçado",
+    "nl": "We halen jullie konvooi neer, branden jullie slagschip plat",
+    "pl": "Rozbijemy wasz konwój, spalimy wasz pancernik",
+    "tr": "Konvoyunu yıkacağız, savaş gemini yakacağız",
+    "sv": "Vi river er konvoj, bränner ert slagskepp",
+    "no": "Vi river konvoien deres, brenner slagskipet deres",
+    "da": "Vi river jeres konvoj ned, brænder jeres slagskib",
+    "ru": "Сокрушим ваш конвой, сожжём ваш линкор"
+   }
+  },
+  {
+   "t": 173.4,
+   "text": "This is our sky and we're taking it now",
+   "tr": {
+    "fr": "Ce ciel est le nôtre et nous le reprenons maintenant",
+    "es": "Este es nuestro cielo y lo recuperamos ahora",
+    "de": "Das ist unser Himmel und wir holen ihn uns jetzt",
+    "it": "Questo è il nostro cielo e ce lo riprendiamo ora",
+    "pt": "Este céu é nosso e vamos tomá-lo agora",
+    "nl": "Dit is onze lucht en we nemen hem nu terug",
+    "pl": "To nasze niebo i odbieramy je teraz",
+    "tr": "Bu bizim gökyüzümüz ve onu şimdi geri alıyoruz",
+    "sv": "Det här är vår himmel och vi tar den nu",
+    "no": "Dette er vår himmel og vi tar den nå",
+    "da": "Dette er vores himmel, og vi tager den nu",
+    "ru": "Это наше небо, и мы возвращаем его сейчас"
+   }
+  },
+  {
+   "t": 180.99,
+   "text": "No mercy left, no mercy left",
+   "tr": {
+    "fr": "Plus de pitié, plus de pitié",
+    "es": "Sin piedad, sin piedad",
+    "de": "Kein Erbarmen mehr, kein Erbarmen mehr",
+    "it": "Niente più pietà, niente più pietà",
+    "pt": "Sem piedade, sem piedade",
+    "nl": "Geen genade meer, geen genade meer",
+    "pl": "Koniec litości, koniec litości",
+    "tr": "Merhamet kalmadı, merhamet kalmadı",
+    "sv": "Ingen nåd kvar, ingen nåd kvar",
+    "no": "Ingen nåde igjen, ingen nåde igjen",
+    "da": "Ingen nåde tilbage, ingen nåde tilbage",
+    "ru": "Пощады нет, пощады нет"
+   }
+  },
+  {
+   "t": 182.63,
+   "text": "Humanity answers with fire and death",
+   "tr": {
+    "fr": "L'humanité répond par le feu et la mort",
+    "es": "La humanidad responde con fuego y muerte",
+    "de": "Die Menschheit antwortet mit Feuer und Tod",
+    "it": "L'umanità risponde con fuoco e morte",
+    "pt": "A humanidade responde com fogo e morte",
+    "nl": "De mensheid antwoordt met vuur en dood",
+    "pl": "Ludzkość odpowiada ogniem i śmiercią",
+    "tr": "İnsanlık ateş ve ölümle cevap veriyor",
+    "sv": "Mänskligheten svarar med eld och död",
+    "no": "Menneskeheten svarer med ild og død",
+    "da": "Menneskeheden svarer med ild og død",
+    "ru": "Человечество отвечает огнём и смертью"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 184.28,
+   "text": "From the unknown space you came",
+   "tr": {
+    "fr": "De l'espace inconnu vous êtes venus",
+    "es": "Del espacio desconocido viniste",
+    "de": "Aus dem unbekannten Raum kamt ihr",
+    "it": "Dallo spazio ignoto siete venuti",
+    "pt": "Do espaço desconhecido vieram",
+    "nl": "Uit de onbekende ruimte kwamen jullie",
+    "pl": "Z nieznanej przestrzeni przybyliście",
+    "tr": "Bilinmeyen uzaydan geldin",
+    "sv": "Från den okända rymden kom ni",
+    "no": "Fra det ukjente rommet kom dere",
+    "da": "Fra det ukendte rum kom I",
+    "ru": "Из неведомого космоса вы пришли"
+   }
+  },
+  {
+   "t": 185.92,
+   "text": "With your eggs and your birds and your pride",
+   "tr": {
+    "fr": "Avec vos œufs, vos oiseaux et votre orgueil",
+    "es": "Con tus huevos, tus aves y tu orgullo",
+    "de": "Mit euren Eiern, euren Vögeln und eurem Stolz",
+    "it": "Con le vostre uova, i vostri uccelli e il vostro orgoglio",
+    "pt": "Com os vossos ovos, as vossas aves e o vosso orgulho",
+    "nl": "Met je eieren, je vogels en je trots",
+    "pl": "Z waszymi jajami, ptakami i pychą",
+    "tr": "Yumurtalarınla, kuşlarınla ve gururunla",
+    "sv": "Med era ägg och era fåglar och er stolthet",
+    "no": "Med eggene og fuglene og stoltheten deres",
+    "da": "Med jeres æg og jeres fugle og jeres stolthed",
+    "ru": "С вашими яйцами, птицами и гордыней"
+   }
+  },
+  {
+   "t": 187.57,
+   "text": "But the dawn that you feared is already here",
+   "tr": {
+    "fr": "Mais l'aube que vous redoutiez est déjà là",
+    "es": "Pero el alba que temías ya está aquí",
+    "de": "Doch das Morgenrot, das ihr fürchtetet, ist schon da",
+    "it": "Ma l'alba che temevate è già qui",
+    "pt": "Mas a aurora que temiam já chegou",
+    "nl": "Maar de dageraad die jullie vreesden is er al",
+    "pl": "Lecz świt, którego się baliście, już nadszedł",
+    "tr": "Ama korktuğun şafak çoktan geldi",
+    "sv": "Men gryningen ni fruktade är redan här",
+    "no": "Men daggryet dere fryktet er allerede her",
+    "da": "Men daggryet, I frygtede, er allerede her",
+    "ru": "Но рассвет, которого вы боялись, уже здесь"
+   }
+  },
+  {
+   "t": 189.21,
+   "text": "And there's nowhere left for you to hide",
+   "tr": {
+    "fr": "Et il ne vous reste nulle part où vous cacher",
+    "es": "Y no te queda ningún lugar donde esconderte",
+    "de": "Und es gibt keinen Ort mehr, an dem ihr euch verstecken könnt",
+    "it": "E non avete più un posto dove nascondervi",
+    "pt": "E já não têm onde se esconder",
+    "nl": "En er is nergens meer om je te verstoppen",
+    "pl": "I nie macie już gdzie się ukryć",
+    "tr": "Ve saklanacak hiçbir yerin kalmadı",
+    "sv": "Och det finns ingenstans kvar att gömma sig",
+    "no": "Og det finnes ingen steder igjen å gjemme seg",
+    "da": "Og der er intet sted tilbage at gemme sig",
+    "ru": "И вам больше негде спрятаться"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 190.85,
+   "text": "No mercy left, no mercy left",
+   "tr": {
+    "fr": "Plus de pitié, plus de pitié",
+    "es": "Sin piedad, sin piedad",
+    "de": "Kein Erbarmen mehr, kein Erbarmen mehr",
+    "it": "Niente più pietà, niente più pietà",
+    "pt": "Sem piedade, sem piedade",
+    "nl": "Geen genade meer, geen genade meer",
+    "pl": "Koniec litości, koniec litości",
+    "tr": "Merhamet kalmadı, merhamet kalmadı",
+    "sv": "Ingen nåd kvar, ingen nåd kvar",
+    "no": "Ingen nåde igjen, ingen nåde igjen",
+    "da": "Ingen nåde tilbage, ingen nåde tilbage",
+    "ru": "Пощады нет, пощады нет"
+   }
+  },
+  {
+   "t": 192.5,
+   "text": "We will hunt you down till there's nothing left",
+   "tr": {
+    "fr": "Nous vous traquerons jusqu'à ce qu'il ne reste rien",
+    "es": "Te daremos caza hasta que no quede nada",
+    "de": "Wir jagen euch, bis nichts mehr übrig ist",
+    "it": "Vi daremo la caccia finché non resterà nulla",
+    "pt": "Vamos caçar-vos até não restar nada",
+    "nl": "We jagen jullie op tot er niets meer over is",
+    "pl": "Będziemy was ścigać, aż nic nie zostanie",
+    "tr": "Hiçbir şey kalmayana dek seni avlayacağız",
+    "sv": "Vi ska jaga er tills ingenting finns kvar",
+    "no": "Vi skal jakte på dere til ingenting er igjen",
+    "da": "Vi jager jer, til der intet er tilbage",
+    "ru": "Мы будем гнать вас, пока ничего не останется"
+   }
+  },
+  {
+   "t": 194.14,
+   "text": "Tear down your convoy, burn your battle ship down",
+   "tr": {
+    "fr": "Nous abattrons votre convoi, brûlerons votre vaisseau amiral",
+    "es": "Derribaremos tu convoy, quemaremos tu acorazado",
+    "de": "Wir reißen euren Konvoi nieder, brennen euer Schlachtschiff nieder",
+    "it": "Abbatteremo il vostro convoglio, bruceremo la vostra corazzata",
+    "pt": "Derrubamos o vosso comboio, queimamos o vosso couraçado",
+    "nl": "We halen jullie konvooi neer, branden jullie slagschip plat",
+    "pl": "Rozbijemy wasz konwój, spalimy wasz pancernik",
+    "tr": "Konvoyunu yıkacağız, savaş gemini yakacağız",
+    "sv": "Vi river er konvoj, bränner ert slagskepp",
+    "no": "Vi river konvoien deres, brenner slagskipet deres",
+    "da": "Vi river jeres konvoj ned, brænder jeres slagskib",
+    "ru": "Сокрушим ваш конвой, сожжём ваш линкор"
+   }
+  },
+  {
+   "t": 195.79,
+   "text": "This is our sky and we're taking it now",
+   "tr": {
+    "fr": "Ce ciel est le nôtre et nous le reprenons maintenant",
+    "es": "Este es nuestro cielo y lo recuperamos ahora",
+    "de": "Das ist unser Himmel und wir holen ihn uns jetzt",
+    "it": "Questo è il nostro cielo e ce lo riprendiamo ora",
+    "pt": "Este céu é nosso e vamos tomá-lo agora",
+    "nl": "Dit is onze lucht en we nemen hem nu terug",
+    "pl": "To nasze niebo i odbieramy je teraz",
+    "tr": "Bu bizim gökyüzümüz ve onu şimdi geri alıyoruz",
+    "sv": "Det här är vår himmel och vi tar den nu",
+    "no": "Dette er vår himmel og vi tar den nå",
+    "da": "Dette er vores himmel, og vi tager den nu",
+    "ru": "Это наше небо, и мы возвращаем его сейчас"
+   }
+  },
+  {
+   "t": 197.43,
+   "text": "No mercy left, no mercy left",
+   "tr": {
+    "fr": "Plus de pitié, plus de pitié",
+    "es": "Sin piedad, sin piedad",
+    "de": "Kein Erbarmen mehr, kein Erbarmen mehr",
+    "it": "Niente più pietà, niente più pietà",
+    "pt": "Sem piedade, sem piedade",
+    "nl": "Geen genade meer, geen genade meer",
+    "pl": "Koniec litości, koniec litości",
+    "tr": "Merhamet kalmadı, merhamet kalmadı",
+    "sv": "Ingen nåd kvar, ingen nåd kvar",
+    "no": "Ingen nåde igjen, ingen nåde igjen",
+    "da": "Ingen nåde tilbage, ingen nåde tilbage",
+    "ru": "Пощады нет, пощады нет"
+   }
+  },
+  {
+   "t": 199.08,
+   "text": "Humanity answers — and we answer with death",
+   "tr": {
+    "fr": "L'humanité répond — et nous répondons par la mort",
+    "es": "La humanidad responde — y respondemos con la muerte",
+    "de": "Die Menschheit antwortet — und wir antworten mit dem Tod",
+    "it": "L'umanità risponde — e noi rispondiamo con la morte",
+    "pt": "A humanidade responde — e nós respondemos com a morte",
+    "nl": "De mensheid antwoordt — en wij antwoorden met de dood",
+    "pl": "Ludzkość odpowiada — i odpowiadamy śmiercią",
+    "tr": "İnsanlık cevap veriyor — ve biz ölümle cevap veriyoruz",
+    "sv": "Mänskligheten svarar — och vi svarar med döden",
+    "no": "Menneskeheten svarer — og vi svarer med død",
+    "da": "Menneskeheden svarer — og vi svarer med død",
+    "ru": "Человечество отвечает — и мы отвечаем смертью"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 200.72,
+   "text": "Count your dead",
+   "tr": {
+    "fr": "Comptez vos morts",
+    "es": "Cuenta tus muertos",
+    "de": "Zählt eure Toten",
+    "it": "Contate i vostri morti",
+    "pt": "Contem os vossos mortos",
+    "nl": "Tel je doden",
+    "pl": "Policzcie swoich zabitych",
+    "tr": "Ölülerini say",
+    "sv": "Räkna era döda",
+    "no": "Tell de døde",
+    "da": "Tæl jeres døde",
+    "ru": "Считайте своих мёртвых"
+   }
+  },
+  {
+   "t": 203.16,
+   "text": "Count your ships",
+   "tr": {
+    "fr": "Comptez vos vaisseaux",
+    "es": "Cuenta tus naves",
+    "de": "Zählt eure Schiffe",
+    "it": "Contate le vostre navi",
+    "pt": "Contem as vossas naves",
+    "nl": "Tel je schepen",
+    "pl": "Policzcie swoje statki",
+    "tr": "Gemilerini say",
+    "sv": "Räkna era skepp",
+    "no": "Tell skipene",
+    "da": "Tæl jeres skibe",
+    "ru": "Считайте свои корабли"
+   }
+  },
+  {
+   "t": 204.84,
+   "text": "Count the stars that we still own",
+   "tr": {
+    "fr": "Comptez les étoiles qui sont encore à nous",
+    "es": "Cuenta las estrellas que aún son nuestras",
+    "de": "Zählt die Sterne, die uns noch gehören",
+    "it": "Contate le stelle che sono ancora nostre",
+    "pt": "Contem as estrelas que ainda são nossas",
+    "nl": "Tel de sterren die nog van ons zijn",
+    "pl": "Policzcie gwiazdy, które wciąż są nasze",
+    "tr": "Hâlâ bizim olan yıldızları say",
+    "sv": "Räkna stjärnorna som fortfarande är våra",
+    "no": "Tell stjernene som fortsatt er våre",
+    "da": "Tæl de stjerner, der stadig er vores",
+    "ru": "Считайте звёзды, что всё ещё наши"
+   }
+  },
+  {
+   "t": 208.26,
+   "text": "This war ends",
+   "tr": {
+    "fr": "Cette guerre finira",
+    "es": "Esta guerra termina",
+    "de": "Dieser Krieg endet",
+    "it": "Questa guerra finisce",
+    "pt": "Esta guerra acaba",
+    "nl": "Deze oorlog eindigt",
+    "pl": "Ta wojna skończy się",
+    "tr": "Bu savaş biter",
+    "sv": "Det här kriget tar slut",
+    "no": "Denne krigen slutter",
+    "da": "Denne krig slutter",
+    "ru": "Эта война закончится"
+   }
+  },
+  {
+   "t": 209.38,
+   "text": "When we say it ends",
+   "tr": {
+    "fr": "Quand nous dirons qu'elle est finie",
+    "es": "Cuando nosotros digamos que termina",
+    "de": "Wenn wir sagen, dass er endet",
+    "it": "Quando diciamo noi che finisce",
+    "pt": "Quando nós dissermos que acaba",
+    "nl": "Wanneer wij zeggen dat hij eindigt",
+    "pl": "Kiedy my powiemy, że się kończy",
+    "tr": "Biz bitti dediğimizde",
+    "sv": "När vi säger att det tar slut",
+    "no": "Når vi sier at den slutter",
+    "da": "Når vi siger, den slutter",
+    "ru": "Когда мы скажем, что она закончилась"
+   }
+  },
+  {
+   "t": 214.24,
+   "text": "And we say it ends right now",
+   "tr": {
+    "fr": "Et nous disons qu'elle finit maintenant",
+    "es": "Y decimos que termina ahora mismo",
+    "de": "Und wir sagen, er endet jetzt",
+    "it": "E noi diciamo che finisce adesso",
+    "pt": "E nós dizemos que acaba agora",
+    "nl": "En wij zeggen: hij eindigt nu",
+    "pl": "A my mówimy: kończy się teraz",
+    "tr": "Ve biz diyoruz ki şimdi bitiyor",
+    "sv": "Och vi säger att det tar slut nu",
+    "no": "Og vi sier at den slutter nå",
+    "da": "Og vi siger, den slutter nu",
+    "ru": "И мы говорим: она кончается сейчас"
+   }
+  }
+ ]
+}

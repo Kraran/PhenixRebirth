@@ -1,0 +1,785 @@
+{
+ "lang": "en",
+ "lines": [
+  {
+   "t": 51.74,
+   "text": "We used to fear the dark when we were kids",
+   "tr": {
+    "fr": "Enfants, nous avions peur du noir",
+    "es": "De niños le teníamos miedo a la oscuridad",
+    "de": "Als Kinder hatten wir Angst vor der Dunkelheit",
+    "it": "Da bambini avevamo paura del buio",
+    "pt": "Em crianças tínhamos medo do escuro",
+    "nl": "Als kind waren we bang in het donker",
+    "pl": "Jako dzieci baliśmy się ciemności",
+    "tr": "Çocukken karanlıktan korkardık",
+    "sv": "Som barn var vi rädda för mörkret",
+    "no": "Som barn var vi redde for mørket",
+    "da": "Som børn var vi bange for mørket",
+    "ru": "В детстве мы боялись темноты"
+   }
+  },
+  {
+   "t": 52.24,
+   "text": "Something moving just beyond the light",
+   "tr": {
+    "fr": "De quelque chose qui bougeait juste au-delà de la lumière",
+    "es": "Algo que se movía justo más allá de la luz",
+    "de": "Vor etwas, das sich gleich hinter dem Licht bewegte",
+    "it": "Di qualcosa che si muoveva appena oltre la luce",
+    "pt": "De algo a mexer-se logo além da luz",
+    "nl": "Voor iets dat bewoog net buiten het licht",
+    "pl": "Czegoś, co poruszało się tuż za światłem",
+    "tr": "Işığın hemen ötesinde kıpırdayan bir şeyden",
+    "sv": "För något som rörde sig strax bortom ljuset",
+    "no": "For noe som rørte seg like bak lyset",
+    "da": "For noget, der bevægede sig lige bag lyset",
+    "ru": "Чего-то, что двигалось прямо за краем света"
+   }
+  },
+  {
+   "t": 52.75,
+   "text": "Now the dark is bigger than the sky",
+   "tr": {
+    "fr": "Aujourd'hui le noir est plus grand que le ciel",
+    "es": "Ahora la oscuridad es más grande que el cielo",
+    "de": "Jetzt ist die Dunkelheit größer als der Himmel",
+    "it": "Ora il buio è più grande del cielo",
+    "pt": "Agora o escuro é maior do que o céu",
+    "nl": "Nu is het donker groter dan de lucht",
+    "pl": "Teraz ciemność jest większa niż niebo",
+    "tr": "Şimdi karanlık gökyüzünden büyük",
+    "sv": "Nu är mörkret större än himlen",
+    "no": "Nå er mørket større enn himmelen",
+    "da": "Nu er mørket større end himlen",
+    "ru": "Теперь тьма больше, чем небо"
+   }
+  },
+  {
+   "t": 53.25,
+   "text": "And the things inside it want to end the night",
+   "tr": {
+    "fr": "Et ce qu'il abrite veut en finir avec la nuit",
+    "es": "Y lo que habita en ella quiere acabar con la noche",
+    "de": "Und was in ihr lebt, will die Nacht beenden",
+    "it": "E ciò che vi abita vuole porre fine alla notte",
+    "pt": "E o que vive nele quer acabar com a noite",
+    "nl": "En wat erin leeft wil de nacht beëindigen",
+    "pl": "A to, co w niej żyje, chce zakończyć noc",
+    "tr": "Ve içindekiler geceyi bitirmek istiyor",
+    "sv": "Och det som finns i det vill göra slut på natten",
+    "no": "Og det som bor i det vil gjøre slutt på natten",
+    "da": "Og det, der bor i det, vil gøre en ende på natten",
+    "ru": "И то, что живёт в ней, хочет покончить с ночью"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 56.23,
+   "text": "They come out of the black between the stars",
+   "tr": {
+    "fr": "Ils surgissent du noir entre les étoiles",
+    "es": "Salen de la negrura entre las estrellas",
+    "de": "Sie kommen aus dem Schwarz zwischen den Sternen",
+    "it": "Escono dal nero tra le stelle",
+    "pt": "Saem do negro entre as estrelas",
+    "nl": "Ze komen uit het zwart tussen de sterren",
+    "pl": "Wychodzą z czerni między gwiazdami",
+    "tr": "Yıldızların arasındaki karanlıktan çıkıyorlar",
+    "sv": "De kommer ur svärtan mellan stjärnorna",
+    "no": "De kommer ut av svartet mellom stjernene",
+    "da": "De kommer ud af sortet mellem stjernerne",
+    "ru": "Они выходят из черноты между звёзд"
+   }
+  },
+  {
+   "t": 65.92,
+   "text": "No warning, no shape, just hunger and teeth",
+   "tr": {
+    "fr": "Sans prévenir, sans forme, rien que la faim et les crocs",
+    "es": "Sin aviso, sin forma, solo hambre y dientes",
+    "de": "Ohne Warnung, ohne Gestalt, nur Hunger und Zähne",
+    "it": "Senza preavviso, senza forma, solo fame e denti",
+    "pt": "Sem aviso, sem forma, só fome e dentes",
+    "nl": "Zonder waarschuwing, zonder vorm, alleen honger en tanden",
+    "pl": "Bez ostrzeżenia, bez kształtu, tylko głód i kły",
+    "tr": "Uyarısız, şekilsiz, sadece açlık ve dişler",
+    "sv": "Utan varning, utan form, bara hunger och tänder",
+    "no": "Uten varsel, uten form, bare sult og tenner",
+    "da": "Uden varsel, uden form, kun sult og tænder",
+    "ru": "Без предупреждения, без формы — лишь голод и зубы"
+   }
+  },
+  {
+   "t": 67.56,
+   "text": "War birds hatching where the shadows start",
+   "tr": {
+    "fr": "Des oiseaux de guerre qui éclosent là où naissent les ombres",
+    "es": "Aves de guerra naciendo donde empiezan las sombras",
+    "de": "Kriegsvögel schlüpfen dort, wo die Schatten beginnen",
+    "it": "Uccelli da guerra che nascono dove iniziano le ombre",
+    "pt": "Aves de guerra a nascer onde as sombras começam",
+    "nl": "Oorlogsvogels die uitkomen waar de schaduwen beginnen",
+    "pl": "Ptaki wojny wykluwają się tam, gdzie zaczynają się cienie",
+    "tr": "Gölgelerin başladığı yerde yumurtadan çıkan savaş kuşları",
+    "sv": "Krigsfåglar kläcks där skuggorna börjar",
+    "no": "Krigsfugler klekkes der skyggene begynner",
+    "da": "Krigsfugle klækkes, hvor skyggerne begynder",
+    "ru": "Птицы войны вылупляются там, где рождаются тени"
+   }
+  },
+  {
+   "t": 70.44,
+   "text": "And the silence is the sound of what they keep",
+   "tr": {
+    "fr": "Et le silence est le bruit de ce qu'ils gardent",
+    "es": "Y el silencio es el sonido de lo que guardan",
+    "de": "Und die Stille ist der Klang dessen, was sie verwahren",
+    "it": "E il silenzio è il suono di ciò che custodiscono",
+    "pt": "E o silêncio é o som do que elas guardam",
+    "nl": "En de stilte is het geluid van wat zij bewaren",
+    "pl": "A cisza to dźwięk tego, co w sobie skrywają",
+    "tr": "Ve sessizlik, sakladıkları şeyin sesi",
+    "sv": "Och tystnaden är ljudet av det de gömmer",
+    "no": "Og stillheten er lyden av det de skjuler",
+    "da": "Og stilheden er lyden af det, de gemmer",
+    "ru": "А тишина — это звук того, что они хранят"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 74.18,
+   "text": "Out of the dark, out of the dark",
+   "tr": {
+    "fr": "Hors du noir, hors du noir",
+    "es": "Desde la oscuridad, desde la oscuridad",
+    "de": "Aus der Dunkelheit, aus der Dunkelheit",
+    "it": "Fuori dal buio, fuori dal buio",
+    "pt": "Do escuro, do escuro",
+    "nl": "Uit het donker, uit het donker",
+    "pl": "Z ciemności, z ciemności",
+    "tr": "Karanlıktan, karanlıktan",
+    "sv": "Ur mörkret, ur mörkret",
+    "no": "Ut av mørket, ut av mørket",
+    "da": "Ud af mørket, ud af mørket",
+    "ru": "Из темноты, из темноты"
+   }
+  },
+  {
+   "t": 75.06,
+   "text": "They're coming for the last of what we are",
+   "tr": {
+    "fr": "Ils viennent prendre ce qu'il reste de nous",
+    "es": "Vienen por lo último que queda de nosotros",
+    "de": "Sie kommen für das Letzte, was von uns bleibt",
+    "it": "Vengono a prendere ciò che resta di noi",
+    "pt": "Vêm buscar o que resta de nós",
+    "nl": "Ze komen voor het laatste wat er van ons is",
+    "pl": "Przychodzą po resztki tego, czym jesteśmy",
+    "tr": "Bizden geriye kalanı almaya geliyorlar",
+    "sv": "De kommer för det sista som finns kvar av oss",
+    "no": "De kommer for det siste som er igjen av oss",
+    "da": "De kommer efter det sidste, der er tilbage af os",
+    "ru": "Они идут за последним, что осталось от нас"
+   }
+  },
+  {
+   "t": 81.38,
+   "text": "From the void that never ends",
+   "tr": {
+    "fr": "Du vide qui ne finit jamais",
+    "es": "Del vacío que nunca acaba",
+    "de": "Aus der Leere, die nie endet",
+    "it": "Dal vuoto che non finisce mai",
+    "pt": "Do vazio que nunca acaba",
+    "nl": "Uit de leegte die nooit eindigt",
+    "pl": "Z pustki, która nigdy się nie kończy",
+    "tr": "Hiç bitmeyen boşluktan",
+    "sv": "Ur tomrummet som aldrig tar slut",
+    "no": "Fra tomrommet som aldri tar slutt",
+    "da": "Fra tomrummet, der aldrig ender",
+    "ru": "Из пустоты, что не кончается"
+   }
+  },
+  {
+   "t": 83.76,
+   "text": "From the night that never bends",
+   "tr": {
+    "fr": "De la nuit qui ne plie jamais",
+    "es": "De la noche que nunca se doblega",
+    "de": "Aus der Nacht, die sich nie beugt",
+    "it": "Dalla notte che non si piega mai",
+    "pt": "Da noite que nunca se verga",
+    "nl": "Uit de nacht die nooit buigt",
+    "pl": "Z nocy, która nigdy się nie ugnie",
+    "tr": "Hiç eğilmeyen geceden",
+    "sv": "Ur natten som aldrig böjer sig",
+    "no": "Fra natten som aldri bøyer seg",
+    "da": "Fra natten, der aldrig bøjer sig",
+    "ru": "Из ночи, что не сгибается"
+   }
+  },
+  {
+   "t": 85.56,
+   "text": "Out of the dark they rise",
+   "tr": {
+    "fr": "Hors du noir ils s'élèvent",
+    "es": "Desde la oscuridad se alzan",
+    "de": "Aus der Dunkelheit steigen sie auf",
+    "it": "Fuori dal buio si levano",
+    "pt": "Do escuro erguem-se",
+    "nl": "Uit het donker rijzen ze op",
+    "pl": "Z ciemności się wznoszą",
+    "tr": "Karanlıktan yükseliyorlar",
+    "sv": "Ur mörkret stiger de",
+    "no": "Ut av mørket stiger de",
+    "da": "Ud af mørket rejser de sig",
+    "ru": "Из темноты они встают"
+   }
+  },
+  {
+   "t": 86.8,
+   "text": "And the oldest fear is still alive",
+   "tr": {
+    "fr": "Et la plus vieille peur est toujours vivante",
+    "es": "Y el miedo más antiguo sigue vivo",
+    "de": "Und die älteste Angst lebt noch immer",
+    "it": "E la paura più antica è ancora viva",
+    "pt": "E o medo mais antigo continua vivo",
+    "nl": "En de oudste angst leeft nog steeds",
+    "pl": "A najstarszy strach wciąż żyje",
+    "tr": "Ve en eski korku hâlâ yaşıyor",
+    "sv": "Och den äldsta rädslan lever än",
+    "no": "Og den eldste frykten lever ennå",
+    "da": "Og den ældste frygt lever stadig",
+    "ru": "И самый древний страх всё ещё жив"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 92.99,
+   "text": "We painted lights on every ship we sent",
+   "tr": {
+    "fr": "Nous avons peint des lumières sur chaque vaisseau envoyé",
+    "es": "Pintamos luces en cada nave que enviamos",
+    "de": "Wir malten Lichter auf jedes Schiff, das wir schickten",
+    "it": "Abbiamo dipinto luci su ogni nave che mandavamo",
+    "pt": "Pintámos luzes em cada nave que enviámos",
+    "nl": "We schilderden lichten op elk schip dat we stuurden",
+    "pl": "Malowaliśmy światła na każdym wysłanym statku",
+    "tr": "Gönderdiğimiz her gemiye ışıklar boyadık",
+    "sv": "Vi målade ljus på varje skepp vi sände",
+    "no": "Vi malte lys på hvert skip vi sendte",
+    "da": "Vi malede lys på hvert skib, vi sendte",
+    "ru": "Мы рисовали огни на каждом корабле, что отправляли"
+   }
+  },
+  {
+   "t": 99.19,
+   "text": "Tried to push the monsters back with fire",
+   "tr": {
+    "fr": "Tenté de repousser les monstres par le feu",
+    "es": "Intentamos hacer retroceder a los monstruos con fuego",
+    "de": "Versuchten, die Monster mit Feuer zurückzudrängen",
+    "it": "Provato a respingere i mostri col fuoco",
+    "pt": "Tentámos repelir os monstros com fogo",
+    "nl": "Probeerden de monsters met vuur terug te drijven",
+    "pl": "Próbowaliśmy odpędzić potwory ogniem",
+    "tr": "Canavarları ateşle geri püskürtmeye çalıştık",
+    "sv": "Försökte driva monstren tillbaka med eld",
+    "no": "Prøvde å drive monstrene tilbake med ild",
+    "da": "Prøvede at drive monstrene tilbage med ild",
+    "ru": "Пытались отогнать чудовищ огнём"
+   }
+  },
+  {
+   "t": 105.38,
+   "text": "But the dark doesn't care about our guns",
+   "tr": {
+    "fr": "Mais le noir se moque de nos canons",
+    "es": "Pero a la oscuridad no le importan nuestras armas",
+    "de": "Doch der Dunkelheit sind unsere Waffen egal",
+    "it": "Ma al buio non importano le nostre armi",
+    "pt": "Mas o escuro não quer saber das nossas armas",
+    "nl": "Maar het donker geeft niets om onze kanonnen",
+    "pl": "Lecz ciemność nie dba o nasze działa",
+    "tr": "Ama karanlık silahlarımızı umursamıyor",
+    "sv": "Men mörkret bryr sig inte om våra vapen",
+    "no": "Men mørket bryr seg ikke om våpnene våre",
+    "da": "Men mørket er ligeglad med vores kanoner",
+    "ru": "Но тьме нет дела до наших пушек"
+   }
+  },
+  {
+   "t": 111.57,
+   "text": "It just waits and swallows every wire",
+   "tr": {
+    "fr": "Il attend, simplement, et avale chaque câble",
+    "es": "Solo espera y se traga cada cable",
+    "de": "Sie wartet nur und verschluckt jede Leitung",
+    "it": "Aspetta e basta, e inghiotte ogni cavo",
+    "pt": "Só espera e engole cada cabo",
+    "nl": "Het wacht alleen en slokt elke draad op",
+    "pl": "Po prostu czeka i połyka każdy przewód",
+    "tr": "Sadece bekliyor ve her kabloyu yutuyor",
+    "sv": "Det bara väntar och sväljer varje ledning",
+    "no": "Det bare venter og sluker hver ledning",
+    "da": "Det venter bare og sluger hver ledning",
+    "ru": "Она просто ждёт и глотает каждый провод"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 117.77,
+   "text": "I still hear the pilots when they call",
+   "tr": {
+    "fr": "J'entends encore les pilotes quand ils appellent",
+    "es": "Todavía oigo a los pilotos cuando llaman",
+    "de": "Ich höre die Piloten noch, wenn sie rufen",
+    "it": "Sento ancora i piloti quando chiamano",
+    "pt": "Ainda ouço os pilotos quando chamam",
+    "nl": "Ik hoor de piloten nog als ze roepen",
+    "pl": "Wciąż słyszę pilotów, gdy wzywają",
+    "tr": "Pilotları hâlâ duyuyorum, çağırdıklarında",
+    "sv": "Jag hör fortfarande piloterna när de ropar",
+    "no": "Jeg hører fortsatt pilotene når de roper",
+    "da": "Jeg hører stadig piloterne, når de kalder",
+    "ru": "Я до сих пор слышу пилотов, когда они зовут"
+   }
+  },
+  {
+   "t": 123.96,
+   "text": "Right before the signal cuts and dies",
+   "tr": {
+    "fr": "Juste avant que le signal se coupe et meure",
+    "es": "Justo antes de que la señal se corte y muera",
+    "de": "Kurz bevor das Signal abreißt und stirbt",
+    "it": "Proprio prima che il segnale si spezzi e muoia",
+    "pt": "Mesmo antes de o sinal cair e morrer",
+    "nl": "Vlak voordat het signaal wegvalt en sterft",
+    "pl": "Tuż zanim sygnał się urwie i zgaśnie",
+    "tr": "Sinyal kesilip ölmeden hemen önce",
+    "sv": "Precis innan signalen bryts och dör",
+    "no": "Rett før signalet brytes og dør",
+    "da": "Lige før signalet brydes og dør",
+    "ru": "За миг до того, как сигнал оборвётся и умрёт"
+   }
+  },
+  {
+   "t": 127.62,
+   "text": "They don't scream about the ships or the fall",
+   "tr": {
+    "fr": "Ils ne hurlent pas pour les vaisseaux ni pour la chute",
+    "es": "No gritan por las naves ni por la caída",
+    "de": "Sie schreien nicht wegen der Schiffe oder des Sturzes",
+    "it": "Non urlano per le navi né per la caduta",
+    "pt": "Não gritam pelas naves nem pela queda",
+    "nl": "Ze schreeuwen niet om de schepen of de val",
+    "pl": "Nie krzyczą o statkach ani o upadku",
+    "tr": "Gemiler ya da düşüş için çığlık atmıyorlar",
+    "sv": "De skriker inte om skeppen eller fallet",
+    "no": "De skriker ikke om skipene eller fallet",
+    "da": "De skriger ikke om skibene eller faldet",
+    "ru": "Они кричат не о кораблях и не о падении"
+   }
+  },
+  {
+   "t": 131.08,
+   "text": "They just scream about the things with eyes",
+   "tr": {
+    "fr": "Ils hurlent pour les choses qui ont des yeux",
+    "es": "Solo gritan por las cosas con ojos",
+    "de": "Sie schreien nur wegen der Dinge mit Augen",
+    "it": "Urlano soltanto per le cose con gli occhi",
+    "pt": "Só gritam pelas coisas com olhos",
+    "nl": "Ze schreeuwen alleen om de dingen met ogen",
+    "pl": "Krzyczą tylko o rzeczach z oczami",
+    "tr": "Sadece gözlü şeyler için çığlık atıyorlar",
+    "sv": "De skriker bara om tingen med ögon",
+    "no": "De skriker bare om tingene med øyne",
+    "da": "De skriger kun om tingene med øjne",
+    "ru": "Они кричат лишь о тех, у кого есть глаза"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 134.74,
+   "text": "Out of the dark, out of the dark",
+   "tr": {
+    "fr": "Hors du noir, hors du noir",
+    "es": "Desde la oscuridad, desde la oscuridad",
+    "de": "Aus der Dunkelheit, aus der Dunkelheit",
+    "it": "Fuori dal buio, fuori dal buio",
+    "pt": "Do escuro, do escuro",
+    "nl": "Uit het donker, uit het donker",
+    "pl": "Z ciemności, z ciemności",
+    "tr": "Karanlıktan, karanlıktan",
+    "sv": "Ur mörkret, ur mörkret",
+    "no": "Ut av mørket, ut av mørket",
+    "da": "Ud af mørket, ud af mørket",
+    "ru": "Из темноты, из темноты"
+   }
+  },
+  {
+   "t": 137.28,
+   "text": "They're coming for the last of what we are",
+   "tr": {
+    "fr": "Ils viennent prendre ce qu'il reste de nous",
+    "es": "Vienen por lo último que queda de nosotros",
+    "de": "Sie kommen für das Letzte, was von uns bleibt",
+    "it": "Vengono a prendere ciò che resta di noi",
+    "pt": "Vêm buscar o que resta de nós",
+    "nl": "Ze komen voor het laatste wat er van ons is",
+    "pl": "Przychodzą po resztki tego, czym jesteśmy",
+    "tr": "Bizden geriye kalanı almaya geliyorlar",
+    "sv": "De kommer för det sista som finns kvar av oss",
+    "no": "De kommer for det siste som er igjen av oss",
+    "da": "De kommer efter det sidste, der er tilbage af os",
+    "ru": "Они идут за последним, что осталось от нас"
+   }
+  },
+  {
+   "t": 141.72,
+   "text": "From the void that never ends",
+   "tr": {
+    "fr": "Du vide qui ne finit jamais",
+    "es": "Del vacío que nunca acaba",
+    "de": "Aus der Leere, die nie endet",
+    "it": "Dal vuoto che non finisce mai",
+    "pt": "Do vazio que nunca acaba",
+    "nl": "Uit de leegte die nooit eindigt",
+    "pl": "Z pustki, która nigdy się nie kończy",
+    "tr": "Hiç bitmeyen boşluktan",
+    "sv": "Ur tomrummet som aldrig tar slut",
+    "no": "Fra tomrommet som aldri tar slutt",
+    "da": "Fra tomrummet, der aldrig ender",
+    "ru": "Из пустоты, что не кончается"
+   }
+  },
+  {
+   "t": 143.92,
+   "text": "From the night that never bends",
+   "tr": {
+    "fr": "De la nuit qui ne plie jamais",
+    "es": "De la noche que nunca se doblega",
+    "de": "Aus der Nacht, die sich nie beugt",
+    "it": "Dalla notte che non si piega mai",
+    "pt": "Da noite que nunca se verga",
+    "nl": "Uit de nacht die nooit buigt",
+    "pl": "Z nocy, która nigdy się nie ugnie",
+    "tr": "Hiç eğilmeyen geceden",
+    "sv": "Ur natten som aldrig böjer sig",
+    "no": "Fra natten som aldri bøyer seg",
+    "da": "Fra natten, der aldrig bøjer sig",
+    "ru": "Из ночи, что не сгибается"
+   }
+  },
+  {
+   "t": 145.72,
+   "text": "Out of the dark they rise",
+   "tr": {
+    "fr": "Hors du noir ils s'élèvent",
+    "es": "Desde la oscuridad se alzan",
+    "de": "Aus der Dunkelheit steigen sie auf",
+    "it": "Fuori dal buio si levano",
+    "pt": "Do escuro erguem-se",
+    "nl": "Uit het donker rijzen ze op",
+    "pl": "Z ciemności się wznoszą",
+    "tr": "Karanlıktan yükseliyorlar",
+    "sv": "Ur mörkret stiger de",
+    "no": "Ut av mørket stiger de",
+    "da": "Ud af mørket rejser de sig",
+    "ru": "Из темноты они встают"
+   }
+  },
+  {
+   "t": 148.3,
+   "text": "And the oldest fear is still alive",
+   "tr": {
+    "fr": "Et la plus vieille peur est toujours vivante",
+    "es": "Y el miedo más antiguo sigue vivo",
+    "de": "Und die älteste Angst lebt noch immer",
+    "it": "E la paura più antica è ancora viva",
+    "pt": "E o medo mais antigo continua vivo",
+    "nl": "En de oudste angst leeft nog steeds",
+    "pl": "A najstarszy strach wciąż żyje",
+    "tr": "Ve en eski korku hâlâ yaşıyor",
+    "sv": "Och den äldsta rädslan lever än",
+    "no": "Og den eldste frykten lever ennå",
+    "da": "Og den ældste frygt lever stadig",
+    "ru": "И самый древний страх всё ещё жив"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 166.8,
+   "text": "We thought we left the monsters in the past",
+   "tr": {
+    "fr": "Nous pensions avoir laissé les monstres dans le passé",
+    "es": "Creíamos haber dejado a los monstruos en el pasado",
+    "de": "Wir dachten, wir ließen die Monster in der Vergangenheit",
+    "it": "Credevamo di aver lasciato i mostri nel passato",
+    "pt": "Pensávamos ter deixado os monstros no passado",
+    "nl": "We dachten dat we de monsters in het verleden lieten",
+    "pl": "Myśleliśmy, że zostawiliśmy potwory w przeszłości",
+    "tr": "Canavarları geçmişte bıraktığımızı sandık",
+    "sv": "Vi trodde att vi lämnat monstren i det förflutna",
+    "no": "Vi trodde vi hadde latt monstrene bli i fortiden",
+    "da": "Vi troede, vi havde efterladt monstrene i fortiden",
+    "ru": "Мы думали, что оставили чудовищ в прошлом"
+   }
+  },
+  {
+   "t": 173.26,
+   "text": "In the caves, in the woods, in the sea",
+   "tr": {
+    "fr": "Dans les grottes, dans les bois, dans la mer",
+    "es": "En las cuevas, en los bosques, en el mar",
+    "de": "In den Höhlen, in den Wäldern, im Meer",
+    "it": "Nelle grotte, nei boschi, nel mare",
+    "pt": "Nas grutas, nas florestas, no mar",
+    "nl": "In de grotten, in de bossen, in de zee",
+    "pl": "W jaskiniach, w lasach, w morzu",
+    "tr": "Mağaralarda, ormanlarda, denizde",
+    "sv": "I grottorna, i skogarna, i havet",
+    "no": "I hulene, i skogene, i havet",
+    "da": "I hulerne, i skovene, i havet",
+    "ru": "В пещерах, в лесах, в море"
+   }
+  },
+  {
+   "t": 180.36,
+   "text": "But the dark just followed us out here",
+   "tr": {
+    "fr": "Mais le noir nous a suivis jusqu'ici",
+    "es": "Pero la oscuridad nos siguió hasta aquí",
+    "de": "Doch die Dunkelheit ist uns bis hierher gefolgt",
+    "it": "Ma il buio ci ha seguiti fin quassù",
+    "pt": "Mas o escuro seguiu-nos até aqui",
+    "nl": "Maar het donker volgde ons tot hier",
+    "pl": "Lecz ciemność poszła za nami aż tutaj",
+    "tr": "Ama karanlık bizi buraya kadar izledi",
+    "sv": "Men mörkret följde oss hela vägen hit",
+    "no": "Men mørket fulgte oss helt hit",
+    "da": "Men mørket fulgte os helt herud",
+    "ru": "Но тьма последовала за нами сюда"
+   }
+  },
+  {
+   "t": 186.56,
+   "text": "And the dark remembers what we used to be",
+   "tr": {
+    "fr": "Et le noir se souvient de ce que nous étions",
+    "es": "Y la oscuridad recuerda lo que fuimos",
+    "de": "Und die Dunkelheit weiß noch, was wir einst waren",
+    "it": "E il buio ricorda ciò che eravamo",
+    "pt": "E o escuro lembra-se do que fomos",
+    "nl": "En het donker weet nog wat we ooit waren",
+    "pl": "I ciemność pamięta, kim kiedyś byliśmy",
+    "tr": "Ve karanlık eskiden ne olduğumuzu hatırlıyor",
+    "sv": "Och mörkret minns vad vi en gång var",
+    "no": "Og mørket husker hva vi en gang var",
+    "da": "Og mørket husker, hvad vi engang var",
+    "ru": "И тьма помнит, кем мы были когда-то"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 195.56,
+   "text": "Out of the dark, out of the dark",
+   "tr": {
+    "fr": "Hors du noir, hors du noir",
+    "es": "Desde la oscuridad, desde la oscuridad",
+    "de": "Aus der Dunkelheit, aus der Dunkelheit",
+    "it": "Fuori dal buio, fuori dal buio",
+    "pt": "Do escuro, do escuro",
+    "nl": "Uit het donker, uit het donker",
+    "pl": "Z ciemności, z ciemności",
+    "tr": "Karanlıktan, karanlıktan",
+    "sv": "Ur mörkret, ur mörkret",
+    "no": "Ut av mørket, ut av mørket",
+    "da": "Ud af mørket, ud af mørket",
+    "ru": "Из темноты, из темноты"
+   }
+  },
+  {
+   "t": 199.06,
+   "text": "They're coming for the last of what we are",
+   "tr": {
+    "fr": "Ils viennent prendre ce qu'il reste de nous",
+    "es": "Vienen por lo último que queda de nosotros",
+    "de": "Sie kommen für das Letzte, was von uns bleibt",
+    "it": "Vengono a prendere ciò che resta di noi",
+    "pt": "Vêm buscar o que resta de nós",
+    "nl": "Ze komen voor het laatste wat er van ons is",
+    "pl": "Przychodzą po resztki tego, czym jesteśmy",
+    "tr": "Bizden geriye kalanı almaya geliyorlar",
+    "sv": "De kommer för det sista som finns kvar av oss",
+    "no": "De kommer for det siste som er igjen av oss",
+    "da": "De kommer efter det sidste, der er tilbage af os",
+    "ru": "Они идут за последним, что осталось от нас"
+   }
+  },
+  {
+   "t": 202.94,
+   "text": "From the void that never ends",
+   "tr": {
+    "fr": "Du vide qui ne finit jamais",
+    "es": "Del vacío que nunca acaba",
+    "de": "Aus der Leere, die nie endet",
+    "it": "Dal vuoto che non finisce mai",
+    "pt": "Do vazio que nunca acaba",
+    "nl": "Uit de leegte die nooit eindigt",
+    "pl": "Z pustki, która nigdy się nie kończy",
+    "tr": "Hiç bitmeyen boşluktan",
+    "sv": "Ur tomrummet som aldrig tar slut",
+    "no": "Fra tomrommet som aldri tar slutt",
+    "da": "Fra tomrummet, der aldrig ender",
+    "ru": "Из пустоты, что не кончается"
+   }
+  },
+  {
+   "t": 204.96,
+   "text": "From the night that never bends",
+   "tr": {
+    "fr": "De la nuit qui ne plie jamais",
+    "es": "De la noche que nunca se doblega",
+    "de": "Aus der Nacht, die sich nie beugt",
+    "it": "Dalla notte che non si piega mai",
+    "pt": "Da noite que nunca se verga",
+    "nl": "Uit de nacht die nooit buigt",
+    "pl": "Z nocy, która nigdy się nie ugnie",
+    "tr": "Hiç eğilmeyen geceden",
+    "sv": "Ur natten som aldrig böjer sig",
+    "no": "Fra natten som aldri bøyer seg",
+    "da": "Fra natten, der aldrig bøjer sig",
+    "ru": "Из ночи, что не сгибается"
+   }
+  },
+  {
+   "t": 206.72,
+   "text": "Out of the dark they rise",
+   "tr": {
+    "fr": "Hors du noir ils s'élèvent",
+    "es": "Desde la oscuridad se alzan",
+    "de": "Aus der Dunkelheit steigen sie auf",
+    "it": "Fuori dal buio si levano",
+    "pt": "Do escuro erguem-se",
+    "nl": "Uit het donker rijzen ze op",
+    "pl": "Z ciemności się wznoszą",
+    "tr": "Karanlıktan yükseliyorlar",
+    "sv": "Ur mörkret stiger de",
+    "no": "Ut av mørket stiger de",
+    "da": "Ud af mørket rejser de sig",
+    "ru": "Из темноты они встают"
+   }
+  },
+  {
+   "t": 210.0,
+   "text": "And the oldest fear is still alive",
+   "tr": {
+    "fr": "Et la plus vieille peur est toujours vivante",
+    "es": "Y el miedo más antiguo sigue vivo",
+    "de": "Und die älteste Angst lebt noch immer",
+    "it": "E la paura più antica è ancora viva",
+    "pt": "E o medo mais antigo continua vivo",
+    "nl": "En de oudste angst leeft nog steeds",
+    "pl": "A najstarszy strach wciąż żyje",
+    "tr": "Ve en eski korku hâlâ yaşıyor",
+    "sv": "Och den äldsta rädslan lever än",
+    "no": "Og den eldste frykten lever ennå",
+    "da": "Og den ældste frygt lever stadig",
+    "ru": "И самый древний страх всё ещё жив"
+   }
+  },
+  {
+   "text": ""
+  },
+  {
+   "t": 222.12,
+   "text": "Don't turn off the lights",
+   "tr": {
+    "fr": "N'éteins pas la lumière",
+    "es": "No apagues las luces",
+    "de": "Mach das Licht nicht aus",
+    "it": "Non spegnere le luci",
+    "pt": "Não apagues as luzes",
+    "nl": "Doe het licht niet uit",
+    "pl": "Nie gaś światła",
+    "tr": "Işıkları kapatma",
+    "sv": "Släck inte ljuset",
+    "no": "Ikke slå av lyset",
+    "da": "Sluk ikke lyset",
+    "ru": "Не выключай свет"
+   }
+  },
+  {
+   "t": 226.16,
+   "text": "Don't look away",
+   "tr": {
+    "fr": "Ne détourne pas les yeux",
+    "es": "No apartes la mirada",
+    "de": "Schau nicht weg",
+    "it": "Non distogliere lo sguardo",
+    "pt": "Não desvies o olhar",
+    "nl": "Kijk niet weg",
+    "pl": "Nie odwracaj wzroku",
+    "tr": "Gözünü kaçırma",
+    "sv": "Titta inte bort",
+    "no": "Ikke se bort",
+    "da": "Se ikke væk",
+    "ru": "Не отводи глаз"
+   }
+  },
+  {
+   "t": 230.75,
+   "text": "Something's moving",
+   "tr": {
+    "fr": "Quelque chose bouge",
+    "es": "Algo se mueve",
+    "de": "Etwas bewegt sich",
+    "it": "Qualcosa si muove",
+    "pt": "Algo se move",
+    "nl": "Er beweegt iets",
+    "pl": "Coś się porusza",
+    "tr": "Bir şey kıpırdıyor",
+    "sv": "Något rör sig",
+    "no": "Noe beveger seg",
+    "da": "Noget bevæger sig",
+    "ru": "Что-то движется"
+   }
+  },
+  {
+   "t": 232.52,
+   "text": "In the black",
+   "tr": {
+    "fr": "Dans le noir",
+    "es": "En la negrura",
+    "de": "Im Schwarz",
+    "it": "Nel nero",
+    "pt": "No negro",
+    "nl": "In het zwart",
+    "pl": "W czerni",
+    "tr": "Karanlıkta",
+    "sv": "I svärtan",
+    "no": "I svartet",
+    "da": "I sortet",
+    "ru": "Во тьме"
+   }
+  }
+ ]
+}

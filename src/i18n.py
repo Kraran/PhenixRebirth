@@ -1460,6 +1460,21 @@ T = {
         "da": "Phoenix - Nostalgie pour Elise (Final)",
         "ru": "Phoenix - Nostalgie pour Elise (Final)",
     },
+    "juke_lyrics": {
+        "fr": "PAROLES", "en": "LYRICS", "es": "LETRA", "de": "SONGTEXT", "it": "TESTO", "pt": "LETRA",
+        "nl": "SONGTEKST", "pl": "TEKST", "tr": "SÖZLER", "sv": "TEXT", "no": "TEKST", "da": "TEKST", "ru": "ТЕКСТ",
+    },
+    "juke_no_lyrics": {
+        "fr": "Paroles à venir", "en": "Lyrics coming soon", "es": "Letra próximamente", "de": "Songtext folgt",
+        "it": "Testo in arrivo", "pt": "Letra em breve", "nl": "Songtekst volgt", "pl": "Tekst wkrótce",
+        "tr": "Sözler yakında", "sv": "Text kommer snart", "no": "Tekst kommer snart", "da": "Tekst følger snart",
+        "ru": "Текст скоро появится",
+    },
+    "juke_instrumental": {
+        "fr": "Instrumental", "en": "Instrumental", "es": "Instrumental", "de": "Instrumental", "it": "Strumentale",
+        "pt": "Instrumental", "nl": "Instrumentaal", "pl": "Instrumentalny", "tr": "Enstrümantal",
+        "sv": "Instrumental", "no": "Instrumental", "da": "Instrumental", "ru": "Инструментал",
+    },
     "juke_lyra_eternal_dawn": {
         "fr": "Lyra Voss - Eternal Dawn (Aventure)",
         "en": "Lyra Voss - Eternal Dawn (Adventure)",
