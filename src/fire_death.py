@@ -11,6 +11,7 @@ the wind. The ship also has a flash, a ring of heat and a big glow, and its ash 
 import math
 
 import pygame
+import loading
 
 try:
     import numpy as np
@@ -203,4 +204,8 @@ def render(source, t, style, canvas, origin, pixels=None):
 def frames(source, count, style, canvas, origin):
     """`count` pictures from t = 0 to t = 1 (the last one is empty)."""
     pixels = _pixels(source, style)
-    return tuple(render(source, i / (count - 1), style, canvas, origin, pixels) for i in range(count))
+    out = []
+    for i in range(count):
+        out.append(render(source, i / (count - 1), style, canvas, origin, pixels))
+        loading.report()                      # (the bar of a mission moves on while the flames are made)
+    return tuple(out)

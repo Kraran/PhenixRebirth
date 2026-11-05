@@ -14,6 +14,7 @@ import threading
 
 import numpy as np
 import pygame
+import loading
 
 import announce
 import lander
@@ -634,11 +635,15 @@ def _draw_base(surface, form, cam_i):
 def warm_sky():
     """Make the pictures of the birds and of the comets (at the start of the mission, not when the first one comes)."""
     brick_tiles()
+    loading.report()
     boss_frames()
+    loading.report()
     for stage in (1, 2):
         bird_frames(stage)
+        loading.report()
     for down in (True, False):
         comet_frames(down)
+        loading.report()
 
 
 def draw_items(surface, form):

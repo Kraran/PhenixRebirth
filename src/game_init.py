@@ -9,6 +9,7 @@ window, sounds and several settings are kept).
 import os
 
 import pygame
+import loading
 
 import bindings
 import controls
@@ -29,6 +30,15 @@ from text_cache import TextCache
 from user_settings import load_user_settings
 from errlog import log_exc
 import fonts
+
+
+def early_language():
+    """The language of the player before the settings are read (the loading bar at the start speaks it)."""
+    try:
+        lang = (load_user_settings() or {}).get("language", "fr")
+        return lang if lang in LANG_CODES else "fr"
+    except Exception:
+        return "fr"
 
 
 def init_display(game):
@@ -298,6 +308,7 @@ def init_fonts_and_logo(game):
         for name in sorted(os.listdir(logo_dir)):
             if name.endswith(".png"):
                 fp = os.path.join(logo_dir, name)
+                loading.report()
                 try:
                     img = pygame.image.load(fp).convert_alpha()
                     # Fit width ~720 max for menu

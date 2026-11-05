@@ -1460,6 +1460,11 @@ T = {
         "da": "Phoenix - Nostalgie pour Elise (Final)",
         "ru": "Phoenix - Nostalgie pour Elise (Final)",
     },
+    "loading": {
+        "fr": "CHARGEMENT", "en": "LOADING", "es": "CARGANDO", "de": "LADEN", "it": "CARICAMENTO", "pt": "A CARREGAR",
+        "nl": "LADEN", "pl": "WCZYTYWANIE", "tr": "YÜKLENİYOR", "sv": "LADDAR", "no": "LASTER", "da": "INDLÆSER",
+        "ru": "ЗАГРУЗКА",
+    },
     "juke_lyrics": {
         "fr": "PAROLES", "en": "LYRICS", "es": "LETRA", "de": "SONGTEXT", "it": "TESTO", "pt": "LETRA",
         "nl": "SONGTEKST", "pl": "TEKST", "tr": "SÖZLER", "sv": "TEXT", "no": "TEKST", "da": "TEKST", "ru": "ТЕКСТ",

@@ -9,6 +9,7 @@ import math
 import os
 
 import pygame
+import loading
 
 import menu_ui
 
@@ -35,6 +36,7 @@ def load_ship_previews(game):
         for name in sorted(os.listdir(pdir)):
             if name.startswith("phenix_") and name.endswith(".png"):
                 fr = _load(os.path.join(pdir, name))
+                loading.report()
                 if fr is not None:
                     anim_p.append(fr)
     morph_p = []
@@ -42,6 +44,7 @@ def load_ship_previews(game):
         for name in sorted(os.listdir(pdir)):
             if name.startswith("morph_") and name.endswith(".png"):
                 fr = _load(os.path.join(pdir, name))
+                loading.report()
                 if fr is not None:
                     morph_p.append(fr)
     pack_p = {
