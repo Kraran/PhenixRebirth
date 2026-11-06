@@ -219,6 +219,7 @@ class Gyro:
         sides = (-1, 1)[:self.count]                 # one module: on the left; two: one on each side
         self.modules = [Module(s, self.armour, sx + s * ANCHOR[0], sy + ANCHOR[1]) for s in sides]
         self.lost = []                   # what happened to the modules lost: "wall", "shot", "crash"
+        self.owned = False               # the pilot's modules (a module destroyed must be bought again)
         self.smoke = []                  # puffs of the damaged modules: [x, y, vx, vy, age, life, size]
         self.sparks = []                 # [x, y, vx, vy, age]
         frames(self.hull)
@@ -321,6 +322,10 @@ class Gyro:
     def _blow_up(self, game, m, why):
         m.alive = False
         self.lost.append(why)
+        if self.owned:
+            story = getattr(game, "story", None)
+            if story is not None:
+                story.lose_module()                # one of the pilot's modules: lost for good, to buy again
         for _ in range(14):
             self._spark(m.x, m.y)
         try:
@@ -389,6 +394,7 @@ def start(game, spec):
     try:
         hull = "phoenix" if getattr(game.player, "ship_id", "") == "phoenix" else "shield"
         game.gyro = Gyro(hull, want.get("count", 2), want.get("armour", 1), game.player)
+        game.gyro.owned = bool(want.get("owned"))                # the pilot's modules (not those of the test)
         game.player.gun_points = game.gyro.gun_points            # each salvo of the ship gets a shot from each module
         game.player.gun_colours = SHOT_COLOURS[hull]
     except Exception:

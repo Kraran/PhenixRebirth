@@ -7009,6 +7009,33 @@ for _k, (_fr, _en) in _MISSILE_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}
     T[_k]["fr"] = _fr
 
+# The escort modules at the workshop (story_state.module_rows) and their pieces (French and English; the other languages show
+# the English text).
+_MODULE_TEXTS = {
+    "story_shop_module1": ("Module d'escorte 1", "Escort module 1"),
+    "story_shop_module2": ("Module d'escorte 2", "Escort module 2"),
+    "story_shop_module1_rebuy": ("Module d'escorte 1 (détruit)", "Escort module 1 (destroyed)"),
+    "story_shop_module2_rebuy": ("Module d'escorte 2 (détruit)", "Escort module 2 (destroyed)"),
+    "story_module_parts": ("Morceaux {n}/{of}", "Pieces {n}/{of}"),
+    "story_module_ready": ("EN SERVICE", "IN SERVICE"),
+    "story_desc_module": (
+        "Un satellite qui vole à côté du vaisseau et tire avec lui. Détruit, il est perdu : rachat à moitié prix.",
+        "A satellite that flies beside the ship and fires with it. Destroyed, it is lost: bought again at half price."),
+    "story_desc_module_armour": ("Blindage renforcé : 2 tirs.", "Reinforced armour: 2 shots."),
+    "story_desc_module_cheap": ("Plans de montage : -40 %.", "Assembly plans: -40 %."),
+    "story_part_m1_lander": ("Morceau du module d'escorte 1 récupéré !", "Piece of escort module 1 recovered!"),
+    "story_part_m1_raid": ("Morceau du module d'escorte 1 récupéré !", "Piece of escort module 1 recovered!"),
+    "story_part_m2_lander": ("Morceau du module d'escorte 2 récupéré !", "Piece of escort module 2 recovered!"),
+    "story_part_m2_raid": ("Morceau du module d'escorte 2 récupéré !", "Piece of escort module 2 recovered!"),
+    "story_part_bonus_cheap": ("Plans de montage récupérés : les modules d'escorte coûtent 40 % de moins !",
+                               "Assembly plans recovered: the escort modules cost 40 % less!"),
+    "story_part_bonus_armour": ("Blindage récupéré : les modules d'escorte encaissent 2 tirs !",
+                                "Armour plating recovered: the escort modules take 2 shots!"),
+}
+for _k, (_fr, _en) in _MODULE_TEXTS.items():
+    T[_k] = {_code: _en for _code in LANG_CODES}
+    T[_k]["fr"] = _fr
+
 # The Lunar Lander test level (src/lander.py, src/lander_view.py): French and English; the other languages show the English text.
 _LANDER_TEXTS = {
     "story_m_lander": ("TEST - Lunar Lander", "TEST - Lunar Lander"),
