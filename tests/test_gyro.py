@@ -381,3 +381,133 @@ def test_holding_fire_the_ship_fires_again_while_the_modules_shots_still_fly(run
     p.autofire = True
     p.update(1 / 120, None, ai_move=0.0, ai_shoot=True)         # (the fire held, as the game reads it each frame)
     assert len(p.own_shots()) == 1 and len(p.shots) == 3
+
+
+# ------------------------------------------------------------------ step 3: the harm done to the modules
+def test_a_shot_destroys_a_normal_module():
+    ship, game = _Ship(), _Game()
+    g = gyro.Gyro("shield", 2, 1, ship)
+    left = g.modules[0]
+    assert g.hit(game, left, "shot") and not left.alive and g.lost == ["shot"]
+    assert game.explosions and "explosion" in game.played
+
+
+def test_a_reinforced_module_takes_two_shots_and_smokes_after_the_first():
+    ship, game = _Ship(), _Game()
+    g = gyro.Gyro("phoenix", 2, 2, ship)
+    left = g.modules[0]
+    assert not g.hit(game, left, "shot")
+    assert left.alive and left.hp == 1 and left.damaged and left.flash > 0 and "shield_zap" in game.played
+    _settle(g, game, ship, 0.5)
+    assert g.smoke and left.flash == 0                                       # it smokes once damaged
+    surf = pygame.Surface((BASE_WIDTH, 720), pygame.SRCALPHA)
+    g.draw(surf, ship)
+    assert g.hit(game, left, "shot") and not left.alive
+    assert not g.modules[1].damaged and g.modules[1].alive
+
+
+def test_a_collision_always_destroys_at_once():
+    ship, game = _Ship(), _Game()
+    g = gyro.Gyro("shield", 2, 2, ship)
+    assert g.hit(game, g.modules[0], "crash") and g.lost == ["crash"]
+
+
+def test_sheltered_in_the_dome_or_the_phenix_form_nothing_touches_them():
+    ship, game = _Ship(), _Game()
+    g = gyro.Gyro("shield", 2, 1, ship)
+    assert g.targets() == g.modules
+    ship.is_phenix = True
+    _settle(g, game, ship, 0.5)
+    assert g.sheltered() and g.targets() == []
+
+
+class _Bullet:
+    def __init__(self, x, y):
+        self.x, self.y = x, y
+        self.alive = True
+
+    def get_hitbox(self):
+        return pygame.Rect(int(self.x) - 3, int(self.y) - 6, 6, 12)
+
+
+def test_in_the_mission_an_enemy_shot_hits_the_module_not_the_ship(run):
+    g = _flying(run, 2)
+    p = g.player
+    p.infinite_lives = False
+    lives = p.lives
+    left = g.gyro.modules[0]
+    b = _Bullet(left.x, left.y)
+    g.formation.bullets.append(b)
+    import update_play
+    update_play.enemy_attacks_vs_players(g)
+    assert not b.alive and not left.alive and g.gyro.lost == ["shot"]
+    assert p.lives == lives and not p.dying                                  # (the module stood in the way)
+
+
+def test_a_diving_bird_and_the_module_go_down_together_for_no_points(run):
+    g = _flying(run, 2)
+    bird = next(e for e in g.formation.get_hittable_enemies())
+    right = g.gyro.modules[1]
+    bird.state = "diving"                                               # (a bird in its dive)
+    bird.x, bird.y = right.x, right.y
+    score = g.score if hasattr(g, "score") else g.player.score
+    import update_play
+    update_play.enemy_attacks_vs_players(g)
+    assert not right.alive and g.gyro.lost == ["crash"]
+    assert not bird.alive or bird.dying
+    assert (g.score if hasattr(g, "score") else g.player.score) == score       # no points
+
+
+def test_the_laser_of_a_guardian_destroys_a_reinforced_module(run):
+    from guardian import FireLaser
+    g = _flying(run, 2)
+    g.gyro.modules[0].hp = g.gyro.modules[0].armour = 2
+    left = g.gyro.modules[0]
+    laser = FireLaser.__new__(FireLaser)
+    laser.alive = True
+    laser.get_hitbox = lambda: left.rect().inflate(4, 40)
+    g.formation.bullets.append(laser)
+    import update_play
+    update_play.enemy_attacks_vs_players(g)
+    assert not left.alive and g.gyro.lost == ["crash"] and laser.alive       # (it goes through)
+
+
+class _Boss:
+    def __init__(self, hull):
+        self.alive = True
+        self.bullets = []
+        self._hull = hull
+
+    def get_hull_hitbox(self):
+        return self._hull
+
+    def draw_shots(self, surface):
+        pass
+
+
+def test_the_boss_its_shots_take_a_point_its_hull_destroys(run):
+    g = _flying(run, 2)
+    left, right = g.gyro.modules
+    left.hp = left.armour = 2
+    boss = _Boss(pygame.Rect(0, 0, 0, 0))
+    shot = _Bullet(left.x, left.y)
+    boss.bullets.append(shot)
+    g.boss_saucer = boss
+    gyro.attacks(g)
+    assert not shot.alive and left.alive and left.hp == 1
+    boss._hull = right.rect().inflate(10, 10)
+    gyro.attacks(g)
+    assert not right.alive and "crash" in g.gyro.lost
+    g.boss_saucer = None
+
+
+def test_nothing_hits_them_while_sheltered_in_the_mission(run):
+    g = _flying(run, 2)
+    p = g.player
+    p.try_activate_phenix()                                                  # (the dome of the test)
+    run.frames(30)
+    left = g.gyro.modules[0]
+    b = _Bullet(left.x, left.y)
+    g.formation.bullets.append(b)
+    gyro.attacks(g)
+    assert left.alive and b.alive
