@@ -3044,8 +3044,9 @@ class StoryHub:
                            self.anim_t + (0.0 if side < 0 else 1.1))
 
     def _draw_module_icon(self, surface, sid, x, cy):
-        """The picture at the left of a workshop row of a module: one half per piece won, the two halves apart while the
-        module is not assembled, the whole module turning once it is (dimmed while it waits to be bought again)."""
+        """The picture at the left of a workshop row of a module: the pieces won (the ring of the landing, the core of the
+        raid), side by side while the module is not assembled, the whole module once it is (dimmed while it waits to be
+        bought again)."""
         import gyro
         k = ss.module_of(sid)
         status = ss.module_status(self.state, k)
@@ -3055,8 +3056,9 @@ class StoryHub:
         if ss.modules_built(self.state) >= k:
             gyro.draw_icon(surface, hull, x, cy, size, self.anim_t, dim=status == "rebuy")
             return
-        lander, raid = ss.MODULE_PIECES[k]
-        gyro.draw_icon(surface, hull, x, cy, size, self.anim_t, halves=(lander in parts, raid in parts), split=4)
+        lander, raid = ss.MODULE_PIECES[k]                    # (the landing gives the ring, the raid the core)
+        pieces = tuple(p for p, got in (("ring", lander in parts), ("core", raid in parts)) if got)
+        gyro.draw_icon(surface, hull, x, cy, size, self.anim_t, pieces=pieces, split=20 if len(pieces) == 2 else 0)
 
     def _draw_missile_icon(self, surface, x, cy):
         """The picture at the left of the workshop row of the antimatter missile: the missile of the missions, its nose in
