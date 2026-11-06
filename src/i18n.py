@@ -7009,6 +7009,150 @@ for _k, (_fr, _en) in _MISSILE_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}
     T[_k]["fr"] = _fr
 
+# The scenes of the landings and the raids (story_state.SCENES "lander_*", "raid_*"), told the first time each mission is
+# launched (French and English; the other languages show the English text).
+_MODULE_SCENE_TEXTS = {
+    "story_scene_land1": (
+        "Grok a ressorti des archives de l’EDF un projet que la guerre avait enterré : des satellites d’escorte, des "
+        "gyroscopes armés qui volent à côté d’un chasseur et tirent avec lui. Un convoi en transportait les prototypes "
+        "vers Mars quand les Avioïdes l’ont intercepté au-dessus de Déimos.\n\n"
+        "Le cargo s’est écrasé dans la poussière de la petite lune. Au fond d’un cratère, les balayages montrent encore"
+        " une caisse intacte : l’anneau gyroscopique du premier module. L’autre moitié, le cœur de tir, a disparu. Les "
+        "Avioïdes l’ont emportée dans la base qu’ils ont creusée dans la roche.\n\n"
+        "Déimos n’attire presque rien. Il faudra poser le vaisseau tout doucement, sans dériver, près de l’épave. Les "
+        "techniciens ont rempli le réservoir à ras bord. Je n’ai jamais posé un chasseur ailleurs que dans une baie… Il"
+        " y a un début à tout.",
+        "Grok has dug out of the EDF archives a project the war had buried: escort satellites, armed gyroscopes that "
+        "fly beside a fighter and fire with it. A convoy was carrying the prototypes to Mars when the Avioids caught it"
+        " above Deimos.\n\n"
+        "The freighter crashed into the dust of the little moon. At the bottom of a crater, the scans still show one "
+        "crate intact: the gyroscopic ring of the first module. The other half, the firing core, is gone. The Avioids "
+        "took it into the base they have dug into the rock.\n\n"
+        "Deimos pulls at almost nothing. I will have to set the ship down very gently, without drifting, near the "
+        "wreck. The technicians have filled the tank to the brim. I have never landed a fighter anywhere but in a bay… "
+        "There is a first time for everything."),
+    "story_scene_raid1": (
+        "Sous la croûte noire de Déimos, les Avioïdes ont creusé une base : une galerie de plusieurs kilomètres, "
+        "hérissée de lance-missiles, qui mène à une salle fortifiée. C’est là qu’ils gardent ce qu’ils ont pris au "
+        "convoi de l’EDF, et parmi leur butin, le cœur de tir du premier module d’escorte.\n\n"
+        "Grok a tracé la route : entrer par les collines, traverser la caverne, abattre le commandant derrière son mur."
+        " Je volerai entre le plafond et le sol, et chaque mètre de roche sera contre moi.\n\n"
+        "C’est la plus petite de leurs bases, disent les relevés. Tant mieux. Il faut bien apprendre quelque part.",
+        "Under the black crust of Deimos, the Avioids have dug a base: a tunnel several kilometres long, bristling with"
+        " missile launchers, that leads to a fortified hall. That is where they keep what they took from the EDF "
+        "convoy, and among their loot, the firing core of the first escort module.\n\n"
+        "Grok has drawn the route: in through the hills, across the cavern, and shoot down the commander behind his "
+        "wall. I will fly between the ceiling and the ground, and every metre of rock will be against me.\n\n"
+        "It is the smallest of their bases, the scans say. Good. One has to learn somewhere."),
+    "story_scene_land2": (
+        "Avant la guerre, l’EDF entretenait un petit poste de maintenance sur un astéroïde de la ceinture, à quelques "
+        "heures de l’atelier du vieux Wallems. Le poste est vide depuis deux ans. Mais d’après Wallems, ses ingénieurs "
+        "y montaient les satellites d’escorte, et leurs plans de montage dormiraient encore dans les mémoires du "
+        "poste.\n\n"
+        "Avec ces plans, les techniciens de Phobos gagneraient des semaines de travail. Et moi, beaucoup de "
+        "crédits.\n\n"
+        "La zone d’atterrissage est étroite, coincée entre les rochers, et la faible gravité de l’astéroïde pardonne "
+        "mal les gestes trop brusques. Réservoir plein. Je descends.",
+        "Before the war, the EDF kept a small maintenance post on an asteroid of the belt, a few hours from old "
+        "Wallems’s workshop. The post has stood empty for two years. But according to Wallems, its engineers used to "
+        "assemble the escort satellites there, and their assembly plans should still be sleeping in the post’s memory "
+        "banks.\n\n"
+        "With those plans, the technicians of Phobos would save weeks of work. And I would save a lot of credits.\n\n"
+        "The landing zone is narrow, wedged between the rocks, and the feeble gravity of the asteroid is unforgiving of"
+        " sudden moves. Tank full. Going down."),
+    "story_scene_raid2": (
+        "Au cœur d’un astéroïde voisin, les Avioïdes ont installé une base. Ils y entassent les plaques de blindage "
+        "arrachées aux épaves des Shields abattus, par dizaines, comme des trophées.\n\n"
+        "Ce blindage appartenait à mes camarades. Les techniciens de Phobos savent le découper pour en habiller les "
+        "satellites d’escorte : de quoi leur faire encaisser un tir de plus.\n\n"
+        "La galerie est plus longue que celle de Déimos, et ses pics de roche montent jusqu’au plafond. Le commandant "
+        "qui garde la base est plus coriace aussi. Je compte bien lui reprendre ce qu’il a volé.",
+        "At the heart of a nearby asteroid, the Avioids have set up a base. They pile up in it the armour plates torn "
+        "from the wrecks of the Shields they shot down, by the dozen, like trophies.\n\n"
+        "That armour belonged to my comrades. The technicians of Phobos know how to cut it to clad the escort "
+        "satellites: enough to let them take one more shot.\n\n"
+        "The tunnel is longer than the one on Deimos, and its peaks of rock rise to the ceiling. The commander guarding"
+        " the base is tougher too. I fully intend to take back what he stole."),
+    "story_scene_land3": (
+        "Un seul module ne suffira pas. Grok en a dessiné un second, et ses pièces ne sont pas sur Mars : le convoi de "
+        "l’EDF devait les livrer à la station de recherche Europa-3, sur la glace d’Europe, la lune de Jupiter. La "
+        "station a été rasée, mais son hangar de surface tient encore debout, et la caisse du second anneau "
+        "gyroscopique est toujours dedans.\n\n"
+        "Europe est lisse comme une patinoire, mais sa gravité est forte et ses crêtes de glace coupent la plaine.\n\n"
+        "120 unités de carburant, pas une de plus. Cette fois, il faudra les compter.",
+        "One module will not be enough. Grok has drawn a second one, and its parts are not on Mars: the EDF convoy was "
+        "to deliver them to the research station Europa-3, on the ice of Europa, the moon of Jupiter. The station has "
+        "been razed, but its surface hangar still stands, and the crate of the second gyroscopic ring is still "
+        "inside.\n\n"
+        "Europa is as smooth as a skating rink, but its gravity is strong and its ridges of ice cut across the "
+        "plain.\n\n"
+        "120 units of fuel, not one more. This time, I will have to count them."),
+    "story_scene_raid3": (
+        "Sous la glace d’Europe, à deux pas des ruines de la station, les Avioïdes ont creusé une base. Le cœur de tir "
+        "du second module y est enfermé, avec tout ce qu’ils ont pillé dans les laboratoires.\n\n"
+        "Cette base est mieux défendue que les autres. Les comètes qui tombent vers Jupiter traversent sa galerie, et "
+        "pour la première fois, leurs missiles me suivront.\n\n"
+        "Le second module est au bout de cette galerie. Je vais le chercher.",
+        "Under the ice of Europa, a stone’s throw from the ruins of the station, the Avioids have dug a base. The "
+        "firing core of the second module is locked away in it, with everything they looted from the laboratories.\n\n"
+        "This base is better defended than the others. The comets falling towards Jupiter sweep through its tunnel, and"
+        " for the first time, their missiles will follow me.\n\n"
+        "The second module is at the end of that tunnel. I am going to get it."),
+    "story_scene_land4": (
+        "Sur Titan, la grande lune de Saturne, la raffinerie de méthane de l’EDF est abandonnée depuis le début de la "
+        "guerre. Ses cuves sont encore pleines. Le vieux Wallems paiera une fortune pour chaque cellule d’énergie que "
+        "je lui ramènerai : dans la ceinture, plus rien ne se raffine.\n\n"
+        "Mais Titan est la plus lourde des cinq. Sa gravité est la plus forte, et 120 unités de carburant passent vite "
+        "quand il faut freiner la chute.\n\n"
+        "Il faudra se poser du premier coup.",
+        "On Titan, the great moon of Saturn, the EDF methane refinery has been abandoned since the start of the war. "
+        "Its tanks are still full. Old Wallems will pay a fortune for every energy cell I bring him back: nothing gets "
+        "refined in the belt any more.\n\n"
+        "But Titan is the heaviest of the five. Its gravity is the strongest, and 120 units of fuel go fast when the "
+        "fall has to be braked.\n\n"
+        "I will have to land at the first attempt."),
+    "story_scene_raid4": (
+        "Les Avioïdes ont creusé leur base de Titan au bout d’une longue suite de défilés étroits. C’est de là que "
+        "partent les patrouilles qui harcèlent tout ce qui bouge autour de Saturne.\n\n"
+        "Mars offre une prime pour sa destruction. Une grosse prime. Grok dit que le passage est serré, que les lance-"
+        "missiles sont partout et que le commandant encaisse trois tirs. Il dit aussi que je suis le seul à pouvoir "
+        "passer.\n\n"
+        "Je n’en demandais pas tant.",
+        "The Avioids have dug their base on Titan at the end of a long string of narrow passes. From there leave the "
+        "patrols that harass everything that moves around Saturn.\n\n"
+        "Mars offers a bounty for its destruction. A big bounty. Grok says the passage is tight, that the missile "
+        "launchers are everywhere and that the commander takes three shots. He also says I am the only one who can get "
+        "through.\n\n"
+        "I was not asking for that much."),
+    "story_scene_land5": (
+        "Triton. C’est ici que tout a commencé, le 1er juin 2169, quand la station Huygens s’est tue. Ses ruines sont "
+        "toujours là, sur la glace d’azote. Sa boîte noire aussi, d’après Grok : les derniers enregistrements de la "
+        "station, ce que les 91 ont vu avant la fin.\n\n"
+        "Mars paiera cher pour ces données. Et moi, je veux savoir.\n\n"
+        "La glace de Triton est criblée de cuvettes. 120 unités de carburant. Je me pose près de Huygens.",
+        "Triton. This is where it all began, on 1 June 2169, when the Huygens station fell silent. Its ruins are still "
+        "there, on the nitrogen ice. So is its black box, according to Grok: the last recordings of the station, what "
+        "the 91 saw before the end.\n\n"
+        "Mars will pay well for that data. And I want to know.\n\n"
+        "The ice of Triton is riddled with dimples. 120 units of fuel. I am landing near Huygens."),
+    "story_scene_raid5": (
+        "Sous la glace de Triton, tout près du nid, les Avioïdes ont creusé leur dernière base. La plus longue, la plus"
+        " rapide, la mieux défendue : collines, caverne, comètes, pics et défilés, et au bout, un mur de quatre rangs "
+        "et un commandant qui ne lâche rien.\n\n"
+        "Mars paiera pour sa destruction. Mais ce n’est pas pour la prime que j’y vais. C’est la dernière, et elle est "
+        "à deux pas de Huygens.\n\n"
+        "Pour les 91.",
+        "Under the ice of Triton, right next to the nest, the Avioids have dug their last base. The longest, the "
+        "fastest, the best defended: hills, cavern, comets, peaks and narrows, and at the end, a wall four bricks thick"
+        " and a commander who gives nothing up.\n\n"
+        "Mars will pay for its destruction. But it is not for the bounty that I am going. It is the last one, and it "
+        "stands a stone’s throw from Huygens.\n\n"
+        "For the 91."),
+}
+for _k, (_fr, _en) in _MODULE_SCENE_TEXTS.items():
+    T[_k] = {_code: _en for _code in LANG_CODES}
+    T[_k]["fr"] = _fr
+
 # The escort modules at the workshop (story_state.module_rows) and their pieces (French and English; the other languages show
 # the English text).
 _MODULE_TEXTS = {

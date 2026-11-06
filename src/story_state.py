@@ -1575,6 +1575,18 @@ SCENES = {
     "sentinelle_2": {"title": "story_scene_sent2_t", "slides": [("sentinelle2_saturne", "story_scene_sent2")]},
     "sentinelle_3": {"title": "story_scene_sent3_t", "slides": [("sentinelle3_uranus", "story_scene_sent3")]},
     "sentinelle_4": {"title": "story_scene_sent4_t", "slides": [("sentinelle4_neptune", "story_scene_sent4")]},
+    # the landings and the raids on the Avioid bases (the escort modules): the briefing, told before the first flight (the
+    # pictures will come later: until then the slide is a dark sky behind the text)
+    "lander_deimos": {"title": "story_m_land1", "slides": [("atterrissage_deimos", "story_scene_land1")]},
+    "raid_deimos": {"title": "story_m_raid1", "slides": [("raid_deimos", "story_scene_raid1")]},
+    "lander_rock": {"title": "story_m_land2", "slides": [("atterrissage_asteroide", "story_scene_land2")]},
+    "raid_rock": {"title": "story_m_raid2", "slides": [("raid_asteroide", "story_scene_raid2")]},
+    "lander_europa": {"title": "story_m_land3", "slides": [("atterrissage_europe", "story_scene_land3")]},
+    "raid_europa": {"title": "story_m_raid3", "slides": [("raid_europe", "story_scene_raid3")]},
+    "lander_titan": {"title": "story_m_land4", "slides": [("atterrissage_titan", "story_scene_land4")]},
+    "raid_titan": {"title": "story_m_raid4", "slides": [("raid_titan", "story_scene_raid4")]},
+    "lander_triton": {"title": "story_m_land5", "slides": [("atterrissage_triton", "story_scene_land5")]},
+    "raid_triton": {"title": "story_m_raid5", "slides": [("raid_triton", "story_scene_raid5")]},
 }
 
 # The VIP rescue (Act 2 BONUS): its victory tells who was on board, and the concert of Lyra Voss in the Phobos bar opens.
@@ -1600,10 +1612,11 @@ STORY_SCENES = {
 }
 # The order of the journal (the order of the story): the mission scenes of Acts 1 and 2, the attack, the loss, the
 # Act 3 scenes, the end; the Phobos bar (Add-On) last.
-SCENE_ORDER = (["ch1_sortie", "best_s2", "best_s3", "best_s4", "ast_1", "dome_1", "sentinelle_1", "best_boss", "ast_2", "paint_1",
-                VIP_SCENE, ACT3_ATTACK, "act3_kept_shield", "act3_kept_phoenix", "up_shield_1", "up_phenix_1",
-                "bonus_wreck_phenix", "bonus_wreck_shield", "sentinelle_2", "sentinelle_3", "ast_3", "sentinelle_4", "final_1",
-                EPILOGUE, ENDING_MISSION])
+SCENE_ORDER = (["ch1_sortie", "best_s2", "best_s3", "best_s4", "ast_1", "dome_1", "lander_deimos", "raid_deimos", "sentinelle_1",
+                "lander_rock", "raid_rock", "best_boss", "ast_2", "paint_1", VIP_SCENE, "lander_europa", "raid_europa",
+                "lander_titan", "raid_titan", ACT3_ATTACK, "act3_kept_shield", "act3_kept_phoenix", "up_shield_1",
+                "up_phenix_1", "bonus_wreck_phenix", "bonus_wreck_shield", "sentinelle_2", "sentinelle_3", "lander_triton",
+                "raid_triton", "ast_3", "sentinelle_4", "final_1", EPILOGUE, ENDING_MISSION])
 
 
 # The films: videos watched full screen with their sound (assets/video/<video>.mp4, silent, and <video>.ogg, its
