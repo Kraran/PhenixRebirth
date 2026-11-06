@@ -1753,6 +1753,9 @@ class StoryHub:
             spec["modules"] = {"count": 2, "armour": 1}             # (the menu of the test changes them; src/gyro.py)
             if mission.get("training"):
                 spec.update(training=True, items=[])                # the test: nothing won, nothing lost
+        owned = ss.module_spec(self.state, mission)
+        if owned:
+            spec["modules"] = owned                  # the escort modules in working order fly with the ship (src/gyro.py)
         if ss.missile_ready(self.state) and not mission.get("training") and not mission.get("scramble"):
             spec["antimatter"] = True                 # the launcher is bought and a missile is held: one in this mission
         if ship:
@@ -1852,6 +1855,9 @@ class StoryHub:
             self.toast_kind = "danger"
         if res.get("reactor_lost") and not res["fallen"]:
             self.toast += "   " + t("story_reactor_lost")
+        if res.get("part"):
+            self.toast += "   " + t("story_part_" + res["part"])
+            self.toast_kind = "reward"
         if res.get("loot") and not res["fallen"]:
             self.toast += "   " + t("story_item_found").format(name=t("item_%s_name" % res["loot"]))
             if self.toast_kind != "danger":
@@ -1885,6 +1891,12 @@ class StoryHub:
             self.toast = toast
             self.toast_kind = toast_kind
 
+    def lose_module(self):
+        """An escort module destroyed in a mission: one less in working order, written at once (leaving the mission does not
+        give it back)."""
+        if ss.lose_module(self.state):
+            self.save()
+
     def use_missile(self):
         """A missile left in a mission: one less in the hangar, written at once (leaving the mission does not give it back)."""
         if ss.use_missile(self.state):
@@ -1904,7 +1916,20 @@ class StoryHub:
         self.save()
         return True
 
+    def _module_desc(self):
+        """The line under the workshop rows of the escort modules: what they do, and the bonuses won."""
+        parts = ss.module_parts(self.state)
+        text = t("story_desc_module")
+        if "bonus_armour" in parts:
+            text += "  " + t("story_desc_module_armour")
+        if "bonus_cheap" in parts:
+            text += "  " + t("story_desc_module_cheap")
+        return text
+
     def _shop_extra(self, sid, cost, locked):
+        k = ss.module_of(sid)
+        if k is not None and ss.module_status(self.state, k) == "parts":
+            return t("story_module_parts").format(n=ss.module_pieces_held(self.state, k), of=2)
         if sid == "paint":
             if not ss.paint_state(self.state)["token"]:
                 return t("story_locked")
@@ -3082,6 +3107,8 @@ class StoryHub:
                 locked = story_items.status(self.state, item) != story_items.INSTALLED and not story_items.affordable(self.state, item)
             if sid in ss.MISSILE_ROWS:
                 locked = not ss.missile_buyable(self.state, sid)
+            if sid in ss.MODULE_ROWS:
+                locked = not ss.module_buyable(self.state, sid)
             focus = self.zone == "shop" and i == self.shop_index
             row = pygame.Rect(box.x + 16, y, box.w - 32, 38)
             if focus:
@@ -3123,6 +3150,8 @@ class StoryHub:
             if item and self.zone == "shop":
                 _text_fit(surface, small, t("item_%s_desc" % item), (190, 200, 220), box.bottom - 22,
                           box.x + 20, box.w - 40)
+            elif rows[self.shop_index][0] in ss.MODULE_ROWS and self.zone == "shop":
+                _text_fit(surface, small, self._module_desc(), (190, 200, 220), box.bottom - 22, box.x + 20, box.w - 40)
             elif rows[self.shop_index][0] in ss.MISSILE_ROWS and self.zone == "shop":
                 _text_fit(surface, small, t("story_desc_" + rows[self.shop_index][0]), (190, 200, 220), box.bottom - 22,
                           box.x + 20, box.w - 40)

@@ -964,6 +964,9 @@ def default_state():
         "credits": 0,
         "flags": {"bestiary_s1": True},
         "missiles": 0,
+        "module_parts": [],      # the pieces of the escort modules and their bonuses won so far (MODULE_PARTS)
+        "modules_built": 0,      # escort modules assembled at the workshop (0-2)
+        "modules": 0,            # ... still in working order (the others were destroyed: to buy again)
         "cleared": [],
         "slots": [
             {
@@ -1068,6 +1071,10 @@ def migrate_state(data):
     base["credits"] = max(0, int(_num(data.get("credits"), 0)))
     base["selected_slot"] = int(_num(data.get("selected_slot"), 0))
     base["missiles"] = max(0, min(MISSILE_MAX, int(_num(data.get("missiles"), 0))))
+    if isinstance(data.get("module_parts"), list):
+        base["module_parts"] = [p for p in dict.fromkeys(data["module_parts"]) if p in MODULE_PARTS.values()]
+    base["modules_built"] = max(0, min(MODULE_MAX, int(_num(data.get("modules_built"), 0))))
+    base["modules"] = max(0, min(base["modules_built"], int(_num(data.get("modules"), 0))))
     # chapter (v2) became act (v3)
     base["act"] = max(1, min(3, int(_num(data.get("act", data.get("chapter")), 1))))
     if isinstance(data.get("name"), str):
@@ -1338,6 +1345,122 @@ def missile_buyable(state, sid):
     if sid == "missile_ammo":
         return has_launcher(state) and missile_stock(state) < MISSILE_MAX and credits >= story_vn.sale_price(state, MISSILE_PRICE)
     return False
+
+
+# ------------------------------------------------------------ escort modules
+# The escort modules (src/gyro.py): each one is assembled at the workshop from two pieces, one won by a landing and one by
+# a raid (the first victory of each); the two missions of the asteroid give a bonus each instead. A module assembled flies
+# with the ship in the arcade missions of the Adventure (one on the left; two: one on each side); a module destroyed in a
+# mission is lost at once (`lose_module`) and must be bought again, at half its price. Module 1 is numbered before module 2:
+# with n modules in working order, they are modules 1..n.
+MODULE_MAX = 2
+MODULE_PARTS = {"lander_deimos": "m1_lander", "raid_deimos": "m1_raid", "lander_europa": "m2_lander",
+                "raid_europa": "m2_raid", "lander_rock": "bonus_cheap", "raid_rock": "bonus_armour"}
+MODULE_PIECES = {1: ("m1_lander", "m1_raid"), 2: ("m2_lander", "m2_raid")}
+MODULE_PRICES = {1: 3000, 2: 5000}          # to assemble; a module destroyed is bought again for half
+MODULE_CHEAP = 0.6                          # the bonus "bonus_cheap": 40 % off every module price
+MODULE_ROWS = ("module_1", "module_2")
+
+
+def module_parts(state):
+    """The pieces and bonuses of the escort modules won so far."""
+    return [p for p in ((state or {}).get("module_parts") or []) if p in MODULE_PARTS.values()]
+
+
+def modules_built(state):
+    return max(0, min(MODULE_MAX, int(_num((state or {}).get("modules_built"), 0))))
+
+
+def modules_alive(state):
+    """Escort modules in working order: they fly with the ship."""
+    return max(0, min(modules_built(state), int(_num((state or {}).get("modules"), 0))))
+
+
+def module_armour(state):
+    """Hits from enemy shots a module takes (the bonus "bonus_armour": 2)."""
+    return 2 if "bonus_armour" in module_parts(state) else 1
+
+
+def module_of(sid):
+    """The number (1, 2) of the workshop row of a module, or None."""
+    return MODULE_ROWS.index(sid) + 1 if sid in MODULE_ROWS else None
+
+
+def module_price(state, k):
+    """Credits asked for module `k`: to assemble it, or to buy it again once destroyed (half), 40 % off with the bonus
+    (before the price of the Romance, see story_vn.sale_price)."""
+    price = MODULE_PRICES[k] if modules_built(state) < k else MODULE_PRICES[k] // 2
+    if "bonus_cheap" in module_parts(state):
+        price = int(price * MODULE_CHEAP + 0.5)
+    return price
+
+
+def module_status(state, k):
+    """What the workshop row of module `k` is: "hidden" (none of its pieces yet), "parts" (a piece missing), "need_prev"
+    (module 1 first), "assemble", "rebuy" (destroyed) or "ready" (in working order)."""
+    parts = module_parts(state)
+    built, alive = modules_built(state), modules_alive(state)
+    if alive >= k:
+        return "ready"
+    if built >= k:
+        return "rebuy" if alive >= k - 1 else "need_prev"
+    pieces = MODULE_PIECES[k]
+    if not any(p in parts for p in pieces):
+        return "hidden"
+    if not all(p in parts for p in pieces):
+        return "parts"
+    return "assemble" if built >= k - 1 else "need_prev"
+
+
+def module_pieces_held(state, k):
+    return sum(1 for p in MODULE_PIECES[k] if p in module_parts(state))
+
+
+def module_buyable(state, sid):
+    k = module_of(sid)
+    if k is None or module_status(state, k) not in ("assemble", "rebuy"):
+        return False
+    return int(_num(state.get("credits"), 0)) >= story_vn.sale_price(state, module_price(state, k))
+
+
+def module_rows(state):
+    """The workshop rows of the escort modules: one for each module whose pieces are being gathered or that is built."""
+    rows = []
+    for k in (1, 2):
+        status = module_status(state, k)
+        if status == "hidden":
+            continue
+        label = "story_shop_module%d%s" % (k, "_rebuy" if status == "rebuy" else "")
+        rows.append((MODULE_ROWS[k - 1], label, module_price(state, k), None))
+    return rows
+
+
+def buy_module(state, sid):
+    """Assemble module `sid`, or buy it again. True when it was bought."""
+    if not module_buyable(state, sid):
+        return False
+    k = module_of(sid)
+    state["credits"] = int(_num(state.get("credits"), 0)) - story_vn.sale_price(state, module_price(state, k))
+    state["modules_built"] = max(modules_built(state), k)
+    state["modules"] = modules_alive(state) + 1
+    return True
+
+
+def lose_module(state):
+    """A module was destroyed in a mission: one less in working order. False when there was none."""
+    if modules_alive(state) <= 0:
+        return False
+    state["modules"] = modules_alive(state) - 1
+    return True
+
+
+def module_spec(state, mission):
+    """The modules a mission launches with ({"count", "armour", "owned"}), or None: those in working order, in every
+    mission that counts (src/gyro.py leaves them out of the Lander, Scramble, SpaceWar, the asteroids and the coop)."""
+    n = modules_alive(state)
+    if n <= 0 or not mission or mission.get("training") or mission.get("modules"):
+        return None
+    return {"count": n, "armour": module_armour(state), "owned": True}
 
 
 def missile_rows(state):
@@ -2267,10 +2390,12 @@ def shop_for(state):
     # the loot items caught (a reactor only for the hull flown)
     rows = rows + [item_row(i) for i in story_items.shop(state, slot.get("id"))]
     rows = rows + missile_rows(state)
+    rows = rows + module_rows(state)
     # what is already at MAX goes last: the rows still to buy stay under the cursor, the finished ones are a footnote
     rows = [(sid, label, story_vn.sale_price(state, cost), need) for sid, label, cost, need in rows]   # (Romance: -10 %)
-    todo = [r for r in rows if upgrade_note(state, r[0]) != "story_owned"]
-    return todo + [r for r in rows if upgrade_note(state, r[0]) == "story_owned"]
+    done = ("story_owned", "story_module_ready")
+    todo = [r for r in rows if upgrade_note(state, r[0]) not in done]
+    return todo + [r for r in rows if upgrade_note(state, r[0]) in done]
 
 
 def shop_after(state, sid):
@@ -2326,6 +2451,10 @@ def upgrade_note(state, sid):
         return "story_item_installed" if story_items.status(state, item) == story_items.INSTALLED else None
     if sid == "missile_launcher":
         return "story_owned" if has_launcher(state) else None
+    k = module_of(sid)
+    if k is not None:
+        return {"ready": "story_module_ready", "need_prev": "story_need_prev",
+                "parts": "story_module_parts"}.get(module_status(state, k))
     if sid == "missile_ammo":
         if not has_launcher(state):
             return "story_need_launcher"
@@ -2341,6 +2470,8 @@ def upgrade_note(state, sid):
 
 def buy(state, sid):
     """Buy one upgrade for the selected hull. True when it was bought."""
+    if sid in MODULE_ROWS:
+        return buy_module(state, sid)
     if sid in MISSILE_ROWS:
         if not missile_buyable(state, sid):
             return False
@@ -2471,6 +2602,10 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
         if res["first"] and int(_num(mission.get("reward"), 0)) > 0:
             res["reward"] = int(mission["reward"])   # the parts salvaged (a BONUS mission): paid once
             state["credits"] = int(state.get("credits", 0)) + res["reward"]
+        part = MODULE_PARTS.get(mission_id)
+        if part and part not in module_parts(state):
+            state["module_parts"] = module_parts(state) + [part]
+            res["part"] = part                       # a piece of an escort module (or a bonus): the first victory
         if res["first"]:
             cleared_ids.append(mission_id)
             state.setdefault("log", []).append({"key": mission.get("log") or "story_log_clear"})
