@@ -35,6 +35,18 @@ def test_the_tank_holds_what_the_mission_gives():
     assert f.fuel == f.fuel_max == 150.0
 
 
+def _gauge_fill(surf):
+    """The width of the green fill of the fuel gauge: the longest run of its green on one row (the bar is 10 px high)."""
+    green = (90, 255, 120)
+    best = 0
+    for y in range(surf.get_height()):
+        run_len = 0
+        for x in range(surf.get_width()):
+            run_len = run_len + 1 if surf.get_at((x, y))[:3] == green else 0
+            best = max(best, run_len)
+    return best
+
+
 def test_the_gauge_is_full_with_a_full_tank_of_150(run):
     g = run.game
     from test_spacewar import _state
@@ -57,9 +69,8 @@ def test_the_gauge_is_full_with_a_full_tank_of_150(run):
             lv.draw_hud(g, form)
         finally:
             g.game_surface = keep
-        seen.append(sum(1 for x in range(surf.get_width()) for y in range(0, 300, 2)
-                        if surf.get_at((x, y))[:3] == (90, 255, 120)))
-    assert seen[0] > 0 and abs(seen[1] / seen[0] - 0.5) < 0.1
+        seen.append(_gauge_fill(surf))
+    assert seen[0] > 50 and abs(seen[1] / seen[0] - 0.5) < 0.03
 
 
 def test_a_landing_launches_its_setting_and_its_tank_without_a_menu(run):
