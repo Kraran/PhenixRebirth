@@ -68,3 +68,16 @@ def test_the_journal_lists_them_once_seen():
     i = entries.index({"scene": "dome_1"})
     assert entries[i + 1] == {"scene": "lander_deimos"} and entries[i + 2] == {"scene": "raid_deimos"}
     assert t("story_log_scene").format(title=t("story_m_raid1")) in [ss.log_text(e, t) for e in entries]
+
+
+def test_the_ten_pictures_are_there_and_widescreen():
+    import os
+
+    import pygame
+    from settings import asset_path
+    for mid in MISSIONS:
+        pic = ss.scene_of(mid)["slides"][0][0]
+        path = asset_path("story", pic + ".jpg")
+        assert os.path.isfile(path), pic
+        w, h = pygame.image.load(path).get_size()
+        assert w >= 1280 and abs(w / h - 16 / 9) < 0.01, pic
