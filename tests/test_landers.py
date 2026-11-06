@@ -78,6 +78,8 @@ def test_a_landing_launches_its_setting_and_its_tank_without_a_menu(run):
     from test_spacewar import _state
     st = _state(act=2)
     st["flags"].update({"dome_s2": True, "dome_s4": True, "phenix_s1": True, "phenix_s3": True})
+    for mid in WANT:
+        ss.mark_scene_seen(st, mid)                               # (the briefing told before: tests/test_modules_scenes.py)
     ss.save_state(ss.story_path(1), st)
     g.story.open_slot(1)
     g.story.pane = "map"
