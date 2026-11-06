@@ -1596,7 +1596,7 @@ class StoryHub:
                 self.screen = "lander_pick"                         # (the same menu, its own choices)
                 self.pick_for = "modules"
                 return None
-            if mission and mission.get("scramble") and self.mission_playable(mission):
+            if mission and mission.get("scramble") and not mission.get("body") and self.mission_playable(mission):
                 self.lander_index = 0                 # the Scramble test: the same choice of the setting (the same five)
                 self.screen = "lander_pick"
                 self.pick_for = "scramble"
@@ -1741,6 +1741,9 @@ class StoryHub:
             spec.update(scramble=True, items=[])                     # (src/scramble.py)
             if mission.get("training"):
                 spec["training"] = True                             # the test: nothing won, nothing lost
+            if mission.get("raid"):
+                spec["raid"] = int(mission["raid"])                 # a raid: its level of difficulty (scramble.LEVELS)
+            body = mission.get("body") or body                      # (a raid flies over its own setting, no menu)
             if body in lander.BODIES:
                 spec["body"] = body                   # the setting chosen in the menu (else drawn at random)
         if mission.get("modules"):

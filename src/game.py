@@ -2219,7 +2219,8 @@ class Game:
         elif adv and adv.get("scramble"):
             # Scramble (src/scramble.py): the course scrolls from right to left, the ship flies through it
             self.stage = 1
-            self.formation = scramble.ScrambleFormation(style=adv.get("body"), seed=adv.get("seed"))
+            self.formation = scramble.ScrambleFormation(style=adv.get("body"), seed=adv.get("seed"),
+                                                        level=adv.get("raid") or scramble.LEVEL_MAX)
             self.formation.sounds = self.sounds
             self.formation.font = self.font
             self.formation.text_cache = self.text_cache

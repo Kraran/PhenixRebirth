@@ -70,6 +70,56 @@ SECTIONS = (
 # "stations": (the gap between two missile stations, from .. to, in px of the course; the share of them hanging from the
 # ceiling), None: no station in that section.
 SECTION_KEYS = tuple(s[0] for s in SECTIONS)
+SECTION_LOOK = {key: look for key, _, look in SECTIONS}
+
+# The difficulty of a course: five levels ("paliers"), for the raids of the Adventure on the five settings. 5 is the full
+# Scramble of the test (the constants of the modules: every key left out of a level takes them). The sections: (name,
+# seconds at full speed), in order. "gap": the lowest passage in ship heights; "stations": the share of missile stations
+# (1: as many as at 5); "homing": how hard their missiles home in (0: they fly straight); "comets": the share of comets;
+# "wave_gap" / "green": the waves of birds; "columns" / "turrets": the wall of the base and its turrets (rows of bricks);
+# "bullets": the boss's shots on the screen at once; "boss_hp": shots through a hole to kill it.
+LEVEL_MAX = 5
+LEVELS = {
+    1: {"sections": (("hills", 30.0), ("cavern", 36.0), ("approach", 12.0)),
+        "scroll": 150.0, "gap": 3.6, "stations": 0.6, "reload": 3.6, "homing": 0.0, "comets": 0.0,
+        "wave_gap": (10.0, 14.0), "green": (0.0, 0.2), "columns": 2, "turrets": (9, 22), "bullets": 3, "boss_hp": 1},
+    2: {"sections": (("hills", 26.0), ("cavern", 30.0), ("peaks", 28.0), ("approach", 12.0)),
+        "scroll": 158.0, "gap": 3.45, "stations": 0.7, "reload": 3.3, "homing": 0.0, "comets": 0.0,
+        "wave_gap": (9.0, 13.0), "green": (0.05, 0.3), "columns": 2, "turrets": (9, 22), "bullets": 3, "boss_hp": 2},
+    3: {"sections": (("hills", 26.0), ("cavern", 28.0), ("comets", 20.0), ("peaks", 26.0), ("approach", 12.0)),
+        "scroll": 165.0, "gap": 3.3, "stations": 0.8, "reload": 3.0, "homing": 0.5, "comets": 0.5,
+        "wave_gap": (8.0, 12.0), "green": (0.15, 0.45), "columns": 3, "turrets": (5, 15, 26), "bullets": 4, "boss_hp": 2},
+    4: {"sections": (("hills", 24.0), ("cavern", 27.0), ("comets", 18.0), ("peaks", 25.0), ("narrows", 20.0),
+                     ("approach", 12.0)),
+        "scroll": 172.0, "gap": 3.15, "stations": 0.9, "reload": 2.8, "homing": 0.75, "comets": 0.75,
+        "wave_gap": (7.0, 11.0), "green": (0.2, 0.55), "columns": 3, "turrets": (5, 15, 26), "bullets": 4, "boss_hp": 3},
+    5: {},
+}
+
+
+class Tune:
+    """The numbers of one level of difficulty (LEVELS), read by the course, the sky and the base."""
+
+    def __init__(self, level=LEVEL_MAX):
+        import scramble_birds as sb
+        import scramble_base as sbase
+        self.level = max(1, min(LEVEL_MAX, int(level or LEVEL_MAX)))
+        d = LEVELS[self.level]
+        plan = d.get("sections") or tuple((key, seconds) for key, seconds, _ in SECTIONS)
+        self.sections = tuple((key, float(seconds), SECTION_LOOK[key]) for key, seconds in plan)
+        self.keys = tuple(key for key, _, _ in self.sections)
+        self.scroll = float(d.get("scroll", SCROLL))
+        self.gap_min = GAP_MIN if "gap" not in d else d["gap"] * SHIP_SPAN
+        self.stations = float(d.get("stations", 1.0))
+        self.reload = float(d.get("reload", STATION_RELOAD))
+        self.homing = float(d.get("homing", 1.0))
+        self.comets = float(d.get("comets", 1.0))
+        self.wave_gap = tuple(d.get("wave_gap", sb.WAVE_GAP))
+        self.green = tuple(d.get("green", sb.GREEN_SHARE))
+        self.columns = int(d.get("columns", sbase.COLUMNS))
+        self.turret_rows = tuple(d.get("turrets", sbase.TURRET_ROWS))
+        self.bullets = int(d.get("bullets", sbase.BULLET_MAX))
+        self.boss_hp = int(d.get("boss_hp", sbase.BOSS_HP))
 MENU_ORDER = lander.MENU_ORDER    # the choice of the test (story.py, screen "lander_pick" for the Scramble)
 BODY_KEYS = lander.BODY_KEYS
 MAX_SHOTS = 3                     # the ship's shots on the screen
@@ -122,15 +172,19 @@ class Course:
     """The rock of the whole course: the y of the ceiling (`ceil`: its lower edge) and of the ground (`floor`: its upper edge)
     every STEP px, with where each section begins, where the scroll stops (`stop`) and the length of the world (`length`)."""
 
-    def __init__(self, style, seed=None):
+    def __init__(self, style, seed=None, level=LEVEL_MAX):
         self.style = style
         self.seed = random.getrandbits(32) if seed is None else int(seed)
+        self.tune = tune = Tune(level)
+        self.sections = tune.sections                # (name, seconds, look) of this level
+        self.scroll = tune.scroll
+        self.gap_min = tune.gap_min
         rng = np.random.default_rng(self.seed)
         # where the sections are (world px): the scroll runs at full speed until the braking, which ends at `stop`
         starts, x = [], 0.0
-        for _, seconds, _ in SECTIONS:
+        for _, seconds, _ in self.sections:
             starts.append(x)
-            x += seconds * SCROLL
+            x += seconds * self.scroll
         self.starts = starts
         self.course_end = x                          # the end of the last section: the braking starts BRAKE before
         self.stop = x                                # the camera stops here (the arena fills the screen from there)
@@ -143,7 +197,7 @@ class Course:
         ceil_d = np.zeros(n)
         floor_d = np.zeros(n)
         weights = self._weights(xs)
-        for k, (_, _, look) in enumerate(SECTIONS):
+        for k, (_, _, look) in enumerate(self.sections):
             w = weights[k]
             if not w.any():
                 continue
@@ -173,7 +227,7 @@ class Course:
         """The share of each section at each x (they melt into one another over TRANSITION px)."""
         out = []
         bounds = list(self.starts[1:])
-        for k in range(len(SECTIONS)):
+        for k in range(len(self.sections)):
             rise = smoothstep((xs - (bounds[k - 1] - TRANSITION / 2)) / TRANSITION) if k > 0 else np.ones_like(xs)
             fall = 1 - smoothstep((xs - (bounds[k] - TRANSITION / 2)) / TRANSITION) if k < len(bounds) else np.ones_like(xs)
             out.append(rise * fall)
@@ -230,8 +284,9 @@ class Course:
             for i in range(self.n - 2, -1, -1):
                 f[i] = max(f[i], f[i + 1] - d)
                 c[i] = min(c[i], c[i + 1] + d)
-        np.clip(f, BAND_MIN + GAP_MIN, H - BAND_MIN, out=f)
-        np.clip(c, BAND_MIN, H - BAND_MIN - GAP_MIN, out=c)
+        gap = self.gap_min
+        np.clip(f, BAND_MIN + gap, H - BAND_MIN, out=f)
+        np.clip(c, BAND_MIN, H - BAND_MIN - gap, out=c)
 
     def _open_passage(self):
         """Where the ship would not fit (over GAP_WINDOW px the lowest ceiling and the highest ground are less than GAP_MIN
@@ -239,17 +294,18 @@ class Course:
         half = int(math.ceil(GAP_WINDOW / 2 / STEP))
         soft = 10                                     # samples over which a carving fades out on each side
         bowl = np.cos(np.linspace(0, math.pi / 2, soft + 1)[1:]) ** 2      # (from nearly 1 next to it down to 0)
+        gap = self.gap_min                              # (this level's)
         for _ in range(6):
             changed = False
             for i in range(self.n):
                 a, b = max(0, i - half), min(self.n, i + half + 1)
                 low_ceil = float(self.ceil[a:b].max())
                 high_floor = float(self.floor[a:b].min())
-                if high_floor - low_ceil >= GAP_MIN - 0.01:
+                if high_floor - low_ceil >= gap - 0.01:
                     continue
                 mid = (low_ceil + high_floor) / 2.0
-                mid = min(max(mid, BAND_MIN + GAP_MIN / 2.0), H - BAND_MIN - GAP_MIN / 2.0)
-                top, bottom = mid - GAP_MIN / 2.0 - 1.0, mid + GAP_MIN / 2.0 + 1.0
+                mid = min(max(mid, BAND_MIN + gap / 2.0), H - BAND_MIN - gap / 2.0)
+                top, bottom = mid - gap / 2.0 - 1.0, mid + gap / 2.0 + 1.0
                 self.ceil[a:b] = np.minimum(self.ceil[a:b], top)
                 self.floor[a:b] = np.maximum(self.floor[a:b], bottom)
                 for j, k in enumerate(bowl):              # (the edges of the carving fade out: no step in the rock)
@@ -305,8 +361,8 @@ class Course:
 
     def section_at(self, x):
         """The name of the section at the world x."""
-        name = SECTION_KEYS[0]
-        for (key, _, _), start in zip(SECTIONS, self.starts):
+        name = self.sections[0][0]
+        for (key, _, _), start in zip(self.sections, self.starts):
             if x >= start:
                 name = key
         return name
@@ -387,12 +443,15 @@ def place_stations(course, rng):
     """The stations of the course (sorted by x): in each section with stations, one every so often where the rock is flat
     enough and where it does not take the passage below GAP_MIN (it stands out of the rock)."""
     out = []
-    for k, (name, _, look) in enumerate(SECTIONS):
+    share = course.tune.stations                      # (fewer stations at the lower levels: further apart)
+    for k, (name, _, look) in enumerate(course.sections):
         plan = look.get("stations")
         if not plan:
             continue
         lo, hi = course._span(k)
         gap_lo, gap_hi, ceil_share = plan
+        if share != 1.0:
+            gap_lo, gap_hi = gap_lo / share, gap_hi / share
         x = max(lo, STATION_FIRST) + rng.uniform(0, gap_lo)
         while x < min(hi, course.brake_from):
             side = "ceil" if rng.random() < ceil_share else "floor"
@@ -420,7 +479,7 @@ def _station_spot(course, x, side):
     base = float(edge.max()) if side == "floor" else float(edge.min())        # (the pad: the rock is cut down to its lowest point)
     span = np.linspace(x - GAP_WINDOW, x + GAP_WINDOW, 13)
     room = float(np.min(course.ground(span)) - np.max(course.ceiling(span)))
-    if room < GAP_MIN + STATION_H + 12:
+    if room < course.gap_min + STATION_H + 12:
         return None
     if side == "ceil" and base < BAND_MIN + 20:
         return None                                    # (a ceiling that is only a thin band: nothing hangs from it)
@@ -444,10 +503,11 @@ class ScrambleFormation:
     """The field of the level: the course, the scroll, the ship's shots and the end. Looks like a formation without enemies to
     the rest of the game."""
 
-    def __init__(self, style=None, seed=None, speed_mult=1.0, rng=None):
+    def __init__(self, style=None, seed=None, speed_mult=1.0, rng=None, level=LEVEL_MAX):
         self.rng = rng if rng is not None else random.Random()
         self.style = style if style in lander.BODIES else self.rng.choice(BODY_KEYS)
-        self.course = Course(self.style, seed)
+        self.course = Course(self.style, seed, level)
+        self.tune = self.course.tune
         self.enemies = []
         self.bullets = []
         self.swarm = None
@@ -456,7 +516,7 @@ class ScrambleFormation:
         self.text_cache = None
         self.view = None                    # scramble_view.View, made by the first draw
         self.cam = 0.0                      # the world x of the left edge of the screen
-        self.speed = SCROLL
+        self.speed = self.course.scroll
         self.time = 0.0
         self.phase = "flying"               # flying -> arena (the scroll has stopped) -> won
         self.arena_time = 0.0
@@ -508,8 +568,8 @@ class ScrambleFormation:
         if cam >= c.stop:
             return 0.0
         if cam <= c.brake_from:
-            return SCROLL
-        return SCROLL * math.sqrt(max(0.0, c.stop - cam) / BRAKE)
+            return c.scroll
+        return c.scroll * math.sqrt(max(0.0, c.stop - cam) / BRAKE)
 
     def advance(self, dt):
         """Slide the camera for `dt` seconds (exact for the braking: the same at any frame rate). Returns how far it went."""
@@ -517,13 +577,13 @@ class ScrambleFormation:
         before = self.cam
         left = dt
         if self.cam < c.brake_from:
-            run = min(left, (c.brake_from - self.cam) / SCROLL)
-            self.cam += run * SCROLL
+            run = min(left, (c.brake_from - self.cam) / c.scroll)
+            self.cam += run * c.scroll
             left -= run
         if left > 0 and self.cam < c.stop:
             # the braking: v = SCROLL * sqrt(rest / BRAKE), so the rest falls as a square in time
             rest = c.stop - self.cam
-            u = math.sqrt(rest) - SCROLL * left / (2.0 * math.sqrt(BRAKE))
+            u = math.sqrt(rest) - c.scroll * left / (2.0 * math.sqrt(BRAKE))
             self.cam = c.stop - (u * u if u > 0 else 0.0)
             if self.cam > c.stop - 0.05:
                 self.cam = c.stop
@@ -861,10 +921,12 @@ def _stations(game, form, dt, alive):
         if alive and STATION_RANGE[0] <= ahead <= STATION_RANGE[1] and \
                 ahead / max(1.0, form.speed) <= rise_time(abs(p.y - st.mouth()[1])) + st.lead:
             x, y = st.mouth()
-            form.missiles.append(Missile(x, y, st.dir))
+            m = Missile(x, y, st.dir)
+            m.homing = form.tune.homing > 0
+            form.missiles.append(m)
             st.missiles -= 1
             st.loaded = False
-            st.reload = STATION_RELOAD
+            st.reload = form.tune.reload
             _play(getattr(game, "sounds", None), "scramble_launch", volume=0.5, x=sx)
 
 
@@ -886,8 +948,9 @@ def _missiles(game, form, dt, ship=None):
         m.age += dt
         m.speed = min(MISSILE_SPEED[1], m.speed + MISSILE_ACCEL * dt)
         if m.homing and ship is not None and m.age <= HOMING_TIME and (ship.y - m.y) * m.dir > 0:
-            want = max(-HOMING_VX, min(HOMING_VX, (form.cam + ship.x - m.x) * HOMING_GAIN))
-            step = HOMING_ACCEL * dt
+            k = form.tune.homing
+            want = max(-HOMING_VX * k, min(HOMING_VX * k, (form.cam + ship.x - m.x) * HOMING_GAIN))
+            step = HOMING_ACCEL * k * dt
             m.vx += max(-step, min(step, want - m.vx))
         else:
             m.homing = False                      # (once it has passed the ship, or given up: straight on)

@@ -17,7 +17,7 @@ PHENIX = ["phenix_1", "phenix_2", "phenix_3", "phenix_4", "phenix_5"]
 PAINT = ["paint_1", "paint_2", "paint_3"]
 GATE3 = ["act3_gate"]           # the last mission of Act 2 (it opens Act 3)
 # the map of Act 2 is grouped: the story first, then the hunts, then the bonus and the paint series
-ACT2_MAP = ["ast_2"] + PHENIX + GATE3 + ["sentinelle_1", "sentinelle_2", "sentinelle_3"] + HUNTS + ["best_boss", "bonus_2d"] + PAINT + ["test_guardians", "test_lander", "test_scramble", "test_modules"]
+ACT2_MAP = ["ast_2"] + PHENIX + GATE3 + ["sentinelle_1", "sentinelle_2", "sentinelle_3"] + HUNTS + ["best_boss", "bonus_2d"] + PAINT + ["raid_deimos", "raid_rock", "raid_europa", "raid_titan"] + ["test_guardians", "test_lander", "test_scramble", "test_modules"]
 
 
 def _state(phenix=True, selected=0):
@@ -297,8 +297,8 @@ def test_loading_the_save_again_clears_the_cheat():
     _type(hub, "2222")
     hub.open_slot(1)
     assert not hub.cheat_act2 and not hub.cheating and hub.state["act"] == 1
-    assert _ids(hub.missions())[-6:] == ["ch2_tease", "sentinelle_1", "test_guardians", "test_lander", "test_scramble",
-                                        "test_modules"]
+    assert _ids(hub.missions())[-8:] == ["ch2_tease", "sentinelle_1", "raid_deimos", "raid_rock", "test_guardians",
+                                        "test_lander", "test_scramble", "test_modules"]
 
 
 def test_act2_typed_elsewhere_does_nothing():

@@ -101,7 +101,7 @@ class Sky:
         self.birds = []
         self.shots = []
         self.comets = []
-        self.wave_in = form.rng.uniform(*WAVE_GAP) * 0.5
+        self.wave_in = form.rng.uniform(*form.tune.wave_gap) * 0.5
         self.comet_in = 0.0
         self.waves = 0
 
@@ -121,7 +121,8 @@ class Sky:
         rng = f.rng
         k = f.progress()
         if stage is None:
-            green = GREEN_SHARE[0] + (GREEN_SHARE[1] - GREEN_SHARE[0]) * k
+            lo, hi = f.tune.green
+            green = lo + (hi - lo) * k
             stage = 2 if rng.random() < green else 1
         pattern = pattern or rng.choice(("snake", "vee", "swoop"))
         mid, gap = f.course.passage(f.cam + W * 0.8)
@@ -161,7 +162,7 @@ class Sky:
             self.wave_in -= dt
             if self.wave_in <= 0 and not self.birds:
                 self.send_wave()
-                self.wave_in = f.rng.uniform(*WAVE_GAP)
+                self.wave_in = f.rng.uniform(*f.tune.wave_gap)
             elif self.wave_in <= 0:
                 self.wave_in = 0.5                      # (the last wave is still there: a little later)
         for b in self.birds:
@@ -184,7 +185,7 @@ class Sky:
             self.comet_in -= dt
             if self.comet_in <= 0:
                 self._comet()
-                self.comet_in = f.rng.uniform(*COMET_GAP)
+                self.comet_in = f.rng.uniform(*COMET_GAP) / max(0.05, f.tune.comets)
         for c in self.comets:
             c.age += dt
             c.x += c.vx * dt
@@ -200,7 +201,10 @@ class Sky:
     def comets_due(self):
         """True while comets come in: the right edge of the screen is in the comets section (past its first stretch)."""
         f = self.form
-        k = sc.SECTION_KEYS.index("comets")
+        keys = f.course.tune.keys
+        if "comets" not in keys or f.tune.comets <= 0:
+            return False
+        k = keys.index("comets")
         x = f.cam + W
         return f.course.starts[k] + 300.0 < x < f.course.starts[k + 1]
 
