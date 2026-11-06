@@ -235,9 +235,10 @@ class LanderFormation:
     """The field of the level: the ground, the ship's flight (world position, speed, fuel), the zoom and the end. Looks like
     a formation without enemies to the rest of the game."""
 
-    def __init__(self, style=None, seed=None, speed_mult=1.0, rng=None):
+    def __init__(self, style=None, seed=None, speed_mult=1.0, rng=None, fuel=None):
         self.rng = rng if rng is not None else random.Random()
         self.style = style if style in BODIES else self.rng.choice(BODY_KEYS)
+        self.fuel_max = float(fuel) if fuel else FUEL_START     # (a landing of the Adventure may fill the tank higher)
         self.gravity = BODIES[self.style]["gravity"]
         self.terrain = Terrain(self.style, seed)
         self.enemies = []
@@ -251,7 +252,7 @@ class LanderFormation:
         self.y = START_Y
         self.vx = self.rng.uniform(*START_VX)
         self.vy = 0.0
-        self.fuel = FUEL_START
+        self.fuel = self.fuel_max
         self.zoom_i = 0
         self.zoom = ZOOMS[0]
         self.thrusting = False

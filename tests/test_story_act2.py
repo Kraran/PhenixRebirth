@@ -17,8 +17,9 @@ PAINT = ["paint_1", "paint_2", "paint_3"]
 SENT1 = ["sentinelle_1"]                # the Silent Sentinels on the map of Act 1
 SENT2 = ["sentinelle_1", "sentinelle_2", "sentinelle_3"]      # ... of Act 2
 TRAINING = ["test_guardians", "test_lander", "test_scramble", "test_modules"]
-RAID1 = ["raid_deimos", "raid_rock"]          # the raids on the Avioid bases of Act 1 (optional: with the BONUS missions)
-RAID2 = RAID1 + ["raid_europa", "raid_titan"]                   # ... of Act 2
+# the landings and the raids of Act 1 (optional: with the BONUS missions)
+RAID1 = ["lander_deimos", "raid_deimos", "lander_rock", "raid_rock"]
+RAID2 = RAID1 + ["lander_europa", "raid_europa", "lander_titan", "raid_titan"]   # ... of Act 2
 GATE3 = ["act3_gate"]           # the last mission of Act 2 (it opens Act 3)
 
 

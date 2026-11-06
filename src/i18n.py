@@ -7140,6 +7140,35 @@ _SCRAMBLE_TEXTS = {
         "The test's Scramble, for real: fly through the rock to the enemy base and shoot down its red Avioid commander. The points "
         "pay in credits; a failure costs what a failure costs. The missile launchers and the red Avioid commander go into the "
         "Bestiary. You choose the setting at the start. Open once the game is finished."),
+    # Atterrissages (story_state.MISSIONS "lander_*"): the Lunar Lander on one setting, with its own tank
+    "story_m_land1": ("Atterrissage sur Déimos", "Landing on Deimos"),
+    "story_m_land1_b": (
+        "Facultative. Pose le vaisseau en douceur sur une zone plane de Déimos, la petite lune de Mars. Sa gravité est faible "
+        "et le réservoir est plein à ras bord : 150 unités de carburant. L'atterrissage rapporte ses points (plus le carburant restant) en crédits ; un crash coûte ce que coûte un échec.",
+        "Optional. Set the ship down gently on a flat zone of Deimos, the little moon of Mars. Its gravity is low and the tank "
+        "is full to the brim: 150 units of fuel. The landing pays its points (plus the fuel left) in credits; a crash costs what a failure costs."),
+    "story_m_land2": ("Atterrissage sur un astéroïde", "Landing on an asteroid"),
+    "story_m_land2_b": (
+        "Facultative. Pose le vaisseau sur un astéroïde de la ceinture, entre ses rochers. Réservoir plein à ras bord : 150 "
+        "unités de carburant. L'atterrissage rapporte ses points (plus le carburant restant) en crédits ; un crash coûte ce que coûte un échec.",
+        "Optional. Set the ship down on an asteroid of the belt, between its rocks. Tank full to the brim: 150 units of "
+        "fuel. The landing pays its points (plus the fuel left) in credits; a crash costs what a failure costs."),
+    "story_m_land3": ("Atterrissage sur Europe", "Landing on Europa"),
+    "story_m_land3_b": (
+        "Facultative. Pose le vaisseau sur la glace d'Europe, la lune de Jupiter. 120 unités de carburant, pas une de plus. L'atterrissage rapporte ses points (plus le carburant restant) en crédits ; un crash coûte ce que coûte un échec.",
+        "Optional. Set the ship down on the ice of Europa, the moon of Jupiter. 120 units of fuel, not one more. The landing pays its points (plus the fuel left) in credits; a crash costs what a failure costs."),
+    "story_m_land4": ("Atterrissage sur Titan", "Landing on Titan"),
+    "story_m_land4_b": (
+        "Facultative. Pose le vaisseau sur Titan, la grande lune de Saturne : la gravité la plus forte des cinq "
+        "décors, et 120 unités de carburant. L'atterrissage rapporte ses points (plus le carburant restant) en crédits ; un crash coûte ce que coûte un échec.",
+        "Optional. Set the ship down on Titan, the great moon of Saturn: the strongest gravity of the five settings, and 120 "
+        "units of fuel. The landing pays its points (plus the fuel left) in credits; a crash costs what a failure costs."),
+    "story_m_land5": ("Atterrissage sur Triton", "Landing on Triton"),
+    "story_m_land5_b": (
+        "Facultative. Pose le vaisseau sur la glace de Triton, la lune de Neptune, au bout du système solaire. 120 unités "
+        "de carburant. L'atterrissage rapporte ses points (plus le carburant restant) en crédits ; un crash coûte ce que coûte un échec.",
+        "Optional. Set the ship down on the ice of Triton, the moon of Neptune, at the edge of the solar system. 120 units "
+        "of fuel. The landing pays its points (plus the fuel left) in credits; a crash costs what a failure costs."),
     # Raid sur les bases avioïdes I-V (story_state.MISSIONS "raid_*"): the Scramble on one setting, at its level
     "story_m_raid_hud": ("Raid", "Raid"),
     "story_m_raid1": ("Raid sur les bases avioïdes I : Déimos", "Raid on the Avioid bases I: Deimos"),

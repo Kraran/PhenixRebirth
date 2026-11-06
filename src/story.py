@@ -1585,7 +1585,7 @@ class StoryHub:
                     and not ss.scene_seen(self.state, mission["id"])):
                 self.start_scene(mission["id"], back_to="map", launch=True)       # the story comes first
                 return None
-            if mission and mission.get("lander") and self.mission_playable(mission):
+            if mission and mission.get("lander") and not mission.get("body") and self.mission_playable(mission):
                 self.lander_index = 0                 # the Lunar Lander test: the setting is chosen first (to be taken out of
                 self.screen = "lander_pick"           # the final missions)
                 self.pick_for = "lander"
@@ -1735,6 +1735,9 @@ class StoryHub:
             spec.update(lander=True, items=[])                       # (src/lander.py)
             if mission.get("training"):
                 spec["training"] = True                             # the test: nothing won, nothing lost (the BONUS pays)
+            if mission.get("fuel"):
+                spec["fuel"] = float(mission["fuel"])               # a landing: its own tank
+            body = mission.get("body") or body                      # (a landing has its own setting, no menu)
             if body in lander.BODIES:
                 spec["body"] = body                   # the setting chosen in the menu of the test (else drawn at random)
         if mission.get("scramble"):
