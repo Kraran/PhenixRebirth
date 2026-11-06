@@ -7140,6 +7140,40 @@ _SCRAMBLE_TEXTS = {
         "The test's Scramble, for real: fly through the rock to the enemy base and shoot down its red Avioid commander. The points "
         "pay in credits; a failure costs what a failure costs. The missile launchers and the red Avioid commander go into the "
         "Bestiary. You choose the setting at the start. Open once the game is finished."),
+    # Raid sur les bases avioïdes I-V (story_state.MISSIONS "raid_*"): the Scramble on one setting, at its level
+    "story_m_raid_hud": ("Raid", "Raid"),
+    "story_m_raid1": ("Raid sur les bases avioïdes I : Déimos", "Raid on the Avioid bases I: Deimos"),
+    "story_m_raid1_b": (
+        "Facultative. Les avioïdes ont creusé une base dans la roche de Déimos : vole entre le plafond et le sol jusqu'à elle "
+        "et abats son commandant. Le premier raid, le plus doux : un défilement lent, un passage large, peu de lance-missiles. "
+        "Les points rapportent des crédits ; un échec coûte ce que coûte un échec.",
+        "Optional. The Avioids have dug a base into the rock of Deimos: fly between the ceiling and the ground to it and shoot "
+        "down its commander. The first raid, the gentlest: a slow scroll, a wide passage, few missile launchers. The points pay "
+        "in credits; a failure costs what a failure costs."),
+    "story_m_raid2": ("Raid sur les bases avioïdes II : astéroïde", "Raid on the Avioid bases II: asteroid"),
+    "story_m_raid2_b": (
+        "Facultative. Une base avioïde au cœur d'un astéroïde de la ceinture. Plus long que Déimos, avec ses pics, et le "
+        "commandant encaisse deux tirs. Les points rapportent des crédits ; un échec coûte ce que coûte un échec.",
+        "Optional. An Avioid base at the heart of an asteroid of the belt. Longer than Deimos, with its peaks, and the "
+        "commander takes two shots. The points pay in credits; a failure costs what a failure costs."),
+    "story_m_raid3": ("Raid sur les bases avioïdes III : Europe", "Raid on the Avioid bases III: Europa"),
+    "story_m_raid3_b": (
+        "Facultative. Sous la glace d'Europe, une base avioïde. Les comètes s'en mêlent et les missiles commencent à te "
+        "suivre. Les points rapportent des crédits ; un échec coûte ce que coûte un échec.",
+        "Optional. Under the ice of Europa, an Avioid base. The comets join in and the missiles start to follow you. The "
+        "points pay in credits; a failure costs what a failure costs."),
+    "story_m_raid4": ("Raid sur les bases avioïdes IV : Titan", "Raid on the Avioid bases IV: Titan"),
+    "story_m_raid4_b": (
+        "Facultative. La base avioïde de Titan, au bout des défilés. Presque le Scramble complet : rapide, serré, bien "
+        "défendu. Les points rapportent des crédits ; un échec coûte ce que coûte un échec.",
+        "Optional. The Avioid base of Titan, at the end of the narrows. Nearly the full Scramble: fast, tight, well "
+        "defended. The points pay in credits; a failure costs what a failure costs."),
+    "story_m_raid5": ("Raid sur les bases avioïdes V : Triton", "Raid on the Avioid bases V: Triton"),
+    "story_m_raid5_b": (
+        "Facultative. La dernière base avioïde, dans la glace de Triton : le Scramble complet, sans rien retenir. Les points "
+        "rapportent des crédits ; un échec coûte ce que coûte un échec.",
+        "Optional. The last Avioid base, in the ice of Triton: the full Scramble, holding nothing back. The points pay in "
+        "credits; a failure costs what a failure costs."),
     "story_b_station": ("LANCE-MISSILE", "MISSILE LAUNCHER"),
     "story_b_station_t": (
         "Un lanceur blindé, posé sur la roche ou accroché au plafond. Ses missiles partent tout droit, calés pour "

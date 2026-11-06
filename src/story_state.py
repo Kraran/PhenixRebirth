@@ -561,6 +561,36 @@ MISSIONS = [
         "id": ENDING_MISSION, "acts": (ENDING_ACT,), "ending": True, "title": "story_m_act4", "blurb": "story_m_act4_b",
         "need": GAME_WON, "content": 1, "speed": 1.0, "once": True, "log": "story_log_act4",
     },
+    # Raid sur les bases avioïdes (I-V): the Scramble level (src/scramble.py) for real, on one setting each and at its own level
+    # of difficulty (`raid`: scramble.LEVELS, 1 the easiest, 5 the full Scramble of the test), no menu. Optional (on the map
+    # with the BONUS missions), flown once until the ending has been told; the points pay in credits, a failure costs what a
+    # failure always costs. Deimos and the asteroid in Act 1, Europa and Titan in Act 2, Triton in Act 3 (the earlier ones
+    # stay on the map of the later acts).
+    {
+        "id": "raid_deimos", "acts": (1, 2, 3), "extra": True, "once": True, "scramble": True, "body": "deimos", "raid": 1,
+        "title": "story_m_raid1", "hud_title": "story_m_raid_hud", "blurb": "story_m_raid1_b",
+        "need": "dome_s2", "content": 1, "speed": 1.0,
+    },
+    {
+        "id": "raid_rock", "acts": (1, 2, 3), "extra": True, "once": True, "scramble": True, "body": "rock", "raid": 2,
+        "title": "story_m_raid2", "hud_title": "story_m_raid_hud", "blurb": "story_m_raid2_b",
+        "need": "dome_s4", "content": 1, "speed": 1.0,
+    },
+    {
+        "id": "raid_europa", "acts": (2, 3), "extra": True, "once": True, "scramble": True, "body": "europa", "raid": 3,
+        "title": "story_m_raid3", "hud_title": "story_m_raid_hud", "blurb": "story_m_raid3_b",
+        "need": "phenix_s1", "content": 1, "speed": 1.0,
+    },
+    {
+        "id": "raid_titan", "acts": (2, 3), "extra": True, "once": True, "scramble": True, "body": "ice", "raid": 4,
+        "title": "story_m_raid4", "hud_title": "story_m_raid_hud", "blurb": "story_m_raid4_b",
+        "need": "phenix_s3", "content": 1, "speed": 1.0,
+    },
+    {
+        "id": "raid_triton", "acts": (3,), "extra": True, "once": True, "scramble": True, "body": "triton", "raid": 5,
+        "title": "story_m_raid5", "hud_title": "story_m_raid_hud", "blurb": "story_m_raid5_b",
+        "need": "act3", "content": 1, "speed": 1.0,
+    },
     {
         "id": "test_guardians", "training": True, "test": True, "guardians": True,
         "title": "story_m_guardians_test", "blurb": "story_m_guardians_test_b",

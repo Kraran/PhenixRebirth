@@ -577,7 +577,7 @@ def _wall_picture(base):
         tiles = brick_tiles()
         import scramble_base as sb
         pic = cached[1] if cached is not None else pygame.Surface(
-            (sb.COLUMNS * sb.BRICK_W, base.rows * sb.BRICK_H), pygame.SRCALPHA)
+            (base.columns * sb.BRICK_W, base.rows * sb.BRICK_H), pygame.SRCALPHA)
         pic.fill((0, 0, 0, 0))
         for b in base.bricks:
             if b.alive:
@@ -698,9 +698,9 @@ def _draw_wall_hud(game, surface, font, base):
     by = y + h + 10
     label = game._txt(font, t("scramble_boss_hp"), (255, 120, 110))
     surface.blit(label, (x + w - label.get_width(), by + 14))
-    seg = (w - 2 * (sb.BOSS_HP - 1)) / float(sb.BOSS_HP)
+    seg = (w - 2 * (boss.max_hp - 1)) / float(boss.max_hp)
     flash = boss.hit_flash > 0 and int(boss.hit_flash * 16) % 2 == 0
-    for i in range(sb.BOSS_HP):
+    for i in range(boss.max_hp):
         r = pygame.Rect(int(x + i * (seg + 2)), by, int(seg), 10)
         on = i < boss.hp
         pygame.draw.rect(surface, ((255, 255, 255) if flash else (220, 40, 40)) if on else (50, 20, 24), r)
@@ -719,7 +719,7 @@ def _draw_sections(game, surface, font, form):
     course = form.course
     total = course.stop
     here = course.section_at(form.cam + scramble.START_X)
-    for (key, _, _), start, end in zip(scramble.SECTIONS, course.starts, list(course.starts[1:]) + [course.stop]):
+    for (key, _, _), start, end in zip(course.sections, course.starts, list(course.starts[1:]) + [course.stop]):
         a = x + int(w * start / total)
         b = x + int(w * min(end, total) / total)
         rect = pygame.Rect(a + 1, y, max(2, b - a - 2), h)

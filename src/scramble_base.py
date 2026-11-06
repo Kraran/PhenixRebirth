@@ -103,7 +103,7 @@ class BaseBullet:
 class Boss:
     """The alien behind the wall (its middle in the world)."""
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, hp=BOSS_HP):
         self.x, self.y0 = float(x), float(y)
         self.y = float(y)
         self.t = 0.0
@@ -111,7 +111,7 @@ class Boss:
         self.dying = False
         self.death = 0.0
         self.hit_flash = 0.0
-        self.hp = BOSS_HP
+        self.hp = self.max_hp = int(hp)
 
     def box(self):
         half = BOSS_SIZE * BOSS_HIT / 2
@@ -130,16 +130,18 @@ class Base:
         self.rows = int((self.bottom - self.top) // BRICK_H)
         self.y0 = self.top + ((self.bottom - self.top) - self.rows * BRICK_H) / 2.0
         self.face = course.stop + W - WALL_FROM_RIGHT           # the world x of the face of the wall
-        self.back = self.face + COLUMNS * BRICK_W
+        tune = form.tune
+        self.columns = tune.columns
+        self.back = self.face + self.columns * BRICK_W
         self.bricks = []
         for row in range(self.rows):
-            for col in range(COLUMNS):
+            for col in range(self.columns):
                 x = self.face + (col + 0.5) * BRICK_W
                 y = self.y0 + (row + 0.5) * BRICK_H
                 self.bricks.append(Brick(col, row, x, y, rng.randrange(16)))
         self.turrets = [Turret(r, self.face - TURRET_W / 2 + 4, self.y0 + (r + 0.5) * BRICK_H,
-                               rng.uniform(*TURRET_FIRST)) for r in TURRET_ROWS if r < self.rows]
-        self.boss = Boss(self.back + CHAMBER, (self.top + self.bottom) / 2.0)
+                               rng.uniform(*TURRET_FIRST)) for r in tune.turret_rows if r < self.rows]
+        self.boss = Boss(self.back + CHAMBER, (self.top + self.bottom) / 2.0, tune.boss_hp)
         self.panel_x = self.back + BACK_FROM
         self.missiles = []
         self.bullets = []
@@ -195,7 +197,7 @@ class Base:
         self.bullet_in -= dt
         if self.bullet_in <= 0 and ship_alive and boss.alive and not boss.dying:
             self.bullet_in = f.rng.uniform(*BULLET_GAP)
-            if sum(1 for b in self.bullets if b.alive) < BULLET_MAX:
+            if sum(1 for b in self.bullets if b.alive) < f.tune.bullets:
                 src = self._bullet_source(p.y)
                 if src is not None:
                     self.bullets.append(BaseBullet(src[0], src[1]))
