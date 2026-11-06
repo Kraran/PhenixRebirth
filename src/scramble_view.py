@@ -195,6 +195,9 @@ class View:
             ox = int(-cam * FAR_SKY) % W
             surface.blit(stars, (ox - W, 0))
             surface.blit(stars, (ox, 0))
+            ox = int(-cam * NEAR_SKY) % W                   # the nearer stars: still behind the planet and the rocks
+            surface.blit(self.near, (ox - W, 0))
+            surface.blit(self.near, (ox, 0))
         else:
             surface.blit(self.assets["sky"], (0, 0))
         mother = self.assets["planet"]
@@ -207,10 +210,6 @@ class View:
         for pic, x, y, amp in self.far_rocks:
             sx = (x - cam * PLANET_SKY * amp / 40.0) % (W + 300) - 150
             surface.blit(pic, (round(sx - pic.get_width() / 2), round(y - 60 - pic.get_height() / 2)))
-        if stars is not None:
-            ox = int(-cam * NEAR_SKY) % W
-            surface.blit(self.near, (ox - W, 0))
-            surface.blit(self.near, (ox, 0))
 
     def draw(self, surface, form):
         self._sky(surface, form.cam)

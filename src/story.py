@@ -3003,6 +3003,8 @@ class StoryHub:
             if owned and img is not None:
                 bob = int(math.sin(self.anim_t * 3.2) * 4) if chosen else 0
                 surface.blit(img, (r.centerx - img.get_width() // 2, r.y + 10 + bob))
+                if chosen:
+                    self._draw_hangar_modules(surface, sl, r.centerx, r.y + 10 + bob + img.get_height() / 2)
                 label = t("ship_shield") if sl.get("id") == "shield" else t("ship_phoenix")
                 col = (255, 230, 120) if chosen else phobos_ui.HOLO_TEXT
                 _text(surface, small, label, col, r.bottom - 20, centerx=r.centerx)
@@ -3027,6 +3029,46 @@ class StoryHub:
         self._draw_shop(surface, small)
         phobos_ui.badge(surface, small, f"{int(self.state.get('credits', 0))} PTS", phobos_ui.GOLD, 40,
                         right=BASE_WIDTH - 56, max_w=330)
+
+    def _draw_hangar_modules(self, surface, sl, cx, cy):
+        """The escort modules in working order beside the hull that flies (src/gyro.py): at the places they hold in a
+        mission, scaled like the portrait, turning."""
+        n = ss.modules_alive(self.state)
+        if n <= 0:
+            return
+        import gyro
+        k = PORTRAIT_H / 90.0                                   # (the portrait: the 90 px of the sprite of the ship)
+        hull = "phoenix" if sl.get("id") == "phoenix" else "shield"
+        for side in (-1, 1)[:n]:
+            gyro.draw_icon(surface, hull, cx + side * gyro.ANCHOR[0] * k, cy + gyro.ANCHOR[1] * k, gyro.SIZE * k,
+                           self.anim_t + (0.0 if side < 0 else 1.1))
+
+    def _draw_module_icon(self, surface, sid, x, cy):
+        """The picture at the left of a workshop row of a module: one half per piece won, the two halves apart while the
+        module is not assembled, the whole module turning once it is (dimmed while it waits to be bought again)."""
+        import gyro
+        k = ss.module_of(sid)
+        status = ss.module_status(self.state, k)
+        parts = ss.module_parts(self.state)
+        hull = "phoenix" if (ss.selected_slot(self.state) or {}).get("id") == "phoenix" else "shield"
+        size = 34
+        if ss.modules_built(self.state) >= k:
+            gyro.draw_icon(surface, hull, x, cy, size, self.anim_t, dim=status == "rebuy")
+            return
+        lander, raid = ss.MODULE_PIECES[k]
+        gyro.draw_icon(surface, hull, x, cy, size, self.anim_t, halves=(lander in parts, raid in parts), split=4)
+
+    def _draw_missile_icon(self, surface, x, cy):
+        """The picture at the left of the workshop row of the antimatter missile: the missile of the missions, its nose in
+        the colour of the hull, its engine flickering."""
+        import antimatter
+        import asteroids
+        import spacewar
+        sl = ss.selected_slot(self.state) or {}
+        tip = asteroids.tip_color(type("P", (), {"palette": sl.get("tint", "argent")})())
+        a = math.radians(-35)
+        flick = 1.0 + 0.06 * math.sin(self.anim_t * 23.0)
+        spacewar.draw_torpedo(surface, x + 4, cy, math.cos(a), math.sin(a), tip, antimatter.SIZE * 0.95 * flick)
 
     def _draw_stats(self, surface, sl, small, y):
         owned = bool(sl.get("owned"))
@@ -3130,7 +3172,14 @@ class StoryHub:
                 name = t(label)
                 if sid == "missile_ammo":
                     name += "   (%d/%d)" % (ss.missile_stock(self.state), ss.MISSILE_MAX)     # the missiles held
-                _text(surface, small, name, col, row.centery, left=row.x + 24)
+                left = row.x + 24
+                if sid in ss.MODULE_ROWS:
+                    self._draw_module_icon(surface, sid, row.x + 50, row.centery)
+                    left = row.x + 80
+                elif sid == "missile_ammo":
+                    self._draw_missile_icon(surface, row.x + 50, row.centery)
+                    left = row.x + 80
+                _text(surface, small, name, col, row.centery, left=left)
                 if sid in ss.MISSILE_ROWS:
                     perm = sid == "missile_launcher"
                     _text(surface, small, t("story_item_permanent" if perm else "story_item_consumable"),
