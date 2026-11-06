@@ -201,3 +201,82 @@ def test_no_modules_in_the_lander_nor_the_scramble(run):
     st["flags"]["dome_s2"] = True
     g, spec = _fly(run, "lander_deimos", st)
     assert spec["modules"]["owned"] and g.gyro is None
+
+
+# ---------------------------------------------------------------- the pictures of the workshop
+def _hangar(run, parts=(), built=0, alive=0, launcher=False):
+    g = run.game
+    st = _st(parts=parts, built=built, alive=alive)
+    if launcher:
+        st["flags"][ss.ANTIMATTER_FLAG] = True
+        st["flags"][ss.LAUNCHER_FLAG] = True
+        st["missiles"] = 1
+    ss.save_state(ss.story_path(1), st)
+    hub = g.story
+    hub.open_slot(1)
+    hub.screen, hub.pane, hub.zone = "hub", "hangar", "shop"
+    return g, hub
+
+
+def _spy_icons(monkeypatch):
+    import gyro
+    calls = []
+    real = gyro.draw_icon
+
+    def spy(surface, hull, cx, cy, size, t, halves=(True, True), split=0.0, dim=False):
+        calls.append({"hull": hull, "cx": cx, "cy": cy, "size": size, "halves": tuple(halves), "split": split, "dim": dim})
+        return real(surface, hull, cx, cy, size, t, halves, split, dim)
+
+    monkeypatch.setattr(gyro, "draw_icon", spy)
+    return calls
+
+
+def test_the_icon_draws_the_halves_asked_for():
+    import gyro
+    surf = pygame.Surface((100, 100), pygame.SRCALPHA)
+    gyro.draw_icon(surf, "shield", 50, 50, 40, 0.0, halves=(True, False))
+    assert any(surf.get_at((x, 50)).a for x in range(30, 50)) and not any(surf.get_at((x, y)).a for x in range(51, 100)
+                                                                          for y in range(100))
+    surf.fill((0, 0, 0, 0))
+    gyro.draw_icon(surf, "shield", 50, 50, 40, 0.0, halves=(False, True), split=6)
+    assert not any(surf.get_at((x, y)).a for x in range(0, 56) for y in range(100))
+    assert gyro.frame_at(0.0) == 0 and gyro.frame_at(180.0 / gyro.SPIN * 0.5) == gyro.FRAMES // 2
+
+
+def test_the_hangar_shows_the_modules_in_service_beside_the_hull(run, monkeypatch):
+    for alive, want in ((0, 0), (1, 1), (2, 2)):
+        g, hub = _hangar(run, built=2, alive=alive)
+        hub._ensure_art()                                                 # (the portraits)
+        calls = _spy_icons(monkeypatch)
+        hub._draw_hangar(pygame.Surface((1280, 720)), g.font, g.medium_font, g.font)
+        ship = [c for c in calls if c["size"] > 40]
+        assert len(ship) == want and all(c["halves"] == (True, True) and not c["dim"] for c in ship)
+        if want:
+            assert ship[0]["cx"] < 640 and (want == 1 or ship[1]["cx"] > ship[0]["cx"])        # the first one on the left
+
+
+def test_the_rows_of_the_modules_show_their_pieces(run, monkeypatch):
+    cases = [((("m1_lander",), 0, 0), (True, False), False, 4),
+             ((("m1_raid",), 0, 0), (False, True), False, 4),
+             ((("m1_lander", "m1_raid"), 0, 0), (True, True), False, 4),       # two halves, apart
+             ((("m1_lander", "m1_raid"), 1, 1), (True, True), False, 0),       # assembled: whole
+             ((("m1_lander", "m1_raid"), 1, 0), (True, True), True, 0)]        # destroyed: whole, dimmed
+    for (parts, built, alive), halves, dim, split in cases:
+        g, hub = _hangar(run, parts=parts, built=built, alive=alive)
+        calls = _spy_icons(monkeypatch)
+        hub._draw_shop(pygame.Surface((1280, 720)), g.font)
+        row = [c for c in calls if c["size"] <= 40]
+        assert len(row) == 1 and row[0]["halves"] == halves and row[0]["dim"] == dim and row[0]["split"] == split, parts
+
+
+def test_the_row_of_the_missile_shows_the_missile(run, monkeypatch):
+    import spacewar
+    seen = []
+    real = spacewar.draw_torpedo
+    monkeypatch.setattr(spacewar, "draw_torpedo", lambda *a, **k: seen.append(a) or real(*a, **k))
+    g, hub = _hangar(run)
+    hub._draw_shop(pygame.Surface((1280, 720)), g.font)
+    assert not seen                                                       # (no missile row before it is unlocked)
+    g, hub = _hangar(run, launcher=True)
+    hub._draw_shop(pygame.Surface((1280, 720)), g.font)
+    assert len(seen) == 1 and seen[0][5] == (255, 120, 110)                # one picture, the nose in the red of the Shield

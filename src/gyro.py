@@ -167,6 +167,36 @@ def frames(hull):
     return out
 
 
+def frame_at(t):
+    """The index of the picture shown `t` seconds after the ring started to turn (SPIN degrees a second)."""
+    return int((t * SPIN) % 180.0 / 180.0 * FRAMES) % FRAMES
+
+
+def scaled(hull, size):
+    """The pictures of `frames(hull)` at `size` px (the workshop and the hangar), made once."""
+    key = ("scaled", "phoenix" if hull == "phoenix" else "shield", int(size))
+    out = _FRAMES.get(key)
+    if out is None:
+        out = [pygame.transform.smoothscale(img, (int(size), int(size))) for img in frames(hull)]
+        _FRAMES[key] = out
+    return out
+
+
+def draw_icon(surface, hull, cx, cy, size, t, halves=(True, True), split=0.0, dim=False):
+    """A module turning, `size` px, centred on (cx, cy), for the menus: `halves` (left, right) says which halves are shown
+    (a piece of a module not yet assembled is one half) and `split` how far apart the two halves stand (px)."""
+    img = scaled(hull, size)[frame_at(t)]
+    if dim:
+        img = img.copy()
+        img.fill((110, 110, 120, 255), special_flags=pygame.BLEND_RGBA_MULT)
+    half = int(size) // 2
+    x0, y0 = int(cx - size / 2), int(cy - size / 2)
+    if halves[0]:
+        surface.blit(img, (x0 - int(split), y0), pygame.Rect(0, 0, half, int(size)))
+    if halves[1]:
+        surface.blit(img, (x0 + half + int(split), y0), pygame.Rect(half, 0, int(size) - half, int(size)))
+
+
 def whites(hull):
     """The same pictures in white (the flash of the lightning)."""
     key = ("white", "phoenix" if hull == "phoenix" else "shield")

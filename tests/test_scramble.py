@@ -1638,3 +1638,21 @@ def test_the_bonus_opens_the_menu_of_the_setting(run):
     g.story.map_index = [m["id"] for m in g.story.missions()].index("bonus_scramble")
     assert g.story.confirm() is None
     assert g.story.screen == "lander_pick" and g.story.pick_for == "scramble"
+
+
+@pytest.mark.parametrize("style", [s for s in lander.MENU_ORDER if s != "rock"])
+def test_the_near_stars_stay_behind_the_planet(style):
+    f = _form(style, 4)
+    view = sv.View(style, f.course)
+    if view.assets["planet"] is None or view.assets["stars"] is None:
+        pytest.skip("no planet in front of stars in this setting")
+    view.near = pygame.Surface((sc.W, sc.H))
+    view.near.fill((255, 0, 255))                                  # (a layer of "stars" everywhere: magenta)
+    pic, back, (px, py) = view.assets["planet"]
+    for cam in (0.0, 900.0, 2500.0):
+        surf = pygame.Surface((sc.W, sc.H))
+        view._sky(surf, cam)
+        cx = round(px + 160 - cam * sv.PLANET_SKY)
+        cy = round(py - 40)
+        if 0 <= cx < sc.W and 0 <= cy < sc.H:
+            assert surf.get_at((cx, cy))[:3] != (255, 0, 255), (style, cam)      # the middle of the planet hides them
