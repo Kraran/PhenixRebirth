@@ -2209,7 +2209,7 @@ class Game:
         elif adv and adv.get("lander"):
             # Lunar Lander (src/lander.py): a ground to land on, the ship (always in the middle) falls to it
             self.stage = 1
-            self.formation = lander.LanderFormation(style=adv.get("body"), seed=adv.get("seed"))
+            self.formation = lander.LanderFormation(style=adv.get("body"), seed=adv.get("seed"), fuel=adv.get("fuel"))
             self.formation.sounds = self.sounds
             self.formation.font = self.font
             self.formation.text_cache = self.text_cache

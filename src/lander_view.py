@@ -682,7 +682,7 @@ def draw_hud(game, form):
     bar = pygame.Rect(left_x, y + label.get_height() + 4, right_x - left_x, 10)
     pygame.draw.rect(surface, (30, 40, 60), bar)
     fill = bar.copy()
-    fill.width = int(bar.width * max(0.0, min(1.0, form.fuel / lander.FUEL_START)))
+    fill.width = int(bar.width * max(0.0, min(1.0, form.fuel / form.fuel_max)))
     pygame.draw.rect(surface, (255, 80, 60) if low else (90, 255, 120), fill)
     pygame.draw.rect(surface, HUD_COLOR, bar, 1)
     if form.fuel <= 0 and form.phase == "flying":

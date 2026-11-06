@@ -561,15 +561,28 @@ MISSIONS = [
         "id": ENDING_MISSION, "acts": (ENDING_ACT,), "ending": True, "title": "story_m_act4", "blurb": "story_m_act4_b",
         "need": GAME_WON, "content": 1, "speed": 1.0, "once": True, "log": "story_log_act4",
     },
+    # Atterrissages (Déimos, astéroïde, Europe, Titan, Triton): the Lunar Lander (src/lander.py) for real, on one setting each,
+    # no menu, before the raid of the same setting (same acts, same flags, same rules: optional, once until the ending, the
+    # points in credits). `fuel`: the tank (lander.FUEL_START when left out): fuller on the two settings of Act 1.
     # Raid sur les bases avioïdes (I-V): the Scramble level (src/scramble.py) for real, on one setting each and at its own level
     # of difficulty (`raid`: scramble.LEVELS, 1 the easiest, 5 the full Scramble of the test), no menu. Optional (on the map
     # with the BONUS missions), flown once until the ending has been told; the points pay in credits, a failure costs what a
     # failure always costs. Deimos and the asteroid in Act 1, Europa and Titan in Act 2, Triton in Act 3 (the earlier ones
     # stay on the map of the later acts).
     {
+        "id": "lander_deimos", "acts": (1, 2, 3), "extra": True, "once": True, "lander": True, "body": "deimos", "fuel": 150,
+        "title": "story_m_land1", "hud_title": "story_m_lander_hud", "blurb": "story_m_land1_b",
+        "need": "dome_s2", "content": 1, "speed": 1.0,
+    },
+    {
         "id": "raid_deimos", "acts": (1, 2, 3), "extra": True, "once": True, "scramble": True, "body": "deimos", "raid": 1,
         "title": "story_m_raid1", "hud_title": "story_m_raid_hud", "blurb": "story_m_raid1_b",
         "need": "dome_s2", "content": 1, "speed": 1.0,
+    },
+    {
+        "id": "lander_rock", "acts": (1, 2, 3), "extra": True, "once": True, "lander": True, "body": "rock", "fuel": 150,
+        "title": "story_m_land2", "hud_title": "story_m_lander_hud", "blurb": "story_m_land2_b",
+        "need": "dome_s4", "content": 1, "speed": 1.0,
     },
     {
         "id": "raid_rock", "acts": (1, 2, 3), "extra": True, "once": True, "scramble": True, "body": "rock", "raid": 2,
@@ -577,14 +590,29 @@ MISSIONS = [
         "need": "dome_s4", "content": 1, "speed": 1.0,
     },
     {
+        "id": "lander_europa", "acts": (2, 3), "extra": True, "once": True, "lander": True, "body": "europa", "fuel": 120,
+        "title": "story_m_land3", "hud_title": "story_m_lander_hud", "blurb": "story_m_land3_b",
+        "need": "phenix_s1", "content": 1, "speed": 1.0,
+    },
+    {
         "id": "raid_europa", "acts": (2, 3), "extra": True, "once": True, "scramble": True, "body": "europa", "raid": 3,
         "title": "story_m_raid3", "hud_title": "story_m_raid_hud", "blurb": "story_m_raid3_b",
         "need": "phenix_s1", "content": 1, "speed": 1.0,
     },
     {
+        "id": "lander_titan", "acts": (2, 3), "extra": True, "once": True, "lander": True, "body": "ice", "fuel": 120,
+        "title": "story_m_land4", "hud_title": "story_m_lander_hud", "blurb": "story_m_land4_b",
+        "need": "phenix_s3", "content": 1, "speed": 1.0,
+    },
+    {
         "id": "raid_titan", "acts": (2, 3), "extra": True, "once": True, "scramble": True, "body": "ice", "raid": 4,
         "title": "story_m_raid4", "hud_title": "story_m_raid_hud", "blurb": "story_m_raid4_b",
         "need": "phenix_s3", "content": 1, "speed": 1.0,
+    },
+    {
+        "id": "lander_triton", "acts": (3,), "extra": True, "once": True, "lander": True, "body": "triton", "fuel": 120,
+        "title": "story_m_land5", "hud_title": "story_m_lander_hud", "blurb": "story_m_land5_b",
+        "need": "act3", "content": 1, "speed": 1.0,
     },
     {
         "id": "raid_triton", "acts": (3,), "extra": True, "once": True, "scramble": True, "body": "triton", "raid": 5,
