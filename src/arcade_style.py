@@ -5,8 +5,9 @@ equipment of the Adventure.
 - "gp_modules": the two escort modules of the Adventure (src/gyro.py), one hit each;
 - "gp_missiles": the antimatter missiles of the Adventure (src/antimatter.py), 0 to MISSILES_MAX for the whole game.
 
-Only in a solo game (not the hot-seat, not the coop, not the demo); the choice is read when the game starts. A score made
-in Adventure style carries a mark in the table of high scores (highscores.insert_score adventure=True)."""
+Only in a solo game (not the hot-seat, not the coop, not the demo); the choice is read when the game starts. The style
+is not saved: the game always starts in the classic style (the two settings of the Adventure style are saved). A game in
+Adventure style never enters the high scores (Game._begin_highscore_flow: like a cheat, the table only)."""
 
 import antimatter
 import gyro

@@ -57,8 +57,7 @@ def hs_ship_icon(game, sid, tint=None):
     return cache[key]
 
 
-def draw_hs_row(game, surface, y, rank, name, score, col, score_right_x=None, coop=False, ship=None, ship2=None, veteran=False, tint=None,
-                adventure=False):
+def draw_hs_row(game, surface, y, rank, name, score, col, score_right_x=None, coop=False, ship=None, ship2=None, veteran=False, tint=None):
     """Draw one high-score line: rank aligned on '.', score right-aligned."""
     if score_right_x is None:
         score_right_x = BASE_WIDTH // 2 + 160
@@ -100,12 +99,6 @@ def draw_hs_row(game, surface, y, rank, name, score, col, score_right_x=None, co
         ix += 22
     if veteran:
         game._draw_vet_mark(surface, ix + 4, y)
-        ix += 22
-    if adventure:                                   # made in Adventure style: a little escort module turning
-        import gyro
-        line_h = game.font.get_height()
-        gyro.draw_icon(surface, ship if ship in ("phoenix", "shield") else "phoenix", ix + 14, y + line_h // 2, 22,
-                       pygame.time.get_ticks() / 1000.0)
 
 
 def draw_highscores(game):
@@ -128,7 +121,6 @@ def draw_highscores(game):
                 ship2=entries[i].get("ship2"),
                 veteran=bool(entries[i].get("veteran")),
                 tint=entries[i].get("tint"),
-                adventure=bool(entries[i].get("adventure")),
             )
         else:
             game._draw_hs_row(

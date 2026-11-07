@@ -1063,11 +1063,9 @@ class Game:
         """Tiny hull for the high-score table — same visual height after crop."""
         return highscores_screen.hs_ship_icon(self, sid, tint)
 
-    def _draw_hs_row(self, surface, y, rank, name, score, col, score_right_x=None, coop=False, ship=None, ship2=None, veteran=False, tint=None,
-                     adventure=False):
+    def _draw_hs_row(self, surface, y, rank, name, score, col, score_right_x=None, coop=False, ship=None, ship2=None, veteran=False, tint=None):
         """Draw one high-score line: rank aligned on '.', score right-aligned."""
-        return highscores_screen.draw_hs_row(self, surface, y, rank, name, score, col, score_right_x, coop, ship, ship2, veteran, tint,
-                                             adventure)
+        return highscores_screen.draw_hs_row(self, surface, y, rank, name, score, col, score_right_x, coop, ship, ship2, veteran, tint)
 
     def difficulty_speed_mult(self):
 
@@ -2541,7 +2539,8 @@ class Game:
         self.hs_slot_label = 1
         block = (self.difficulty == "novice"
                  or getattr(self, "used_cheat", False)
-                 or getattr(self, "phenix_cheat", False))
+                 or getattr(self, "phenix_cheat", False)
+                 or getattr(self, "arcade_style", False))      # (Adventure style: no high score, the classic game only)
         if self.hotseat and self.slots[0] and self.slots[1]:
             # Show last player's score as default; queue every qualifying run
             self.score = max(self.slots[0]["score"], self.slots[1]["score"])
@@ -2575,7 +2574,6 @@ class Game:
         elif is_highscore(self.score, self.hs_entries):
             self.hs_ship = getattr(self.player, "ship_id", "phoenix")
             self.hs_tint = getattr(self.player, "palette", None) or self._tint_for_pid(1)
-            self.hs_adventure = bool(getattr(self, "arcade_style", False))     # (marked in the table: Adventure style)
             self.hs_phase = "enter"
         else:
             self.hs_phase = "table"
@@ -2587,7 +2585,6 @@ class Game:
         p = sl.get("player")
         self.hs_ship = getattr(p, "ship_id", None) or self._ship_for_pid(slot_idx + 1)
         self.hs_tint = getattr(p, "palette", None) or self._tint_for_pid(slot_idx + 1)
-        self.hs_adventure = False                  # (the Adventure style is for a solo game only)
         self.hs_name = ["A", "A", "A"]
         self.hs_char_index = 0
         self.hs_submitted = False
@@ -2598,7 +2595,6 @@ class Game:
         self.hs_slot_label = int(getattr(ship, "pid", 1) or 1)
         self.hs_ship = getattr(ship, "ship_id", "phoenix")
         self.hs_tint = getattr(ship, "palette", None) or self._tint_of(self.hs_ship, int(getattr(ship, "pid", 1) or 1))
-        self.hs_adventure = False                  # (the Adventure style is for a solo game only)
         self.hs_name = ["A", "A", "A"]
         self.hs_char_index = 0
         self.hs_submitted = False
@@ -2616,7 +2612,6 @@ class Game:
             ship=ship, ship2=None,
             veteran=(getattr(self, "difficulty", "normal") == "veteran"),
             tint=tint,
-            adventure=bool(getattr(self, "hs_adventure", False)),
         )
         self.hs_submitted = True
         added = getattr(self, "hs_just_added", None)
@@ -3278,7 +3273,6 @@ class Game:
             "ingame_music": ingame_normalize(getattr(self, "ingame_music", "none")),
             "rumble_level": int(getattr(self, "rumble_level", 3)),
             "autofire": bool(getattr(self, "autofire", True)),
-            "gameplay_style": getattr(self, "gameplay_style", "classic"),
             "gp_modules": bool(getattr(self, "gp_modules", True)),
             "gp_missiles": int(getattr(self, "gp_missiles", 5) or 0),
             "language": self.language,

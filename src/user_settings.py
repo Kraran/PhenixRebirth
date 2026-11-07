@@ -37,7 +37,6 @@ def clean_user_settings(data):
         "audio_mix": "sfx",
         "ingame_music": "none",
         "season_force": "",  # "" | xmas | halloween — title overlay test
-        "gameplay_style": "classic",  # classic | adventure: the equipment of the Adventure in a solo game (arcade_style.py)
         "gp_modules": True,  # Adventure style: the two escort modules
         "gp_missiles": 5,  # Adventure style: antimatter missiles for the game (0-20)
     }
@@ -51,7 +50,6 @@ def clean_user_settings(data):
         "vsync_mode": ("on", "adaptive", "off"),
         "audio_mix": ("sfx", "sfx_music", "music", "off"),
         "season_force": ("", "xmas", "halloween"),
-        "gameplay_style": ("classic", "adventure"),
     }
     for key, default in defaults.items():
         value = data.get(key, default)

@@ -7164,11 +7164,11 @@ _GAMEPLAY_TEXTS = {
     "opt_gp_missiles": ("Missiles antimatière", "Antimatter missiles"),
     "opt_help_gp_style": (
         "Classique : le jeu d'arcade de toujours. Aventure : une partie solo commence avec une partie de l'équipement de "
-        "l'Aventure (les réglages en dessous). Un score fait en style Aventure porte une marque dans les meilleurs scores. "
-        "Le choix compte au début de la partie suivante ; pas en hot-seat ni en coop.",
+        "l'Aventure (les réglages en dessous), mais sans meilleur score. Le jeu démarre toujours en Classique ; le choix "
+        "compte pour la partie suivante, pas en hot-seat ni en coop.",
         "Classic: the arcade game as it always was. Adventure: a solo game starts with some of the equipment of the "
-        "Adventure (the settings below). A score made in Adventure style carries a mark in the high scores. The choice "
-        "counts when the next game starts; not in hot-seat or coop."),
+        "Adventure (the settings below), but with no high score. The game always starts in Classic; the choice counts for "
+        "the next game, not in hot-seat or coop."),
     "opt_help_gp_modules": (
         "Style Aventure : deux modules d'escorte volent à côté du vaisseau et tirent avec lui (tirs ×3). Chacun est détruit "
         "au premier tir ou au premier choc, et il ne revient pas avant la partie suivante.",

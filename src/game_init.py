@@ -403,7 +403,7 @@ def init_settings(game, soft):
     if not hasattr(game, "autofire"):
         game.autofire = bool(user.get("autofire", True))
     if not hasattr(game, "gameplay_style"):                  # Options > GAMEPLAY (src/arcade_style.py)
-        game.gameplay_style = user.get("gameplay_style", "classic")
+        game.gameplay_style = "classic"                      # (always the classic style when the game starts: not saved)
         game.gp_modules = bool(user.get("gp_modules", True))
         game.gp_missiles = int(user.get("gp_missiles", 5))
     game.arcade_style = False                                # (set by arcade_style.start when a solo game begins)

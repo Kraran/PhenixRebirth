@@ -1,5 +1,5 @@
 """Options > GAMEPLAY: the Adventure style of a solo arcade game (src/arcade_style.py): two escort modules (one hit each)
-and 0 to 20 antimatter missiles, a mark on the high scores."""
+and 0 to 20 antimatter missiles; never saved (the game always starts in the classic style), never a high score."""
 
 import pygame
 import pytest
@@ -40,13 +40,27 @@ def test_the_gameplay_tab_and_its_rows():
 
 def test_the_settings_are_kept_and_cleaned():
     d = user_settings.clean_user_settings({})
-    assert d["gameplay_style"] == "classic" and d["gp_modules"] is True and d["gp_missiles"] == 5
+    assert "gameplay_style" not in d and d["gp_modules"] is True and d["gp_missiles"] == 5      # (the style: never saved)
     d = user_settings.clean_user_settings({"gameplay_style": "adventure", "gp_modules": False, "gp_missiles": 17})
-    assert d["gameplay_style"] == "adventure" and d["gp_modules"] is False and d["gp_missiles"] == 17
-    d = user_settings.clean_user_settings({"gameplay_style": "turbo", "gp_modules": "yes", "gp_missiles": 99})
-    assert d["gameplay_style"] == "classic" and d["gp_modules"] is True and d["gp_missiles"] == 20
+    assert "gameplay_style" not in d and d["gp_modules"] is False and d["gp_missiles"] == 17
+    d = user_settings.clean_user_settings({"gp_modules": "yes", "gp_missiles": 99})
+    assert d["gp_modules"] is True and d["gp_missiles"] == 20
     assert user_settings.clean_user_settings({"gp_missiles": True})["gp_missiles"] == 5
     assert user_settings.clean_user_settings({"gp_missiles": -3})["gp_missiles"] == 0
+
+
+def test_the_game_always_starts_in_the_classic_style(tmp_path, monkeypatch):
+    from game import Game
+    monkeypatch.setattr(user_settings, "SETTINGS_FILE", str(tmp_path / "s.json"))
+    user_settings.save_user_settings({"gameplay_style": "adventure", "gp_modules": False, "gp_missiles": 9})
+    g = Game()
+    try:
+        assert g.gameplay_style == "classic" and g.gp_modules is False and g.gp_missiles == 9
+        g.gameplay_style = "adventure"
+        g.save_settings()
+        assert "gameplay_style" not in user_settings.load_user_settings()
+    finally:
+        g.running = False
 
 
 def test_the_rows_change_and_are_greyed_in_the_classic_style(game):
@@ -75,7 +89,7 @@ def test_the_rows_change_and_are_greyed_in_the_classic_style(game):
     menu_actions.menu_adjust(game, -1)
     assert game.gp_missiles == 20
     saved = user_settings.load_user_settings()
-    assert saved["gameplay_style"] == "adventure" and saved["gp_modules"] is False and saved["gp_missiles"] == 20
+    assert "gameplay_style" not in saved and saved["gp_modules"] is False and saved["gp_missiles"] == 20
 
 
 def test_the_options_screen_draws_the_tab(game):
@@ -158,33 +172,19 @@ def test_nothing_carries_over_to_the_next_game(game):
 
 
 # ---------------------------------------------------------------- the high scores
-def test_a_score_in_adventure_style_is_marked(game, tmp_path):
-    entries = highscores.insert_score("ABC", 999999, adventure=True)
-    top = [e for e in entries if e["name"] == "ABC"][0]
-    assert top["adventure"] is True
-    assert [e for e in highscores.load_highscores() if e["name"] == "ABC"][0]["adventure"] is True
-    plain = highscores.insert_score("XYZ", 888888)
-    assert [e for e in plain if e["name"] == "XYZ"][0]["adventure"] is False
+def _game_over(game, score):
+    game.score = score
+    game.player.score = score
+    game._begin_highscore_flow()
 
 
-def test_the_table_draws_the_mark(game, monkeypatch):
-    import gyro
-    seen = []
-    real = gyro.draw_icon
-    monkeypatch.setattr(gyro, "draw_icon", lambda *a, **k: seen.append(a) or real(*a, **k))
-    surf = pygame.Surface((1280, 720))
-    game._draw_hs_row(surf, 100, 1, "ABC", 1000, (255, 255, 255), ship="shield", adventure=True)
-    assert len(seen) == 1 and seen[0][1] == "shield"
-    game._draw_hs_row(surf, 130, 2, "XYZ", 900, (255, 255, 255), ship="shield")
-    assert len(seen) == 1
+def test_no_high_score_in_adventure_style(game):
+    _solo(game, "adventure", True, 3)
+    _game_over(game, 9_999_999)
+    assert game.hs_phase == "table"                                           # the table only, no name to enter
 
 
-def test_the_entry_remembers_the_style_of_the_game(game, monkeypatch):
-    _solo(game, "adventure", True, 1)
-    game.hs_adventure = bool(game.arcade_style)
-    got = {}
-    monkeypatch.setattr("game.insert_score", lambda *a, **k: got.update(k) or [])
-    game.hs_submitted = False
-    game.hs_name = ["A", "B", "C"]
-    game._submit_highscore()
-    assert got.get("adventure") is True
+def test_the_classic_style_still_enters_its_high_score(game):
+    _solo(game, "classic")
+    _game_over(game, 9_999_999)
+    assert game.hs_phase == "enter"
