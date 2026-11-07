@@ -15,6 +15,7 @@ import pygame
 from settings import (BASE_HEIGHT, BASE_WIDTH, SCREEN_SHAKE_DECAY, stage_speed_mult)
 from achievements import BOLDLY_GO_STAGE
 from enemy import BigBird, Enemy
+import guardian
 from guardian import FireLaser, Guardian, GuardianFormation
 from explosion import TeslaCoilFx
 from i18n import t
@@ -104,7 +105,7 @@ def tick_loot(game):
     if plan and not due and plan.get("last_wave"):
         form = getattr(game, "formation", None)            # a BONUS mission: it falls at the latest when the last wave is in
         due = getattr(form, "waves", None) is not None and getattr(form, "wave", 0) >= form.waves
-        if not due and form is not None and form.all_dead():
+        if not due and form is not None and form.all_dead() and squad_clear(game):
             due = True                                     # the last bird is down before its time: it falls now
     if plan and getattr(game, "loot", None) is None and due and ship and ship.alive:
         adv["loot_plan"] = None
@@ -235,6 +236,12 @@ def tick_boss_saucer(game):
             game.formation.enemies.append(bird)
 
 
+def squad_clear(game):
+    """True when the Guardians that came with the wave are all down (or none came)."""
+    sq = guardian.squad(game)
+    return sq is None or sq.clear()
+
+
 def begin_stage_clear(game):
     """Non-boss stage cleared: start the fly-up transition."""
     game._clear_enemy_fire()
@@ -275,6 +282,9 @@ def boss_cataclysm(game):
     game.sounds.play("explosion_big", x=bx)
     for e in game.formation.get_alive_enemies():
         e.kill()
+    sq = guardian.squad(game)
+    if sq is not None:
+        sq.kill_all()                       # (the Guardians that came with the boss fall with it)
     game.boss_saucer = None
     game.bosses_defeated += 1
     game._note_scalable("boss_down")
@@ -381,7 +391,7 @@ def player_bullets_vs_enemies(game):
         if hit_something:
             break  # indices shifted; next frame continues
 
-        for enemy in game.formation.get_hittable_enemies():
+        for enemy in guardian.targets(game):              # (the formation's, then the Guardians of the wave)
             if isinstance(enemy, Guardian):
                 if _shot_at_guardian(game, ship, shot_i, bullet_rect, enemy):
                     hit_something = True
@@ -552,9 +562,7 @@ def enemy_attacks_vs_players(game):
                     break
         for bullet in game.formation.bullets[:]:
             if bullet.alive and bullet.get_hitbox().colliderect(player_hitbox):
-                if (isinstance(game.formation, GuardianFormation)
-                        and (getattr(game, "adventure", None) or {}).get("guardians")
-                        and isinstance(bullet, FireLaser)):
+                if isinstance(bullet, FireLaser):              # a Guardian's laser (the test, or a wave with Guardians)
                     if ship.burn_by_guardian(blaze=True):
                         _life_lost(game)
                         game.shake_amount = max(game.shake_amount, 22.0)
@@ -576,7 +584,7 @@ def enemy_attacks_vs_players(game):
                     game.shake_amount = 22.0 if ship.dying else 12.0
                     game.sounds.play("explosion_big" if ship.dying else "explosion", x=ship.x)
                 break
-        for enemy in game.formation.get_hittable_enemies():
+        for enemy in guardian.targets(game):
             if enemy.diving and enemy.get_hitbox().colliderect(player_hitbox):
                 try:
                     enemy.kill(flash=False)

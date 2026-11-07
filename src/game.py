@@ -2165,6 +2165,29 @@ class Game:
             log_exc("game._end_adventure")
 
     def _setup_stage(self, stage):
+        """The wave `stage`: its formation (_setup_formation), then the Guardians that come with it in this mission (the
+        Adventure: "guardians_at", {stage: how many}; src/guardian.py GuardianSquad)."""
+        self.guardian_squad = None
+        self._setup_formation(stage)
+        adv = getattr(self, "adventure", None) or {}
+        plan = adv.get("guardians_at") or {}
+        count = int(plan.get(int(self.stage), plan.get(str(int(self.stage)), 0)) or 0)
+        if count > 0 and not adv.get("guardians"):
+            from guardian import GuardianSquad
+            from ship_burn import prepare as prepare_ship_burn
+            prepare_ship_burn(self.player)                  # (the burning ship of a laser, made before it is needed)
+            from guardian import SQUAD_BOSS_Y, SQUAD_Y
+            y = SQUAD_BOSS_Y if stage_content(int(self.stage)) == 5 else SQUAD_Y     # (with the boss: below its saucer)
+            self.guardian_squad = GuardianSquad(count, self.sounds, y)
+
+    def _tick_guardian_squad(self):
+        """The Guardians of the wave (if any): after the formation, with its shots and its birds."""
+        sq = getattr(self, "guardian_squad", None)
+        if sq is not None:
+            form = self.formation
+            sq.tick(self.dt, self.player.x, self.player.y, form.bullets, form.get_hittable_enemies())
+
+    def _setup_formation(self, stage):
         """Load content for stage (1-5 cycle) with speed scaling + difficulty.
 
         Adventure forces the mission content (chapter 1 main = stage 1 only).
@@ -4560,6 +4583,7 @@ class Game:
             self.formation.update(self.dt, self.player.x, self.player.y)
         else:
             self.formation.update(self.dt, self.player.x)
+        self._tick_guardian_squad()               # the Guardians that came with this wave (a few missions only)
         escort.tick(self)                         # the VIP rescue: the cruise ship (nothing in any other mission)
         asteroids.tick(self)                      # the Asteroids mission: rocks, saucer, shots (nothing elsewhere)
         spacewar.tick(self)                       # the SpaceWar test: the birds, the torpedoes, the levels (nothing elsewhere)
@@ -4579,6 +4603,7 @@ class Game:
         content = stage_content(self.stage)
         if (self.stage_transition is None and content != 5
                 and self.formation.all_dead()
+                and update_play.squad_clear(self)                  # (and the Guardians that came with the wave)
                 and not any(s.dying for s in self._ships())
                 and not update_play.loot_holds_the_clear(self)     # the reactor of a BONUS mission falls before the end
                 and self.boss_saucer is None):

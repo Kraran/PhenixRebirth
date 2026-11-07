@@ -114,6 +114,8 @@ def draw_play(game):
         game.boss_saucer.draw_shots(game.game_surface)
     escort.draw(game, game.game_surface)            # the VIP's cruise ship, under the birds (that mission only)
     game.formation.draw(game.game_surface)
+    if getattr(game, "guardian_squad", None) is not None:
+        game.guardian_squad.draw(game.game_surface)      # the Guardians that came with the wave
     antimatter.draw(game, game.game_surface)        # the missile in flight, over the enemies
     if getattr(game, "loot", None) is not None:
         game.loot.draw(game.game_surface)

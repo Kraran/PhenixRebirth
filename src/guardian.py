@@ -140,11 +140,12 @@ class Guardian:
     width = 116
     height = 100
 
-    def __init__(self, x, y, index):
+    def __init__(self, x, y, index, squad=PER_WAVE):
         self.x, self.y = float(x), float(y)
         self.home_x = self.x
         self.home_y = self.y
         self.index = index
+        self.squad = squad                   # how many fly together (they spread around the ship by their index)
         self.owner_id = index
         self.time = 0.0
         self.anim = 0.0
@@ -437,7 +438,7 @@ class Guardian:
                 self.y += dy / distance * RETURN_SPEED * dt
             return
         if not self.charge:
-            aim = self.home_x if player_x is None else player_x + (self.index - (PER_WAVE - 1) / 2) * 150
+            aim = self.home_x if player_x is None else player_x + (self.index - (self.squad - 1) / 2) * 150
             target_x = max(100, min(BASE_WIDTH - 100, aim + math.sin(self.time * 0.9 + self.index) * 65))
             target_y = self.home_y + math.sin(self.time * 0.7 + self.index) * 24
             self.x += max(-110 * dt, min(110 * dt, target_x - self.x))
@@ -632,6 +633,172 @@ class EscortBird(Enemy):
             super().update(dt, math.sin(clock * 0.7) * 45, player_x)
 
 
+def burn_birds(owner, birds, previous_boxes):
+    """The lasers of `owner.bullets` burn the birds they cross (`previous_boxes`: where each bird was a tick ago, so a
+    fast bolt cannot jump over one). The birds burn and fall to ash (BurningBird, in `owner.effects`), worth no points.
+    A bird with no picture to burn (a gargoyle, a bird of the Galaga waves) just explodes. Returns how many burned."""
+    burned = 0
+    for bolt in owner.bullets:
+        if not isinstance(bolt, FireLaser):
+            continue
+        # A bolt leaving the screen can still cross a bird this tick.
+        for bird in birds:
+            if not bird.alive or bird.dying:
+                continue
+            current = bird.get_hitbox()
+            previous = previous_boxes.get(bird, current)
+            # Wrapping from below to above is a teleport, not a sweep
+            # through every laser on screen.
+            if abs(previous.centery - current.centery) > BASE_HEIGHT / 2:
+                previous = current
+            if bolt.hits_moving_rect(previous, current):
+                frames = getattr(bird, "frames", None)
+                if frames and isinstance(frames, list) and isinstance(frames[0], pygame.Surface):
+                    owner.effects.append(BurningBird(bird))
+                    bird.kill(flash=False)
+                else:
+                    try:
+                        bird.kill(flash=False)
+                    except TypeError:
+                        bird.kill()
+                burned += 1
+                if owner.sounds:
+                    owner.sounds.play("enemy_explosion", volume=0.35, x=bird.x)
+    return burned
+
+
+def guardian_attacks(owner, dt, player_x, player_y):
+    """The Guardians of `owner` (owner.guardians, owner.bullets, owner.clock, owner.next_charge, owner.next_fire,
+    owner.sounds) charge and fire their lasers, one after the other, and dive one at a time."""
+    living = [bird for bird in owner.guardians if bird.alive]
+    for bird in living:
+        active = any(getattr(b, "owner_id", None) == bird.owner_id for b in owner.bullets)
+        if bird.charge and not bird.has_wing:
+            bird.charge = 0.0            # no wing left: the shot is cancelled, like a gargoyle that cannot shoot
+            bird.shot_wait = max(bird.shot_wait, 0.5)
+            continue
+        if bird.charge:
+            bird.charge += dt
+            if bird.charge >= CHARGE_SECONDS and owner.clock >= owner.next_fire and not active:
+                bird.emission = FireLaser(bird.x, bird.y + 16, bird.owner_id)
+                owner.bullets.append(bird.emission)
+                bird.charge = 0.0
+                bird.firing = 0.2
+                bird.shot_wait = SHOT_GAP + bird.index * 0.15
+                owner.next_fire = owner.clock + FIRE_STAGGER
+                if owner.sounds:
+                    owner.sounds.play("enemy_shoot", x=bird.x)
+            continue
+        if bird.state != "patrol" or bird.laser_attached:
+            continue
+        if bird.dive_wait <= 0 and bird.has_both_wings and not any(b.state in ("windup", "dive") for b in living):
+            bird.start_dive(player_x, player_y)
+        elif bird.can_shoot() and not active and bird.shot_wait <= 0 and owner.clock >= owner.next_charge:
+            bird.charge = 1e-9
+            owner.next_charge = owner.clock + CHARGE_STAGGER
+
+
+SQUAD_Y = 126                    # where the Guardians of an arcade wave patrol: above the birds of the formation ...
+SQUAD_BOSS_Y = 440               # ... or, with the boss, below its saucer: a barrage in front of it
+SQUAD_ENTRY = 1.2                # ... they come down from the top of the screen, a little after the wave
+SQUAD_STEP = 0.6                 # ... one after the other
+
+
+class GuardianSquad:
+    """Guardians flying with the birds of an arcade wave of the Adventure (story_state.MISSIONS "guardians_at"): they
+    come down from the top, patrol above the birds, charge and fire their lasers (which burn the birds they cross, like in
+    the test) and dive. They live beside the formation, whatever it is (a wave, the swarm, the Galaga chains, a boss):
+    the game adds them to the targets of the shots, to the attacks against the ship and to the end of the wave
+    (`targets`, `clear`). Their lasers go into the formation's own list of shots (so they are cleared with it)."""
+
+    def __init__(self, count, sounds=None, y=SQUAD_Y):
+        self.count = int(count)
+        self.sounds = sounds
+        self.clock = 0.0
+        self.next_charge = SQUAD_ENTRY + 1.2
+        self.next_fire = 0.0
+        self.effects = []
+        self.burned = 0
+        self.bullets = []                    # (the formation's, set by tick)
+        self.guardians = []
+        for i in range(self.count):
+            g = Guardian(BASE_WIDTH * (i + 1) / (self.count + 1), y, i, squad=self.count)
+            g.owner_id = ("guardian", i)             # (its lasers: never mistaken for a bird's shots)
+            g.y = -90.0 - i * 40.0
+            g.state = "recover"                          # (flying to its place: they come down from the top)
+            g.entry = SQUAD_ENTRY + i * SQUAD_STEP
+            g.shot_wait = SHOT_GAP + 1.0 + i * 0.38
+            g.dive_wait = 6.0 + i * 1.6
+            self.guardians.append(g)
+
+    def targets(self):
+        """The Guardians the shots can hit (and that hit the ship when they dive)."""
+        return [g for g in self.guardians if g.alive and not g.dying and g.entry <= 0]
+
+    def alive(self):
+        return [g for g in self.guardians if g.alive]
+
+    def clear(self):
+        """True when every Guardian is down (the wave can end)."""
+        return not any(g.alive for g in self.guardians)
+
+    def kill_all(self):
+        for g in self.guardians:
+            if g.alive:
+                g.kill()
+
+    def tick(self, dt, player_x, player_y, bullets, birds):
+        """One step: the Guardians fly in, patrol, charge, fire into `bullets` (the formation's), dive; their lasers burn
+        the `birds` they cross."""
+        self.clock += dt
+        self.bullets = bullets
+        held = {id(b) for b in bullets}
+        for g in self.guardians:                         # a laser dropped from the list (the shots cleared): let go of it
+            if g.emission is not None and id(g.emission) not in held:
+                g.emission = None
+        for effect in self.effects:
+            effect.update(dt)
+        self.effects = [e for e in self.effects if e.alive]
+        previous = {bird: bird.get_hitbox() for bird in birds if bird.alive and not bird.dying}
+        for g in self.guardians:
+            if g.entry > 0:
+                g.entry -= dt
+                continue
+            if g.alive:
+                g.update(dt, player_x, player_y)
+            else:
+                g.tick_fx(dt)
+        flying = [g for g in self.guardians if g.entry <= 0]
+        keep = self.guardians
+        self.guardians = flying
+        try:
+            guardian_attacks(self, dt, player_x, player_y)
+        finally:
+            self.guardians = keep
+        self.burned += burn_birds(self, birds, previous)
+
+    def draw(self, surface):
+        for g in self.guardians:
+            if g.entry <= 0:
+                g.draw(surface)
+        for effect in self.effects:
+            effect.draw(surface)
+
+
+def squad(game):
+    """The Guardians of the wave in play, or None (src/game.py sets game.guardian_squad)."""
+    return getattr(game, "guardian_squad", None)
+
+
+def targets(game):
+    """The enemies the shots of the ship can hit: those of the formation, then the Guardians of the wave."""
+    out = list(game.formation.get_hittable_enemies())
+    sq = squad(game)
+    if sq is not None:
+        out += sq.targets()
+    return out
+
+
 class GuardianFormation:
     def __init__(self):
         self.enemies = []
@@ -663,25 +830,7 @@ class GuardianFormation:
         return PER_WAVE + BIRDS_PER_COLOUR * 2
 
     def _burn_birds(self, previous_boxes):
-        for bolt in self.bullets:
-            if not isinstance(bolt, FireLaser):
-                continue
-            # A bolt leaving the screen can still cross a bird this tick.
-            for bird in self.birds:
-                if not bird.alive or bird.dying:
-                    continue
-                current = bird.get_hitbox()
-                previous = previous_boxes.get(bird, current)
-                # Wrapping from below to above is a teleport, not a sweep
-                # through every laser on screen.
-                if abs(previous.centery - current.centery) > BASE_HEIGHT / 2:
-                    previous = current
-                if bolt.hits_moving_rect(previous, current):
-                    self.effects.append(BurningBird(bird))
-                    bird.kill(flash=False)
-                    self.burned += 1
-                    if self.sounds:
-                        self.sounds.play("enemy_explosion", volume=0.35, x=bird.x)
+        self.burned += burn_birds(self, self.birds, previous_boxes)
 
     def update(self, dt, player_x, player_y=BASE_HEIGHT - 95):
         self.clock += dt
@@ -704,7 +853,6 @@ class GuardianFormation:
         self._burn_birds(previous_boxes)
         self.bullets = [bolt for bolt in self.bullets if bolt.alive]
         self.destroyed = self.total - len(self.get_alive_enemies())
-        living = [bird for bird in self.guardians if bird.alive]
         for bird in self.birds:
             if (bird.alive and not bird.dying and bird.shot_wait <= 0
                     and 0 < bird.y < player_y - 50
@@ -713,31 +861,7 @@ class GuardianFormation:
                 bolt.owner_id = bird.owner_id
                 self.bullets.append(bolt)
                 bird.shot_wait = 2.4 + bird.formation_index * 0.1
-        for bird in living:
-            active = any(b.owner_id == bird.owner_id for b in self.bullets)
-            if bird.charge and not bird.has_wing:
-                bird.charge = 0.0            # no wing left: the shot is cancelled, like a gargoyle that cannot shoot
-                bird.shot_wait = max(bird.shot_wait, 0.5)
-                continue
-            if bird.charge:
-                bird.charge += dt
-                if bird.charge >= CHARGE_SECONDS and self.clock >= self.next_fire and not active:
-                    bird.emission = FireLaser(bird.x, bird.y + 16, bird.owner_id)
-                    self.bullets.append(bird.emission)
-                    bird.charge = 0.0
-                    bird.firing = 0.2
-                    bird.shot_wait = SHOT_GAP + bird.index * 0.15
-                    self.next_fire = self.clock + FIRE_STAGGER
-                    if self.sounds:
-                        self.sounds.play("enemy_shoot", x=bird.x)
-                continue
-            if bird.state != "patrol" or bird.laser_attached:
-                continue
-            if bird.dive_wait <= 0 and bird.has_both_wings and not any(b.state in ("windup", "dive") for b in living):
-                bird.start_dive(player_x, player_y)
-            elif bird.can_shoot() and not active and bird.shot_wait <= 0 and self.clock >= self.next_charge:
-                bird.charge = 1e-9
-                self.next_charge = self.clock + CHARGE_STAGGER
+        guardian_attacks(self, dt, player_x, player_y)
 
     def draw(self, surface):
         for bird in self.enemies:
