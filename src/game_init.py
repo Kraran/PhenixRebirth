@@ -119,6 +119,9 @@ def reset_run(game):
     game.player = Player(BASE_WIDTH // 2, BASE_HEIGHT - 95)
     game.player.sounds = getattr(game, "sounds", None)
     game.player2 = None
+    game.arcade_style = False                                # (the modules and missiles of an Adventure-style game)
+    game.gyro = None
+    game.antimatter = None
     game.formation = EnemyFormation()
     game.formation.sounds = getattr(game, "sounds", None)
     game.explosions = []
@@ -399,6 +402,11 @@ def init_settings(game, soft):
         game.rumble_level = max(0, min(5, game.rumble_level))
     if not hasattr(game, "autofire"):
         game.autofire = bool(user.get("autofire", True))
+    if not hasattr(game, "gameplay_style"):                  # Options > GAMEPLAY (src/arcade_style.py)
+        game.gameplay_style = "classic"                      # (always the classic style when the game starts: not saved)
+        game.gp_modules = bool(user.get("gp_modules", True))
+        game.gp_missiles = int(user.get("gp_missiles", 5))
+    game.arcade_style = False                                # (set by arcade_style.start when a solo game begins)
     if not hasattr(game, "ship_id"):
         game.ship_id = "phoenix"
     if not hasattr(game, "ship_id_p2"):

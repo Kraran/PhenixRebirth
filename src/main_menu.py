@@ -4,7 +4,7 @@ The structure of the classic game's menus, in one place (the drawing, the input 
 - MAIN: the five entries of the main menu.
 - ARCADE: the rows of the "arcade game" screen opened by PLAY (mode, difficulty, then the ship select).
 - EXTRAS: the screens gathered behind EXTRAS (scores, achievements, jukebox, credits, help, add-on).
-- OPTION_TABS: the four tabs of the options and the rows of each one.
+- OPTION_TABS: the five tabs of the options and the rows of each one.
 
 Use the names, never the numbers: `main_index("options")`, `extras_index("credits")`.
 """
@@ -17,6 +17,7 @@ EXTRAS = ("highscores", "achievements", "jukebox", "credits", "help", "addon")
 
 OPTION_TABS = (
     ("game", ("control", "coop_p1", "coop_p2", "keybinds", "autofire", "rumble", "language")),
+    ("gameplay", ("gp_style", "gp_modules", "gp_missiles")),          # the Adventure style of a solo game (arcade_style.py)
     ("audio", ("sfx", "music", "audio_mix", "ingame_music")),
     ("display", ("display", "bezel", "scanlines", "fps")),
     ("advanced", ("gpu", "vsync", "hz", "reset_hs")),
@@ -29,8 +30,8 @@ PAUSE_TITLES = {"resume": "resume", "options": "options", "help": "pause_help", 
 MAIN_TITLES = {"play": "play", "story": "story_menu", "extras": "extras_title", "options": "options", "quit": "quit"}
 EXTRAS_TITLES = {"highscores": "high_scores", "achievements": "achievements", "jukebox": "jukebox",
                  "credits": "credits", "help": "extras_help", "addon": "addon"}
-TAB_TITLES = {"game": "opt_tab_game", "audio": "opt_tab_audio", "display": "opt_tab_display",
-              "advanced": "opt_tab_advanced"}
+TAB_TITLES = {"game": "opt_tab_game", "gameplay": "opt_tab_gameplay", "audio": "opt_tab_audio",
+              "display": "opt_tab_display", "advanced": "opt_tab_advanced"}
 
 
 def main_index(name):

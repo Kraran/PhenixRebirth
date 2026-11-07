@@ -41,7 +41,8 @@ def test_invalid_enums_booleans_and_types_keep_defaults():
     defaults = us.clean_user_settings(None)
     for value in (None, [], {}, 123, "invalid"):
         for key in defaults:
-            if key in ("sfx_volume", "music_volume", "rumble_level", "scanlines", "monitor_index", "fps_cap"):
+            if key in ("sfx_volume", "music_volume", "rumble_level", "scanlines", "monitor_index", "fps_cap",
+                           "gp_missiles"):                         # (a number: clamped, see test_arcade_style)
                 continue
             settings = us.clean_user_settings({key: value})
             if key == "ingame_music" and isinstance(value, str):

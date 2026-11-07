@@ -53,6 +53,7 @@ import spacewar
 import lander
 import scramble
 import antimatter
+import arcade_style
 import escort
 import gyro
 import galaga
@@ -1523,6 +1524,7 @@ class Game:
             self.player2 = None
             self._apply_ship_choice()
             self._apply_difficulty_start()
+            arcade_style.start(self)            # Options > GAMEPLAY: the modules and missiles of the Adventure style
             self.started = True
             self.input_grace = 0.35
             self._start_arrive_intro()
@@ -2537,7 +2539,8 @@ class Game:
         self.hs_slot_label = 1
         block = (self.difficulty == "novice"
                  or getattr(self, "used_cheat", False)
-                 or getattr(self, "phenix_cheat", False))
+                 or getattr(self, "phenix_cheat", False)
+                 or getattr(self, "arcade_style", False))      # (Adventure style: no high score, the classic game only)
         if self.hotseat and self.slots[0] and self.slots[1]:
             # Show last player's score as default; queue every qualifying run
             self.score = max(self.slots[0]["score"], self.slots[1]["score"])
@@ -3270,6 +3273,8 @@ class Game:
             "ingame_music": ingame_normalize(getattr(self, "ingame_music", "none")),
             "rumble_level": int(getattr(self, "rumble_level", 3)),
             "autofire": bool(getattr(self, "autofire", True)),
+            "gp_modules": bool(getattr(self, "gp_modules", True)),
+            "gp_missiles": int(getattr(self, "gp_missiles", 5) or 0),
             "language": self.language,
             "show_fps": self.show_fps,
             "scanlines": int(getattr(self, "scanlines", 0) or 0),
@@ -3534,10 +3539,13 @@ class Game:
         if not key or key not in (
             "control", "coop_p1", "coop_p2", "keybinds", "autofire", "sfx", "music", "audio_mix", "ingame_music", "rumble", "display",
             "bezel", "fps", "scanlines", "gpu", "vsync", "hz",
-            "language", "reset_hs", "back",
+            "language", "reset_hs", "back", "gp_style", "gp_modules", "gp_missiles",
         ):
             return
         x, y, w, h = box
+        bf0 = getattr(self, "body_font", None) or self.font
+        n0 = len(self._wrap_ui(t("opt_help_" + key), bf0, w - 36))
+        h = max(h, 58 + n0 * (bf0.get_linesize() + 4) + 14)        # (a short list of rows: the panel holds all its text)
         if key == "ingame_music":
             # its help is long (folder of the player's music) and the chosen title comes under it: the panel grows to hold both
             bf = getattr(self, "body_font", None) or self.font
@@ -3559,6 +3567,7 @@ class Game:
                 "bezel": "opt_bezel", "fps": "opt_fps", "scanlines": "opt_scanlines",
                 "gpu": "opt_gpu", "vsync": "opt_vsync", "hz": "opt_hz",
                 "language": "opt_language", "reset_hs": "opt_reset_hs", "back": "opt_back",
+                "gp_style": "opt_gp_style", "gp_modules": "opt_gp_modules", "gp_missiles": "opt_gp_missiles",
             }.get(key, "options"))
             hdr = self._txt(self.font, title, (255, 210, 140))
             panel.blit(hdr, (18, 14))
@@ -3589,13 +3598,17 @@ class Game:
         "audio_mix": "opt_audio", "ingame_music": "opt_ingame", "rumble": "opt_rumble", "display": "opt_display",
         "bezel": "opt_bezel", "fps": "opt_fps", "scanlines": "opt_scanlines", "gpu": "opt_gpu", "vsync": "opt_vsync",
         "hz": "opt_hz", "language": "opt_language", "reset_hs": "opt_reset_hs",
+        "gp_style": "opt_gp_style", "gp_modules": "opt_gp_modules", "gp_missiles": "opt_gp_missiles",
     }
 
     def _option_label(self, key):
         return t(self.OPTION_LABELS.get(key, key))
 
     def _option_greyed(self, key):
-        """True for a row that does nothing now (the bezels outside fullscreen)."""
+        """True for a row that does nothing now (the bezels outside fullscreen; the equipment of the Adventure style while
+        the classic style is chosen)."""
+        if key in ("gp_modules", "gp_missiles"):
+            return getattr(self, "gameplay_style", "classic") != "adventure"
         return key == "bezel" and getattr(self, "display_mode", "fullscreen") != "fullscreen"
 
     def _option_value(self, key):
@@ -3609,6 +3622,13 @@ class Game:
             return self._coop_label(0 if key == "coop_p1" else 1)
         if key == "autofire":
             return t("yes") if getattr(self, "autofire", True) else t("no")
+        if key == "gp_style":
+            return t("gp_style_" + getattr(self, "gameplay_style", "classic"))
+        if key == "gp_modules":
+            return t("yes") if getattr(self, "gp_modules", True) else t("no")
+        if key == "gp_missiles":
+            n = int(getattr(self, "gp_missiles", 5) or 0)
+            return str(n) if n else t("no")
         if key == "sfx":
             return f"{int(round(self.sfx_volume * 100))}%"
         if key == "music":
