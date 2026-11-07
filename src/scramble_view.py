@@ -219,39 +219,91 @@ class View:
 _SPRITES = {}
 
 
-def _aa(draw, logical, size):
-    """A small picture drawn by `draw(surface, k)` on a canvas of twice its `logical` size (k = 2), then scaled down to
-    `size`: smooth edges."""
-    big = pygame.Surface((int(logical[0] * 2), int(logical[1] * 2)), pygame.SRCALPHA)
-    draw(big, 2)
+def _aa(draw, logical, size, k=2):
+    """A small picture drawn by `draw(surface, k)` on a canvas `k` times its `logical` size, then scaled down to `size`:
+    smooth edges (and smooth shading for the bigger k)."""
+    big = pygame.Surface((int(logical[0] * k), int(logical[1] * k)), pygame.SRCALPHA)
+    draw(big, k)
     return pygame.transform.smoothscale(big, (int(size[0]), int(size[1])))
 
 
+def _mix(a, b, t):
+    return tuple(int(a[i] + (b[i] - a[i]) * t) for i in range(3))
+
+
+def _sheen(pic, poly, stops):
+    """A metal sheen across `poly`, left to right: `stops` = [(0..1, colour), ...]."""
+    xs = [p[0] for p in poly]
+    x0, x1 = int(min(xs)), int(max(xs))
+    layer = pygame.Surface(pic.get_size(), pygame.SRCALPHA)
+    for x in range(x0, x1 + 1):
+        t = (x - x0) / max(1, x1 - x0)
+        col = stops[-1][1]
+        for (ta, ca), (tb, cb) in zip(stops, stops[1:]):
+            if ta <= t <= tb:
+                col = _mix(ca, cb, (t - ta) / max(1e-6, tb - ta))
+                break
+        pygame.draw.line(layer, col + (255,), (x, 0), (x, pic.get_height()))
+    mask = pygame.Surface(pic.get_size(), pygame.SRCALPHA)
+    pygame.draw.polygon(mask, (255, 255, 255, 255), poly)
+    layer.blit(mask, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+    pic.blit(layer, (0, 0))
+
+
+STATION_K = 8                        # the launcher and its missile are drawn 8 times bigger, then scaled (smooth chrome)
+ICE = (120, 220, 255)                # the lights of the launcher, and the nose of its missile: glacier blue
+# where the lights are, on the drawing of the launcher (its logical 44 x 30, from the top left, the launcher standing):
+LIGHTS_BASE = ((9, 23), (35, 23))                     # the two lights of the plinth: a slow pulse
+LIGHTS_RAIL = ((18, 3), (26, 3), (18, 8), (26, 8))    # the four of the rail: steady with a missile on it, blinking without
+
+
 def _draw_station(pic, k):
-    """A launcher standing on the ground: an armoured bunker, a rail in the middle, two red lights."""
+    """A launcher standing on the ground: a chrome dome on a dark plinth, the rail of its missile coming out of the top.
+    Its lights are drawn over it in the game (draw_station: they blink), not here."""
     w, h = pic.get_size()
-    steel, dark, edge = (78, 84, 98), (40, 42, 52), (150, 158, 176)
-    body = [(2 * k, h), (6 * k, h - 17 * k), (w - 6 * k, h - 17 * k), (w - 2 * k, h)]
-    pygame.draw.polygon(pic, steel, body)
-    pygame.draw.polygon(pic, edge, body, max(1, k))
-    pygame.draw.rect(pic, dark, (8 * k, h - 13 * k, w - 16 * k, 5 * k))
-    for lx in (10 * k, w - 10 * k):
-        pygame.draw.circle(pic, (255, 70, 50), (lx, h - 21 * k + 10 * k), int(2.2 * k))
+    plinth = [(1 * k, h), (3 * k, h - 5 * k), (w - 3 * k, h - 5 * k), (w - 1 * k, h)]
+    _sheen(pic, plinth, [(0, (40, 44, 54)), (0.5, (96, 102, 118)), (1, (40, 44, 54))])
+    pygame.draw.polygon(pic, (20, 22, 28), plinth, max(1, k // 2))
+    dome = pygame.Rect(5 * k, h - 23 * k, w - 10 * k, 36 * k)
+    cx, cy, rx, ry = dome.centerx, dome.centery, dome.w / 2.0, dome.h / 2.0
+    layer = pygame.Surface(pic.get_size(), pygame.SRCALPHA)
+    for i in range(int(rx), 0, -1):                     # a chrome bowl: rings brighter towards a light at the upper left
+        t = i / rx
+        pygame.draw.ellipse(layer, _mix((235, 242, 255), (52, 60, 78), t ** 0.8) + (255,),
+                            (cx - i - (1 - t) * 4 * k, cy - i * ry / rx - (1 - t) * 6 * k, 2 * i, 2 * i * ry / rx))
+    clip = pygame.Surface(pic.get_size(), pygame.SRCALPHA)
+    pygame.draw.ellipse(clip, (255, 255, 255, 255), dome)
+    pygame.draw.rect(clip, (0, 0, 0, 0), (0, h - 5 * k, w, 5 * k))
+    layer.blit(clip, (0, 0), special_flags=pygame.BLEND_RGBA_MIN)
+    pic.blit(layer, (0, 0))
+    pygame.draw.arc(pic, (20, 22, 30), dome, 0, math.pi, max(1, k // 2))
+    for dx in (-11 * k, 11 * k):                        # two ribs
+        pygame.draw.line(pic, (60, 66, 84), (cx + dx, h - 5 * k), (cx + dx * 0.55, h - 19 * k), max(1, k // 2))
     rail = pygame.Rect(w // 2 - 6 * k, h - 30 * k, 12 * k, 14 * k)
-    pygame.draw.rect(pic, dark, rail)
-    pygame.draw.rect(pic, edge, rail, max(1, k))
-    pygame.draw.line(pic, (255, 190, 80), (w // 2 - 7 * k, h - 17 * k), (w // 2 + 7 * k, h - 17 * k), max(1, k))
+    _sheen(pic, [rail.topleft, rail.topright, rail.bottomright, rail.bottomleft],
+           [(0, (70, 76, 94)), (0.5, (200, 210, 230)), (1, (70, 76, 94))])
+    pygame.draw.rect(pic, (20, 22, 28), (w // 2 - 2 * k, h - 30 * k, 4 * k, 14 * k))      # the slot of the missile
+    for lx, ly in LIGHTS_BASE + LIGHTS_RAIL:            # the lights, off (draw_station lights them)
+        pygame.draw.circle(pic, (28, 52, 66), (lx * k, ly * k), int(1.1 * k if ly > 20 else 0.9 * k))
 
 
 def _draw_missile(pic, k):
-    """A missile, nose up: a white body, a red nose cone, fins."""
+    """A missile, nose up, to go with the chrome launcher: a brushed metal body, a glacier-blue nose and band, dark chrome
+    fins edged in blue."""
     w, h = pic.get_size()
     cx = w // 2
-    pygame.draw.rect(pic, (225, 228, 236), (cx - 3 * k, 8 * k, 6 * k, h - 14 * k))
-    pygame.draw.polygon(pic, (230, 60, 50), [(cx, 0), (cx - 3 * k, 9 * k), (cx + 3 * k, 9 * k)])
-    pygame.draw.polygon(pic, (200, 50, 45), [(cx - 3 * k, h - 12 * k), (0, h - 2 * k), (cx - 3 * k, h - 4 * k)])
-    pygame.draw.polygon(pic, (200, 50, 45), [(cx + 3 * k, h - 12 * k), (w - 1, h - 2 * k), (cx + 3 * k, h - 4 * k)])
-    pygame.draw.rect(pic, (120, 124, 136), (cx - 3 * k, h - 6 * k, 6 * k, 6 * k))
+    body = [(cx - 3 * k, 8 * k), (cx + 3 * k, 8 * k), (cx + 3 * k, h - 6 * k), (cx - 3 * k, h - 6 * k)]
+    _sheen(pic, body, [(0, (110, 118, 136)), (0.35, (236, 242, 252)), (0.6, (176, 184, 200)), (1, (86, 92, 108))])
+    nose = [(cx, 0), (cx - 3 * k, 9 * k), (cx + 3 * k, 9 * k)]
+    _sheen(pic, nose, [(0, (40, 120, 170)), (0.4, (190, 240, 255)), (1, (40, 110, 160))])
+    pygame.draw.rect(pic, ICE, (cx - 3 * k, 13 * k, 6 * k, 2 * k))                       # the band
+    for side in (-1, 1):
+        fin = [(cx + side * 3 * k, h - 12 * k), (cx + side * (w // 2), h - 2 * k), (cx + side * 3 * k, h - 4 * k)]
+        if side > 0:
+            fin[1] = (w - 1, h - 2 * k)
+        pygame.draw.polygon(pic, (58, 64, 80), fin)
+        pygame.draw.line(pic, ICE, fin[0], fin[1], max(1, k // 2))
+    pygame.draw.rect(pic, (70, 76, 92), (cx - 3 * k, h - 6 * k, 6 * k, 6 * k))           # the nozzle
 
 
 def sprite(name, down):
@@ -260,13 +312,55 @@ def sprite(name, down):
     pic = _SPRITES.get(key)
     if pic is None:
         if name == "station":
-            pic = _aa(_draw_station, (44, 30), (scramble.STATION_W, scramble.STATION_H))
+            pic = _aa(_draw_station, (44, 30), (scramble.STATION_W, scramble.STATION_H), STATION_K)
         else:
-            pic = _aa(_draw_missile, (10, 30), (scramble.MISSILE_W, scramble.MISSILE_H))
+            pic = _aa(_draw_missile, (10, 30), (scramble.MISSILE_W, scramble.MISSILE_H), STATION_K)
         if down:
             pic = pygame.transform.flip(pic, False, True)
         _SPRITES[key] = pic
     return pic
+
+
+_LIGHTS = {}
+
+
+def _light(level):
+    """A light of the launcher at `level` (0..8: off .. full): a blue core and its halo (made once per level)."""
+    pic = _LIGHTS.get(level)
+    if pic is None:
+        r = 5
+        pic = pygame.Surface((2 * r + 1, 2 * r + 1), pygame.SRCALPHA)
+        k = level / 8.0
+        for i in range(r, 0, -1):
+            pygame.draw.circle(pic, ICE + (int(150 * k * (1 - i / r) ** 1.5),), (r, r), i)
+        pygame.draw.circle(pic, _mix((28, 52, 66), (215, 248, 255), k) + (255,), (r, r), 1)
+        _LIGHTS[level] = pic
+    return pic
+
+
+def light_levels(t, phase, loaded):
+    """How bright the lights of a launcher are at time `t` (0..8): (the two of the plinth, the four of the rail). The
+    plinth breathes slowly; the rail is lit while a missile stands on it and blinks, two by two, while it reloads."""
+    base = int(round(4 + 4 * math.sin(t * 2.4 + phase)))
+    if loaded:
+        rail = (8, 8, 8, 8)
+    else:
+        on = int(t * 6.0 + phase) % 2 == 0
+        rail = (8, 8, 1, 1) if on else (1, 1, 8, 8)
+    return (base, base), rail
+
+
+def draw_station(surface, x, y, down, t=0.0, phase=0.0, loaded=True):
+    """A launcher at (x, y), the top left of its picture, upside down on the ceiling, with its lights at time `t`."""
+    pic = sprite("station", down)
+    surface.blit(pic, (round(x), round(y)))
+    sx, sy = scramble.STATION_W / 44.0, scramble.STATION_H / 30.0
+    base, rail = light_levels(t, phase, loaded)
+    for (lx, ly), level in zip(LIGHTS_BASE + LIGHTS_RAIL, base + rail):
+        dot = _light(level)
+        py = (30 - ly) * sy if down else ly * sy
+        half = dot.get_width() // 2                      # (the middle of the light: its pixel (half, half))
+        surface.blit(dot, (round(x + lx * sx) - half, round(y + py) - half))
 
 
 _TILTS = {}
@@ -341,9 +435,8 @@ def _draw_stations(surface, form, cam_i):
             mx, my = st.mouth()
             pic = sprite("missile", down)
             surface.blit(pic, (round(sx - pic.get_width() / 2), round(my - pic.get_height() / 2)))
-        pic = sprite("station", down)
         l, t, r, b = st.box()
-        surface.blit(pic, (round(l - cam_i), round(t)))
+        draw_station(surface, l - cam_i, t, down, form.time, st.x * 0.013, st.loaded)
     for m in form.missiles:
         sx = m.x - cam_i
         down = m.dir > 0
@@ -547,7 +640,8 @@ def station_portrait():
     got = _BASE.get("portrait")
     if got is None:
         import scramble
-        st = sprite("station", False)
+        st = pygame.Surface(sprite("station", False).get_size(), pygame.SRCALPHA)
+        draw_station(st, 0, 0, False)                   # (its lights on)
         mi = sprite("missile", False)
         w = max(st.get_width(), mi.get_width()) + 8
         rise = scramble.STATION_H + scramble.MISSILE_H / 2 - 8          # (Station.mouth: the middle of the missile)
