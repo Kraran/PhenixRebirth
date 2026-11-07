@@ -1656,3 +1656,25 @@ def test_the_near_stars_stay_behind_the_planet(style):
         cy = round(py - 40)
         if 0 <= cx < sc.W and 0 <= cy < sc.H:
             assert surf.get_at((cx, cy))[:3] != (255, 0, 255), (style, cam)      # the middle of the planet hides them
+
+
+def test_the_red_commander_is_solid_and_only_its_skin_turns_red():
+    from boss import BossCore
+    BossCore._load_images()
+    green = BossCore._frames[0]
+    red = sv.redden(green.copy())
+    g = pygame.surfarray.array3d(green).astype(int)
+    r = pygame.surfarray.array3d(red).astype(int)
+    a_g, a_r = pygame.surfarray.array_alpha(green), pygame.surfarray.array_alpha(red)
+    seen = a_g > 40
+    assert (a_r[seen] > 200).mean() > 2 * (a_g[seen] > 200).mean() and (a_r[seen] > 200).mean() > 0.6     # solid
+    assert (a_r[a_g == 0] == 0).all()                                            # (nothing appears around it)
+    skin = seen & (g[..., 1] > np.maximum(g[..., 0], g[..., 2]) + 8)
+    brown = seen & (g[..., 0] > np.maximum(g[..., 1], g[..., 2]) + 8)            # the beak and the mouth
+    assert skin.sum() > 500 and brown.sum() > 100
+    assert (r[skin][:, 0] > r[skin][:, 1] + 20).mean() > 0.95                    # the skin: red
+    assert (r[brown] == g[brown]).all()                                          # the beak, the mouth: untouched
+    n = green.get_width()
+    eye = [(x, y) for x in range(n) for y in range(n) if 0.27 * n < y < 0.42 * n and 0.07 * n < abs(x - n / 2) < 0.22 * n
+           and g[x, y].max() > 0.55 * 255 and a_g[x, y] > 40]
+    assert eye and all((r[x, y] == g[x, y]).all() for x, y in eye)              # the eyes keep their light
