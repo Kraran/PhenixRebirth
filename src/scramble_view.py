@@ -488,9 +488,41 @@ def base_panel(width, height):
     return got
 
 
+RED_SKIN_HUE = 358.0 / 360.0         # the red commander: the hue of its skin ...
+RED_SKIN_SAT = 0.72                  # ... its saturation ...
+RED_SKIN_GAIN = 1.45                 # ... and how much lighter than the green it was painted in
+RED_ALPHA = (22.0, 2.4)              # its picture made solid: alpha = (alpha - 22) * 2.4 (the green one is see-through)
+
+
+def redden(pic):
+    """The green commander turned red (in place): only its skin, the pixels whose green stands over their red and blue,
+    takes the red (its light kept); the beak, the mouth, the eyes (the bright spots at their height, off the middle) and
+    the dark parts keep their colours. Made solid."""
+    raw = pygame.surfarray.array3d(pic).astype(np.float32)
+    r, g, b = raw[..., 0], raw[..., 1], raw[..., 2]
+    v = raw.max(axis=2) / 255.0
+    n = raw.shape[0]
+    xs, ys = np.meshgrid(np.arange(n) / n, np.arange(raw.shape[1]) / raw.shape[1], indexing="ij")
+    eyes = (v > 0.55) & (ys > 0.27) & (ys < 0.42) & (np.abs(xs - 0.5) > 0.07) & (np.abs(xs - 0.5) < 0.22)
+    skin = (np.clip((g - np.maximum(r, b) + 1.0) / 6.0, 0.0, 1.0) * ~eyes)[..., None]     # (the eyes keep their light)
+    k, s = RED_SKIN_HUE * 6.0, RED_SKIN_SAT                 # (the red of the skin, from the hue: HSV, the light of v)
+    tone = np.array([min(1.0, abs(k - 3.0) - 1.0), min(1.0, 2.0 - abs(k - 2.0)), min(1.0, 2.0 - abs(k - 4.0))])
+    tone = np.clip(tone, 0.0, 1.0)
+    val = np.clip(v * RED_SKIN_GAIN, 0.0, 1.0)[..., None]
+    red = val * (1.0 - s + s * tone) * 255.0
+    out = raw * (1.0 - skin) + red * skin
+    pixels = pygame.surfarray.pixels3d(pic)
+    pixels[:] = np.clip(out, 0, 255).astype(np.uint8)
+    del pixels
+    alpha = pygame.surfarray.pixels_alpha(pic)
+    alpha[:] = np.clip((alpha.astype(np.float32) - RED_ALPHA[0]) * RED_ALPHA[1], 0, 255).astype(np.uint8)
+    del alpha
+    return pic
+
+
 def boss_frames(size=None):
-    """The alien of the boss saucer, in red (its greens turned to reds), at the size of the base (or `size` px: the
-    Bestiary shows it at the size of the saucer's): (frames, white frames)."""
+    """The alien of the boss saucer, in red (its green skin turned red, the rest kept: redden), at the size of the base
+    (or `size` px: the Bestiary shows it at the size of the saucer's): (frames, white frames)."""
     import scramble_base as sb
     side = int(size or sb.BOSS_SIZE)
     key = "boss" if side == sb.BOSS_SIZE else ("boss", side)
@@ -501,14 +533,7 @@ def boss_frames(size=None):
         frames, whites = [], []
         size = (side, side)
         for fr in (BossCore._frames or []):
-            pic = pygame.transform.smoothscale(fr, size)
-            rgb = pygame.surfarray.array3d(pic).astype(np.float32)
-            r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
-            hi, lo = np.maximum(r, g), np.minimum(r, g)
-            red = np.stack([np.minimum(255, hi * 1.7 + 25), lo * 0.5, b * 0.55], axis=2)
-            pixels = pygame.surfarray.pixels3d(pic)
-            pixels[:] = np.clip(red, 0, 255).astype(np.uint8)
-            del pixels
+            pic = pygame.transform.smoothscale(redden(fr.copy()), size)      # (at the size it was drawn, then scaled)
             frames.append(pic)
             white = pic.copy()
             white.fill((255, 255, 255, 0), special_flags=pygame.BLEND_RGBA_MAX)
