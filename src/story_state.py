@@ -366,7 +366,7 @@ MISSIONS = [
         "need": "phenix_s2",
         "content": 3,
         "waves": [18, 19],
-        "speed": 1.0,
+        "guardians_at": {19: 2}, "speed": 1.0,
         "once": True,
         "unlock": ["phenix_s3"],
         "log": "story_log_ph3",
@@ -456,7 +456,7 @@ MISSIONS = [
         "need": "phenix_owned",
         "content": 1,
         "waves": [21, 22, 23, 24, 25],
-        "speed": 1.0,
+        "guardians_at": {23: 2, 24: 2, 25: 3}, "speed": 1.0,
         "once": True,
         "unlock": [],
         "act3": True,
@@ -484,6 +484,7 @@ MISSIONS = [
     {
         "id": "up_shield_4", "hull": "shield", "acts": (3,), "title": "story_m_ups4", "blurb": "story_m_ups4_b",
         "need": "ch3_wall", "content": 1, "waves": [16, 17, 18, 19, 20], "speed": 1.0, "once": True,
+        "guardians_at": {20: 2},   # Guardians with these waves (src/guardian.py GuardianSquad)
         "unlock": ["ch3_dome", "ch3_ready"], "log": "story_log_ups4",
     },
     {
@@ -499,6 +500,7 @@ MISSIONS = [
     {
         "id": "up_phenix_3", "hull": "phoenix", "acts": (3,), "title": "story_m_upp3", "blurb": "story_m_upp3_b",
         "need": "ch3_lives", "content": 1, "waves": [16, 17, 18, 19, 20], "speed": 1.0, "once": True,
+        "guardians_at": {20: 2},   # Guardians with these waves (src/guardian.py GuardianSquad)
         "unlock": ["ch3_gauge", "ch3_ready"], "log": "story_log_upp3",
     },
 
@@ -532,27 +534,30 @@ MISSIONS = [
     },
     {
         "id": "final_1", "acts": (3,), "title": "story_m_fin1", "blurb": "story_m_fin1_b", "need": "ast_s3",
-        "content": 1, "waves": [21, 22], "speed": 1.0, "once": True, "unlock": ["final_s1"],
+        "content": 1, "waves": [21, 22], "guardians_at": {22: 1}, "speed": 1.0, "once": True, "unlock": ["final_s1"],
         "log": "story_log_fin1",
     },
     {
         "id": "final_2", "acts": (3,), "title": "story_m_fin2", "blurb": "story_m_fin2_b", "need": "final_s1",
         "content": 1, "swarm": True, "swarm_screens": 1.6, "stage": 21, "speed": 1.0, "once": True,
+        "guardians_at": {21: 2},   # Guardians with these waves (src/guardian.py GuardianSquad)
         "unlock": ["final_s2"], "log": "story_log_fin2",
     },
     {
         "id": "final_3", "acts": (3,), "title": "story_m_fin3", "blurb": "story_m_fin3_b", "need": "final_s2",
         "content": 1, "galaga": True, "stage": 21, "fire_mult": 1.3, "speed": 1.0, "once": True,
+        "guardians_at": {21: 2},   # Guardians with these waves (src/guardian.py GuardianSquad)
         "unlock": ["final_s3"], "log": "story_log_fin3",
     },
     {
         "id": "final_4", "acts": (3,), "title": "story_m_fin4", "blurb": "story_m_fin4_b", "need": "final_s3",
         "content": 1, "waves": [23, 24, 25], "speed": 1.0, "once": True, "unlock": ["final_s4"],
+        "guardians_at": {25: 3},   # Guardians with these waves (src/guardian.py GuardianSquad)
         "log": "story_log_fin4",
     },
     {
         "id": "final_5", "acts": (3,), "title": "story_m_fin5", "blurb": "story_m_fin5_b", "need": "final_s4",
-        "content": 1, "waves": [26, 27, 28, 29, 30], "speed": 1.0, "once": True,
+        "content": 1, "waves": [26, 27, 28, 29, 30], "guardians_at": {30: 4}, "speed": 1.0, "once": True,
         "unlock": ["final_s5", GAME_WON], "epilogue": True, "log": "story_log_fin5",
     },
     # Act IV - No Mercy Left (a pseudo act): one mission with no sortie, the open ending. It is on the map next to Act 3

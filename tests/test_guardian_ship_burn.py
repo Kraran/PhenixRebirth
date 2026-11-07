@@ -102,13 +102,15 @@ def test_normal_damage_still_respects_form_and_invulnerability(display, hull):
     assert not ship.hit() and ship.lives == 3 and ship.guardian_burn is None
 
 
-def test_special_rule_requires_guardian_mission(display):
+def test_the_laser_burns_the_ship_in_any_mission(display):
+    # Since the Guardians fly in the waves of other missions (src/guardian.py GuardianSquad), their laser burns the ship
+    # outside the test too: the Phenix form does not stop it (no absorption, no points).
     ship = _ship("phoenix", True)
     laser = gd.FireLaser(ship.x, ship.y - 100)
     laser.update(0.15)
     game = _game(ship, laser, guardians=False)
     update_play.enemy_attacks_vs_players(game)
-    assert ship.lives == 3 and ship.guardian_burn is None
+    assert ship.lives == 2 and ship.guardian_burn is not None and laser.alive
 
 
 @pytest.mark.parametrize("hull", ["shield", "phoenix"])

@@ -1724,6 +1724,8 @@ class StoryHub:
         }
         if mission.get("guardians"):
             spec.update(guardians=True, training=True, items=[])
+        if mission.get("guardians_at"):
+            spec["guardians_at"] = {int(k): int(v) for k, v in mission["guardians_at"].items()}   # Guardians in a wave
         if mission.get("spacewar"):
             spec.update(spacewar=True, items=[],                    # (src/spacewar.py: the plasma is useless, only the torpedoes)
                         planet=mission.get("planet") or "jupiter")  # (the planet in the middle: Jupiter, Saturn, Uranus, Neptune)
