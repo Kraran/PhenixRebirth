@@ -62,6 +62,7 @@ MISSILE_MAX = 9                          # the most missiles the hangar holds
 MISSILE_ROWS = ("missile_launcher", "missile_ammo")
 SENTINELLE_DONE = "sentinelles_done"   # the last Sentinelle mission is won: all four can be flown again
 REFLECT_FLAG = "reflective_coating"    # Gardiens III is won: the reflective coating (the dome and the Phenix stop the lasers)
+COAT_SCENE = "guardians_coat"          # ... told after that first victory (STORY_SCENES)
 GAME_WON = "game_won"                  # the last mission of Act 3 is won: the Adventure is over (it can still be played)
 ENDING_DONE = "ending_done"            # the open ending (Act IV) has been told: every mission can be flown again, all acts are listed
 ENDING_MISSION = "act4_alcyone"        # the only mission of the pseudo Act IV: no sortie, just the ending
@@ -585,7 +586,7 @@ MISSIONS = [
     {
         "id": "guardians_3", "acts": (3,), "title": "story_m_gd3", "blurb": "story_m_gd3_b", "need": "ast_s3",
         "content": 1, "waves": [23, 24], "guardians_at": {23: 2, 24: 4}, "alpha_at": 24, "speed": 1.0, "once": True,
-        "unlock": ["guardians_s3", REFLECT_FLAG], "log": "story_log_gd3",
+        "unlock": ["guardians_s3", REFLECT_FLAG], "log": "story_log_gd3", "win_scene": COAT_SCENE,
     },
     {
         "id": "final_1", "acts": (3,), "title": "story_m_fin1", "blurb": "story_m_fin1_b", "need": "guardians_s3",
@@ -1652,6 +1653,11 @@ SCENES = {
     "bonus_wreck_shield": {"title": "story_scene_wrecks_t", "slides": [("epave_nx01", "story_scene_wrecks")]},
     "ast_3": {"title": "story_scene_ast3_t", "slides": [("ceinture_asteroides", "story_scene_ast3")]},
     "final_1": {"title": "story_scene_fin_t", "slides": [("riposte", "story_scene_fin")]},
+    # the Guardians series and their Bestiary hunt (the pictures will come later: until then the slide is a dark sky)
+    "guardians_1": {"title": "story_m_gd1", "slides": [("gardiens_premier_feu", "story_scene_gd1")]},
+    "best_guardians": {"title": "story_m_bestgd", "slides": [("gardiens_bestiaire", "story_scene_bestgd")]},
+    "guardians_2": {"title": "story_m_gd2", "slides": [("gardiens_hybrides", "story_scene_gd2")]},
+    "guardians_3": {"title": "story_m_gd3", "slides": [("gardien_alpha", "story_scene_gd3")]},
     # EDF - Opération Sentinelles silencieuses (the SpaceWar missions of the Adventure): the briefing, over the planet
     "sentinelle_1": {"title": "story_scene_sent1_t", "slides": [("sentinelle1_jupiter", "story_scene_sent1")]},
     "sentinelle_2": {"title": "story_scene_sent2_t", "slides": [("sentinelle2_saturne", "story_scene_sent2")]},
@@ -1688,6 +1694,7 @@ STORY_SCENES = {
                   "veteran": [("phobos_attaque", "story_scene_attack_1"), ("ancrage_unique", "story_scene_attack_2v")]},
     "act3_kept_shield": {"title": "story_scene_lostp_t", "slides": [("perte_phenix", "story_scene_lostp")]},
     "act3_kept_phoenix": {"title": "story_scene_losts_t", "slides": [("perte_shield", "story_scene_losts")]},
+    COAT_SCENE: {"title": "story_scene_coat_t", "slides": [("revetement_reflechissant", "story_scene_coat")]},
     EPILOGUE: {"title": "story_scene_epilogue_t",
                "slides": [("epilogue_1", "story_scene_epilogue_1"), ("epilogue_2", "story_scene_epilogue_2")],
                "veteran": [("epilogue_1", "story_scene_epilogue_1"), ("epilogue_2", "story_scene_epilogue_2v")]},
@@ -1695,10 +1702,11 @@ STORY_SCENES = {
 # The order of the journal (the order of the story): the mission scenes of Acts 1 and 2, the attack, the loss, the
 # Act 3 scenes, the end; the Phobos bar (Add-On) last.
 SCENE_ORDER = (["ch1_sortie", "best_s2", "best_s3", "best_s4", "ast_1", "dome_1", "lander_deimos", "raid_deimos", "sentinelle_1",
-                "lander_rock", "raid_rock", "best_boss", "ast_2", "paint_1", VIP_SCENE, "lander_europa", "raid_europa",
-                "lander_titan", "raid_titan", ACT3_ATTACK, "act3_kept_shield", "act3_kept_phoenix", "up_shield_1",
-                "up_phenix_1", "bonus_wreck_phenix", "bonus_wreck_shield", "sentinelle_2", "sentinelle_3", "lander_triton",
-                "raid_triton", "ast_3", "sentinelle_4", "final_1", EPILOGUE, ENDING_MISSION])
+                "lander_rock", "raid_rock", "best_boss", "ast_2", "guardians_1", "paint_1", VIP_SCENE, "lander_europa",
+                "raid_europa", "lander_titan", "raid_titan", "best_guardians", "guardians_2", ACT3_ATTACK,
+                "act3_kept_shield", "act3_kept_phoenix", "up_shield_1", "up_phenix_1", "bonus_wreck_phenix",
+                "bonus_wreck_shield", "sentinelle_2", "sentinelle_3", "lander_triton", "raid_triton", "ast_3", "guardians_3",
+                COAT_SCENE, "sentinelle_4", "final_1", EPILOGUE, ENDING_MISSION])
 
 
 # The films: videos watched full screen with their sound (assets/video/<video>.mp4, silent, and <video>.ogg, its
