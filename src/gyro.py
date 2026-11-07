@@ -462,9 +462,11 @@ def start(game, spec):
 
 
 def _on(game):
-    """The modules of the mission running (none after it: an arcade game never has them)."""
+    """The modules of the mission running, or of a solo arcade game in Adventure style (src/arcade_style.py); none
+    after them (a classic arcade game never has them)."""
     g = getattr(game, "gyro", None)
-    return g if g is not None and getattr(game, "adventure", None) and getattr(game, "started", False) else None
+    on = getattr(game, "adventure", None) or getattr(game, "arcade_style", False)
+    return g if g is not None and on and getattr(game, "started", False) else None
 
 
 def tick(game):

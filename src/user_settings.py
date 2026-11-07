@@ -37,6 +37,9 @@ def clean_user_settings(data):
         "audio_mix": "sfx",
         "ingame_music": "none",
         "season_force": "",  # "" | xmas | halloween — title overlay test
+        "gameplay_style": "classic",  # classic | adventure: the equipment of the Adventure in a solo game (arcade_style.py)
+        "gp_modules": True,  # Adventure style: the two escort modules
+        "gp_missiles": 5,  # Adventure style: antimatter missiles for the game (0-20)
     }
     if not isinstance(data, dict):
         return defaults
@@ -48,6 +51,7 @@ def clean_user_settings(data):
         "vsync_mode": ("on", "adaptive", "off"),
         "audio_mix": ("sfx", "sfx_music", "music", "off"),
         "season_force": ("", "xmas", "halloween"),
+        "gameplay_style": ("classic", "adventure"),
     }
     for key, default in defaults.items():
         value = data.get(key, default)
@@ -57,6 +61,9 @@ def clean_user_settings(data):
         elif isinstance(default, bool):
             if isinstance(value, bool):
                 defaults[key] = value
+        elif key == "gp_missiles":
+            if isinstance(value, int) and not isinstance(value, bool):
+                defaults[key] = max(0, min(20, value))
         elif key in ("sfx_volume", "music_volume", "rumble_level", "scanlines", "monitor_index", "fps_cap"):
             if key == "scanlines" and isinstance(value, bool):
                 value = int(value)  # old settings stored scanlines as a boolean

@@ -7153,6 +7153,38 @@ for _k, (_fr, _en) in _MODULE_SCENE_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}
     T[_k]["fr"] = _fr
 
+# Options > GAMEPLAY: the Adventure style of a solo game (src/arcade_style.py). French and English; the other languages show
+# the English text.
+_GAMEPLAY_TEXTS = {
+    "opt_tab_gameplay": ("GAMEPLAY", "GAMEPLAY"),
+    "opt_gp_style": ("Style de jeu", "Play style"),
+    "gp_style_classic": ("Classique", "Classic"),
+    "gp_style_adventure": ("Aventure", "Adventure"),
+    "opt_gp_modules": ("Modules d'escorte", "Escort modules"),
+    "opt_gp_missiles": ("Missiles antimatière", "Antimatter missiles"),
+    "opt_help_gp_style": (
+        "Classique : le jeu d'arcade de toujours. Aventure : une partie solo commence avec une partie de l'équipement de "
+        "l'Aventure (les réglages en dessous). Un score fait en style Aventure porte une marque dans les meilleurs scores. "
+        "Le choix compte au début de la partie suivante ; pas en hot-seat ni en coop.",
+        "Classic: the arcade game as it always was. Adventure: a solo game starts with some of the equipment of the "
+        "Adventure (the settings below). A score made in Adventure style carries a mark in the high scores. The choice "
+        "counts when the next game starts; not in hot-seat or coop."),
+    "opt_help_gp_modules": (
+        "Style Aventure : deux modules d'escorte volent à côté du vaisseau et tirent avec lui (tirs ×3). Chacun est détruit "
+        "au premier tir ou au premier choc, et il ne revient pas avant la partie suivante.",
+        "Adventure style: two escort modules fly beside the ship and fire with it (shots ×3). Each one is destroyed by the "
+        "first shot or the first crash, and it does not come back before the next game."),
+    "opt_help_gp_missiles": (
+        "Style Aventure : des missiles antimatière pour toute la partie (de 1 à 20, ou aucun). Une seule touche les lance ; "
+        "leur explosion détruit tout ce qui l'entoure. Le nombre restant s'affiche en haut à droite.",
+        "Adventure style: antimatter missiles for the whole game (1 to 20, or none). One key launches them; their blast "
+        "destroys everything around it. The number left shows at the top right."),
+    "antimatter_hud_n": ("MISSILES ×{n}  {key}", "MISSILES ×{n}  {key}"),
+}
+for _k, (_fr, _en) in _GAMEPLAY_TEXTS.items():
+    T[_k] = {_code: _en for _code in LANG_CODES}
+    T[_k]["fr"] = _fr
+
 # The escort modules at the workshop (story_state.module_rows) and their pieces (French and English; the other languages show
 # the English text).
 _MODULE_TEXTS = {

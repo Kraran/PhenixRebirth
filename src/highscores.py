@@ -53,6 +53,7 @@ def load_highscores():
                         "score": int(e["score"]),
                         "coop": bool(e.get("coop", False)),
                         "veteran": bool(e.get("veteran", False)),
+                        "adventure": bool(e.get("adventure", False)),
                         "ship": sid,
                         "ship2": sid2,
                         "tint": tint,
@@ -90,7 +91,8 @@ def is_highscore(score, entries=None):
         return True
     return score > entries[-1]["score"]
 
-def insert_score(name, score, entries=None, coop=False, ship="phoenix", ship2=None, veteran=False, tint=None):
+def insert_score(name, score, entries=None, coop=False, ship="phoenix", ship2=None, veteran=False, tint=None,
+                 adventure=False):
     if entries is None:
         entries = load_highscores()
     sid = "shield" if ship == "shield" else "phoenix"
@@ -106,6 +108,7 @@ def insert_score(name, score, entries=None, coop=False, ship="phoenix", ship2=No
         "score": int(score),
         "coop": bool(coop),
         "veteran": bool(veteran),
+        "adventure": bool(adventure),        # made in Adventure style (modules, missiles: src/arcade_style.py)
         "ship": sid,
         "ship2": sid2,
         "tint": tn,

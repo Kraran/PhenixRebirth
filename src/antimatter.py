@@ -60,10 +60,12 @@ class Missile:
 
 
 class Armory:
-    """The missile of the mission: `ready` until it is fired; `missiles` the ones in flight."""
+    """The missiles of the mission (one) or of an arcade game in Adventure style (`count`): `ready` while one is left;
+    `missiles` the ones in flight."""
 
-    def __init__(self, ready=True):
-        self.ready = bool(ready)
+    def __init__(self, ready=True, count=1):
+        self.count = max(0, int(count)) if ready else 0
+        self.ready = self.count > 0
         self.missiles = []
 
 
@@ -76,8 +78,9 @@ def begin(game, spec):
 
 
 def _armory(game):
-    """The stock of the mission being flown, or None (the arcade game, a mission without a missile)."""
-    if not getattr(game, "adventure", None):
+    """The stock of the mission being flown or of a solo arcade game in Adventure style (src/arcade_style.py), or None
+    (the classic arcade game, a mission without a missile)."""
+    if not getattr(game, "adventure", None) and not getattr(game, "arcade_style", False):
         return None
     return getattr(game, "antimatter", None)
 
@@ -101,10 +104,11 @@ def fire(game, ship):
                     getattr(ship, "ast_vx", 0.0) or 0.0, getattr(ship, "ast_vy", 0.0) or 0.0)
     else:
         m = Missile(ship.x, ship.y - ship.height // 2 - 6, 0.0, -1.0)
-    arm.ready = False
+    arm.count -= 1
+    arm.ready = arm.count > 0
     arm.missiles.append(m)
     story = getattr(game, "story", None)
-    if story is not None:
+    if story is not None and getattr(game, "adventure", None):
         story.use_missile()                       # one missile less in the hangar (one that is not fired stays for the next mission)
     try:
         game.sounds.play("shoot", volume=0.8, x=ship.x)
@@ -369,5 +373,9 @@ def draw_hud(game):
     if arm is None or getattr(game, "attract_mode", False):
         return
     ready = arm.ready
-    text = game.text_cache.get(game.font, t("antimatter_hud").format(key=key_text()), HUD_COLOR if ready else DONE_COLOR)
+    if getattr(game, "arcade_style", False) and not getattr(game, "adventure", None):
+        label = t("antimatter_hud_n").format(n=arm.count, key=key_text())      # (an arcade game: the missiles left)
+    else:
+        label = t("antimatter_hud").format(key=key_text())
+    text = game.text_cache.get(game.font, label, HUD_COLOR if ready else DONE_COLOR)
     game.game_surface.blit(text, (BASE_WIDTH - 16 - text.get_width(), 78))
