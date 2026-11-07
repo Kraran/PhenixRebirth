@@ -1678,3 +1678,37 @@ def test_the_red_commander_is_solid_and_only_its_skin_turns_red():
     eye = [(x, y) for x in range(n) for y in range(n) if 0.27 * n < y < 0.42 * n and 0.07 * n < abs(x - n / 2) < 0.22 * n
            and g[x, y].max() > 0.55 * 255 and a_g[x, y] > 40]
     assert eye and all((r[x, y] == g[x, y]).all() for x, y in eye)              # the eyes keep their light
+
+
+def test_the_lights_of_the_launcher_blink():
+    seen = set()
+    for i in range(200):
+        base, rail = sv.light_levels(i / 60.0, 0.0, True)
+        assert rail == (8, 8, 8, 8) and base[0] == base[1] and 0 <= base[0] <= 8       # loaded: the rail lit
+        seen.add(base[0])
+    assert min(seen) <= 1 and max(seen) >= 7                                          # the plinth breathes
+    rails = {sv.light_levels(i / 60.0, 0.0, False)[1] for i in range(60)}
+    assert rails == {(8, 8, 1, 1), (1, 1, 8, 8)}                                      # reloading: two by two
+    assert sv.light_levels(1.0, 0.0, True)[0] != sv.light_levels(1.0, 1.3, True)[0]   # (each its own phase)
+
+
+@pytest.mark.parametrize("down", [False, True])
+def test_the_lights_are_drawn_where_they_belong(down):
+    w, h = int(sc.STATION_W), int(sc.STATION_H)
+    surf = pygame.Surface((w + 20, h + 20), pygame.SRCALPHA)
+    sv.draw_station(surf, 10, 10, down, 0.0, math.pi / 2, True)                 # (the plinth at its brightest)
+    sx, sy = sc.STATION_W / 44.0, sc.STATION_H / 30.0
+    for lx, ly in sv.LIGHTS_BASE + sv.LIGHTS_RAIL:
+        py = (30 - ly) * sy if down else ly * sy
+        c = surf.get_at((round(10 + lx * sx), round(10 + py)))
+        assert c[2] > 200 and c[1] > 180, (lx, ly, c)                             # a lit blue light
+
+
+def test_the_launcher_is_chrome_and_its_missile_has_a_blue_nose():
+    st = sv.sprite("station", False)
+    w, h = st.get_size()
+    c = st.get_at((w // 2 - 6, h - 9))                                            # (the dome, beside the rail)
+    assert c.a > 200 and abs(c.r - c.g) < 25 and c.b >= c.r and c.r > 120         # bright, cold grey
+    mi = sv.sprite("missile", False)
+    nose = mi.get_at((mi.get_width() // 2, 4))
+    assert nose.b > nose.r + 40 and nose.a > 150
