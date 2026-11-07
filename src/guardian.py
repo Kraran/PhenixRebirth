@@ -139,6 +139,9 @@ class Guardian:
     stage = 3
     width = 116
     height = 100
+    scale = 1.0                          # (the Alpha is bigger: everything it draws and its hitboxes)
+    bestiary_kind = "guardian"           # its entry of the Bestiary of the Adventure (story_state.BESTIARY)
+    point_mult = 1
 
     def __init__(self, x, y, index, squad=PER_WAVE):
         self.x, self.y = float(x), float(y)
@@ -186,8 +189,15 @@ class Guardian:
 
     @property
     def level(self):
-        """0 = intact (3 HP), 1 = wounded (2 HP), 2 = nearly dead (1 HP)."""
+        """0 = intact (3 HP), 1 = wounded (2 HP), 2 = nearly dead (1 HP); the Alpha: by thirds of its health."""
+        if self.max_hp != MAX_HP:
+            lost = (self.max_hp - self.hp) * MAX_HP // self.max_hp
+            return max(0, min(guardian_parts.LEVELS - 1, lost))
         return max(0, min(guardian_parts.LEVELS - 1, self.max_hp - self.hp))
+
+    def fire_lasers(self):
+        """The laser(s) it fires (the first one holds it in place until it leaves its emitter)."""
+        return [FireLaser(self.x, self.y + 16 * self.scale, self.owner_id)]
 
     @property
     def has_wing(self):
@@ -244,18 +254,23 @@ class Guardian:
     def _wing_centre(self, side):
         row, frame = self._pose()
         part = self.parts.wing[row][frame][side][self.level]
-        return (self.x - 80 + part.ox + part.surf.get_width() / 2,
-                self.y - 80 + part.oy + part.surf.get_height() / 2)
+        k = self.scale
+        return (self.x + (part.ox + part.surf.get_width() / 2 - 80) * k,
+                self.y + (part.oy + part.surf.get_height() / 2 - 80) * k)
+
+    def _box(self, dx, dy, w, h):
+        k = self.scale
+        return pygame.Rect(round(self.x + dx * k), round(self.y + dy * k), round(w * k), round(h * k))
 
     def get_left_wing_hitbox(self):
         if not self.wing_left or not self.alive:
             return pygame.Rect(0, 0, 0, 0)
-        return pygame.Rect(round(self.x) - 78, round(self.y) - 58, 58, 90)
+        return self._box(-78, -58, 58, 90)
 
     def get_right_wing_hitbox(self):
         if not self.wing_right or not self.alive:
             return pygame.Rect(0, 0, 0, 0)
-        return pygame.Rect(round(self.x) + 20, round(self.y) - 58, 58, 90)
+        return self._box(20, -58, 58, 90)
 
     def hit_wing(self, side):
         """Shoot a wing off: it tumbles away and regrows after WING_REGEN seconds. Returns False if it was already gone."""
@@ -446,7 +461,7 @@ class Guardian:
 
     def get_hitbox(self):
         # The solid body is the target, not the translucent wing tips.
-        return pygame.Rect(round(self.x - 24), round(self.y - 19), 48, 58)
+        return self._box(-24, -19, 48, 58)
 
     # ---- drawing -------------------------------------------------------------------------------------------------
     def _blit_part(self, surface, part, cx, cy):
@@ -483,14 +498,16 @@ class Guardian:
             pygame.draw.circle(surface, _lerp((150, 40, 20), (255, 190, 70), pulse), (cx + ex, cy + ey), 1)
 
     def _draw_bar(self, surface, ox, oy):
-        left, top = ox - 22, oy - 58
-        pygame.draw.rect(surface, (12, 10, 16), (left, top, 44, 8))
-        pygame.draw.rect(surface, (110, 100, 112), (left, top, 44, 8), 1)
-        if self.hp <= 1:
+        width = 2 + 14 * self.max_hp                    # (44 for 3 HP; the Alpha's is longer)
+        left, top = ox - width // 2, oy - round(58 * self.scale)
+        pygame.draw.rect(surface, (12, 10, 16), (left, top, width, 8))
+        pygame.draw.rect(surface, (110, 100, 112), (left, top, width, 8), 1)
+        level = self.level
+        if level >= 2:
             pulse = 0.5 + 0.5 * math.sin(self.time * 10)
             colour = _lerp((255, 60, 40), (255, 170, 140), pulse)
         else:
-            colour = (240, 190, 50) if self.hp == 2 else (90, 225, 105)
+            colour = (240, 190, 50) if level == 1 else (90, 225, 105)
         for seg in range(self.max_hp):
             rect = (left + 2 + seg * 14, top + 2, 12, 4)
             if seg < self.hp:
@@ -531,22 +548,91 @@ class Guardian:
             tremble = round(math.sin(self.time * 47)) if level == 2 else 0     # a nearly dead bird shudders
             cx = round(self.x - 80 + self.kick_x) + tremble
             cy = round(self.y - 80 + self.kick_y)
-            for side in guardian_parts.SIDES:
-                self._draw_wing(surface, side, row, frame, cx, cy)
-            bank = self.parts.white_body if self.hurt > 0 else self.parts.body
-            self._blit_part(surface, bank[row][frame][level], cx, cy)
-            if level == 2:                                                      # the cracks glow, pulsing
-                for group in guardian_parts.CRACKS:
-                    for k, line in enumerate(group):
-                        mx, my = line[len(line) // 2]
-                        pulse = 0.5 + 0.5 * math.sin(self.time * 8 + k * 2.1)
-                        pygame.draw.circle(surface, _lerp((255, 120, 30), (255, 230, 120), pulse), (cx + mx, cy + my), 1)
-            if self.charge:
-                radius = 3 + int(6 * min(1, self.charge / CHARGE_SECONDS))
-                pygame.draw.circle(surface, (255, 145, 35), (cx + 80, cy + 96), radius)
-                pygame.draw.circle(surface, (255, 245, 180), (cx + 80, cy + 96), max(2, radius // 2))
+            self._draw_bird(surface, row, frame, level, cx, cy)
             self._draw_bar(surface, cx + 80, cy + 80)
         self._draw_fx(surface, False)
+
+
+    def _draw_bird(self, surface, row, frame, level, cx, cy):
+        """The wings, the body, its glowing cracks and the charge of the laser, in the 160 x 160 cell at (cx, cy)."""
+        for side in guardian_parts.SIDES:
+            self._draw_wing(surface, side, row, frame, cx, cy)
+        bank = self.parts.white_body if self.hurt > 0 else self.parts.body
+        self._blit_part(surface, bank[row][frame][level], cx, cy)
+        if level == 2:                                                      # the cracks glow, pulsing
+            for group in guardian_parts.CRACKS:
+                for k, line in enumerate(group):
+                    mx, my = line[len(line) // 2]
+                    pulse = 0.5 + 0.5 * math.sin(self.time * 8 + k * 2.1)
+                    pygame.draw.circle(surface, _lerp((255, 120, 30), (255, 230, 120), pulse), (cx + mx, cy + my), 1)
+        if self.charge:
+            radius = 3 + int(6 * min(1, self.charge / CHARGE_SECONDS))
+            for ex in self.charge_points():
+                pygame.draw.circle(surface, (255, 145, 35), (cx + ex, cy + 96), radius)
+                pygame.draw.circle(surface, (255, 245, 180), (cx + ex, cy + 96), max(2, radius // 2))
+
+    def charge_points(self):
+        """Where the laser charges, in the 160 x 160 cell (one point; the Alpha: two)."""
+        return (80,)
+
+
+_HALOS = {}
+
+
+def _halo(side, step):
+    """The golden glow behind the Alpha (added to the screen: brighter in the middle, nothing at the edge), five
+    strengths for its slow pulse, made once."""
+    key = (side, step)
+    if key not in _HALOS:
+        surf = pygame.Surface((side, side))
+        c, most = side // 2, side * 0.42
+        for r in range(int(most), 0, -2):
+            k = (1 - r / most) ** 1.6 * (0.45 + 0.12 * step)
+            pygame.draw.circle(surf, (round(150 * k), round(95 * k), round(25 * k)), (c, c), r)
+        _HALOS[key] = surf
+    return _HALOS[key]
+
+
+ALPHA_SCALE = 1.4                # the Alpha Guardian of Gardiens III: bigger ...
+ALPHA_HP = 6                     # ... twice the health ...
+ALPHA_SPREAD = 22                # ... and a double laser, this far on each side of its middle (in the 160 cell)
+ALPHA_POINTS = 10                # ... worth ten Guardians
+ALPHA_DROP = 34                  # it patrols a little lower than the others (its health bar clear of the HUD)
+
+
+class AlphaGuardian(Guardian):
+    """The Alpha of Gardiens III: a bigger Guardian (ALPHA_SCALE) with 6 HP and a double laser, crowned with a halo."""
+    scale = ALPHA_SCALE
+    bestiary_kind = "alpha"
+    point_mult = ALPHA_POINTS
+    width = round(Guardian.width * ALPHA_SCALE)
+    height = round(Guardian.height * ALPHA_SCALE)
+
+    def __init__(self, x, y, index, squad=PER_WAVE):
+        super().__init__(x, y, index, squad)
+        self.max_hp = self.hp = ALPHA_HP
+        self._cell = None
+
+    def fire_lasers(self):
+        y = self.y + 16 * self.scale
+        d = ALPHA_SPREAD * self.scale
+        return [FireLaser(self.x - d, y, self.owner_id), FireLaser(self.x + d, y, self.owner_id)]
+
+    def charge_points(self):
+        return (80 - ALPHA_SPREAD, 80 + ALPHA_SPREAD)
+
+    def _draw_bird(self, surface, row, frame, level, cx, cy):
+        if self._cell is None:
+            self._cell = pygame.Surface((160, 160), pygame.SRCALPHA)
+        cell = self._cell
+        cell.fill((0, 0, 0, 0))
+        super()._draw_bird(cell, row, frame, level, 0, 0)
+        side = round(160 * self.scale)
+        big = pygame.transform.smoothscale(cell, (side, side))
+        mx, my = cx + 80, cy + 80
+        pulse = 0.5 + 0.5 * math.sin(self.time * 3.2)
+        surface.blit(_halo(side, round(4 * pulse)), (mx - side // 2, my - side // 2 - 8), special_flags=pygame.BLEND_RGB_ADD)
+        surface.blit(big, (mx - side // 2, my - side // 2))
 
 
 # Burning frames are prepared once per colour, never transformed during draw.
@@ -669,8 +755,17 @@ def burn_birds(owner, birds, previous_boxes):
 
 def guardian_attacks(owner, dt, player_x, player_y):
     """The Guardians of `owner` (owner.guardians, owner.bullets, owner.clock, owner.next_charge, owner.next_fire,
-    owner.sounds) charge and fire their lasers, one after the other, and dive one at a time."""
+    owner.sounds) charge and fire their lasers, one after the other, and dive one at a time. `owner.volley` (Gardiens II):
+    they charge all together, every VOLLEY_GAP seconds, and fire at the same time: a wall of lasers."""
     living = [bird for bird in owner.guardians if bird.alive]
+    together = bool(getattr(owner, "volley", False))
+    if together and owner.clock >= owner.next_charge:
+        ready = [b for b in living if b.state == "patrol" and not b.charge and b.can_shoot() and not b.laser_attached
+                 and not any(getattr(x, "owner_id", None) == b.owner_id for x in owner.bullets)]
+        if ready:
+            for b in ready:
+                b.charge = 1e-9
+            owner.next_charge = owner.clock + VOLLEY_GAP
     for bird in living:
         active = any(getattr(b, "owner_id", None) == bird.owner_id for b in owner.bullets)
         if bird.charge and not bird.has_wing:
@@ -679,9 +774,10 @@ def guardian_attacks(owner, dt, player_x, player_y):
             continue
         if bird.charge:
             bird.charge += dt
-            if bird.charge >= CHARGE_SECONDS and owner.clock >= owner.next_fire and not active:
-                bird.emission = FireLaser(bird.x, bird.y + 16, bird.owner_id)
-                owner.bullets.append(bird.emission)
+            if bird.charge >= CHARGE_SECONDS and (together or owner.clock >= owner.next_fire) and not active:
+                lasers = bird.fire_lasers()
+                bird.emission = lasers[0]
+                owner.bullets.extend(lasers)
                 bird.charge = 0.0
                 bird.firing = 0.2
                 bird.shot_wait = SHOT_GAP + bird.index * 0.15
@@ -693,7 +789,7 @@ def guardian_attacks(owner, dt, player_x, player_y):
             continue
         if bird.dive_wait <= 0 and bird.has_both_wings and not any(b.state in ("windup", "dive") for b in living):
             bird.start_dive(player_x, player_y)
-        elif bird.can_shoot() and not active and bird.shot_wait <= 0 and owner.clock >= owner.next_charge:
+        elif not together and bird.can_shoot() and not active and bird.shot_wait <= 0 and owner.clock >= owner.next_charge:
             bird.charge = 1e-9
             owner.next_charge = owner.clock + CHARGE_STAGGER
 
@@ -702,6 +798,7 @@ SQUAD_Y = 126                    # where the Guardians of an arcade wave patrol:
 SQUAD_BOSS_Y = 440               # ... or, with the boss, below its saucer: a barrage in front of it
 SQUAD_ENTRY = 1.2                # ... they come down from the top of the screen, a little after the wave
 SQUAD_STEP = 0.6                 # ... one after the other
+VOLLEY_GAP = 2.6                 # Gardiens II: the whole squad charges together, this often
 
 
 class GuardianSquad:
@@ -711,7 +808,10 @@ class GuardianSquad:
     the game adds them to the targets of the shots, to the attacks against the ship and to the end of the wave
     (`targets`, `clear`). Their lasers go into the formation's own list of shots (so they are cleared with it)."""
 
-    def __init__(self, count, sounds=None, y=SQUAD_Y):
+    def __init__(self, count, sounds=None, y=SQUAD_Y, volley=False, alpha=False):
+        """`volley`: they charge and fire together (Gardiens II); `alpha`: the Alpha Guardian comes too, in the middle
+        (Gardiens III)."""
+        self.volley = bool(volley)
         self.count = int(count)
         self.sounds = sounds
         self.clock = 0.0
@@ -721,8 +821,12 @@ class GuardianSquad:
         self.burned = 0
         self.bullets = []                    # (the formation's, set by tick)
         self.guardians = []
-        for i in range(self.count):
-            g = Guardian(BASE_WIDTH * (i + 1) / (self.count + 1), y, i, squad=self.count)
+        n = self.count + (1 if alpha else 0)
+        for i in range(n):
+            kind = AlphaGuardian if alpha and i == n // 2 else Guardian
+            g = kind(BASE_WIDTH * (i + 1) / (n + 1), y, i, squad=n)
+            if kind is AlphaGuardian:
+                g.home_y = y + ALPHA_DROP
             g.owner_id = ("guardian", i)             # (its lasers: never mistaken for a bird's shots)
             g.y = -90.0 - i * 40.0
             g.state = "recover"                          # (flying to its place: they come down from the top)

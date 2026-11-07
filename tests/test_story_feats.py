@@ -34,7 +34,8 @@ def _win(st, mission_id, times=1, **kw):
 
 def test_every_mission_flown_again_has_bronze_silver_gold():
     """A mission that can be flown again (the Bestiary hunts, the paint series) has an achievement with tiers."""
-    renewable = [m["id"] for m in ss.MISSIONS if ss.is_hunt(m) or ss.is_paint(m)]
+    renewable = [m["id"] for m in ss.MISSIONS if (ss.is_hunt(m) or ss.is_paint(m))
+                 and m["id"] != "best_guardians"]          # (Bestiary VI: none yet, the page of the Adventure is full)
     covered = set(sf.HUNTS.values()) | {"paint_1", "paint_2", "paint_3"}
     assert set(renewable) <= covered
     for aid in list(sf.HUNTS) + ["adv_paint"]:

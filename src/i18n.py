@@ -7418,6 +7418,44 @@ _SCRAMBLE_TEXTS = {
         "touche-le trois fois.",
         "A red kin of the Avioid commander, hidden behind the wall of its base. Cut the wall down brick by brick, then "
         "hit it three times."),
+    # --- the Guardians series (I-III) and Bestiary VI
+    "story_m_gd1": ("Gardiens I : le premier feu", "Guardians I: the first fire"),
+    "story_m_gd1_b": ("Bleus et Kakis, niveaux 16 et 17, avec un Gardien, puis trois. Leur laser traverse le dôme et "
+                      "brûle les oiseaux. Une seule fois.",
+                      "Blues and Khakis, levels 16 and 17, with one Guardian, then three. Their laser goes through the "
+                      "dome and burns the birds. Once only."),
+    "story_log_gd1": ("Gardiens I — les Gardiens brûlent leurs propres oiseaux.",
+                      "Guardians I — the Guardians burn their own birds."),
+    "story_m_gd2": ("Gardiens II : le mur de lasers", "Guardians II: the wall of lasers"),
+    "story_m_gd2_b": ("Niveaux 21 et 22 : peu d'oiseaux, mais trois, puis cinq Gardiens qui chargent et tirent ensemble. "
+                      "Passe entre les rayons. Une seule fois.",
+                      "Levels 21 and 22: few birds, but three, then five Guardians that charge and fire together. Slip "
+                      "between the beams. Once only."),
+    "story_log_gd2": ("Gardiens II — le mur de lasers est tombé.", "Guardians II — the wall of lasers is down."),
+    "story_m_gd3": ("Gardiens III : le Gardien Alpha", "Guardians III: the Alpha Guardian"),
+    "story_m_gd3_b": ("Niveaux 23 et 24 : le Gardien Alpha, plus grand, six points de vie et un double laser, mène quatre "
+                      "Gardiens. Une seule fois.",
+                      "Levels 23 and 24: the Alpha Guardian, bigger, six hit points and a double laser, leads four "
+                      "Guardians. Once only."),
+    "story_log_gd3": ("Gardiens III — le Gardien Alpha est abattu.", "Guardians III — the Alpha Guardian is down."),
+    "story_m_bestgd": ("Bestiaire VI : les Gardiens", "Bestiary VI: the Guardians"),
+    "story_m_bestgd_b": ("Des Kakis et deux Gardiens, un de plus à chaque victoire (cinq au plus). Rejouable, un niveau de "
+                         "plus à chaque victoire.",
+                         "Khakis and two Guardians, one more after each win (five at most). Replayable, one level harder "
+                         "after each win."),
+    "story_log_bestgd": ("Bestiaire — les Gardiens sont traqués.", "Bestiary — the Guardians are hunted."),
+    "story_b_guardian": ("GARDIEN", "GUARDIAN"),
+    "story_b_guardian_t": (
+        "Un oiseau de feu cuirassé. Trois tirs au corps l'abattent, et ses ailes repoussent. Son laser, annoncé par une "
+        "lueur, traverse le dôme et la forme Phenix, et brûle les oiseaux qu'il croise.",
+        "An armoured bird of fire. Three shots in the body bring it down, and its wings grow back. Its laser, announced "
+        "by a glow, goes through the dome and the Phenix form, and burns the birds it crosses."),
+    "story_b_alpha": ("GARDIEN ALPHA", "ALPHA GUARDIAN"),
+    "story_b_alpha_t": (
+        "Le chef des Gardiens, plus grand, nimbé d'un halo d'or. Six tirs au corps l'abattent. Il tire deux lasers à la "
+        "fois.",
+        "The leader of the Guardians, bigger, in a golden halo. Six shots in the body bring it down. It fires two lasers "
+        "at once."),
     "story_scramble_clear": ("Base ennemie détruite ! Tu peux recommencer à volonté.",
                              "Enemy base destroyed! Replay whenever you like."),
     "story_scramble_retry": ("Le vaisseau a été détruit. Aucun progrès perdu : tu peux réessayer.",

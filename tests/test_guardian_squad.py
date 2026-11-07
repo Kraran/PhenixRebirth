@@ -58,7 +58,8 @@ def _arrive(sq, seconds=6.0):
 
 # ---------------------------------------------------------------- the missions
 def test_the_nine_missions_and_their_guardians():
-    have = {m["id"]: m["guardians_at"] for m in ss.MISSIONS if m.get("guardians_at")}
+    have = {m["id"]: m["guardians_at"] for m in ss.MISSIONS if m.get("guardians_at")
+            and not m["id"].startswith("guardians_")}                       # (the series: tests/test_guardians_series.py)
     assert have == PLANS
     for mid, plan in PLANS.items():
         m = ss.mission_by_id(mid)

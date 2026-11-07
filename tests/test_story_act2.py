@@ -7,7 +7,7 @@ from story import StoryHub
 from test_smoke import run  # noqa: F401  (fixture)
 
 HUNTS = ["ch1_sortie", "best_s2", "best_s3", "best_s4"]
-BOSS = ["best_boss"]
+BOSS = ["best_boss", "best_guardians"]     # Bestiary V and VI (the Guardians: open after Phenix III)
 BONUS = ["bonus_2d"]                      # the secret BONUS mission (Shield): on the map of Act 2 only while its reactor is not caught
 BELT1 = ["ast_1"]                 # the road through the belt: the prelude of the Dome series (Act 1)
 BELT2 = ["ast_2"]                 # the prelude of the Phenix series (Act 2)
@@ -21,6 +21,8 @@ TRAINING = ["test_guardians", "test_lander", "test_scramble", "test_modules"]
 RAID1 = ["lander_deimos", "raid_deimos", "lander_rock", "raid_rock"]
 RAID2 = RAID1 + ["lander_europa", "raid_europa", "lander_titan", "raid_titan"]   # ... of Act 2
 GATE3 = ["act3_gate"]           # the last mission of Act 2 (it opens Act 3)
+GD1 = ["guardians_1"]           # the Guardians series: I between the belt and Phenix I ...
+GD2 = ["guardians_2"]           # ... II before the great raid
 
 
 def _act2():
@@ -28,8 +30,8 @@ def _act2():
     ss.mark_intro_seen(st)
     st["flags"].update(bestiary_s2=True, bestiary_s3=True, bestiary_s4=True, ch1_speed=True, ch1_life_2=True,
                        ch1_wall=True, ast_s1=True, ast_s2=True, dome_s1=True, dome_s2=True, dome_s3=True,
-                       dome_s4=True, dome_s5=True, dome_online=True, act2=True)
-    st["cleared"] = ["ch1_sortie", "best_s2", "best_s3", "best_s4"] + BELT1 + DOME + BELT2
+                       dome_s4=True, dome_s5=True, dome_online=True, act2=True, guardians_s1=True)
+    st["cleared"] = ["ch1_sortie", "best_s2", "best_s3", "best_s4"] + BELT1 + DOME + BELT2 + GD1
     st["act"] = 2
     return st
 
@@ -67,11 +69,11 @@ def test_the_map_of_act_1_has_no_phenix_mission():
 
 def test_the_map_of_act_2_keeps_the_hunts_and_drops_the_dome_missions():
     st = _act2()
-    assert _ids(ss.visible_missions(st)) == BELT2 + PHENIX + GATE3 + SENT2 + HUNTS + BOSS + BONUS + PAINT + RAID2 + TRAINING      # BONUS: open and not flown yet
+    assert _ids(ss.visible_missions(st)) == BELT2 + GD1 + PHENIX + GD2 + GATE3 + SENT2 + HUNTS + BOSS + BONUS + PAINT + RAID2 + TRAINING      # BONUS: open and not flown yet
     st["cleared"].append("bonus_2d")                                            # the waves won, the reactor missed: still to do
-    assert _ids(ss.visible_missions(st)) == BELT2 + PHENIX + GATE3 + SENT2 + HUNTS + BOSS + BONUS + PAINT + RAID2 + TRAINING
+    assert _ids(ss.visible_missions(st)) == BELT2 + GD1 + PHENIX + GD2 + GATE3 + SENT2 + HUNTS + BOSS + BONUS + PAINT + RAID2 + TRAINING
     st["items"]["got"]["reactor_shield"] = "found"                              # caught: it leaves the map of Act 2
-    assert _ids(ss.visible_missions(st)) == BELT2 + PHENIX + GATE3 + SENT2 + HUNTS + BOSS + PAINT + RAID2 + TRAINING
+    assert _ids(ss.visible_missions(st)) == BELT2 + GD1 + PHENIX + GD2 + GATE3 + SENT2 + HUNTS + BOSS + PAINT + RAID2 + TRAINING
 
 
 def test_the_cheat_lists_every_mission():
@@ -85,7 +87,7 @@ def test_the_gate_starts_act_2():
     st["flags"]["dome_s5"] = True
     res = _win(st, "act2_gate")
     assert res["act"] == 2 and st["act"] == 2 and ss.flag(st, "act2")
-    assert _ids(ss.visible_missions(st)) == BELT2 + PHENIX + GATE3 + SENT2 + HUNTS + BOSS + PAINT + RAID2 + TRAINING
+    assert _ids(ss.visible_missions(st)) == BELT2 + GD1 + PHENIX + GD2 + GATE3 + SENT2 + HUNTS + BOSS + PAINT + RAID2 + TRAINING
 
 
 def test_the_hunts_stay_replayable_in_act_2_with_their_level():
@@ -296,7 +298,7 @@ def test_the_map_cursor_walks_the_act_2_list_only():
     hub.pane = "map"
     for _ in range(40):
         hub.nav_v(1)
-    assert hub._mission()["id"] == "test_modules" and hub.map_index == len(BELT2 + PHENIX + GATE3 + SENT2 + HUNTS + BOSS + BONUS + PAINT + RAID2 + TRAINING) - 1
+    assert hub._mission()["id"] == "test_modules" and hub.map_index == len(BELT2 + GD1 + PHENIX + GD2 + GATE3 + SENT2 + HUNTS + BOSS + BONUS + PAINT + RAID2 + TRAINING) - 1
 
 
 def test_winning_the_gate_puts_the_cursor_on_the_new_map():
@@ -308,7 +310,7 @@ def test_winning_the_gate_puts_the_cursor_on_the_new_map():
     hub.apply_result("act2_gate", 100, True)
     from i18n import t
     assert hub.state["act"] == 2 and hub.map_index == 0 and hub.toast == t("story_act_start").format(n=2)
-    assert _ids(hub.missions()) == BELT2 + PHENIX + GATE3 + SENT2 + HUNTS + BOSS + PAINT + RAID2 + TRAINING
+    assert _ids(hub.missions()) == BELT2 + GD1 + PHENIX + GD2 + GATE3 + SENT2 + HUNTS + BOSS + PAINT + RAID2 + TRAINING
 
 
 def test_the_gift_toast_after_the_fifth_mission():

@@ -26,7 +26,11 @@ _KINDS = {
     "boss": ("core", "boss_core"),          # the alien that commands the saucer (not the saucer itself)
     "station": ("scramble", "station"),     # the missile launcher of the Scramble level (src/scramble_view.py)
     "redboss": ("scramble", "redboss"),     # the red commander of its base (the saucer's alien, in red)
+    "guardian": ("guardian", "guardian"),   # a Guardian (src/guardian.py): its four wing beats
+    "alpha": ("guardian", "alpha"),         # the Alpha of Gardiens III: the same, bigger
 }
+GUARDIAN_FIT = {"guardian": (130, 72), "alpha": (180, 100)}    # (the largest picture each one fits in)
+GUARDIAN_FPS = 8.0                          # (the wing beats of a Guardian in the game)
 _cache = {}
 
 
@@ -83,6 +87,17 @@ def _frames(kind):
         elif family == "core":
             frames = _core_frames(prefix)
             hit = {"family": family, "frames": frames, "still": frames[0]}
+        elif family == "guardian":
+            import guardian
+            frames = guardian.art()[0][0]
+            box = frames[0].get_bounding_rect()
+            for f in frames[1:]:
+                box.union_ip(f.get_bounding_rect())               # (the four wing beats, cut to what they show)
+            most_w, most_h = GUARDIAN_FIT[prefix]
+            k = min(most_w / max(1, box.w), most_h / max(1, box.h))
+            size = (max(1, round(box.w * k)), max(1, round(box.h * k)))
+            frames = [pygame.transform.smoothscale(f.subsurface(box), size) for f in frames]
+            hit = {"family": "core", "frames": frames, "still": frames[0], "fps": GUARDIAN_FPS}
         elif family == "scramble":
             import scramble_view
             if prefix == "station":
@@ -118,7 +133,7 @@ def animated(kind, t):
     if data["family"] == "garg" and len(frames) >= 2:
         return frames[1] if math.sin(t * GARG_FLAP_SPEED) > 0 else frames[0]
     if data["family"] == "core" and frames:
-        return frames[int(t * CORE_FPS) % len(frames)]
+        return frames[int(t * data.get("fps", CORE_FPS)) % len(frames)]
     return data["still"]
 
 

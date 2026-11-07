@@ -1726,6 +1726,9 @@ class StoryHub:
             spec.update(guardians=True, training=True, items=[])
         if mission.get("guardians_at"):
             spec["guardians_at"] = {int(k): int(v) for k, v in mission["guardians_at"].items()}   # Guardians in a wave
+        for key in ("volley", "birds_keep", "alpha_at"):
+            if mission.get(key):
+                spec[key] = mission[key]            # the Guardians fire together / fewer birds / the Alpha (src/guardian.py)
         if mission.get("spacewar"):
             spec.update(spacewar=True, items=[],                    # (src/spacewar.py: the plasma is useless, only the torpedoes)
                         planet=mission.get("planet") or "jupiter")  # (the planet in the middle: Jupiter, Saturn, Uranus, Neptune)
@@ -1770,6 +1773,8 @@ class StoryHub:
             spec["level"] = level
             if level > 1:                         # a won sortie comes back faster, like the next arcade cycle
                 spec["waves"] = [ss.hunt_stage(mission, level)]
+            if mission.get("hunt_guardians"):
+                spec["guardians_each"] = ss.hunt_guardians(level)     # Bestiaire VI: Guardians with every wave
         if ss.is_paint(mission):
             spec["level"] = ss.invader_level(self.state, mission)
             spec["invaders"] = True               # a Space Invaders grid, three levels harder each pass
