@@ -1,4 +1,4 @@
-"""Main menu with five entries, the arcade game screen, EXTRAS, and the options in four tabs (src/main_menu.py)."""
+"""Main menu with five entries, the arcade game screen, EXTRAS, and the options in five tabs (src/main_menu.py)."""
 import pygame
 import pytest
 
@@ -196,12 +196,12 @@ def test_scores_left_right_still_go_round_and_esc_returns_to_extras(run):
     assert g.menu_screen == "extras" and main_menu.EXTRAS[g.menu_index] == "achievements"
 
 
-# --- the options in four tabs ----------------------------------------------------------------------------------------
+# --- the options in five tabs ----------------------------------------------------------------------------------------
 def test_every_option_is_in_exactly_one_tab():
     keys = [k for _n, rows in main_menu.OPTION_TABS for k in rows]
-    assert len(keys) == len(set(keys)) == 19
-    assert [n for n, _r in main_menu.OPTION_TABS] == ["game", "audio", "display", "advanced"]
-    assert main_menu.tab_rows(3)[-1] == "reset_hs"
+    assert len(keys) == len(set(keys)) == 22
+    assert [n for n, _r in main_menu.OPTION_TABS] == ["game", "gameplay", "audio", "display", "advanced"]
+    assert main_menu.tab_rows(4)[-1] == "reset_hs"
     for name in main_menu.TAB_TITLES.values():
         assert i18n.T[name]["fr"] and i18n.T[name]["ru"]
 
@@ -231,23 +231,24 @@ def test_the_row_of_tabs_takes_the_focus_above_the_first_row(run):
     assert g.menu_index == -1
     assert hint_bar.menu_items(g)[0] == ("lr", "hint_tab")
     run.key(pygame.K_RIGHT)
-    assert g.opt_tab == 1 and g.menu_index == -1               # Left / Right change the tab there
+    run.key(pygame.K_RIGHT)                                    # (GAMEPLAY, then AUDIO)
+    assert g.opt_tab == 2 and g.menu_index == -1               # Left / Right change the tab there
     run.key(pygame.K_DOWN)
     assert g.menu_index == 0
     vol = g.sfx_volume
     run.key(pygame.K_LEFT)                                     # and set the value on a row
-    assert g.sfx_volume < vol and g.opt_tab == 1
+    assert g.sfx_volume < vol and g.opt_tab == 2
 
 
 def test_reset_scores_question_comes_back_on_its_row(run):
     g = run.game
     g._open_options()
     g._focus_option("reset_hs")
-    assert g.opt_tab == 3
+    assert g.opt_tab == 4
     run.key(pygame.K_RETURN)
     assert g.menu_screen == "reset_confirm"
     run.key(pygame.K_ESCAPE)
-    assert g.menu_screen == "options" and g.opt_tab == 3 and g._options_spec()[g.menu_index] == "reset_hs"
+    assert g.menu_screen == "options" and g.opt_tab == 4 and g._options_spec()[g.menu_index] == "reset_hs"
 
 
 def test_bezel_is_greyed_outside_fullscreen(run):
@@ -281,7 +282,7 @@ def test_pause_options_have_the_tabs_too(run):
 def test_options_draw_a_gauge_for_the_volumes(run):
     g = run.game
     g._open_options()
-    g.opt_tab = 1
+    g.opt_tab = 2                                               # (AUDIO)
     assert g._option_fill("sfx") == pytest.approx(g.sfx_volume)
     assert g._option_fill("audio_mix") is None
     run.frames(2)                                               # draws without error
