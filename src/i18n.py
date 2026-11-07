@@ -7115,13 +7115,13 @@ _MODULE_SCENE_TEXTS = {
         "Les Avioïdes ont creusé leur base de Titan au bout d’une longue suite de défilés étroits. C’est de là que "
         "partent les patrouilles qui harcèlent tout ce qui bouge autour de Saturne.\n\n"
         "Mars offre une prime pour sa destruction. Une grosse prime. Grok dit que le passage est serré, que les lance-"
-        "missiles sont partout et que le commandant encaisse trois tirs. Il dit aussi que je suis le seul à pouvoir "
+        "missiles sont partout et que le commandant encaisse quatre tirs. Il dit aussi que je suis le seul à pouvoir "
         "passer.\n\n"
         "Je n’en demandais pas tant.",
         "The Avioids have dug their base on Titan at the end of a long string of narrow passes. From there leave the "
         "patrols that harass everything that moves around Saturn.\n\n"
         "Mars offers a bounty for its destruction. A big bounty. Grok says the passage is tight, that the missile "
-        "launchers are everywhere and that the commander takes three shots. He also says I am the only one who can get "
+        "launchers are everywhere and that the commander takes four shots. He also says I am the only one who can get "
         "through.\n\n"
         "I was not asking for that much."),
     "story_scene_land5": (
@@ -7353,9 +7353,9 @@ _SCRAMBLE_TEXTS = {
     "story_m_raid2": ("Raid sur les bases avioïdes II : astéroïde", "Raid on the Avioid bases II: asteroid"),
     "story_m_raid2_b": (
         "Facultative. Une base avioïde au cœur d'un astéroïde de la ceinture. Plus long que Déimos, avec ses pics, et le "
-        "commandant encaisse deux tirs. Les points rapportent des crédits ; un échec coûte ce que coûte un échec.",
+        "commandant encaisse trois tirs. Les points rapportent des crédits ; un échec coûte ce que coûte un échec.",
         "Optional. An Avioid base at the heart of an asteroid of the belt. Longer than Deimos, with its peaks, and the "
-        "commander takes two shots. The points pay in credits; a failure costs what a failure costs."),
+        "commander takes three shots. The points pay in credits; a failure costs what a failure costs."),
     "story_m_raid3": ("Raid sur les bases avioïdes III : Europe", "Raid on the Avioid bases III: Europa"),
     "story_m_raid3_b": (
         "Facultative. Sous la glace d'Europe, une base avioïde. Les comètes s'en mêlent et les missiles commencent à te "

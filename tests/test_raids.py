@@ -91,7 +91,7 @@ def test_the_base_follows_the_level():
         assert base.back == base.face + t.columns * scb.BRICK_W
         assert [tr.row for tr in base.turrets] == list(t.turret_rows)
         assert base.boss.hp == base.boss.max_hp == t.boss_hp
-    assert sc.ScrambleFormation("rock", 5, level=1).base.boss.hp == 1
+    assert [sc.Tune(lv).boss_hp for lv in range(1, 6)] == [3, 3, 4, 4, 5]       # never fewer than 3
 
 
 def test_the_boss_fires_no_more_than_its_level_allows():

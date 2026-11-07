@@ -223,24 +223,37 @@ def _spy_icons(monkeypatch):
     calls = []
     real = gyro.draw_icon
 
-    def spy(surface, hull, cx, cy, size, t, halves=(True, True), split=0.0, dim=False):
-        calls.append({"hull": hull, "cx": cx, "cy": cy, "size": size, "halves": tuple(halves), "split": split, "dim": dim})
-        return real(surface, hull, cx, cy, size, t, halves, split, dim)
+    def spy(surface, hull, cx, cy, size, t, pieces=gyro.PIECES, split=0.0, dim=False):
+        calls.append({"hull": hull, "cx": cx, "cy": cy, "size": size, "pieces": tuple(pieces), "split": split, "dim": dim})
+        return real(surface, hull, cx, cy, size, t, pieces, split, dim)
 
     monkeypatch.setattr(gyro, "draw_icon", spy)
     return calls
 
 
-def test_the_icon_draws_the_halves_asked_for():
+def test_the_pieces_are_the_ring_and_the_core():
     import gyro
-    surf = pygame.Surface((100, 100), pygame.SRCALPHA)
-    gyro.draw_icon(surf, "shield", 50, 50, 40, 0.0, halves=(True, False))
-    assert any(surf.get_at((x, 50)).a for x in range(30, 50)) and not any(surf.get_at((x, y)).a for x in range(51, 100)
-                                                                          for y in range(100))
-    surf.fill((0, 0, 0, 0))
-    gyro.draw_icon(surf, "shield", 50, 50, 40, 0.0, halves=(False, True), split=6)
-    assert not any(surf.get_at((x, y)).a for x in range(0, 56) for y in range(100))
+    whole, ring, core = (gyro.frames("shield", p)[0] for p in ("whole", "ring", "core"))
+    mid = gyro.SIZE // 2
+    edge = (mid + int(gyro.SIZE * 0.33), mid)                          # (on the ring, beside the sphere)
+    assert ring.get_at((mid, mid)).a < 40 and ring.get_at(edge).a > 150          # the ring: empty in the middle
+    assert core.get_at((mid, mid)).a > 200 and core.get_at(edge).a < 40          # the core: the sphere, no ring
+    assert whole.get_at((mid, mid)).a > 200 and whole.get_at(edge).a > 150
+    assert gyro.frames("shield", "core")[0] is gyro.frames("shield", "core")[5]  # (the core does not turn)
     assert gyro.frame_at(0.0) == 0 and gyro.frame_at(180.0 / gyro.SPIN * 0.5) == gyro.FRAMES // 2
+
+
+def test_the_icon_sets_the_pieces_apart():
+    import gyro
+    surf = pygame.Surface((120, 60), pygame.SRCALPHA)
+    gyro.draw_icon(surf, "phoenix", 60, 30, 40, 0.0, pieces=("ring", "core"), split=20)
+    assert surf.get_at((50, 30)).a < 40 and surf.get_at((70, 30)).a > 200     # the empty ring on the left, the core right
+    surf.fill((0, 0, 0, 0))
+    gyro.draw_icon(surf, "phoenix", 60, 30, 40, 0.0, pieces=("ring", "core"))
+    assert surf.get_at((60, 30)).a > 200                                       # assembled: the core inside the ring
+    surf.fill((0, 0, 0, 0))
+    gyro.draw_icon(surf, "phoenix", 60, 30, 40, 0.0, pieces=("core",))
+    assert surf.get_at((60, 30)).a > 200 and not any(surf.get_at((x, 30)).a for x in range(0, 40))
 
 
 def test_the_hangar_shows_the_modules_in_service_beside_the_hull(run, monkeypatch):
@@ -250,23 +263,23 @@ def test_the_hangar_shows_the_modules_in_service_beside_the_hull(run, monkeypatc
         calls = _spy_icons(monkeypatch)
         hub._draw_hangar(pygame.Surface((1280, 720)), g.font, g.medium_font, g.font)
         ship = [c for c in calls if c["size"] > 40]
-        assert len(ship) == want and all(c["halves"] == (True, True) and not c["dim"] for c in ship)
+        assert len(ship) == want and all(c["pieces"] == ("ring", "core") and not c["split"] and not c["dim"] for c in ship)
         if want:
             assert ship[0]["cx"] < 640 and (want == 1 or ship[1]["cx"] > ship[0]["cx"])        # the first one on the left
 
 
 def test_the_rows_of_the_modules_show_their_pieces(run, monkeypatch):
-    cases = [((("m1_lander",), 0, 0), (True, False), False, 4),
-             ((("m1_raid",), 0, 0), (False, True), False, 4),
-             ((("m1_lander", "m1_raid"), 0, 0), (True, True), False, 4),       # two halves, apart
-             ((("m1_lander", "m1_raid"), 1, 1), (True, True), False, 0),       # assembled: whole
-             ((("m1_lander", "m1_raid"), 1, 0), (True, True), True, 0)]        # destroyed: whole, dimmed
-    for (parts, built, alive), halves, dim, split in cases:
+    cases = [((("m1_lander",), 0, 0), ("ring",), False, 0),                  # the landing: the ring
+             ((("m1_raid",), 0, 0), ("core",), False, 0),                     # the raid: the core
+             ((("m1_lander", "m1_raid"), 0, 0), ("ring", "core"), False, 20),  # both, side by side
+             ((("m1_lander", "m1_raid"), 1, 1), ("ring", "core"), False, 0),   # assembled: whole
+             ((("m1_lander", "m1_raid"), 1, 0), ("ring", "core"), True, 0)]    # destroyed: whole, dimmed
+    for (parts, built, alive), pieces, dim, split in cases:
         g, hub = _hangar(run, parts=parts, built=built, alive=alive)
         calls = _spy_icons(monkeypatch)
         hub._draw_shop(pygame.Surface((1280, 720)), g.font)
         row = [c for c in calls if c["size"] <= 40]
-        assert len(row) == 1 and row[0]["halves"] == halves and row[0]["dim"] == dim and row[0]["split"] == split, parts
+        assert len(row) == 1 and row[0]["pieces"] == pieces and row[0]["dim"] == dim and row[0]["split"] == split, parts
 
 
 def test_the_row_of_the_missile_shows_the_missile(run, monkeypatch):

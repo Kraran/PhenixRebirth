@@ -77,22 +77,22 @@ SECTION_LOOK = {key: look for key, _, look in SECTIONS}
 # seconds at full speed), in order. "gap": the lowest passage in ship heights; "stations": the share of missile stations
 # (1: as many as at 5); "homing": how hard their missiles home in (0: they fly straight); "comets": the share of comets;
 # "wave_gap" / "green": the waves of birds; "columns" / "turrets": the wall of the base and its turrets (rows of bricks);
-# "bullets": the boss's shots on the screen at once; "boss_hp": shots through a hole to kill it.
+# "bullets": the boss's shots on the screen at once; "boss_hp": shots through a hole to kill it (never fewer than 3).
 LEVEL_MAX = 5
 LEVELS = {
     1: {"sections": (("hills", 30.0), ("cavern", 36.0), ("approach", 12.0)),
         "scroll": 150.0, "gap": 3.6, "stations": 0.6, "reload": 3.6, "homing": 0.0, "comets": 0.0,
-        "wave_gap": (10.0, 14.0), "green": (0.0, 0.2), "columns": 2, "turrets": (9, 22), "bullets": 3, "boss_hp": 1},
+        "wave_gap": (10.0, 14.0), "green": (0.0, 0.2), "columns": 2, "turrets": (9, 22), "bullets": 3, "boss_hp": 3},
     2: {"sections": (("hills", 26.0), ("cavern", 30.0), ("peaks", 28.0), ("approach", 12.0)),
         "scroll": 158.0, "gap": 3.45, "stations": 0.7, "reload": 3.3, "homing": 0.0, "comets": 0.0,
-        "wave_gap": (9.0, 13.0), "green": (0.05, 0.3), "columns": 2, "turrets": (9, 22), "bullets": 3, "boss_hp": 2},
+        "wave_gap": (9.0, 13.0), "green": (0.05, 0.3), "columns": 2, "turrets": (9, 22), "bullets": 3, "boss_hp": 3},
     3: {"sections": (("hills", 26.0), ("cavern", 28.0), ("comets", 20.0), ("peaks", 26.0), ("approach", 12.0)),
         "scroll": 165.0, "gap": 3.3, "stations": 0.8, "reload": 3.0, "homing": 0.5, "comets": 0.5,
-        "wave_gap": (8.0, 12.0), "green": (0.15, 0.45), "columns": 3, "turrets": (5, 15, 26), "bullets": 4, "boss_hp": 2},
+        "wave_gap": (8.0, 12.0), "green": (0.15, 0.45), "columns": 3, "turrets": (5, 15, 26), "bullets": 4, "boss_hp": 4},
     4: {"sections": (("hills", 24.0), ("cavern", 27.0), ("comets", 18.0), ("peaks", 25.0), ("narrows", 20.0),
                      ("approach", 12.0)),
         "scroll": 172.0, "gap": 3.15, "stations": 0.9, "reload": 2.8, "homing": 0.75, "comets": 0.75,
-        "wave_gap": (7.0, 11.0), "green": (0.2, 0.55), "columns": 3, "turrets": (5, 15, 26), "bullets": 4, "boss_hp": 3},
+        "wave_gap": (7.0, 11.0), "green": (0.2, 0.55), "columns": 3, "turrets": (5, 15, 26), "bullets": 4, "boss_hp": 4},
     5: {},
 }
 

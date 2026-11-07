@@ -96,14 +96,18 @@ def _glow(img, colour, cx, cy, radius, strength, x, y):
     img[..., 3] = np.maximum(img[..., 3], np.clip(g, 0, 1))
 
 
-def _picture(hull, turn, n=128):
-    """One picture (n x n, RGBA floats) of the module of `hull`, its ring turned by `turn` radians."""
+def _picture(hull, turn, n=128, part="whole"):
+    """One picture (n x n, RGBA floats) of the module of `hull`, its ring turned by `turn` radians. `part`: "whole", or one
+    of the two pieces of a module not yet assembled (the workshop): "ring" (the ring and its arms, won by a landing) or
+    "core" (the sphere and its cannon, won by a raid)."""
     tint, accent = STYLES.get(hull, STYLES["shield"])
     img = np.zeros((n, n, 4), np.float32)
     x, y = _grid(n)
     r = np.sqrt(x * x + y * y)
     ang = np.arctan2(y, x)
     a = ang - turn
+    if part == "core":
+        return _core(img, hull, x, y, n)
     # the ring: a torus seen from the front, cut twice (on the axis of the arms turned by a quarter)
     R, w = 0.66, 0.11
     t = (r - R) / w
@@ -121,6 +125,14 @@ def _picture(hull, turn, n=128):
     an = np.clip(across / 0.04, -1, 1)
     acol = _shade(-an * uy, an * ux, np.sqrt(np.clip(1 - an * an, 0, 1)), _metal(n, tint, 5, x, y) * 0.8)
     _over(img, acol, arm)
+    if part == "ring":
+        return img
+    return _core(img, hull, x, y, n)
+
+
+def _core(img, hull, x, y, n):
+    """The cannon and the sphere with its band of light, over `img`."""
+    tint, accent = STYLES.get(hull, STYLES["shield"])
     # the cannon, to the front (up)
     width, top, bottom = 0.07, -0.95, -0.25
     barrel = (np.abs(x) < width) & (y > top) & (y < bottom)
@@ -154,16 +166,22 @@ def _surface(arr, size):
     return pygame.transform.smoothscale(surf, (size, size))
 
 
-def frames(hull):
-    """The FRAMES pictures of the ring turning (half a turn) for the modules of `hull` ("phoenix" / "shield")."""
+def frames(hull, part="whole"):
+    """The FRAMES pictures of the ring turning (half a turn) for the modules of `hull` ("phoenix" / "shield"). `part`: see
+    _picture (the core does not turn: one picture, FRAMES times)."""
     hull = "phoenix" if hull == "phoenix" else "shield"
-    out = _FRAMES.get(hull)
+    key = hull if part == "whole" else (hull, part)
+    out = _FRAMES.get(key)
     if out is None:
-        out = []
-        for k in range(FRAMES):
-            out.append(_surface(_picture(hull, math.pi * k / FRAMES), SIZE))
-            loading.report()
-        _FRAMES[hull] = out
+        if part == "core":
+            out = [_surface(_picture(hull, 0.0, part="core"), SIZE)] * FRAMES
+        else:
+            out = []
+            for k in range(FRAMES):
+                out.append(_surface(_picture(hull, math.pi * k / FRAMES, part=part), SIZE))
+                if part == "whole":
+                    loading.report()
+        _FRAMES[key] = out
     return out
 
 
@@ -172,29 +190,40 @@ def frame_at(t):
     return int((t * SPIN) % 180.0 / 180.0 * FRAMES) % FRAMES
 
 
-def scaled(hull, size):
-    """The pictures of `frames(hull)` at `size` px (the workshop and the hangar), made once."""
-    key = ("scaled", "phoenix" if hull == "phoenix" else "shield", int(size))
+def scaled(hull, size, part="whole"):
+    """The pictures of `frames(hull, part)` at `size` px (the workshop and the hangar), made once."""
+    key = ("scaled", "phoenix" if hull == "phoenix" else "shield", int(size), part)
     out = _FRAMES.get(key)
     if out is None:
-        out = [pygame.transform.smoothscale(img, (int(size), int(size))) for img in frames(hull)]
+        src = frames(hull, part)
+        if part == "core":
+            out = [pygame.transform.smoothscale(src[0], (int(size), int(size)))] * FRAMES
+        else:
+            out = [pygame.transform.smoothscale(img, (int(size), int(size))) for img in src]
         _FRAMES[key] = out
     return out
 
 
-def draw_icon(surface, hull, cx, cy, size, t, halves=(True, True), split=0.0, dim=False):
-    """A module turning, `size` px, centred on (cx, cy), for the menus: `halves` (left, right) says which halves are shown
-    (a piece of a module not yet assembled is one half) and `split` how far apart the two halves stand (px)."""
-    img = scaled(hull, size)[frame_at(t)]
-    if dim:
-        img = img.copy()
-        img.fill((110, 110, 120, 255), special_flags=pygame.BLEND_RGBA_MULT)
-    half = int(size) // 2
-    x0, y0 = int(cx - size / 2), int(cy - size / 2)
-    if halves[0]:
-        surface.blit(img, (x0 - int(split), y0), pygame.Rect(0, 0, half, int(size)))
-    if halves[1]:
-        surface.blit(img, (x0 + half + int(split), y0), pygame.Rect(half, 0, int(size) - half, int(size)))
+PIECES = ("ring", "core")
+
+
+def draw_icon(surface, hull, cx, cy, size, t, pieces=PIECES, split=0.0, dim=False):
+    """A module, `size` px, centred on (cx, cy), its ring turning, for the menus. `pieces`: the pieces shown ("ring",
+    "core"; both: the module assembled, unless `split` sets them apart, the ring on the left and the core `split` px to
+    its right)."""
+    both = "ring" in pieces and "core" in pieces
+    if both and not split:
+        parts = [("whole", cx)]
+    elif both:
+        parts = [("ring", cx - split / 2.0), ("core", cx + split / 2.0)]
+    else:
+        parts = [(p, cx) for p in pieces if p in PIECES]
+    for part, x in parts:
+        img = scaled(hull, size, part)[frame_at(t)]
+        if dim:
+            img = img.copy()
+            img.fill((110, 110, 120, 255), special_flags=pygame.BLEND_RGBA_MULT)
+        surface.blit(img, (int(x - size / 2), int(cy - size / 2)))
 
 
 def whites(hull):
