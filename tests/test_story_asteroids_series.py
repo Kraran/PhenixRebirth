@@ -8,8 +8,8 @@ import story_state as ss
 from i18n import LANG_CODES, T, set_lang, t
 from story import StoryHub
 
-PRELUDES = (("ast_1", "dome_1", "ast_s1", 60, 1), ("ast_2", "phenix_1", "ast_s2", 80, 2),
-            ("ast_3", "final_1", "ast_s3", 100, 3))
+PRELUDES = (("ast_1", "dome_1", "ast_s1", 60, 1), ("ast_2", "guardians_1", "ast_s2", 80, 2),   # (after each belt: the
+            ("ast_3", "guardians_3", "ast_s3", 100, 3))                                     # Dome, Gardiens I, III)
 
 
 @pytest.fixture(autouse=True)
@@ -68,7 +68,7 @@ def test_the_dome_waits_for_the_belt_in_act_1():
 
 def test_the_phenix_series_waits_for_the_belt_in_act_2():
     st = _act2()
-    ast, first = ss.mission_by_id("ast_2"), ss.mission_by_id("phenix_1")
+    ast, first = ss.mission_by_id("ast_2"), ss.mission_by_id("guardians_1")
     assert ss.mission_playable(st, ast) and not ss.mission_playable(st, first)
     assert ss.unlock_hint(st, first) is ast
     assert "ast_1" not in [m["id"] for m in ss.visible_missions(st)]
@@ -78,7 +78,7 @@ def test_the_phenix_series_waits_for_the_belt_in_act_2():
 
 def test_la_riposte_waits_for_the_belt_in_act_3():
     st = _act3()
-    ast, first = ss.mission_by_id("ast_3"), ss.mission_by_id("final_1")
+    ast, first = ss.mission_by_id("ast_3"), ss.mission_by_id("guardians_3")
     assert not ss.mission_playable(st, ast)                                # the hull must be at 100 % first
     assert ss.unlock_hint(st, ast) is not None
     st["flags"]["ch3_ready"] = True
@@ -112,11 +112,11 @@ def test_the_belt_comes_first_in_the_story_part_of_the_map():
     assert ss.mission_group(ss.mission_by_id("ch1_sortie")) == ss.GROUP_HUNT and ids.index("ch1_sortie") < ids.index("ast_1")
     st = _act2()
     ids = [m["id"] for m in ss.visible_missions(st)]
-    assert ids.index("ast_2") + 1 == ids.index("phenix_1")
+    assert ids.index("ast_2") + 1 == ids.index("guardians_1")
     st = _act3()
     st["flags"]["ch3_ready"] = True
     ids = [m["id"] for m in ss.visible_missions(st)]
-    assert ids.index("ast_3") + 1 == ids.index("final_1")
+    assert ids.index("ast_3") + 1 == ids.index("guardians_3")
 
 
 def test_the_map_suggests_the_belt_when_the_hunts_are_done():

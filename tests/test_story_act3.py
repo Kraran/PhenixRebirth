@@ -54,6 +54,9 @@ def test_the_last_mission_of_act_2_waits_for_the_phenix():
     ss.jump_to_act2(st)
     assert "act3_gate" in _ids(ss.visible_missions(st)) and not ss.mission_playable(st, m)
     ss.grant_phenix(st)
+    assert not ss.mission_playable(st, m)                               # Gardiens II first
+    assert ss.mission_playable(st, ss.mission_by_id("guardians_2"))
+    ss.record_result(st, "guardians_2", 100, True)
     assert ss.mission_playable(st, m)
 
 
@@ -207,6 +210,8 @@ def test_the_shield_reaches_the_arcade_ship():
     assert ss.flag(st, "ch3_ready") and not ss.mission_playable(st, ss.mission_by_id("final_1"))      # the belt first
     assert ss.mission_playable(st, ss.mission_by_id("ast_3"))
     _win(st, "ast_3")
+    assert not ss.mission_playable(st, ss.mission_by_id("final_1"))      # Gardiens III first
+    _win(st, "guardians_3")
     assert ss.mission_playable(st, ss.mission_by_id("final_1"))
 
 
@@ -224,6 +229,8 @@ def test_the_phenix_reaches_the_arcade_ship():
     assert (lo["speed_pct"], lo["lives"], lo["phenix_pct"], lo["wall"]) == (100, 3, 100, "slow")
     assert not ss.mission_playable(st, ss.mission_by_id("final_1")) and ss.mission_playable(st, ss.mission_by_id("ast_3"))
     _win(st, "ast_3")
+    assert not ss.mission_playable(st, ss.mission_by_id("final_1"))      # Gardiens III first
+    _win(st, "guardians_3")
     assert ss.mission_playable(st, ss.mission_by_id("final_1"))
 
 
@@ -285,6 +292,7 @@ def test_the_final_series_goes_to_triton_and_ends_the_adventure():
     st = _act3("shield")
     st["flags"]["ch3_ready"] = True
     _win(st, "ast_3")                                                # the belt first
+    _win(st, "guardians_3")                                          # ... then the Alpha
     for i, mid in enumerate(FINAL):
         m = ss.mission_by_id(mid)
         assert ss.mission_playable(st, m), mid

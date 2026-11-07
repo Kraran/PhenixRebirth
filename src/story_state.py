@@ -61,6 +61,7 @@ MISSILE_PRICE = 1000                      # one missile, a consumable: it is car
 MISSILE_MAX = 9                          # the most missiles the hangar holds
 MISSILE_ROWS = ("missile_launcher", "missile_ammo")
 SENTINELLE_DONE = "sentinelles_done"   # the last Sentinelle mission is won: all four can be flown again
+REFLECT_FLAG = "reflective_coating"    # Gardiens III is won: the reflective coating (the dome and the Phenix stop the lasers)
 GAME_WON = "game_won"                  # the last mission of Act 3 is won: the Adventure is over (it can still be played)
 ENDING_DONE = "ending_done"            # the open ending (Act IV) has been told: every mission can be flown again, all acts are listed
 ENDING_MISSION = "act4_alcyone"        # the only mission of the pseudo Act IV: no sortie, just the ending
@@ -314,6 +315,21 @@ MISSIONS = [
         "unlock": [],
         "log": "story_log_bestboss",
     },
+    {
+        # Act 2 Bestiary hunt: the Guardians (after Phenix III). Replayable; the Guardians of each wave: 2 at level 1, one
+        # more a level up to 5 (hunt_guardians), the birds faster like the other hunts
+        "id": "best_guardians",
+        "hunt": True,
+        "acts": (2, 3),
+        "title": "story_m_bestgd",
+        "blurb": "story_m_bestgd_b",
+        "need": "phenix_s3",
+        "content": 2,
+        "hunt_guardians": True,
+        "speed": 1.0,
+        "unlock": [],
+        "log": "story_log_bestgd",
+    },
     # Act 2: the Phenix series. Five chained missions, flown once each (arcade levels 16 and up,
     # x1.3 speed). The last one hands over the Phenix and opens its workshop.
     {
@@ -330,12 +346,30 @@ MISSIONS = [
         "unlock": ["ast_s2"],
         "log": "story_log_ast2",
     },
+    # The Guardians series (I-III, mandatory): Gardiens I between the belt and Phenix I, Gardiens II before the great raid,
+    # Gardiens III (the Alpha) before Riposte I. `guardians_at`: how many Guardians come with each wave (src/guardian.py
+    # GuardianSquad); `volley`: they charge and fire together; `birds_keep`: one bird of the formation in so many is left;
+    # `alpha_at`: the wave the Alpha Guardian comes with (bigger, 6 HP, a double laser).
+    {
+        "id": "guardians_1",
+        "acts": (2,),
+        "title": "story_m_gd1",
+        "blurb": "story_m_gd1_b",
+        "need": "ast_s2",
+        "content": 1,
+        "waves": [16, 17],
+        "guardians_at": {16: 1, 17: 3},
+        "speed": 1.0,
+        "once": True,
+        "unlock": ["guardians_s1"],
+        "log": "story_log_gd1",
+    },
     {
         "id": "phenix_1",
         "acts": (2,),
         "title": "story_m_ph1",
         "blurb": "story_m_ph1_b",
-        "need": "ast_s2",
+        "need": "guardians_s1",
         "content": 1,
         "waves": [16, 17],
         "speed": 1.0,
@@ -449,11 +483,27 @@ MISSIONS = [
     # hull that keeps the quantum anchor, the other one is lost (see choose_act3_ship). Until the choice is made the
     # save waits with the flag ACT3_PENDING (the scene comes back when the save is opened).
     {
+        "id": "guardians_2",
+        "acts": (2,),
+        "title": "story_m_gd2",
+        "blurb": "story_m_gd2_b",
+        "need": "phenix_owned",
+        "content": 1,
+        "waves": [21, 22],
+        "guardians_at": {21: 3, 22: 5},
+        "volley": True,
+        "birds_keep": 3,
+        "speed": 1.0,
+        "once": True,
+        "unlock": ["guardians_s2"],
+        "log": "story_log_gd2",
+    },
+    {
         "id": "act3_gate",
         "acts": (2,),
         "title": "story_m_gate3",
         "blurb": "story_m_gate3_b",
-        "need": "phenix_owned",
+        "need": "guardians_s2",
         "content": 1,
         "waves": [21, 22, 23, 24, 25],
         "guardians_at": {23: 2, 24: 2, 25: 3}, "speed": 1.0,
@@ -533,7 +583,12 @@ MISSIONS = [
         "unlock": ["ast_s3"], "log": "story_log_ast3",
     },
     {
-        "id": "final_1", "acts": (3,), "title": "story_m_fin1", "blurb": "story_m_fin1_b", "need": "ast_s3",
+        "id": "guardians_3", "acts": (3,), "title": "story_m_gd3", "blurb": "story_m_gd3_b", "need": "ast_s3",
+        "content": 1, "waves": [23, 24], "guardians_at": {23: 2, 24: 4}, "alpha_at": 24, "speed": 1.0, "once": True,
+        "unlock": ["guardians_s3", REFLECT_FLAG], "log": "story_log_gd3",
+    },
+    {
+        "id": "final_1", "acts": (3,), "title": "story_m_fin1", "blurb": "story_m_fin1_b", "need": "guardians_s3",
         "content": 1, "waves": [21, 22], "guardians_at": {22: 1}, "speed": 1.0, "once": True, "unlock": ["final_s1"],
         "log": "story_log_fin1",
     },
@@ -713,6 +768,9 @@ BESTIARY = [
     # commander of the base; they show up once destroyed in a mission that counts (BONUS - Scramble)
     {"id": "station", "stage": 0, "name": "story_b_station", "text": "story_b_station_t"},
     {"id": "redboss", "stage": 0, "name": "story_b_redboss", "text": "story_b_redboss_t", "boss": True},
+    # the Guardians (src/guardian.py): the common one, then the Alpha of Gardiens III (counted like a boss)
+    {"id": "guardian", "stage": 0, "name": "story_b_guardian", "text": "story_b_guardian_t"},
+    {"id": "alpha", "stage": 0, "name": "story_b_alpha", "text": "story_b_alpha_t", "boss": True},
 ]
 # What each tier shows, by number of enemies of that kind destroyed:
 # (picture, picture twice as big, animation, presentation text, bonus points).
@@ -829,6 +887,15 @@ def hunt_level(state, mission_id):
     if mission_id in (state.get("cleared") or []):
         won = max(won, 1)
     return 1 + won
+
+
+HUNT_GUARDIANS = (2, 5)          # Bestiaire VI: the Guardians of a wave at level 1, and at most
+
+
+def hunt_guardians(level):
+    """How many Guardians come with the wave of Bestiaire VI at `level` (2, 3, 4, then 5)."""
+    first, most = HUNT_GUARDIANS
+    return max(first, min(most, first + max(1, int(_num(level, 1))) - 1))
 
 
 def hunt_stage(mission, level):
@@ -1046,21 +1113,31 @@ def _to_act1_hangar(sl):
             sl["wall"] = "slow"
 
 
-# The Asteroids prelude of each act and the first mission of the main series it opens (Dome I, Phenix I, la Riposte).
-BELT_PRELUDES = (("ast_1", "dome_1"), ("ast_2", "phenix_1"), ("ast_3", "final_1"))
+# The Asteroids prelude of each act and the mission(s) it opens (Dome I; Gardiens I, else Phenix I; Gardiens III, else la
+# Riposte): a save that already won one of them skips the belt (a save from before the Guardians series has the Phenix
+# series or la Riposte started instead).
+BELT_PRELUDES = (("ast_1", ("dome_1",)), ("ast_2", ("guardians_1", "phenix_1")), ("ast_3", ("guardians_3", "final_1")))
+# The Guardians series came later: a save that already won the mission after one of them gets its flag (the next missions
+# stay open); the mission itself is not counted as won (it can still be flown, and Gardiens III still gives the
+# reflective coating). A save that stands before that mission has to fly it.
+GUARDIAN_SKIPS = (("guardians_1", "phenix_1"), ("guardians_2", "act3_gate"), ("guardians_3", "final_1"))
 
 
 def _open_started_series(state):
     """A save made before the preludes existed: a series already started (its first mission won) does not wait for the
-    belt, the prelude counts as won."""
+    belt, the prelude counts as won. A save made before the Guardians series: the series it already went past stays open
+    (GUARDIAN_SKIPS)."""
     cleared = state.setdefault("cleared", [])
     flags = state.setdefault("flags", {})
-    for prelude, first in BELT_PRELUDES:
-        if first in cleared:
+    for prelude, firsts in BELT_PRELUDES:
+        if any(first in cleared for first in firsts):
             for name in (mission_by_id(prelude) or {}).get("unlock") or []:
                 flags[name] = True
             if prelude not in cleared:
                 cleared.append(prelude)
+    for mission_id, after in GUARDIAN_SKIPS:
+        if after in cleared:
+            flags[mission_id.replace("guardians_", "guardians_s")] = True
 
 
 def migrate_state(data):

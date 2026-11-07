@@ -1,15 +1,18 @@
 {
   "version": 4,
   "act": 1,
-  "name": "X",
+  "name": "NOVA",
   "mode": "normal",
   "fallen": false,
-  "saved_at": "2026-11-05T21:19:45",
+  "saved_at": "2026-11-07T18:53:21",
   "credits": 0,
   "flags": {
     "bestiary_s1": true
   },
   "missiles": 0,
+  "module_parts": [],
+  "modules_built": 0,
+  "modules": 0,
   "cleared": [],
   "slots": [
     {

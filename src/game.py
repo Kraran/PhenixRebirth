@@ -1102,11 +1102,14 @@ class Game:
         story = getattr(self, "story", None)
         if not adv or story is None:
             return self._enemy_points(stage)
-        kind = story_state.enemy_kind(stage)
+        kind = getattr(enemy, "bestiary_kind", None) or story_state.enemy_kind(stage)     # (a Guardian: its own entry)
         kills = adv.setdefault("kills", {})
         kills[kind] = kills.get(kind, 0) + 1
         mastered = story_state.kill_bonus(story.state, kind, kills[kind]) > 0
-        return self._enemy_points(stage, mastered)
+        if story_state.is_boss(kind):                       # (the Alpha Guardian: its points, and a boss's bonus)
+            return self._enemy_points(stage) * int(getattr(enemy, "point_mult", 1)) + story_state.kill_bonus(
+                story.state, kind, kills[kind])
+        return self._enemy_points(stage, mastered) * int(getattr(enemy, "point_mult", 1))
 
     def _boss_kill_points(self):
         """Points for the boss saucer destroyed. In the Adventure it also counts for the Bestiary
@@ -2174,13 +2177,19 @@ class Game:
         adv = getattr(self, "adventure", None) or {}
         plan = adv.get("guardians_at") or {}
         count = int(plan.get(int(self.stage), plan.get(str(int(self.stage)), 0)) or 0)
+        count = count or int(adv.get("guardians_each") or 0)          # (Bestiaire VI: Guardians with every wave)
         if count > 0 and not adv.get("guardians"):
             from guardian import GuardianSquad
             from ship_burn import prepare as prepare_ship_burn
             prepare_ship_burn(self.player)                  # (the burning ship of a laser, made before it is needed)
             from guardian import SQUAD_BOSS_Y, SQUAD_Y
             y = SQUAD_BOSS_Y if stage_content(int(self.stage)) == 5 else SQUAD_Y     # (with the boss: below its saucer)
-            self.guardian_squad = GuardianSquad(count, self.sounds, y)
+            alpha = int(adv.get("alpha_at") or 0) == int(self.stage)
+            self.guardian_squad = GuardianSquad(count, self.sounds, y, volley=bool(adv.get("volley")), alpha=alpha)
+            keep = int(adv.get("birds_keep") or 0)
+            form = self.formation
+            if keep > 1 and type(form).__name__ == "EnemyFormation" and not getattr(form, "swarm", None):
+                form.enemies = form.enemies[::keep]          # (Gardiens II: few birds, the Guardians are the wall)
 
     def _tick_guardian_squad(self):
         """The Guardians of the wave (if any): after the formation, with its shots and its birds."""
