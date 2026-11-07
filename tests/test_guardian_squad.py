@@ -164,6 +164,7 @@ def test_the_squad_is_cleared_when_all_are_down(display):
 # ---------------------------------------------------------------- in the game
 def test_the_shots_hit_the_guardians_of_the_wave(game):
     _fly(game, "phenix_3", wave_i=1)
+    game.formation.enemies = []                                             # (no bird in the way of the shot)
     sq = game.guardian_squad
     _arrive(sq)
     g = sq.guardians[0]
