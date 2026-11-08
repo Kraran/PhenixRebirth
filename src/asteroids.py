@@ -597,7 +597,8 @@ def tick(game):
                 game.sounds.play("enemy_shoot", x=s.x)
         if form.saucers:
             try:
-                game.sounds.follow_voice("saucer_pass", x=form.saucer.x, paused=bool(game.paused))
+                if not game.sounds.follow_voice("saucer_pass", x=form.saucer.x, paused=bool(game.paused)):
+                    game.sounds.play_voice("saucer_pass", x=form.saucer.x)    # (a saucer outlives its sound: again)
             except Exception:
                 log_exc("asteroids.tick")
         else:

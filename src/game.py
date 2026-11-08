@@ -4532,6 +4532,8 @@ class Game:
         """The saucer sound belongs to the saucer on screen: it follows it (stereo), waits while the game is
         paused and stops when the saucer is gone or the game is no longer running the invasion."""
         f = getattr(self, "formation", None)
+        if asteroids.active(self) is not None:
+            return                      # (the Asteroids missions have their own saucers: asteroids.tick leads the sound)
         m = getattr(f, "mothership", None)
         running = (bool(getattr(self, "adventure", None)) and self.started and not self.game_over
                    and self.stage_transition is None)
