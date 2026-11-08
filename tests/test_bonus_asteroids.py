@@ -39,9 +39,9 @@ def _launch(run, **kw):
 
 
 # ------------------------------------------------------------------ the mission
-def test_secret_until_the_game_is_finished_then_a_bonus_of_every_act():
+def test_secret_until_the_game_is_finished_then_a_final_bonus_of_act_4():
     m = ss.mission_by_id(MID)
-    assert ss.mission_group(m) == ss.GROUP_EXTRA and m["acts"] == (1, 2, 3)
+    assert ss.mission_group(m) == ss.GROUP_FINAL and m["acts"] == (ss.ENDING_ACT,)
     assert not ss.mission_open(_state(ending=False), m)
     assert ss.mission_open(_state(), m)
 

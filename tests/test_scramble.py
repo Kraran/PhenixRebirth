@@ -1619,7 +1619,7 @@ def test_the_bonus_is_secret_until_the_game_is_finished():
     from test_spacewar import _state
     m = ss.mission_by_id("bonus_scramble")
     assert m and m["scramble"] and m["secret"] and m["extra"] and not m.get("training")
-    assert tuple(m["acts"]) == (1, 2, 3) and m["need"] == ss.ENDING_DONE
+    assert tuple(m["acts"]) == (ss.ENDING_ACT,) and m["need"] == ss.ENDING_DONE
     st = _state()
     assert not ss.mission_open(st, m)
     st.setdefault("flags", {})[ss.ENDING_DONE] = True

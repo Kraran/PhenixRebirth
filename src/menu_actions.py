@@ -216,6 +216,9 @@ def menu_confirm(game):
             spec = game.story.confirm()
             for name in game.story.take_sounds():
                 game.sounds.play(name)
+            pick = game.story.__dict__.pop("pick_load", None)
+            if pick:
+                game._load_pick_menu(pick)                # the menu of the setting: a loading bar while it is made
         if isinstance(spec, dict) and spec.get("launch"):
             game._request_adventure(spec)
         elif isinstance(spec, dict) and spec.get("leave"):

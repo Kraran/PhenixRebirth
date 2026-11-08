@@ -4897,6 +4897,7 @@ _ADVENTURE_TEXTS = {
     "story_grp_story": ("HISTOIRE", "STORY"),
     "story_grp_hunt": ("CHASSES · REJOUABLES", "HUNTS · REPLAYABLE"),
     "story_grp_extra": ("BONUS ET OPTIONS", "BONUS AND OPTIONAL"),
+    "story_grp_final": ("BONUS DE FIN", "END BONUS"),
     "story_next": ("SUIVANTE", "NEXT"),
     "story_unlock_after": ("S'ouvre après : {name}", "Opens after: {name}"),
     "story_scene_best2_t": ("Bestiaire II : les oiseaux kaki", "Bestiary II: the khaki birds"),
@@ -7230,6 +7231,7 @@ _LANDER_TEXTS = {
         "or Triton, with a limited fuel. The view zooms in as you come down. No gain or loss. You choose the setting at the "
         "start."),
     "lander_pick_title": ("TEST - Lunar Lander : choix du décor", "TEST - Lunar Lander: choose the setting"),
+    "lander_pick_title_final": ("BONUS FINAL - Lunar Lander : choix du décor", "FINAL BONUS - Lunar Lander: choose the setting"),
     "lander_body_rock": ("Astéroïde", "Asteroid"),
     "lander_body_ice": ("Titan", "Titan"),
     "lander_body_europa": ("Europe", "Europa"),
@@ -7266,7 +7268,7 @@ _LANDER_TEXTS = {
     "lander_empty": ("RÉSERVOIR VIDE", "OUT OF FUEL"),
     "lander_perfect": ("ATTERRISSAGE PARFAIT !", "PERFECT LANDING!"),
     "lander_rough": ("Atterrissage réussi, mais rude", "Landed, but hard"),
-    "story_m_lander_bonus": ("BONUS - Lunar Lander", "BONUS - Lunar Lander"),
+    "story_m_lander_bonus": ("BONUS FINAL - Lunar Lander", "FINAL BONUS - Lunar Lander"),
     "story_m_lander_bonus_b": (
         "Le Lunar Lander du test, pour de vrai : pose le vaisseau sur une zone plane d'un astéroïde, de Titan, d'Europe, de "
         "Déimos ou de Triton. L'atterrissage rapporte ses points (plus le carburant restant) ; un crash coûte ce que coûte "
@@ -7297,6 +7299,7 @@ _SCRAMBLE_TEXTS = {
         "between the ceiling and the ground to the enemy base. Any touch of the rock costs a life. No gain or loss. You "
         "choose the setting at the start: asteroid, Titan, Europa, Deimos or Triton."),
     "scramble_pick_title": ("TEST - Scramble : choix du décor", "TEST - Scramble: choose the setting"),
+    "scramble_pick_title_final": ("BONUS FINAL - Scramble : choix du décor", "FINAL BONUS - Scramble: choose the setting"),
     "story_m_modules": ("TEST - Modules", "TEST - Modules"),
     "story_m_modules_hud": ("Modules", "Modules"),
     "story_m_modules_b": (
@@ -7341,8 +7344,8 @@ _SCRAMBLE_TEXTS = {
     "scramble_won": ("BASE DÉTRUITE !", "BASE DESTROYED!"),
     "scramble_wall": ("MUR {p} %", "WALL {p}%"),
     "scramble_boss_hp": ("CHEF", "MASTER"),
-    "story_m_ast_bonus": ("BONUS - Asteroids", "BONUS - Asteroids"),
-    "story_m_ast_bonus_hud": ("BONUS - ASTEROIDS", "BONUS - ASTEROIDS"),
+    "story_m_ast_bonus": ("BONUS FINAL - Asteroids", "FINAL BONUS - Asteroids"),
+    "story_m_ast_bonus_hud": ("BONUS FINAL - ASTEROIDS", "FINAL BONUS - ASTEROIDS"),
     "story_m_ast_bonus_b": (
         "Asteroids à l'infini : niveau après niveau (4, 6, 8, 10 puis 11 gros astéroïdes, tous là dès le départ), un niveau "
         "se termine quand il ne reste plus aucun astéroïde, et la soucoupe tire 10 % plus vite à chaque niveau. La partie "
@@ -7354,7 +7357,7 @@ _SCRAMBLE_TEXTS = {
     "story_ast_record": ("RECORD {pts}", "BEST {pts}"),
     "story_ast_end": ("Partie terminée  +{pts} PTS", "Run over  +{pts} PTS"),
     "story_ast_new_best": ("NOUVEAU RECORD", "NEW BEST"),
-    "story_m_scramble_bonus": ("BONUS - Scramble", "BONUS - Scramble"),
+    "story_m_scramble_bonus": ("BONUS FINAL - Scramble", "FINAL BONUS - Scramble"),
     "story_m_scramble_bonus_b": (
         "Le Scramble du test, pour de vrai : traverse la roche jusqu'à la base ennemie et abats son commandant avioïde rouge. Les points "
         "rapportent des crédits ; un échec coûte ce que coûte un échec. Les lance-missiles et le commandant avioïde rouge entrent au "

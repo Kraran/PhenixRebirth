@@ -300,6 +300,7 @@ def tell_ending(state):
     if ending_id(state) is None or ending_told(state):
         return 0
     gift = ending_gift(state)
-    state["credits"] = int(state.get("credits", 0) or 0) + gift
+    import story_state
+    story_state.add_credits(state, gift)
     state.setdefault("flags", {})[ENDING_FLAG] = True
     return gift
