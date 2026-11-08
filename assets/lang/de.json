@@ -215,6 +215,7 @@
  "story_grp_story": "STORY",
  "story_grp_hunt": "JAGDEN · WIEDERSPIELBAR",
  "story_grp_extra": "EXTRAS",
+ "story_grp_final": "ABSCHLUSSBONUS",
  "story_next": "NÄCHSTE",
  "story_unlock_after": "Öffnet nach: {name}",
  "story_log_goal": "ZIEL: {name}",

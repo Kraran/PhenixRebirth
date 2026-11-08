@@ -215,6 +215,7 @@
  "story_grp_story": "VERHAAL",
  "story_grp_hunt": "JACHTEN · HERSPEELBAAR",
  "story_grp_extra": "EXTRA",
+ "story_grp_final": "EINDBONUS",
  "story_next": "VOLGENDE",
  "story_unlock_after": "Opent na: {name}",
  "story_log_goal": "DOEL: {name}",
