@@ -1111,3 +1111,21 @@ def test_a_full_field_forgets_the_pause_and_the_next_thinning_starts_a_new_one(r
     form.rocks[:] = []
     _after(run, ast.REPOP_GAP[0] * 0.9)
     assert form.rocks == []
+
+
+# ------------------------------------------------------------------ the saucer never wraps (no ghost on the other side)
+@pytest.mark.parametrize("x", [-30.0, 20.0, BASE_WIDTH - 20.0, BASE_WIDTH + 30.0])
+def test_the_saucer_at_an_edge_shows_only_where_it_is(x):
+    import random
+    form = AsteroidFormation(rng=random.Random(3))
+    s = ast.Saucer(True, form.rng)
+    s.x, s.y, s.age = x, 300.0, 0.0
+    form.saucer = s
+    surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+    surf.fill((0, 0, 0))
+    form.draw(surf)
+    far = range(BASE_WIDTH - 60, BASE_WIDTH) if x < BASE_WIDTH / 2 else range(0, 60)
+    assert not any(surf.get_at((c, r))[:3] != (0, 0, 0) for c in far for r in range(270, 330))
+    other = BASE_WIDTH - 10.0 if x < BASE_WIDTH / 2 else 10.0          # (and nothing over there can hit it)
+    dx, dy = s.delta_to(other, 300.0)
+    assert abs(dx) > BASE_WIDTH / 2
