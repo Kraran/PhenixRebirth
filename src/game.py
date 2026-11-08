@@ -4221,8 +4221,8 @@ class Game:
         if getattr(self, "adventure", None) and getattr(self, "story", None):
             story_slot = self.story.slot_no
             try:
-                if self.stage_transition == "fly_up" or self.adventure.get("endless"):
-                    # the mission was already won (or it is endless: its points pay when it is left): bank it
+                if self.stage_transition == "fly_up":
+                    # the mission was already won: bank it
                     self.story.apply_result(self.adventure.get("id"), int(self.score), True,
                                             self.adventure.get("kills"), loot=self.adventure.get("loot"),
                                             used=self.adventure.get("items"),
@@ -4573,14 +4573,16 @@ class Game:
                     return
             elif not any(p.alive for p in self._ships()) or escort.failed(self):
                 if getattr(self, "adventure", None):
-                    if self._veteran_adventure():
+                    endless = bool(self.adventure.get("endless"))
+                    if self._veteran_adventure() or endless:
                         # a fallen Veteran gets the real GAME OVER of the game (explosion, card, voice), then the slot list.
-                        # The fall is written down at once: closing the game during the card does not save him.
-                        self._bank_adventure(False)
+                        # The fall is written down at once: closing the game during the card does not save him. An
+                        # endless mission (BONUS - Asteroids) ends the same way, its points paid at once (see
+                        # story_state.record_result), then back to the map.
+                        self._bank_adventure(endless)
                         self._hotseat_arm_hold("adventure_over", self.HOTSEAT_HOLD_FINAL)
                         return
-                    # (an endless mission ends with the ship: its points pay, see story_state.record_result)
-                    self._end_adventure(bool(self.adventure.get("endless")))
+                    self._end_adventure(False)
                     return
                 if self.hotseat:
                     self._hotseat_arm_hold("eliminated", self.HOTSEAT_HOLD_FINAL)

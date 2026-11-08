@@ -22,8 +22,8 @@ THE ENDLESS LEVEL (`endless`: the mission "BONUS - Asteroids", once the game is 
 level until the ship is lost. Every big rock of a level is there from its start (ENDLESS_ROCKS: 4, 6, 8, 10, then 11
 from level 5 on), nothing comes in from outside; a level ends when no rock is left, not even a small one, and the next
 one starts after LEVEL_PAUSE. The saucer comes as in the belts and fires SAUCER_LEVEL_STEP (10 %) faster each level.
-There is no target and the mission is never won: its score is banked when it ends (story_state.record_result), and
-the best one is kept in the save and shown at the top of the screen (not in the high scores).
+There is no target and the mission is never won: it ends with the GAME OVER of the ship, its score is banked then
+(story_state.record_result; leaving it by the pause menu gains nothing and loses nothing), and the best one is kept in the save and shown at the top of the screen (not in the high scores).
 
 `AsteroidFormation` is the formation of the mission (nothing a bird has: no enemy, no bullet in the generic lists);
 `tick(game)` runs it every frame and `draw(surface)` draws it. The pictures of the rocks are made by
@@ -645,6 +645,6 @@ def _next_level(game, form, p):
     if isinstance(adv, dict):
         adv["level"] = form.level                    # (the HUD shows it after the name of the mission)
     try:
-        game.sounds.play("menu_confirm", volume=0.5)
+        game._play_level_vo(form.level)              # the announcer says the level, as at the start ("Level 2"...)
     except Exception:
         log_exc("asteroids._next_level")
