@@ -182,3 +182,48 @@ def test_the_record_is_shown_at_the_top(run):
     g.score = 7000
     assert draw_frame.endless_record(g, g.adventure) == 7000          # (beaten: the run's)
     run.frames(5)                                                      # (the HUD draws: the record, the rocks, the level)
+
+
+# ------------------------------------------------------------------ the saucers by two, every 5 levels
+@pytest.mark.parametrize("level, two", [(1, False), (4, False), (5, True), (6, False), (10, True), (15, True)])
+def test_every_5_levels_the_saucers_come_by_two_from_both_sides(level, two):
+    import random
+    form = AsteroidFormation(endless=True, rng=random.Random(level))
+    form.level = level
+    sent = form.send_saucers()
+    assert len(sent) == (2 if two else 1) and form.twin_level() is two
+    if two:
+        a, b = sent
+        assert (a.x < 0) != (b.x < 0)                                     # (one from each side)
+        assert abs(a.y - b.y) >= ast.TWIN_GAP - 1e-6 and all(150 <= s.y <= 720 - 150 for s in sent)
+    belt = AsteroidFormation(rng=random.Random(1))
+    belt.level = level
+    assert len(belt.send_saucers()) == 1                                 # (the belts: always one)
+
+
+def test_the_two_saucers_fly_fire_and_are_shot_down_one_by_one(run):
+    _launch(run)
+    g = run.game
+    form = g.formation
+    run.frames(2)
+    g.player.invulnerable = 1e9
+    form.rocks.clear()
+    form.level = 5
+    form.rocks.append(ast.Rock(1, 640, 100, 0, 0, form.rng))                # (a rock left: no new level meanwhile)
+    form.saucer_in = 0.0
+    run.frames(2)
+    assert len(form.saucers) == 2
+    for s in form.saucers:
+        s.fire_in = 0.0
+    run.frames(1)
+    assert sum(1 for sh in form.shots if not sh.mine) == 2               # (each one fires)
+    run.frames(3)
+    first, second = form.saucers
+    score = g.score
+    form.blow_saucer(g, second)
+    assert form.saucers == [first] and g.score == score + ast.SAUCER_POINTS
+    form.blow_saucer(g, first)
+    assert form.saucers == [] and form.saucer is None
+    surf = __import__("pygame").Surface((1280, 720))
+    form.send_saucers()
+    form.draw(surf)

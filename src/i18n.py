@@ -7270,10 +7270,10 @@ _LANDER_TEXTS = {
     "lander_rough": ("Atterrissage réussi, mais rude", "Landed, but hard"),
     "story_m_lander_bonus": ("BONUS FINAL - Lunar Lander", "FINAL BONUS - Lunar Lander"),
     "story_m_lander_bonus_b": (
-        "Le Lunar Lander du test, pour de vrai : pose le vaisseau sur une zone plane d'un astéroïde, de Titan, d'Europe, de "
+        "Le Lunar Lander : pose le vaisseau sur une zone plane d'un astéroïde, de Titan, d'Europe, de "
         "Déimos ou de Triton. L'atterrissage rapporte ses points (plus le carburant restant) ; un crash coûte ce que coûte "
         "un échec. Tu choisis le décor au départ. Ouverte une fois le jeu terminé.",
-        "The test's Lunar Lander, for real: set the ship down on a flat zone of an asteroid, Titan, Europa, Deimos or Triton. "
+        "The Lunar Lander: set the ship down on a flat zone of an asteroid, Titan, Europa, Deimos or Triton. "
         "The landing pays its points (plus the fuel left); a crash costs what a failure costs. You choose the setting at the "
         "start. Open once the game is finished."),
     "lander_crash": ("CRASH !", "CRASH!"),
@@ -7348,21 +7348,23 @@ _SCRAMBLE_TEXTS = {
     "story_m_ast_bonus_hud": ("BONUS FINAL - ASTEROIDS", "FINAL BONUS - ASTEROIDS"),
     "story_m_ast_bonus_b": (
         "Asteroids à l'infini : niveau après niveau (4, 6, 8, 10 puis 11 gros astéroïdes, tous là dès le départ), un niveau "
-        "se termine quand il ne reste plus aucun astéroïde, et la soucoupe tire 10 % plus vite à chaque niveau. La partie "
+        "se termine quand il ne reste plus aucun astéroïde, et la soucoupe tire 10 % plus vite à chaque niveau ; tous les "
+        "5 niveaux, les soucoupes arrivent par deux. La partie "
         "dure jusqu'à la perte du vaisseau : ses points rapportent des crédits, sans pénalité. Ton record est gardé. "
         "Ouverte une fois le jeu terminé.",
         "Endless Asteroids: level after level (4, 6, 8, 10 then 11 big asteroids, all there from the start), a level ends "
-        "when no asteroid is left, and the saucer fires 10 % faster each level. The run lasts until the ship is lost: its "
+        "when no asteroid is left, and the saucer fires 10 % faster each level; every 5 levels, the saucers come by two. "
+        "The run lasts until the ship is lost: its "
         "points pay in credits, without a penalty. Your best score is kept. Opens once the game is finished."),
     "story_ast_record": ("RECORD {pts}", "BEST {pts}"),
     "story_ast_end": ("Partie terminée  +{pts} PTS", "Run over  +{pts} PTS"),
     "story_ast_new_best": ("NOUVEAU RECORD", "NEW BEST"),
     "story_m_scramble_bonus": ("BONUS FINAL - Scramble", "FINAL BONUS - Scramble"),
     "story_m_scramble_bonus_b": (
-        "Le Scramble du test, pour de vrai : traverse la roche jusqu'à la base ennemie et abats son commandant avioïde rouge. Les points "
+        "Le Scramble : traverse la roche jusqu'à la base ennemie et abats son commandant avioïde rouge. Les points "
         "rapportent des crédits ; un échec coûte ce que coûte un échec. Les lance-missiles et le commandant avioïde rouge entrent au "
         "Bestiaire. Tu choisis le décor au départ. Ouverte une fois le jeu terminé.",
-        "The test's Scramble, for real: fly through the rock to the enemy base and shoot down its red Avioid commander. The points "
+        "The Scramble: fly through the rock to the enemy base and shoot down its red Avioid commander. The points "
         "pay in credits; a failure costs what a failure costs. The missile launchers and the red Avioid commander go into the "
         "Bestiary. You choose the setting at the start. Open once the game is finished."),
     # Atterrissages (story_state.MISSIONS "lander_*"): the Lunar Lander on one setting, with its own tank
