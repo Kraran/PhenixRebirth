@@ -17,6 +17,7 @@ from achievements import BOLDLY_GO_STAGE
 from enemy import BigBird, Enemy
 import guardian
 from guardian import FireLaser, Guardian, GuardianFormation
+import laser_split
 from explosion import TeslaCoilFx
 from i18n import t
 from loot import FallingItem
@@ -315,28 +316,6 @@ def tick_boss_outro(game):
             ship.destroy_bullet()
 
 
-def laser_reflected(game, ship, bolt, ship_box):
-    """The reflective coating (Gardiens III won: the mission's "reflect"): a Guardian's laser that meets the dome of the
-    Shield or the Phenix form dies on it, in a flash where it touched, and the ship is spared. True when it was stopped.
-    Without the coating, or with the special form off, the laser goes through as always."""
-    adv = getattr(game, "adventure", None) or {}
-    if not adv.get("reflect") or not getattr(ship, "is_phenix", False):
-        return False
-    bolt.alive = False
-    x, y = float(bolt.x), float(ship_box.top)
-    if getattr(ship, "uses_shield", False):
-        game._shield_absorb(ship, x, y)                       # (the dome: its ripple, where the laser touched)
-    else:
-        game.explosions.append(game._boom(x, y, kind="shield"))
-        game.shake_amount = max(game.shake_amount, 3.0)
-        game.sounds.play("shield_zap", volume=0.32, x=ship.x)
-    for owner in (guardian.squad(game), game.formation):           # (the Guardian that fired it is free to move again)
-        for g in getattr(owner, "guardians", None) or []:
-            if getattr(g, "emission", None) is bolt:
-                g.emission = None
-    return True
-
-
 def _shot_at_guardian(game, ship, shot_i, bullet_rect, bird):
     """A shot against a Guardian: a wing first (it falls off, nothing else happens), else the body: one of its 3 HP."""
     for side, box in (("left", bird.get_left_wing_hitbox()), ("right", bird.get_right_wing_hitbox())):
@@ -582,11 +561,12 @@ def enemy_attacks_vs_players(game):
                         game.shake_amount = 22.0 if ship.dying else 12.0
                         game.sounds.play("explosion_big" if ship.dying else "explosion", x=ship.x)
                     break
+        held = laser_split.split(game, ship)          # (the reflective coating: the lasers split on the dome / the form)
         for bullet in game.formation.bullets[:]:
+            if id(bullet) in held:
+                continue
             if bullet.alive and bullet.get_hitbox().colliderect(player_hitbox):
                 if isinstance(bullet, FireLaser):              # a Guardian's laser (the test, or a wave with Guardians)
-                    if laser_reflected(game, ship, bullet, player_hitbox):
-                        break                                  # (the reflective coating: the dome / the Phenix form stop it)
                     if ship.burn_by_guardian(blaze=True):
                         _life_lost(game)
                         game.shake_amount = max(game.shake_amount, 22.0)

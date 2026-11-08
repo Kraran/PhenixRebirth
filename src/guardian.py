@@ -69,6 +69,7 @@ class FireLaser:
         self.alive = True
         self.owner_id = owner_id
         self.age = 0.0
+        self.eaten = 0.0                 # px of its tip already split on the reflective coating (src/laser_split.py)
 
     def update(self, dt):
         self.age += dt
@@ -82,7 +83,7 @@ class FireLaser:
         # extends behind the mouth when a bolt is first emitted.
         top = max(self.origin_y, self.prev_y - LASER_LENGTH)
         return pygame.Rect(round(self.x - LASER_WIDTH / 2), math.floor(top),
-                           LASER_WIDTH, max(1, math.ceil(self.y - top)))
+                           LASER_WIDTH, max(1, math.ceil(self.y - self.eaten - top)))
 
     def hits_moving_rect(self, previous, current):
         """Continuous overlap with a moving bird, including the growing tail."""
@@ -93,7 +94,7 @@ class FireLaser:
              current.right - (self.x - LASER_WIDTH / 2)),
             (self.x + LASER_WIDTH / 2 - previous.left,
              self.x + LASER_WIDTH / 2 - current.left),
-            (self.prev_y - previous.top, self.y - current.top),
+            (self.prev_y - self.eaten - previous.top, self.y - self.eaten - current.top),
             (previous.bottom - self.origin_y, current.bottom - self.origin_y),
             (previous.bottom - self.prev_y + LASER_LENGTH,
              current.bottom - self.y + LASER_LENGTH),
@@ -113,9 +114,10 @@ class FireLaser:
             return
         pic = art()[1][int(self.age * LASER_FPS) % LASER_FRAMES]
         visible = min(LASER_LENGTH, max(0, int(self.y - self.origin_y)))
-        if visible:
+        shown = visible - int(self.eaten)                # (its tip split on the coating is drawn by src/laser_split.py)
+        if shown > 0:
             surface.blit(pic, (round(self.x - pic.get_width() / 2), round(self.y - visible)),
-                         (0, LASER_LENGTH - visible, pic.get_width(), visible))
+                         (0, LASER_LENGTH - visible, pic.get_width(), shown))
 
 
 _SPIN = {}
@@ -738,19 +740,26 @@ def burn_birds(owner, birds, previous_boxes):
             if abs(previous.centery - current.centery) > BASE_HEIGHT / 2:
                 previous = current
             if bolt.hits_moving_rect(previous, current):
-                frames = getattr(bird, "frames", None)
-                if frames and isinstance(frames, list) and isinstance(frames[0], pygame.Surface):
-                    owner.effects.append(BurningBird(bird))
-                    bird.kill(flash=False)
-                else:
-                    try:
-                        bird.kill(flash=False)
-                    except TypeError:
-                        bird.kill()
+                burn_bird(owner, bird)
                 burned += 1
-                if owner.sounds:
-                    owner.sounds.play("enemy_explosion", volume=0.35, x=bird.x)
     return burned
+
+
+def burn_bird(owner, bird):
+    """A laser (or a half of one split on the reflective coating) burns `bird`: it burns and falls to ash (BurningBird,
+    in `owner.effects`), worth no points; a bird with no picture to burn just explodes."""
+    frames = getattr(bird, "frames", None)
+    effects = getattr(owner, "effects", None)
+    if frames and isinstance(frames, list) and isinstance(frames[0], pygame.Surface) and effects is not None:
+        effects.append(BurningBird(bird))
+        bird.kill(flash=False)
+    else:
+        try:
+            bird.kill(flash=False)
+        except TypeError:
+            bird.kill()
+    if getattr(owner, "sounds", None):
+        owner.sounds.play("enemy_explosion", volume=0.35, x=bird.x)
 
 
 def guardian_attacks(owner, dt, player_x, player_y):

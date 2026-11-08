@@ -24,6 +24,7 @@ import pygame
 
 import loading
 from errlog import log_exc
+import laser_split
 from settings import BASE_WIDTH
 
 SIZE = 40                       # px, on screen
@@ -274,6 +275,7 @@ class Gyro:
         self.count = max(0, min(2, int(count)))
         self.armour = max(1, int(armour))
         self.wide = 0.0                  # 0: by the cockpit, 1: moved out (dome, Phenix form)
+        self.split = 0.0                 # 1: further out still, while the halves of a split laser run (src/laser_split.py)
         sx, sy = (ship.x, ship.y) if ship is not None else (BASE_WIDTH / 2, 0.0)
         sides = (-1, 1)[:self.count]                 # one module: on the left; two: one on each side
         self.modules = [Module(s, self.armour, sx + s * ANCHOR[0], sy + ANCHOR[1]) for s in sides]
@@ -323,14 +325,17 @@ class Gyro:
         return [(m.side, m.x, m.y - SIZE * 0.48) for m in self.alive()]
 
     def target(self, ship, side):
-        ax = ANCHOR[0] + (WIDE[0] - ANCHOR[0]) * self.wide
-        ay = ANCHOR[1] + (WIDE[1] - ANCHOR[1]) * self.wide
+        ax = ANCHOR[0] + (WIDE[0] - ANCHOR[0]) * self.wide + laser_split.SPREAD[0] * self.split
+        ay = ANCHOR[1] + (WIDE[1] - ANCHOR[1]) * self.wide + laser_split.SPREAD[1] * self.split
         return ship.x + side * ax, ship.y + ay
 
     def update(self, game, ship, dt):
         out = 1.0 if _moved_out(ship) else 0.0
         step = dt / WIDE_TIME
         self.wide = min(out, self.wide + step) if out > self.wide else max(out, self.wide - step)
+        apart = 1.0 if laser_split.active(game, ship) else 0.0
+        step = dt / laser_split.SPREAD_TIME
+        self.split = min(apart, self.split + step) if apart > self.split else max(apart, self.split - step)
         k = 1.0 - math.exp(-FOLLOW * dt)
         self._puffs(dt)
         for m in self.modules:

@@ -76,9 +76,12 @@ def test_the_launch_carries_the_coating_once_gardiens_iii_is_won(game):
 def test_the_dome_and_the_phenix_form_stop_the_laser(game, hull):
     _fly(game, "guardians_1", coated=True)
     lost, bolt, owner = _laser_on_the_ship(game, hull)
-    assert lost == 0 and not bolt.alive and not game.player.dying
+    for _ in range(20):                                              # (it splits on the film, slice after slice)
+        bolt.update(DT)
+        update_play.enemy_attacks_vs_players(game)
+    assert lost == 0 and not game.player.dying and not bolt.alive                 # (all of it split: nothing left to burn the ship)
     assert owner.emission is None                                    # (its Guardian is free again)
-    assert game.explosions                                           # (a flash where it touched)
+    assert game.laser_slices                                         # (its two halves run around the ship)
 
 
 def test_the_bare_hull_still_burns(game):
