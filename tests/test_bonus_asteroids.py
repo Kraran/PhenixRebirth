@@ -1,7 +1,8 @@
 """BONUS - Asteroids (story_state "bonus_ast_endless", src/asteroids.py `endless`): pure Asteroids, level after level until
 the ship is lost; every big rock of a level from its start (4, 6, 8, 10, then 11), the next level once no rock is left,
-the saucer 10 % faster each level; its points pay when it ends, never a penalty nor a fall; the best score of the save
-is kept and shown at the top of the screen (not in the high scores)."""
+the saucer 10 % faster each level, the announcer saying each level; it ends with the GAME OVER of the ship, its points
+paid, never a penalty nor a fall (leaving it gains and loses nothing); the best score of the save is kept and shown at
+the top of the screen (not in the high scores)."""
 import pygame
 import pytest
 
@@ -84,6 +85,8 @@ def test_never_won_and_nothing_comes_in(run):
 def test_a_rock_hit_breaks_and_the_level_ends_when_no_rock_is_left(run):
     _launch(run)
     g = run.game
+    said = []
+    g._play_level_vo = lambda n: said.append(n)
     form = g.formation
     run.frames(2)
     g.player.invulnerable = 1e9
@@ -96,23 +99,44 @@ def test_a_rock_hit_breaks_and_the_level_ends_when_no_rock_is_left(run):
     assert form.level == 1 and not form.rocks                          # (a short pause first)
     run.frames(10)
     assert form.level == 2 and len(form.rocks) == 6 and g.adventure["level"] == 2 and form.banner > 0
-    assert g.adventure is not None
+    assert g.adventure is not None and said == [2]                     # (the announcer: "Level 2")
+    form.rocks.clear()
+    run.frames(int(ast.LEVEL_PAUSE * 60) + 5)
+    assert form.level == 3 and said == [2, 3]
 
 
-def test_the_loss_of_the_ship_pays_the_points_and_keeps_the_best(run):
-    _launch(run, mode="normal", credits=1000)
-    g = run.game
-    run.frames(2)
-    g.score = 4321
+def _lose_the_ship(run, g):
     g.player.lives = 1
     g.player.alive = False
     g.player.dying = False
     run.frames(3)
-    assert g.adventure is None
-    st = g.story.state
+
+
+def _until_back(run, g, limit=60 * 15):
+    for _ in range(limit):
+        if g.adventure is None:
+            return
+        run.frames(1)
+
+
+def test_the_loss_of_the_ship_shows_game_over_pays_the_points_and_keeps_the_best(run):
+    _launch(run, mode="normal", credits=1000)
+    g = run.game
+    run.frames(2)
+    g.score = 4321
+    _lose_the_ship(run, g)
+    st = ss.load_state(ss.story_path(1))                               # (written at once, before the card)
     assert st["credits"] == 1000 + 4321 and ss.endless_best(st, MID) == 4321
+    seen = False
+    for _ in range(60 * 15):
+        seen = seen or (g.game_over and g.hs_phase == "card")
+        if g.adventure is None:
+            break
+        run.frames(1)
+    assert seen and g.adventure is None                                # (the GAME OVER card, then the map)
+    assert g.menu_screen == "story_hub"
     assert g.story.toast.startswith(__import__("i18n").t("story_ast_end").format(pts=4321)[:8])
-    assert highscores.load_highscores() == [] or all(e.get("score") != 4321 for e in highscores.load_highscores())
+    assert all(e.get("score") != 4321 for e in highscores.load_highscores())
 
 
 def test_a_veteran_does_not_fall_in_it(run):
@@ -120,22 +144,20 @@ def test_a_veteran_does_not_fall_in_it(run):
     g = run.game
     run.frames(2)
     g.score = 100
-    g.player.alive = False
-    g.player.dying = False
-    run.frames(3)
-    assert g.adventure is None                                         # (no GAME OVER of a fallen Veteran: back at once)
+    _lose_the_ship(run, g)
+    _until_back(run, g)
     st = ss.load_state(ss.story_path(1))
-    assert not st.get("fallen") and st["credits"] == 600
+    assert g.adventure is None and not st.get("fallen") and st["credits"] == 600
 
 
-def test_leaving_it_pays_too(run):
-    _launch(run, credits=0)
+def test_leaving_it_gains_and_loses_nothing(run):
+    _launch(run, credits=300)
     g = run.game
     run.frames(2)
     g.score = 250
     g._quit_to_menu()
     st = ss.load_state(ss.story_path(1))
-    assert st["credits"] == 250 and ss.endless_best(st, MID) == 250
+    assert st["credits"] == 300 and ss.endless_best(st, MID) == 0
 
 
 def test_a_lower_score_keeps_the_record():

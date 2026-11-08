@@ -726,8 +726,8 @@ MISSIONS = [
     },
     # BONUS: Asteroids, the endless level (src/asteroids.py, `endless`): pure Asteroids, level after level (4, 6, 8, 10,
     # then 11 big rocks, all there from the start of the level), the saucer firing 10 % faster each level, until the ship
-    # is lost. It is never won nor lost: its points pay in credits when it ends (by the loss of the ship or by leaving
-    # it), without a penalty nor a fall, and the best score of the save is kept (ENDLESS_BEST, shown at the top of the
+    # is lost (the GAME OVER of the game). It is never won nor lost: its points pay in credits when the ship is lost,
+    # without a penalty nor a fall (leaving it by the pause menu gains nothing and loses nothing), and the best score of the save is kept (ENDLESS_BEST, shown at the top of the
     # screen, not in the high scores). Secret until the game is finished; then on the map of every act, replayable.
     {
         "id": "bonus_ast_endless", "acts": (1, 2, 3), "secret": True, "extra": True, "asteroids": True, "endless": True,
@@ -2675,7 +2675,7 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
     record_kills(state, kills)            # the enemies met count whatever the outcome
     record_mission_kills(state, mission_id, kills)
     if is_endless(mission_by_id(mission_id)):
-        # an endless mission ends with the ship (or when it is left): never a failure, its points pay, the best is kept
+        # an endless mission ends with the ship: never a failure, its points pay, the best is kept
         cleared = True
         res["cleared"] = True
         res["best"] = score > endless_best(state, mission_id)
