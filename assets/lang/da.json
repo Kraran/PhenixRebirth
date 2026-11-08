@@ -215,6 +215,7 @@
  "story_grp_story": "STORY",
  "story_grp_hunt": "JAGT · KAN SPILLES IGEN",
  "story_grp_extra": "EKSTRA",
+ "story_grp_final": "SLUTBONUS",
  "story_next": "NÆSTE",
  "story_unlock_after": "Åbner efter: {name}",
  "story_log_goal": "MÅL: {name}",

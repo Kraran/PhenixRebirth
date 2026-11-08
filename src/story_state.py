@@ -31,6 +31,7 @@ NAME_MAX = 12
 # A failed mission (Normal and Novice modes) gains nothing and costs this share of the credits held.
 # Veteran: a failure is a permanent death.
 PENALTY_RATE = 0.05
+CREDITS_MAX = 99999                    # the workshop holds at most this many credits: what is won beyond is lost
 NOVICE_PENALTY_RATE = 0.02
 # Novice mode: the hulls start with three lives (the workshop sells the fourth, like the second one in Normal).
 NOVICE_LIVES = 3
@@ -710,17 +711,18 @@ MISSIONS = [
     },
     # BONUS: Scramble, the same level as the test (the menu of the five settings included) but for real: its points pay in
     # credits, a failure costs what a failure always costs, its launchers and its red commander go into the Bestiary.
-    # Secret until the game is finished (the open ending of Act IV has been told); then on the map of every act.
+    # Secret until the game is finished (the open ending of Act IV has been told); then at the end of Act IV, under END
+    # BONUS (GROUP_FINAL), with the two other final BONUS missions.
     {
-        "id": "bonus_scramble", "acts": (1, 2, 3), "secret": True, "extra": True, "scramble": True,
+        "id": "bonus_scramble", "acts": (ENDING_ACT,), "secret": True, "extra": True, "final_bonus": True, "scramble": True,
         "title": "story_m_scramble_bonus", "hud_title": "story_m_scramble_hud", "blurb": "story_m_scramble_bonus_b",
         "need": ENDING_DONE, "content": 1, "speed": 1.0,
     },
     # BONUS: Lunar Lander, the same level as the test (the menu of the five settings included) but for real: the landing pays its
     # points (+ the fuel left) in credits, a crash costs what a failure always costs. Secret until the game is finished (the open
-    # ending of Act IV has been told); then on the map of every act, replayable at will.
+    # ending of Act IV has been told); then at the end of Act IV (END BONUS), replayable at will.
     {
-        "id": "bonus_lander", "acts": (1, 2, 3), "secret": True, "extra": True, "lander": True,
+        "id": "bonus_lander", "acts": (ENDING_ACT,), "secret": True, "extra": True, "final_bonus": True, "lander": True,
         "title": "story_m_lander_bonus", "hud_title": "story_m_lander_hud", "blurb": "story_m_lander_bonus_b",
         "need": ENDING_DONE, "content": 1, "speed": 1.0,
     },
@@ -728,9 +730,9 @@ MISSIONS = [
     # then 11 big rocks, all there from the start of the level), the saucer firing 10 % faster each level, until the ship
     # is lost (the GAME OVER of the game). It is never won nor lost: its points pay in credits when the ship is lost,
     # without a penalty nor a fall (leaving it by the pause menu gains nothing and loses nothing), and the best score of the save is kept (ENDLESS_BEST, shown at the top of the
-    # screen, not in the high scores). Secret until the game is finished; then on the map of every act, replayable.
+    # screen, not in the high scores). Secret until the game is finished; then at the end of Act IV (END BONUS), replayable.
     {
-        "id": "bonus_ast_endless", "acts": (1, 2, 3), "secret": True, "extra": True, "asteroids": True, "endless": True,
+        "id": "bonus_ast_endless", "acts": (ENDING_ACT,), "secret": True, "extra": True, "final_bonus": True, "asteroids": True, "endless": True,
         "title": "story_m_ast_bonus", "hud_title": "story_m_ast_bonus_hud", "blurb": "story_m_ast_bonus_b",
         "need": ENDING_DONE, "content": 1, "speed": 1.0,
     },
@@ -1162,7 +1164,7 @@ def migrate_state(data):
         return None
     base = default_state()
     old_version = int(_num(data.get("version"), 2))
-    base["credits"] = max(0, int(_num(data.get("credits"), 0)))
+    base["credits"] = max(0, min(CREDITS_MAX, int(_num(data.get("credits"), 0))))
     base["selected_slot"] = int(_num(data.get("selected_slot"), 0))
     base["missiles"] = max(0, min(MISSILE_MAX, int(_num(data.get("missiles"), 0))))
     if isinstance(data.get("module_parts"), list):
@@ -2048,14 +2050,19 @@ def mission_in_act(mission, act):
 # The map groups its missions. A hunt is a Bestiary mission (replayable); an "extra" is a BONUS or the optional
 # paint series; the rest is the story (the Asteroids prelude of each act among them). Act 1 lists the hunts first (they bring the speed, the life and the walls the
 # Dome series needs), the later acts list the story first.
-GROUP_STORY, GROUP_HUNT, GROUP_EXTRA = "story", "hunt", "extra"
-GROUP_ORDER = {1: (GROUP_HUNT, GROUP_STORY, GROUP_EXTRA), 2: (GROUP_STORY, GROUP_HUNT, GROUP_EXTRA),
-               3: (GROUP_STORY, GROUP_HUNT, GROUP_EXTRA)}
+# The final BONUS missions (Scramble, Lunar Lander, Asteroids: `final_bonus`) close Act IV under their own heading,
+# END BONUS.
+GROUP_STORY, GROUP_HUNT, GROUP_EXTRA, GROUP_FINAL = "story", "hunt", "extra", "final"
+GROUP_ORDER = {1: (GROUP_HUNT, GROUP_STORY, GROUP_EXTRA, GROUP_FINAL),
+               2: (GROUP_STORY, GROUP_HUNT, GROUP_EXTRA, GROUP_FINAL),
+               3: (GROUP_STORY, GROUP_HUNT, GROUP_EXTRA, GROUP_FINAL)}
 
 
 def mission_group(mission):
-    """"hunt", "extra" or "story": the section of the map a mission belongs to."""
+    """"hunt", "extra", "final" or "story": the section of the map a mission belongs to."""
     m = mission or {}
+    if m.get("final_bonus"):
+        return GROUP_FINAL
     if m.get("hunt"):
         return GROUP_HUNT
     if (m.get("training") or m.get("extra") or m.get("reactor") or m.get("drop") or m.get("needs_reactor") or m.get("reward")
@@ -2633,6 +2640,13 @@ def buy(state, sid):
 
 
 # ----------------------------------------------------------------- results
+def add_credits(state, amount):
+    """Add credits to the save, at most CREDITS_MAX in all (what would go beyond is lost). Returns what was really added."""
+    before = max(0, int(_num(state.get("credits"), 0)))
+    state["credits"] = min(CREDITS_MAX, before + max(0, int(_num(amount, 0))))
+    return state["credits"] - before
+
+
 def failure_penalty(credits, mode="normal"):
     """Points lost after a failed mission in Normal mode (5 % of the credits held) or Novice mode (2 %)."""
     credits = max(0, int(_num(credits, 0)))
@@ -2706,7 +2720,7 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
         res["score"] = 0
         res["no_item"] = story_items.REACTORS.get(mission.get("reactor")) or mission.get("drop")
         return res
-    state["credits"] = int(state.get("credits", 0)) + score
+    add_credits(state, score)                                # (at most CREDITS_MAX: the rest is lost)
     if is_paint(mission):
         paint = paint_state(state)
         if paint["step"] == int(mission["paint"]) - 1:        # in order only (the cheat can fly any)
@@ -2745,7 +2759,7 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
         res["first"] = mission_id not in cleared_ids
         if res["first"] and int(_num(mission.get("reward"), 0)) > 0:
             res["reward"] = int(mission["reward"])   # the parts salvaged (a BONUS mission): paid once
-            state["credits"] = int(state.get("credits", 0)) + res["reward"]
+            add_credits(state, res["reward"])
         part = MODULE_PARTS.get(mission_id)
         if part and part not in module_parts(state):
             state["module_parts"] = module_parts(state) + [part]

@@ -1589,8 +1589,8 @@ class StoryHub:
                 self.lander_index = 0                 # the Lunar Lander test: the setting is chosen first (to be taken out of
                 self.screen = "lander_pick"           # the final missions)
                 self.pick_for = "lander"
-                lander_view.warm(lander.MENU_ORDER)   # (the pictures of the five settings are made in the background)
-                return None
+                self.pick_load = "lander"             # (the Game shows a loading bar while the first picture is made, then
+                return None                           # the other four are made in the background: Game._load_pick_menu)
             if mission and mission.get("modules") and self.mission_playable(mission):
                 self.lander_index = MODULE_PICKS.index((2, 1))       # the test of the modules: how many, how tough
                 self.screen = "lander_pick"                         # (the same menu, its own choices)
@@ -1600,7 +1600,7 @@ class StoryHub:
                 self.lander_index = 0                 # the Scramble test: the same choice of the setting (the same five)
                 self.screen = "lander_pick"
                 self.pick_for = "scramble"
-                scramble_view.warm(lander.MENU_ORDER)
+                self.pick_load = "scramble"           # (the same loading bar: Game._load_pick_menu)
                 return None
             return self._launch_selected()
         if self.pane == "extras":
@@ -2430,6 +2430,8 @@ class StoryHub:
             surface.blit(picture, (0, 0))
         title = ("scramble_pick_title" if self._pick_scramble() else "modules_pick_title" if self._pick_modules()
                  else titles[self.screen])
+        if self.screen == "lander_pick" and (self._mission() or {}).get("final_bonus"):
+            title += "_final"                         # (BONUS FINAL - ..., not TEST - ...)
         phobos_ui.title(surface, medium, t(title), cx, 10)
         getattr(self, "_draw_gate_" + self.screen)(surface, font, medium, small)
 

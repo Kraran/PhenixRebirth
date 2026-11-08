@@ -215,6 +215,7 @@
  "story_grp_story": "FABUŁA",
  "story_grp_hunt": "POLOWANIA · DO POWTÓRZENIA",
  "story_grp_extra": "EXTRA",
+ "story_grp_final": "BONUSY KOŃCOWE",
  "story_next": "NASTĘPNA",
  "story_unlock_after": "Otwiera się po: {name}",
  "story_log_goal": "CEL: {name}",

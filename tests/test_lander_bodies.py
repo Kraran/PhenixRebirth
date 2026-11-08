@@ -440,11 +440,9 @@ def test_the_menu_makes_the_pictures_of_the_settings_in_the_background(monkeypat
 
 def test_the_background_work_is_off_in_the_tests_and_the_menu_asks_for_it(monkeypatch):
     assert lv.WARM_UP is False
-    asked = []
-    monkeypatch.setattr(lv, "warm", lambda order: asked.append(list(order)))
     hub = _hub()
     hub.confirm()
-    assert asked == [list(ld.MENU_ORDER)]
+    assert hub.screen == "lander_pick" and hub.pick_load == "lander"     # (the Game makes it: Game._load_pick_menu)
 
 
 # ------------------------------------------------------------------ the BONUS mission
@@ -471,14 +469,14 @@ def test_the_bonus_lander_is_a_bonus_of_the_map_and_never_what_the_map_suggests(
     hub = _bonus_hub()
     hub.state["cleared"] = [c for c in hub.state["cleared"] if c != "bonus_lander"]       # (the ACT2 shortcut of the helper won it)
     m = ss.mission_by_id("bonus_lander")
-    assert ss.mission_group(m) == ss.GROUP_EXTRA and not m.get("training") and not m.get("test") and m["lander"]
+    assert ss.mission_group(m) == ss.GROUP_FINAL and not m.get("training") and not m.get("test") and m["lander"]
     assert ss.next_mission(hub.state, [m]) is None                # (alone on the map, it is still not suggested)
     assert ss.mission_playable(hub.state, m) and not ss.mission_playable(_bonus_hub(done=False).state, m)
     for lang in ("fr", "en"):
         before = i18n.get_lang()
         i18n.set_lang(lang)
         try:
-            assert i18n.t(m["title"]).startswith("BONUS - ") and i18n.t(m["blurb"]) != m["blurb"]
+            assert i18n.t(m["title"]).startswith(("BONUS FINAL - ", "FINAL BONUS - ")) and i18n.t(m["blurb"]) != m["blurb"]
         finally:
             i18n.set_lang(before)
 

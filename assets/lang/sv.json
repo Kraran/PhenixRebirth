@@ -215,6 +215,7 @@
  "story_grp_story": "BERÄTTELSE",
  "story_grp_hunt": "JAKTER · KAN SPELAS OM",
  "story_grp_extra": "EXTRA",
+ "story_grp_final": "SLUTBONUS",
  "story_next": "NÄSTA",
  "story_unlock_after": "Öppnas efter: {name}",
  "story_log_goal": "MÅL: {name}",

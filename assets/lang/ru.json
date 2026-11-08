@@ -215,6 +215,7 @@
  "story_grp_story": "СЮЖЕТ",
  "story_grp_hunt": "ОХОТЫ · МОЖНО ПОВТОРЯТЬ",
  "story_grp_extra": "БОНУС",
+ "story_grp_final": "ФИНАЛЬНЫЙ БОНУС",
  "story_next": "СЛЕДУЮЩАЯ",
  "story_unlock_after": "Откроется после: {name}",
  "story_log_goal": "ЦЕЛЬ: {name}",
