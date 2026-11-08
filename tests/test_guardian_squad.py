@@ -190,9 +190,11 @@ def test_the_wave_does_not_end_while_a_guardian_flies(game):
     game.update()
     assert game.stage_transition is None                                  # the birds are down, not the Guardians
     sq.kill_all()
-    for _ in range(3):
+    for _ in range(60 * 4):                                               # (and their debris have fallen)
+        if game.stage_transition is not None:
+            break
         game.update()
-    assert game.stage_transition == "fly_up"
+    assert game.stage_transition == "fly_up" and not any(g.fx_active() for g in sq.guardians)
 
 
 def test_their_laser_burns_the_ship_in_any_wave(game):
