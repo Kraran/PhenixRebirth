@@ -3,7 +3,9 @@ equipment of the Adventure.
 
 - "gameplay_style": "classic" (the game as it always was) or "adventure";
 - "gp_modules": the two escort modules of the Adventure (src/gyro.py), one hit each;
-- "gp_missiles": the antimatter missiles of the Adventure (src/antimatter.py), 0 to MISSILES_MAX for the whole game.
+- "gp_missiles": the antimatter missiles of the Adventure (src/antimatter.py), 0 to MISSILES_MAX for the whole game;
+- "gp_reactor": the two-dimensional impulse reactor of the Adventure (its BONUS missions): the ship also flies up and
+  down, in the lower third of the screen.
 
 Only in a solo game (not the hot-seat, not the coop, not the demo); the choice is read when the game starts. The style
 is not saved: the game always starts in the classic style (the two settings of the Adventure style are saved). A game in
@@ -11,6 +13,7 @@ Adventure style never enters the high scores (Game._begin_highscore_flow: like a
 
 import antimatter
 import gyro
+from settings import PLAYER_VERTICAL_BOTTOM, PLAYER_VERTICAL_TOP
 
 STYLES = ("classic", "adventure")
 MISSILES_MAX = 20
@@ -37,6 +40,8 @@ def start(game):
     n = max(0, min(MISSILES_MAX, int(getattr(game, "gp_missiles", 0) or 0)))
     if n:
         game.antimatter = antimatter.Armory(True, count=n)
+    if getattr(game, "gp_reactor", True) and getattr(game, "player", None) is not None:
+        game.player.vertical_range = (PLAYER_VERTICAL_TOP, PLAYER_VERTICAL_BOTTOM)
 
 
 def stop(game):

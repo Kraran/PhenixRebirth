@@ -17,7 +17,7 @@ EXTRAS = ("highscores", "achievements", "jukebox", "credits", "help", "addon")
 
 OPTION_TABS = (
     ("game", ("control", "coop_p1", "coop_p2", "keybinds", "autofire", "rumble", "language")),
-    ("gameplay", ("gp_style", "gp_modules", "gp_missiles")),          # the Adventure style of a solo game (arcade_style.py)
+    ("gameplay", ("gp_style", "gp_modules", "gp_missiles", "gp_reactor")),          # the Adventure style of a solo game (arcade_style.py)
     ("audio", ("sfx", "music", "audio_mix", "ingame_music")),
     ("display", ("display", "bezel", "scanlines", "fps")),
     ("advanced", ("gpu", "vsync", "hz", "reset_hs")),

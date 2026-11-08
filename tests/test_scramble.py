@@ -377,7 +377,7 @@ def test_killing_the_boss_of_the_base_wins_the_mission(run):
     run.frames(60 * 3)
     assert g.adventure
     form.base._kill_boss(g)
-    run.frames(int(60 * (scb.DONE_AFTER + 1)))
+    run.frames(int(60 * (scb.DONE_AFTER + 2.5)))      # (and its last explosions have ended)
     assert not g.adventure                              # over, and won (a training: nothing won either)
     assert g.story.toast == __import__("i18n").t("story_scramble_clear")
 

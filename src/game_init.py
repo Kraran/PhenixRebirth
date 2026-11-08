@@ -406,6 +406,7 @@ def init_settings(game, soft):
         game.gameplay_style = "classic"                      # (always the classic style when the game starts: not saved)
         game.gp_modules = bool(user.get("gp_modules", True))
         game.gp_missiles = int(user.get("gp_missiles", 5))
+        game.gp_reactor = bool(user.get("gp_reactor", True))
     game.arcade_style = False                                # (set by arcade_style.start when a solo game begins)
     if not hasattr(game, "ship_id"):
         game.ship_id = "phoenix"

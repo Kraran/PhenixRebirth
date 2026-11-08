@@ -18,7 +18,7 @@ from enemy import BigBird, Enemy
 import guardian
 from guardian import FireLaser, Guardian, GuardianFormation
 import laser_split
-from explosion import TeslaCoilFx
+from explosion import Explosion, TeslaCoilFx
 from i18n import t
 from loot import FallingItem
 
@@ -243,6 +243,17 @@ def squad_clear(game):
     return sq is None or sq.clear()
 
 
+# the explosions that are not the ship's: the shield ripple and the landing puff never hold the end of a level
+_NOT_ENEMY_BLASTS = ("shield", "dust")
+
+
+def blasts_running(game):
+    """True while the explosion of an enemy (or of a part of the saucer) still plays: the ship waits for it to finish
+    before flying up to the next level."""
+    return any(isinstance(e, Explosion) and e.kind not in _NOT_ENEMY_BLASTS and not e.is_finished()
+               for e in getattr(game, "explosions", None) or [])
+
+
 def begin_stage_clear(game):
     """Non-boss stage cleared: start the fly-up transition."""
     game._clear_enemy_fire()
@@ -306,7 +317,7 @@ def tick_boss_outro(game):
         if exp.is_finished():
             game.explosions.remove(exp)
     # After spectacle, ship flies to next stage
-    if game.transition_timer > 1.8:
+    if game.transition_timer > 1.8 and not blasts_running(game):     # (and the last explosions of the saucer have ended)
         game._clear_enemy_fire()
         game._on_stage_cleared()
         if not getattr(game, "adventure", None):          # a mission never announces the next level
