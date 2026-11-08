@@ -198,6 +198,11 @@ class Saucer:
         self.fire_in -= dt
         return self.x < -90 or self.x > BASE_WIDTH + 90        # True: it left the screen
 
+    def delta_to(self, x, y):
+        """From the saucer to (x, y), the plain way: it crosses the screen once and never wraps round it (nothing on
+        the other side can touch it, it shows nowhere else)."""
+        return x - self.x, y - self.y
+
 
 class Spark:
     """A bit of debris or dust (cosmetic)."""
@@ -382,7 +387,7 @@ class AsteroidFormation:
             _blit_wrapped(surface, r.image(), r.x, r.y, wrap=not r.entering)
         if self.saucer is not None:
             s = self.saucer
-            _blit_wrapped(surface, saucer_frame(s.age), s.x, s.y + math.sin(s.age * 5.0) * 2.0)
+            _blit_wrapped(surface, saucer_frame(s.age), s.x, s.y + math.sin(s.age * 5.0) * 2.0, wrap=False)
         for p in self.sparks:
             a = max(0.0, p.life / p.max)
             if p.kind == "dust":
@@ -584,7 +589,7 @@ def tick(game):
             form.break_rock(game, hit)
             continue
         if shot.mine and form.saucer is not None:
-            dx, dy = wrapped_delta(shot.x, shot.y, form.saucer.x, form.saucer.y)
+            dx, dy = form.saucer.delta_to(shot.x, shot.y)
             if abs(dx) < SAUCER_HALF[0] and abs(dy) < SAUCER_HALF[1]:
                 form.shots.remove(shot)
                 form.blow_saucer(game)
@@ -606,7 +611,7 @@ def tick(game):
                     _ship_hit(game, form)
                     break
             if form.saucer is not None and p.alive and not p.dying:
-                dx, dy = wrapped_delta(p.x, p.y, form.saucer.x, form.saucer.y)
+                dx, dy = form.saucer.delta_to(p.x, p.y)
                 if abs(dx) < SAUCER_HALF[0] + radius * 0.6 and abs(dy) < SAUCER_HALF[1] + radius * 0.6:
                     form.blow_saucer(game)
                     _ship_hit(game, form)

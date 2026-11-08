@@ -175,7 +175,7 @@ def _touch(game, m):
                 return "hit"
         s = ast.saucer
         if s is not None:
-            dx, dy = asteroids.wrapped_delta(x, y, s.x, s.y)
+            dx, dy = s.delta_to(x, y)
             if abs(dx) < asteroids.SAUCER_HALF[0] + HIT_HALF and abs(dy) < asteroids.SAUCER_HALF[1] + HIT_HALF:
                 return "hit"
         return None
@@ -293,7 +293,7 @@ def _blast_asteroids(game, form, x, y):
         for r in near:
             form.break_rock(game, r)
     s = form.saucer
-    if s is not None and math.hypot(*asteroids.wrapped_delta(x, y, s.x, s.y)) <= BLAST_RADIUS + max(asteroids.SAUCER_HALF):
+    if s is not None and math.hypot(*s.delta_to(x, y)) <= BLAST_RADIUS + max(asteroids.SAUCER_HALF):
         form.blow_saucer(game)
 
 
