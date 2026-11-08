@@ -190,12 +190,12 @@ def test_maxed_rows_go_last():
     for f in ("ch1_speed", "ch1_life_2", "ch1_wall", "dome_online"):
         st["flags"][f] = True
     st["credits"] = 100000
-    assert ss.buy(st, "speed_60")
+    assert ss.buy(st, "lives_2")                      # (Act 1: no "Vies 3", the row stays and reads MAX)
     rows = ss.shop_for(st)
     notes = [ss.upgrade_note(st, r[0]) == "story_owned" for r in rows]
     assert any(notes)
     assert notes == sorted(notes)                      # False... then True...: the finished rows are at the bottom
-    assert rows[0][0] != "speed_60"
+    assert rows[0][0] != "lives_2" and rows[-1][0] == "lives_2"
 
 
 def test_locked_row_names_its_mission(run):

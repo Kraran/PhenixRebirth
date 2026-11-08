@@ -2473,6 +2473,10 @@ ACT3_SHOP_IDS = {"shield": ("speed_100", "lives_3", "wall_immune", "dome_dur"),
 
 # The workshop sells "Vies 2" (and "Vies 3" in Act 3): the number is the lives you end up with, so a Novice (who starts with 3)
 # reads "Vies 4" (then "Vies 5")
+# The next step of a line of the workshop (a step bought is no longer listed once its next step is)
+NEXT_STEP = {"speed_60": "speed_80", "speed_80": "speed_100", "lives_2": "lives_3", "wall_slow": "wall_immune",
+             "phenix_cap_80": "phenix_cap_100"}
+
 NOVICE_LABELS = {"story_shop_lives2": "story_shop_lives4", "story_shop_lives3": "story_shop_lives5"}
 
 
@@ -2485,6 +2489,10 @@ def shop_for(state):
     if act >= 3:
         ids = list(ids) + list(ACT3_SHOP_IDS[hull])
     rows = [(u[0], u[1], upgrade_cost(slot, u[0]), u[3]) for sid in ids for u in UPGRADES if u[0] == sid]
+    # a step bought gives way to the next step of its line when the workshop sells it: one row per upgrade
+    # ("Vies 2 MAX" beside "Vies 3" read as "two lives at most")
+    listed = {r[0] for r in rows}
+    rows = [r for r in rows if not (NEXT_STEP.get(r[0]) in listed and upgrade_note(state, r[0]) == "story_owned")]
     target = paint_target(state)
     if act >= 2 and target is not None and target.get("id") == slot.get("id"):
         rows.append(PAINT_ROW)                 # the paint shop: PAINT_COST credits, and one change per finished series
