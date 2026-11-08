@@ -933,7 +933,7 @@ def test_the_stars_follow_the_real_movement_of_the_ship_through_the_wrap(run):
 def test_the_sprites_are_there_with_their_sizes():
     here = os.path.join(os.path.dirname(__file__), "..", "assets", "sprites", "asteroids")
     for size, cell in (("L", 132), ("M", 78), ("S", 44)):
-        for v in (0, 1):
+        for v in range(ast.ROCK_VARIANTS):
             img = pygame.image.load(os.path.join(here, f"rock_{size}_{v}.png"))
             assert img.get_size() == (cell * ast.ROCK_FRAMES, cell)
 
@@ -943,6 +943,20 @@ def test_every_rock_size_gives_its_frames():
         for v in range(ast.ROCK_VARIANTS):
             frames = ast.rock_frames(size, v)
             assert len(frames) == ast.ROCK_FRAMES and frames[0].get_width() == frames[0].get_height()
+
+
+def test_three_shapes_per_size_one_drawn_at_random_for_each_new_rock():
+    import random
+    assert ast.ROCK_VARIANTS == 3
+    for size in (1, 2, 3):                                  # (three different silhouettes, not the same one again)
+        outlines = {pygame.mask.from_surface(ast.rock_frames(size, v)[0]).count() for v in range(3)}
+        assert len(outlines) == 3
+    rng = random.Random(5)
+    picked = {Rock(3, 0, 0, 0, 0, rng).variant for _ in range(60)}
+    assert picked == {0, 1, 2}
+    form = AsteroidFormation(rng=random.Random(9))
+    form.new_wave()
+    assert all(r.variant in (0, 1, 2) for r in form.rocks)
 
 
 def test_the_generator_is_deterministic(tmp_path):
