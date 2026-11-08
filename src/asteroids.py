@@ -21,7 +21,8 @@ _update_asteroid) and draws it turned (Player._draw_asteroid). Everything else i
 THE ENDLESS LEVEL (`endless`: the mission "BONUS - Asteroids", once the game is finished): pure Asteroids, level after
 level until the ship is lost. Every big rock of a level is there from its start (ENDLESS_ROCKS: 4, 6, 8, 10, then 11
 from level 5 on), nothing comes in from outside; a level ends when no rock is left, not even a small one, and the next
-one starts after LEVEL_PAUSE. The saucer comes as in the belts and fires SAUCER_LEVEL_STEP (10 %) faster each level.
+one starts after LEVEL_PAUSE. The saucer comes as in the belts and fires SAUCER_LEVEL_STEP (10 %) faster each level;
+every TWIN_EVERY levels (5, 10, 15...) the saucers come by two, one from each side of the screen at different heights.
 There is no target and the mission is never won: it ends with the GAME OVER of the ship, its score is banked then
 (story_state.record_result; leaving it by the pause menu gains nothing and loses nothing), and the best one is kept in the save and shown at the top of the screen (not in the high scores).
 
@@ -75,6 +76,8 @@ ENDLESS_ROCKS = (4, 6, 8, 10, 11)    # the endless level: big rocks of levels 1,
 LEVEL_PAUSE = 1.6                    # seconds between the last rock of a level and the next level
 LEVEL_BANNER = 2.0                   # seconds the number of a new level is shown
 SAUCER_LEVEL_STEP = 0.10             # the saucer fires this much faster at each level (level 3: 20 % faster than level 1)
+TWIN_EVERY = 5                       # the endless level: at levels 5, 10, 15... the saucers come by two, from both sides
+TWIN_GAP = 220                       # px: at least this far apart in height, the two saucers of a pair
 
 _strips = {}
 _saucer_cache = {}
@@ -179,9 +182,9 @@ class Shot:
 
 
 class Saucer:
-    def __init__(self, left, rng):
+    def __init__(self, left, rng, y=None):
         self.x = -60.0 if left else BASE_WIDTH + 60.0
-        self.y = rng.uniform(150, BASE_HEIGHT - 150)
+        self.y = rng.uniform(150, BASE_HEIGHT - 150) if y is None else float(y)
         self.vx = invaders.SAUCER_SPEED * (1 if left else -1)
         self.vy = 0.0
         self.age = 0.0
@@ -230,7 +233,7 @@ class AsteroidFormation:
         self.rocks = []
         self.shots = []
         self.sparks = []
-        self.saucer = None
+        self.saucers = []                 # on the screen: one, or two at the twin levels of the endless level
         self.time = 0.0
         self.destroyed = 0                # rocks hit so far (every piece counts)
         self.waves = 0                    # 0: the first rocks are not placed yet
@@ -247,6 +250,31 @@ class AsteroidFormation:
         self.banner = 0.0                 # seconds the number of the level is still shown (endless)
         if self.endless:
             self.repop = False
+
+    @property
+    def saucer(self):
+        """The saucer on the screen (the first one when there are two), or None."""
+        return self.saucers[0] if self.saucers else None
+
+    @saucer.setter
+    def saucer(self, s):
+        self.saucers = [] if s is None else [s]
+
+    def twin_level(self):
+        """The endless level sends its saucers by two at levels 5, 10, 15..."""
+        return self.endless and self.level % TWIN_EVERY == 0
+
+    def send_saucers(self):
+        """A saucer comes in from one side (two at a twin level: one from each side, at heights well apart)."""
+        left = self.rng.random() < 0.5
+        first = Saucer(left, self.rng)
+        self.saucers = [first]
+        if self.twin_level():
+            lo, hi = 150.0, BASE_HEIGHT - 150.0
+            choices = [y for y in (first.y - TWIN_GAP, first.y + TWIN_GAP) if lo <= y <= hi] or [lo if first.y > (lo + hi) / 2 else hi]
+            y = self.rng.choice(choices) if len(choices) > 1 else choices[0]
+            self.saucers.append(Saucer(not left, self.rng, y=y))
+        return self.saucers
 
     # --- what the rest of the game asks of a formation ---
     def update(self, dt, player_x):
@@ -365,18 +393,19 @@ class AsteroidFormation:
                                        rock.vy * 0.6 + math.sin(a) * sp, self.rng))
         # (once the target is reached a rock that is hit is just gone: the screen only has to be emptied)
 
-    def blow_saucer(self, game):
-        s = self.saucer
-        if s is None:
+    def blow_saucer(self, game, s=None):
+        s = s if s is not None else self.saucer
+        if s is None or s not in self.saucers:
             return
-        self.saucer = None
+        self.saucers.remove(s)
         game._add_score(game.player, SAUCER_POINTS)
         self.debris(s.x, s.y, "fire", 40, 300, life=(0.4, 1.2), size=(3.0, 8.0))
         self.debris(s.x, s.y, "spark", 22, 380, life=(0.3, 0.9), size=(2.0, 3.0))
         self.sparks.append(Spark(s.x, s.y, 0, 0, 0.35, "flash", 90))
         game.explosions.append(game._boom(s.x, s.y, kind="enemy"))
         try:
-            game.sounds.stop_sfx("saucer_pass", 150)
+            if not self.saucers:
+                game.sounds.stop_sfx("saucer_pass", 150)
             game.sounds.play("explosion", volume=0.7, x=s.x)
         except Exception:
             log_exc("asteroids.blow_saucer")
@@ -385,8 +414,7 @@ class AsteroidFormation:
     def draw(self, surface):
         for r in sorted(self.rocks, key=lambda r: -r.size):
             _blit_wrapped(surface, r.image(), r.x, r.y, wrap=not r.entering)
-        if self.saucer is not None:
-            s = self.saucer
+        for s in self.saucers:
             _blit_wrapped(surface, saucer_frame(s.age), s.x, s.y + math.sin(s.age * 5.0) * 2.0, wrap=False)
         for p in self.sparks:
             a = max(0.0, p.life / p.max)
@@ -547,27 +575,27 @@ def tick(game):
         sp.vy *= damp
     form.sparks = [sp for sp in form.sparks if sp.life > 0]
     # --- the saucer
-    if form.saucer is None and not form.reached:
+    if not form.saucers and not form.reached:
         form.saucer_in -= dt
         if form.saucer_in <= 0:
-            form.saucer = Saucer(form.rng.random() < 0.5, form.rng)
+            form.send_saucers()
             form.saucer_in = form.rng.uniform(*SAUCER_GAP)
             try:
                 game.sounds.play_voice("saucer_pass", x=form.saucer.x)
             except Exception:
                 log_exc("asteroids.tick")
-    if form.saucer is not None:
-        s = form.saucer
-        if s.update(dt, form.rng):
-            form.saucer = None
-        elif s.fire_in <= 0 and p.alive and not p.dying:
-            s.fire_in = form.saucer_fire_gap()
-            dx, dy = wrapped_delta(s.x, s.y, p.x, p.y)
-            a = math.atan2(dy, dx) + form.rng.uniform(-SAUCER_AIM_ERROR, SAUCER_AIM_ERROR)
-            form.shots.append(Shot(s.x, s.y, math.cos(a) * SAUCER_SHOT_SPEED, math.sin(a) * SAUCER_SHOT_SPEED,
-                                   SAUCER_SHOT_LIFE, False))
-            game.sounds.play("enemy_shoot", x=s.x)
-        if form.saucer is not None:
+    if form.saucers:
+        for s in list(form.saucers):
+            if s.update(dt, form.rng):
+                form.saucers.remove(s)
+            elif s.fire_in <= 0 and p.alive and not p.dying:
+                s.fire_in = form.saucer_fire_gap()
+                dx, dy = wrapped_delta(s.x, s.y, p.x, p.y)
+                a = math.atan2(dy, dx) + form.rng.uniform(-SAUCER_AIM_ERROR, SAUCER_AIM_ERROR)
+                form.shots.append(Shot(s.x, s.y, math.cos(a) * SAUCER_SHOT_SPEED, math.sin(a) * SAUCER_SHOT_SPEED,
+                                       SAUCER_SHOT_LIFE, False))
+                game.sounds.play("enemy_shoot", x=s.x)
+        if form.saucers:
             try:
                 game.sounds.follow_voice("saucer_pass", x=form.saucer.x, paused=bool(game.paused))
             except Exception:
@@ -588,12 +616,13 @@ def tick(game):
             form.shots.remove(shot)
             form.break_rock(game, hit)
             continue
-        if shot.mine and form.saucer is not None:
-            dx, dy = form.saucer.delta_to(shot.x, shot.y)
-            if abs(dx) < SAUCER_HALF[0] and abs(dy) < SAUCER_HALF[1]:
-                form.shots.remove(shot)
-                form.blow_saucer(game)
-                continue
+        struck = next((s for s in form.saucers if shot.mine
+                       and abs(s.delta_to(shot.x, shot.y)[0]) < SAUCER_HALF[0]
+                       and abs(s.delta_to(shot.x, shot.y)[1]) < SAUCER_HALF[1]), None)
+        if struck is not None:
+            form.shots.remove(shot)
+            form.blow_saucer(game, struck)
+            continue
         if not shot.mine and p.alive and not p.dying:
             radius, dome = _ship_circle(p)
             dx, dy = wrapped_delta(shot.x, shot.y, p.x, p.y)
@@ -610,10 +639,12 @@ def tick(game):
                     form.break_rock(game, r)
                     _ship_hit(game, form)
                     break
-            if form.saucer is not None and p.alive and not p.dying:
-                dx, dy = form.saucer.delta_to(p.x, p.y)
+            for s in list(form.saucers):
+                if not p.alive or p.dying:
+                    break
+                dx, dy = s.delta_to(p.x, p.y)
                 if abs(dx) < SAUCER_HALF[0] + radius * 0.6 and abs(dy) < SAUCER_HALF[1] + radius * 0.6:
-                    form.blow_saucer(game)
+                    form.blow_saucer(game, s)
                     _ship_hit(game, form)
     # --- the field is topped up with rocks coming in from outside, and the end
     if form.repop and not form.reached:
