@@ -7162,6 +7162,7 @@ _GAMEPLAY_TEXTS = {
     "gp_style_adventure": ("Aventure", "Adventure"),
     "opt_gp_modules": ("Modules d'escorte", "Escort modules"),
     "opt_gp_missiles": ("Missiles antimatière", "Antimatter missiles"),
+    "opt_gp_reactor": ("Réacteur 2D", "2D reactor"),
     "opt_help_gp_style": (
         "Classique : le jeu d'arcade de toujours. Aventure : une partie solo commence avec une partie de l'équipement de "
         "l'Aventure (les réglages en dessous), mais sans meilleur score. Le jeu démarre toujours en Classique ; le choix "
@@ -7179,6 +7180,11 @@ _GAMEPLAY_TEXTS = {
         "leur explosion détruit tout ce qui l'entoure. Le nombre restant s'affiche en haut à droite.",
         "Adventure style: antimatter missiles for the whole game (1 to 20, or none). One key launches them; their blast "
         "destroys everything around it. The number left shows at the top right."),
+    "opt_help_gp_reactor": (
+        "Style Aventure : le réacteur à impulsion bidimensionnelle. Le vaisseau vole aussi vers le haut et vers le bas, "
+        "dans le tiers inférieur de l'écran (haut / bas du clavier, de la croix ou du stick).",
+        "Adventure style: the two-dimensional impulse reactor. The ship also flies up and down, in the lower third of the "
+        "screen (up / down on the keyboard, the d-pad or the stick)."),
     "antimatter_hud_n": ("MISSILES ×{n}  {key}", "MISSILES ×{n}  {key}"),
 }
 for _k, (_fr, _en) in _GAMEPLAY_TEXTS.items():

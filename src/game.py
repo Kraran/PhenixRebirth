@@ -3286,6 +3286,7 @@ class Game:
             "autofire": bool(getattr(self, "autofire", True)),
             "gp_modules": bool(getattr(self, "gp_modules", True)),
             "gp_missiles": int(getattr(self, "gp_missiles", 5) or 0),
+            "gp_reactor": bool(getattr(self, "gp_reactor", True)),
             "language": self.language,
             "show_fps": self.show_fps,
             "scanlines": int(getattr(self, "scanlines", 0) or 0),
@@ -3550,7 +3551,7 @@ class Game:
         if not key or key not in (
             "control", "coop_p1", "coop_p2", "keybinds", "autofire", "sfx", "music", "audio_mix", "ingame_music", "rumble", "display",
             "bezel", "fps", "scanlines", "gpu", "vsync", "hz",
-            "language", "reset_hs", "back", "gp_style", "gp_modules", "gp_missiles",
+            "language", "reset_hs", "back", "gp_style", "gp_modules", "gp_missiles", "gp_reactor",
         ):
             return
         x, y, w, h = box
@@ -3579,6 +3580,7 @@ class Game:
                 "gpu": "opt_gpu", "vsync": "opt_vsync", "hz": "opt_hz",
                 "language": "opt_language", "reset_hs": "opt_reset_hs", "back": "opt_back",
                 "gp_style": "opt_gp_style", "gp_modules": "opt_gp_modules", "gp_missiles": "opt_gp_missiles",
+                "gp_reactor": "opt_gp_reactor",
             }.get(key, "options"))
             hdr = self._txt(self.font, title, (255, 210, 140))
             panel.blit(hdr, (18, 14))
@@ -3610,6 +3612,7 @@ class Game:
         "bezel": "opt_bezel", "fps": "opt_fps", "scanlines": "opt_scanlines", "gpu": "opt_gpu", "vsync": "opt_vsync",
         "hz": "opt_hz", "language": "opt_language", "reset_hs": "opt_reset_hs",
         "gp_style": "opt_gp_style", "gp_modules": "opt_gp_modules", "gp_missiles": "opt_gp_missiles",
+        "gp_reactor": "opt_gp_reactor",
     }
 
     def _option_label(self, key):
@@ -3618,7 +3621,7 @@ class Game:
     def _option_greyed(self, key):
         """True for a row that does nothing now (the bezels outside fullscreen; the equipment of the Adventure style while
         the classic style is chosen)."""
-        if key in ("gp_modules", "gp_missiles"):
+        if key in ("gp_modules", "gp_missiles", "gp_reactor"):
             return getattr(self, "gameplay_style", "classic") != "adventure"
         return key == "bezel" and getattr(self, "display_mode", "fullscreen") != "fullscreen"
 
@@ -3640,6 +3643,8 @@ class Game:
         if key == "gp_missiles":
             n = int(getattr(self, "gp_missiles", 5) or 0)
             return str(n) if n else t("no")
+        if key == "gp_reactor":
+            return t("yes") if getattr(self, "gp_reactor", True) else t("no")
         if key == "sfx":
             return f"{int(round(self.sfx_volume * 100))}%"
         if key == "music":
@@ -4638,6 +4643,7 @@ class Game:
                 and update_play.squad_clear(self)                  # (and the Guardians that came with the wave)
                 and not any(s.dying for s in self._ships())
                 and not update_play.loot_holds_the_clear(self)     # the reactor of a BONUS mission falls before the end
+                and not update_play.blasts_running(self)           # the last explosions end before the ship flies up
                 and self.boss_saucer is None):
             update_play.begin_stage_clear(self)
             return

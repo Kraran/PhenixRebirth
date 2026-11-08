@@ -34,7 +34,7 @@ def _solo(game, style="adventure", modules=True, missiles=5):
 def test_the_gameplay_tab_and_its_rows():
     names = [name for name, _rows in main_menu.OPTION_TABS]
     assert names == ["game", "gameplay", "audio", "display", "advanced"]
-    assert main_menu.tab_rows(names.index("gameplay")) == ["gp_style", "gp_modules", "gp_missiles"]
+    assert main_menu.tab_rows(names.index("gameplay")) == ["gp_style", "gp_modules", "gp_missiles", "gp_reactor"]
     assert main_menu.TAB_TITLES["gameplay"] == "opt_tab_gameplay"
 
 
@@ -68,7 +68,7 @@ def test_the_rows_change_and_are_greyed_in_the_classic_style(game):
     game.opt_tab = [n for n, _r in main_menu.OPTION_TABS].index("gameplay")
     game.gameplay_style, game.gp_modules, game.gp_missiles = "classic", True, 5
     spec = game._options_spec()
-    assert spec[:3] == ["gp_style", "gp_modules", "gp_missiles"]
+    assert spec[:4] == ["gp_style", "gp_modules", "gp_missiles", "gp_reactor"]
     assert game._option_greyed("gp_modules") and game._option_greyed("gp_missiles") and not game._option_greyed("gp_style")
     game.menu_index = 1
     menu_actions.menu_adjust(game, 1)
@@ -97,7 +97,7 @@ def test_the_options_screen_draws_the_tab(game):
     game.opt_tab = 1
     game.menu_index = 0
     game.gameplay_style = "adventure"
-    for i in range(3):
+    for i in range(4):
         game.menu_index = i
         game.draw()
 

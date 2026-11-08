@@ -39,6 +39,7 @@ def clean_user_settings(data):
         "season_force": "",  # "" | xmas | halloween — title overlay test
         "gp_modules": True,  # Adventure style: the two escort modules
         "gp_missiles": 5,  # Adventure style: antimatter missiles for the game (0-20)
+        "gp_reactor": True,  # Adventure style: the 2D reactor (the ship flies up and down in the lower third)
     }
     if not isinstance(data, dict):
         return defaults

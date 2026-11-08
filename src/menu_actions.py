@@ -81,6 +81,10 @@ def menu_adjust(game, direction):
             n = int(getattr(game, "gp_missiles", 5) or 0)
             game.gp_missiles = (n + (1 if direction >= 0 else -1)) % 21                 # 0 (none) to 20, round
             game.save_settings()
+    elif key == "gp_reactor":
+        if getattr(game, "gameplay_style", "classic") == "adventure":
+            game.gp_reactor = not bool(getattr(game, "gp_reactor", True))
+            game.save_settings()
     elif key == "sfx":
         game.sfx_volume = max(0.0, min(1.0, game.sfx_volume + direction * 0.1))
         game.sounds.set_master_volume(game.sfx_volume)
