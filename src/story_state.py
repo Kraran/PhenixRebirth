@@ -719,10 +719,13 @@ MISSIONS = [
         "need": ENDING_DONE, "content": 1, "speed": 1.0,
     },
     # BONUS: Lunar Lander, the same level as the test (the menu of the five settings included) but for real: the landing pays its
-    # points (+ the fuel left) in credits, a crash costs what a failure always costs. Secret until the game is finished (the open
-    # ending of Act IV has been told); then at the end of Act IV (END BONUS), replayable at will.
+    # points (+ the fuel left) in credits. Endless (lander.py `endless`): landing after landing, with the fuel left (+50 / +25)
+    # and fewer big zones each level, until a crash or an empty tank (the GAME OVER); its points pay without a penalty nor
+    # a fall, leaving it gains nothing, one record per setting (ENDLESS_BEST "bonus_lander:<setting>"). Secret until the
+    # game is finished (the open ending of Act IV has been told); then at the end of Act IV (END BONUS), replayable.
     {
         "id": "bonus_lander", "acts": (ENDING_ACT,), "secret": True, "extra": True, "final_bonus": True, "lander": True,
+        "endless": True,
         "title": "story_m_lander_bonus", "hud_title": "story_m_lander_hud", "blurb": "story_m_lander_bonus_b",
         "need": ENDING_DONE, "content": 1, "speed": 1.0,
     },
@@ -1209,7 +1212,7 @@ def migrate_state(data):
                 base["mission_clears"][mid] = max(0, int(_num(n, 0)))
     if isinstance(data.get(ENDLESS_BEST), dict):
         best = {mid: max(0, int(_num(n, 0))) for mid, n in data[ENDLESS_BEST].items()
-                if isinstance(mid, str) and is_endless(mission_by_id(mid))}
+                if isinstance(mid, str) and is_endless(mission_by_id(mid.split(":")[0]))}
         if best:
             base[ENDLESS_BEST] = best
     if isinstance(data.get("paint"), dict):
@@ -2674,7 +2677,8 @@ def endless_guardians(level):
 
 
 def endless_best(state, mission_id):
-    """The best score of an endless mission in this save (0 before its first run)."""
+    """The best score of an endless mission in this save (0 before its first run); `mission_id` may name a setting too
+    ("bonus_lander:rock")."""
     best = (state or {}).get(ENDLESS_BEST)
     return max(0, int(_num((best or {}).get(mission_id), 0))) if isinstance(best, dict) else 0
 
@@ -2683,7 +2687,7 @@ def is_endless(mission):
     return bool((mission or {}).get("endless"))
 
 
-def record_result(state, mission_id, score, cleared, kills=None, loot=None, used=None):
+def record_result(state, mission_id, score, cleared, kills=None, loot=None, used=None, best_key=None):
     """Apply the end of a mission.
 
     Cleared: the score is banked as hangar credits, unlock flags and journal line.
@@ -2711,9 +2715,10 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
         # an endless mission ends with the ship: never a failure, its points pay, the best is kept
         cleared = True
         res["cleared"] = True
-        res["best"] = score > endless_best(state, mission_id)
+        key = best_key or mission_id                          # (the Lunar Lander: one record for each setting)
+        res["best"] = score > endless_best(state, key)
         if res["best"]:
-            state[ENDLESS_BEST] = dict(state.get(ENDLESS_BEST) or {}, **{mission_id: score})
+            state[ENDLESS_BEST] = dict(state.get(ENDLESS_BEST) or {}, **{key: score})
     res["used"] = story_items.consume(state, used)           # before the Act can change: they belong to this one
     if loot in story_items.REACTOR_IDS and not cleared:
         res["reactor_lost"] = loot if story_items.status(state, loot) is None else None

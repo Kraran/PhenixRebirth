@@ -490,7 +490,7 @@ def test_the_bonus_lander_has_the_same_menu_and_a_real_spec():
     assert spec["lander"] and spec["body"] == ld.MENU_ORDER[3] and not spec.get("training") and spec["id"] == "bonus_lander"
 
 
-def test_the_bonus_lander_pays_its_points_and_a_crash_costs_a_failure():
+def test_the_bonus_lander_pays_its_points_and_a_crash_costs_nothing_more():
     hub = _bonus_hub()
     hub.state["credits"] = 1000
     hub.apply_result("bonus_lander", 5500, True)
@@ -499,6 +499,6 @@ def test_the_bonus_lander_pays_its_points_and_a_crash_costs_a_failure():
     assert hub.state["credits"] == 12000                         # (it can be flown again and again)
     assert ss.mission_playable(hub.state, ss.mission_by_id("bonus_lander"))
     hub.apply_result("bonus_lander", 0, False)
-    assert hub.state["credits"] == 12000 - ss.failure_penalty(12000)
+    assert hub.state["credits"] == 12000                         # (endless now: the end of a run is never a failure)
     test = ss.mission_by_id("test_lander")
     assert test["training"] and ss.record_result(hub.state, "test_lander", 999, True)["score"] == 0   # (the test still pays nothing)

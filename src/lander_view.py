@@ -695,3 +695,6 @@ def draw_hud(game, form):
         if form.phase == "landed":
             detail = t("lander_points").format(p=form.points, b=form.bonus, z=lander.PAD_BONUS[form.pad["kind"]])
             announce.draw(game, surface, detail, "gain", "standard", (BASE_WIDTH // 2, BASE_HEIGHT // 2 - 20))
+            if getattr(form, "refuel", 0):                  # (the endless level: the fuel won for the next one)
+                announce.draw(game, surface, t("lander_refuel").format(n=int(form.refuel)), "info", "standard",
+                              (BASE_WIDTH // 2, BASE_HEIGHT // 2 + 50))
