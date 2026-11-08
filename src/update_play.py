@@ -249,9 +249,24 @@ _NOT_ENEMY_BLASTS = ("shield", "dust")
 
 def blasts_running(game):
     """True while the explosion of an enemy (or of a part of the saucer) still plays: the ship waits for it to finish
-    before flying up to the next level."""
-    return any(isinstance(e, Explosion) and e.kind not in _NOT_ENEMY_BLASTS and not e.is_finished()
-               for e in getattr(game, "explosions", None) or [])
+    before flying up to the next level. The Guardians count too: the debris of one shot down (chips, embers, smoke, its
+    wings tumbling away) and the birds or gargoyles their lasers burned, still falling to ash."""
+    if any(isinstance(e, Explosion) and e.kind not in _NOT_ENEMY_BLASTS and not e.is_finished()
+           for e in getattr(game, "explosions", None) or []):
+        return True
+    return guardian_blasts_running(game)
+
+
+def guardian_blasts_running(game):
+    """The debris of the Guardians shot down, or the ash of what their lasers burned, still on the screen."""
+    for owner in (guardian.squad(game), getattr(game, "formation", None)):
+        if owner is None or not hasattr(owner, "guardians"):
+            continue
+        if any(getattr(e, "alive", False) for e in getattr(owner, "effects", None) or []):
+            return True
+        if any(not g.alive and g.fx_active() for g in owner.guardians):
+            return True
+    return False
 
 
 def begin_stage_clear(game):
