@@ -736,6 +736,17 @@ MISSIONS = [
         "title": "story_m_ast_bonus", "hud_title": "story_m_ast_bonus_hud", "blurb": "story_m_ast_bonus_b",
         "need": ENDING_DONE, "content": 1, "speed": 1.0,
     },
+    # BONUS FINAL - Gardiens: the arcade game (the birds, the gargoyles, the saucer every five levels, level after level)
+    # with Guardians in every level (endless_guardians: one small more each level, then from level 6 a big one more every
+    # five levels), until the ship is lost. Everything of the workshop flies with the ship. Like BONUS FINAL - Asteroids:
+    # it ends with the GAME OVER, its points pay without a penalty nor a fall, leaving it gains and loses nothing, and the
+    # best score of the save is kept (ENDLESS_BEST, at the top of the screen).
+    {
+        "id": "bonus_gd_endless", "acts": (ENDING_ACT,), "secret": True, "extra": True, "final_bonus": True,
+        "endless": True, "endless_guardians": True,
+        "title": "story_m_gd_bonus", "hud_title": "story_m_gd_bonus_hud", "blurb": "story_m_gd_bonus_b",
+        "need": ENDING_DONE, "content": 1, "speed": 1.0,
+    },
     # EDF - Opération Sentinelles silencieuses (I-IV): a stealth spy satellite to put in orbit round each gas giant, built on the
     # SpaceWar level (src/spacewar.py) but for real: the birds and the saucers pay their normal points and a failure costs what
     # it always costs. Flown in order (I from the start of Act 1, II and III in Act 2, IV in Act 3), once each, until the
@@ -2652,6 +2663,14 @@ def failure_penalty(credits, mode="normal"):
     credits = max(0, int(_num(credits, 0)))
     rate = NOVICE_PENALTY_RATE if mode == "novice" else PENALTY_RATE
     return int(credits * rate + 0.5)
+
+
+def endless_guardians(level):
+    """BONUS FINAL - Gardiens: (small Guardians, big ones) at this level. One small more each level, five at most; every
+    five levels the count of the small ones starts again at one and one big one more: level 1 -> (1, 0), 5 -> (5, 0),
+    6 -> (1, 1), 7 -> (2, 1), 11 -> (1, 2)..."""
+    level = max(1, int(_num(level, 1)))
+    return (level - 1) % 5 + 1, (level - 1) // 5
 
 
 def endless_best(state, mission_id):

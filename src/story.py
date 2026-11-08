@@ -1797,6 +1797,8 @@ class StoryHub:
             if mission.get("endless"):
                 spec["endless"] = True                # BONUS - Asteroids: level after level until the ship is lost
                 spec["level"] = 1
+        if mission.get("endless_guardians"):
+            spec.update(endless=True, endless_guardians=True, waves=[1], level=1)   # BONUS FINAL - Gardiens: level 1, 2, 3...
         if mission.get("escort"):
             spec["escort"] = True                 # the VIP rescue: the cruise ship to bring across (src/escort.py)
             spec["stage"] = int(mission.get("stage") or 6)
