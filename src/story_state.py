@@ -730,7 +730,7 @@ MISSIONS = [
     # it), without a penalty nor a fall, and the best score of the save is kept (ENDLESS_BEST, shown at the top of the
     # screen, not in the high scores). Secret until the game is finished; then on the map of every act, replayable.
     {
-        "id": "bonus_asteroids", "acts": (1, 2, 3), "secret": True, "extra": True, "asteroids": True, "endless": True,
+        "id": "bonus_ast_endless", "acts": (1, 2, 3), "secret": True, "extra": True, "asteroids": True, "endless": True,
         "title": "story_m_ast_bonus", "hud_title": "story_m_ast_bonus_hud", "blurb": "story_m_ast_bonus_b",
         "need": ENDING_DONE, "content": 1, "speed": 1.0,
     },

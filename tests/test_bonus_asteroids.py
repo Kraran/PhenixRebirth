@@ -1,4 +1,4 @@
-"""BONUS - Asteroids (story_state "bonus_asteroids", src/asteroids.py `endless`): pure Asteroids, level after level until
+"""BONUS - Asteroids (story_state "bonus_ast_endless", src/asteroids.py `endless`): pure Asteroids, level after level until
 the ship is lost; every big rock of a level from its start (4, 6, 8, 10, then 11), the next level once no rock is left,
 the saucer 10 % faster each level; its points pay when it ends, never a penalty nor a fall; the best score of the save
 is kept and shown at the top of the screen (not in the high scores)."""
@@ -12,7 +12,7 @@ from asteroids import AsteroidFormation
 from test_smoke import run  # noqa: F401  (fixture)
 
 DT = 1 / 60
-MID = "bonus_asteroids"
+MID = "bonus_ast_endless"
 
 
 def _state(mode="normal", credits=1000, ending=True):
