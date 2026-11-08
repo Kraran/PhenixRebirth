@@ -7357,6 +7357,17 @@ _SCRAMBLE_TEXTS = {
         "The run lasts until the ship is lost: its "
         "points pay in credits, without a penalty. Your best score is kept. Opens once the game is finished."),
     "story_ast_record": ("RECORD {pts}", "BEST {pts}"),
+    "story_m_gd_bonus": ("BONUS FINAL - Gardiens", "FINAL BONUS - Guardians"),
+    "story_m_gd_bonus_hud": ("BONUS FINAL - GARDIENS", "FINAL BONUS - GUARDIANS"),
+    "story_m_gd_bonus_b": (
+        "Le jeu classique à l'infini, avec tous les oiseaux, les gargouilles et la soucoupe, et un Gardien de plus à chaque "
+        "niveau (cinq au plus) ; au niveau 6 on recommence avec un gros Gardien en plus, au niveau 11 avec deux, et ainsi de "
+        "suite. Tout ce que tu as à l'atelier vole avec toi. La partie dure jusqu'à la perte du vaisseau : ses points "
+        "rapportent des crédits, sans pénalité. Ton record est gardé. Ouverte une fois le jeu terminé.",
+        "The classic game, endless, with all the birds, the gargoyles and the saucer, and one more Guardian each level (five "
+        "at most); at level 6 it starts again with one big Guardian more, at level 11 with two, and so on. Everything you "
+        "have in the workshop flies with you. The run lasts until the ship is lost: its points pay in credits, without a "
+        "penalty. Your best score is kept. Opens once the game is finished."),
     "story_ast_end": ("Partie terminée  +{pts} PTS", "Run over  +{pts} PTS"),
     "story_ast_new_best": ("NOUVEAU RECORD", "NEW BEST"),
     "story_m_scramble_bonus": ("BONUS FINAL - Scramble", "FINAL BONUS - Scramble"),

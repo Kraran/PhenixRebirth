@@ -8,7 +8,7 @@ import story_state as ss
 import story_vn
 from story import StoryHub
 
-FINALS = ("bonus_scramble", "bonus_lander", "bonus_ast_endless")
+FINALS = ("bonus_scramble", "bonus_lander", "bonus_ast_endless", "bonus_gd_endless")
 
 
 def _state(credits=0, ending=True):
@@ -68,7 +68,7 @@ def test_they_close_the_map_after_the_ending_of_act_4():
     st = _state()
     shown = ss.visible_missions(st)
     ids = [m["id"] for m in shown]
-    assert ids[-3:] == list(FINALS)                                       # (the very end of the map)
+    assert ids[-len(FINALS):] == list(FINALS)                             # (the very end of the map)
     act4 = [m["id"] for m in shown if ss.map_act(st, m) == ss.ENDING_ACT]
     assert act4 == [ss.ENDING_MISSION] + list(FINALS)
     assert i18n.T["story_grp_final"]["fr"] == "BONUS DE FIN" and i18n.T["story_grp_final"]["en"] == "END BONUS"

@@ -138,12 +138,17 @@ def endless_record(game, adv):
     return max(story_state.endless_best(state, adv.get("id")), int(getattr(game, "score", 0) or 0))
 
 
+def _draw_endless_record(game, adv):
+    """An endless mission: its record (the save's, or the run's once beaten) at the top right."""
+    rec = game.text_cache.get(game.font, t("story_ast_record").format(pts=game.format_score(endless_record(game, adv))),
+                              announce.REWARD)
+    game.game_surface.blit(rec, (BASE_WIDTH - 16 - rec.get_width(), 16))
+
+
 def _draw_endless_asteroids_hud(game, adv, form):
     """BONUS - Asteroids: the record at the top right, the rocks left under it, the number of a new level."""
     tc = game.text_cache
-    rec = tc.get(game.font, t("story_ast_record").format(pts=game.format_score(endless_record(game, adv))),
-                 announce.REWARD)
-    game.game_surface.blit(rec, (BASE_WIDTH - 16 - rec.get_width(), 16))
+    _draw_endless_record(game, adv)
     left = tc.get(game.font, t("story_swarm_left").format(n=len(getattr(form, "rocks", []) or [])), announce.INFO)
     game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
     if getattr(form, "banner", 0.0) > 0:
@@ -231,6 +236,8 @@ def draw_hud(game):
         pct = int(game.formation.cruise.progress() * 100)
         left = tc.get(game.font, t("story_vip_hud").format(p=pct), announce.INFO)
         game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
+    elif adv and adv.get("endless_guardians"):
+        _draw_endless_record(game, adv)                     # BONUS FINAL - Gardiens: the record (the level: in the title)
     elif adv and adv.get("asteroids") and adv.get("endless"):
         _draw_endless_asteroids_hud(game, adv, game.formation)
     elif adv and adv.get("asteroids") and game.play_mode != "coop":

@@ -262,8 +262,8 @@ def begin_stage_clear(game):
         game._end_adventure(True)           # the Asteroids mission just ends: no flight up, no change of level
         return
     game._on_stage_cleared()
-    if not getattr(game, "adventure", None):
-        game._play_level_vo(int(getattr(game, "stage", 1) or 1) + 1)
+    if not adv or adv.get("endless"):
+        game._play_level_vo(int(getattr(game, "stage", 1) or 1) + 1)     # (and the levels of an endless mission)
     game.stage_transition = "fly_up"
     for ship in game._ships():
         ship.destroy_bullet()
@@ -320,7 +320,8 @@ def tick_boss_outro(game):
     if game.transition_timer > 1.8 and not blasts_running(game):     # (and the last explosions of the saucer have ended)
         game._clear_enemy_fire()
         game._on_stage_cleared()
-        if not getattr(game, "adventure", None):          # a mission never announces the next level
+        adv = getattr(game, "adventure", None)
+        if not adv or adv.get("endless"):                  # a mission never announces the next level (but an endless one)
             game._play_level_vo(int(getattr(game, "stage", 1) or 1) + 1)
         game.stage_transition = "fly_up"
         for ship in game._ships():

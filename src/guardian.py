@@ -817,9 +817,9 @@ class GuardianSquad:
     the game adds them to the targets of the shots, to the attacks against the ship and to the end of the wave
     (`targets`, `clear`). Their lasers go into the formation's own list of shots (so they are cleared with it)."""
 
-    def __init__(self, count, sounds=None, y=SQUAD_Y, volley=False, alpha=False):
+    def __init__(self, count, sounds=None, y=SQUAD_Y, volley=False, alpha=False, alphas=0):
         """`volley`: they charge and fire together (Gardiens II); `alpha`: the Alpha Guardian comes too, in the middle
-        (Gardiens III)."""
+        (Gardiens III); `alphas`: that many Alphas, side by side in the middle (BONUS FINAL - Gardiens)."""
         self.volley = bool(volley)
         self.count = int(count)
         self.sounds = sounds
@@ -830,9 +830,11 @@ class GuardianSquad:
         self.burned = 0
         self.bullets = []                    # (the formation's, set by tick)
         self.guardians = []
-        n = self.count + (1 if alpha else 0)
+        big = max(int(alphas or 0), 1 if alpha else 0)
+        n = self.count + big
+        first = n // 2 if big == 1 else (n - big) // 2            # (the Alphas: in the middle of the row)
         for i in range(n):
-            kind = AlphaGuardian if alpha and i == n // 2 else Guardian
+            kind = AlphaGuardian if first <= i < first + big else Guardian
             g = kind(BASE_WIDTH * (i + 1) / (n + 1), y, i, squad=n)
             if kind is AlphaGuardian:
                 g.home_y = y + ALPHA_DROP

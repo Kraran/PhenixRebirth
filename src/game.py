@@ -2100,6 +2100,10 @@ class Game:
         adv = getattr(self, "adventure", None) or {}
         waves = adv.get("waves") or []
         i = int(adv.get("wave_i", 0) or 0) + 1
+        if adv.get("endless") and i >= len(waves):
+            waves.append(int(waves[-1] if waves else 0) + 1)           # (an endless mission: the next arcade level)
+            adv["waves"] = waves
+            adv["level"] = len(waves)
         if i >= len(waves):
             return False
         adv["wave_i"] = i
@@ -2201,14 +2205,18 @@ class Game:
         plan = adv.get("guardians_at") or {}
         count = int(plan.get(int(self.stage), plan.get(str(int(self.stage)), 0)) or 0)
         count = count or int(adv.get("guardians_each") or 0)          # (Bestiaire VI: Guardians with every wave)
-        if count > 0 and not adv.get("guardians"):
+        alphas = 0
+        if adv.get("endless_guardians"):
+            count, alphas = story_state.endless_guardians(int(self.stage))   # (BONUS FINAL - Gardiens)
+        if (count > 0 or alphas > 0) and not adv.get("guardians"):
             from guardian import GuardianSquad
             from ship_burn import prepare as prepare_ship_burn
             prepare_ship_burn(self.player)                  # (the burning ship of a laser, made before it is needed)
             from guardian import SQUAD_BOSS_Y, SQUAD_Y
             y = SQUAD_BOSS_Y if stage_content(int(self.stage)) == 5 else SQUAD_Y     # (with the boss: below its saucer)
             alpha = int(adv.get("alpha_at") or 0) == int(self.stage)
-            self.guardian_squad = GuardianSquad(count, self.sounds, y, volley=bool(adv.get("volley")), alpha=alpha)
+            self.guardian_squad = GuardianSquad(count, self.sounds, y, volley=bool(adv.get("volley")), alpha=alpha,
+                                                alphas=alphas)
             keep = int(adv.get("birds_keep") or 0)
             form = self.formation
             if keep > 1 and type(form).__name__ == "EnemyFormation" and not getattr(form, "swarm", None):
