@@ -1931,9 +1931,22 @@ class Game:
         title = t(spec["title"]) if spec.get("title") else None
         heavy_view = bool(spec.get("lander") or spec.get("scramble"))
         first, second = (0.15, 0.85) if heavy_view else (0.85, 0.15) if spec.get("guardians") else (0.5, 0.5)
+        ash = self.guardians_meet_gargoyles(spec)
+        if ash:
+            first, second = first * 0.6, second * 0.6                # (the rest of the bar: the ash of the gargoyles)
         with loading.Loading(self, "adventure", title=title, delay=self.LOADING_DELAY) as ld:
             ld.step(first, lambda: self._begin_adventure(spec), 1.5 if spec.get("guardians") else 0.3)
             ld.step(second, self._prewarm_mission, 1.0 if heavy_view else 0.2)
+            if ash:
+                import guardian
+                ld.step(0.4, guardian.warm_gargoyle_ash, 0.7)     # (the ash of the gargoyles their lasers burn)
+
+    @staticmethod
+    def guardians_meet_gargoyles(spec):
+        """Can the Guardians of this mission burn gargoyles (Guardians in a wave of gargoyles, levels 3 and 4 of a cycle)?"""
+        if spec.get("endless_guardians") or spec.get("guardians_each"):
+            return True
+        return any(stage_content(int(k)) in (3, 4) for k in (spec.get("guardians_at") or {}))
 
     def _prewarm_mission(self):
         """Draw the first picture of the mission off screen, so what it needs is made now, behind the bar. The warm-ups of the

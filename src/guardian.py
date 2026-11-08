@@ -654,10 +654,64 @@ def burning_frames(stage, source):
     return _BURN_ART[stage]
 
 
+def gargoyle_picture(bird, wing_left=True, wing_right=True):
+    """A gargoyle (enemy.BigBird) drawn alone, wings up, on a transparent picture just big enough (its wings as given)."""
+    bw, bh = bird.body_img.get_size()
+    ww, wh = bird.wing_up.get_size()
+    w, h = bw + 2 * ww + 8, max(bh, wh) + 24
+    pic = pygame.Surface((w, h), pygame.SRCALPHA)
+    pic.fill((0, 0, 0, 0))
+    saved = (bird.x, bird.y, bird.flap, bird.wing_left, bird.wing_right, bird.dying)
+    try:
+        bird.x, bird.y, bird.flap, bird.dying = w / 2.0, h / 2.0, math.pi / 2, False
+        bird.wing_left, bird.wing_right = wing_left, wing_right
+        bird.draw(pic)
+    finally:
+        bird.x, bird.y, bird.flap, bird.wing_left, bird.wing_right, bird.dying = saved
+    return pic
+
+
+def gargoyle_burning_frames(bird):
+    """The fire and the ash of a gargoyle (as for a bird), with the wings it still has. Made once per kind of gargoyle and
+    wings (about a third of a second): the one with both wings is made before the mission (warm_gargoyle_ash)."""
+    key = ("garg", int(getattr(bird, "stage", 3)), bool(bird.wing_left), bool(bird.wing_right))
+    if key not in _BURN_ART:
+        pic = gargoyle_picture(bird, key[2], key[3])
+        size = max(128, pic.get_width() + 64, pic.get_height() + 64)
+        origin = ((size - pic.get_width()) // 2, (size - pic.get_height()) // 2)
+        _BURN_ART[key] = fire_death.frames(pic, BURN_FRAME_COUNT, fire_death.BIRD, (size, size), origin)
+    return _BURN_ART[key]
+
+
+def warm_gargoyle_ash(stages=(3, 4)):
+    """Make the ash of the gargoyles with both wings beforehand (behind the loading bar of a mission whose Guardians can
+    burn gargoyles), so the first one does not hold the game."""
+    from enemy import BigBird
+    state = random.getstate()
+    try:
+        for stage in stages:
+            gargoyle_burning_frames(BigBird(0, 0, 0, stage))
+    finally:
+        random.setstate(state)                      # (a gargoyle made here must not change the game's draws)
+
+
+def can_burn(bird):
+    """Has `bird` a picture to burn and to fall to ash: a bird of the arcade (its frames) or a gargoyle (its body)."""
+    frames = getattr(bird, "frames", None)
+    if frames and isinstance(frames, list) and isinstance(frames[0], pygame.Surface):
+        return True
+    return isinstance(getattr(bird, "body_img", None), pygame.Surface) and isinstance(getattr(bird, "wing_up", None),
+                                                                                    pygame.Surface)
+
+
 class BurningBird:
     def __init__(self, bird):
         self.x, self.y = bird.x, bird.y
-        self.frames = burning_frames(bird.stage, bird.frames[0])
+        frames = getattr(bird, "frames", None)
+        if frames and isinstance(frames, list) and isinstance(frames[0], pygame.Surface):
+            self.frames = burning_frames(bird.stage, frames[0])
+        else:
+            self.frames = gargoyle_burning_frames(bird)          # (a gargoyle: its body and the wings it has left)
         self.age = 0.0
 
     @property
@@ -723,8 +777,8 @@ class EscortBird(Enemy):
 
 def burn_birds(owner, birds, previous_boxes):
     """The lasers of `owner.bullets` burn the birds they cross (`previous_boxes`: where each bird was a tick ago, so a
-    fast bolt cannot jump over one). The birds burn and fall to ash (BurningBird, in `owner.effects`), worth no points.
-    A bird with no picture to burn (a gargoyle, a bird of the Galaga waves) just explodes. Returns how many burned."""
+    fast bolt cannot jump over one). The birds burn and fall to ash (BurningBird, in `owner.effects`), worth no points,
+    the gargoyles too. A bird with no picture to burn (a bird of the Galaga waves) just explodes. Returns how many burned."""
     burned = 0
     for bolt in owner.bullets:
         if not isinstance(bolt, FireLaser):
@@ -747,10 +801,9 @@ def burn_birds(owner, birds, previous_boxes):
 
 def burn_bird(owner, bird):
     """A laser (or a half of one split on the reflective coating) burns `bird`: it burns and falls to ash (BurningBird,
-    in `owner.effects`), worth no points; a bird with no picture to burn just explodes."""
-    frames = getattr(bird, "frames", None)
+    in `owner.effects`), worth no points; the gargoyles too. A bird with no picture to burn just explodes."""
     effects = getattr(owner, "effects", None)
-    if frames and isinstance(frames, list) and isinstance(frames[0], pygame.Surface) and effects is not None:
+    if can_burn(bird) and effects is not None:
         effects.append(BurningBird(bird))
         bird.kill(flash=False)
     else:
