@@ -7434,9 +7434,9 @@ _SCRAMBLE_TEXTS = {
     "story_log_gd2": ("Gardiens II — le mur de lasers est tombé.", "Guardians II — the wall of lasers is down."),
     "story_m_gd3": ("Gardiens III : le Gardien Alpha", "Guardians III: the Alpha Guardian"),
     "story_m_gd3_b": ("Niveaux 23 et 24 : le Gardien Alpha, plus grand, six points de vie et un double laser, mène quatre "
-                      "Gardiens. Une seule fois.",
+                      "Gardiens. Son plumage donnera le revêtement réfléchissant. Une seule fois.",
                       "Levels 23 and 24: the Alpha Guardian, bigger, six hit points and a double laser, leads four "
-                      "Guardians. Once only."),
+                      "Guardians. Its plumage will give the reflective coating. Once only."),
     "story_log_gd3": ("Gardiens III — le Gardien Alpha est abattu.", "Guardians III — the Alpha Guardian is down."),
     "story_m_bestgd": ("Bestiaire VI : les Gardiens", "Bestiary VI: the Guardians"),
     "story_m_bestgd_b": ("Des Kakis et deux Gardiens, un de plus à chaque victoire (cinq au plus). Rejouable, un niveau de "
@@ -7444,6 +7444,93 @@ _SCRAMBLE_TEXTS = {
                          "Khakis and two Guardians, one more after each win (five at most). Replayable, one level harder "
                          "after each win."),
     "story_log_bestgd": ("Bestiaire — les Gardiens sont traqués.", "Bestiary — the Guardians are hunted."),
+    # the scenes of the series (told before the first flight; the coating: after the first victory of Gardiens III)
+    "story_scene_gd1": (
+        "De l’autre côté de la ceinture, là d’où vient le signal du Phenix, les relevés montrent quelque chose que je "
+        "n’avais jamais vu. Des oiseaux de feu. Plus grands que les gargouilles, cuirassés de plaques noires, avec des "
+        "ailes rouges qui rougeoient comme des braises. Ils ne plongent pas sur nos lignes : ils restent là-haut, en "
+        "sentinelles, et ils tuent tout ce qui approche. Même les leurs.\n\n"
+        "Les survivants des convois les appellent les Gardiens. Avant de tirer, leur poitrine s’allume. Puis un rayon de "
+        "feu tombe d’un coup et traverse tout : les oiseaux qui sont dessous, les coques, et d’après Grok, le dôme du "
+        "Shield aussi. Rien de ce que j’ai ne l’arrête.\n\n"
+        "Grok ne sait pas encore ce qu’ils sont. Moi, je sais seulement qu’ils gardent la route du signal, et que je "
+        "vais devoir passer sous leurs rayons. Les regarder briller, et me trouver ailleurs quand ils tombent.",
+        "On the other side of the belt, where the signal of the Phenix comes from, the scans show something I had never "
+        "seen. Birds of fire. Bigger than the gargoyles, armoured in black plates, with red wings that glow like embers. "
+        "They do not dive at our lines: they stay up there, like sentries, and they kill everything that comes near. "
+        "Even their own.\n\n"
+        "The survivors of the convoys call them the Guardians. Before they fire, their chest lights up. Then a beam of "
+        "fire falls all at once and goes through everything: the birds below, the hulls, and according to Grok, the "
+        "dome of the Shield as well. Nothing I have can stop it.\n\n"
+        "Grok does not know yet what they are. All I know is that they guard the road to the signal, and that I will "
+        "have to fly under their beams. Watch them glow, and be somewhere else when they fall."),
+    "story_scene_bestgd": (
+        "Les Gardiens sont partout sur la route du Phenix maintenant. On ne bat que ce qu’on connaît bien : il leur faut "
+        "une page dans le Bestiaire, et pour l’écrire, je vais devoir les chasser.\n\n"
+        "Ce que j’ai appris jusqu’ici tient en quelques lignes. Trois tirs dans le corps pour en abattre un. Les ailes "
+        "tombent sous les tirs, mais elles repoussent en quelques secondes, et un Gardien sans ailes ne tire plus. Leur "
+        "poitrine s’allume toujours avant le rayon. Et quand ils plongent, ils ne reviennent pas avant d’avoir traversé "
+        "tout l’écran.\n\n"
+        "Chaque victoire en fera venir un de plus. Tant mieux. Plus j’en verrai tomber, plus je saurai ce qu’ils sont.",
+        "The Guardians are everywhere on the road to the Phenix now. You only beat what you know well: they need a page "
+        "in the Bestiary, and to write it, I will have to hunt them.\n\n"
+        "What I have learned so far fits in a few lines. Three shots in the body to bring one down. The wings fall under "
+        "fire, but they grow back in a few seconds, and a Guardian with no wings cannot fire. Their chest always lights "
+        "up before the beam. And when they dive, they do not come back before they have crossed the whole screen.\n\n"
+        "Each victory will bring one more. Good. The more of them I see fall, the more I will know what they are."),
+    "story_scene_gd2": (
+        "Grok a fini d’analyser les débris des Gardiens abattus. Sous les plaques noires, il y a la chair d’un Avioïde. "
+        "Mais à l’intérieur, mêlés aux os et aux nerfs, il y a des fragments d’un métal que nous connaissons : le même "
+        "alliage, la même matrice de feu que la coque du Phenix qui dort maintenant dans notre hangar.\n\n"
+        "Ce sont des hybrides. Les Avioïdes ont trouvé la technologie du Phenix avant nous, et ils ont voulu la faire "
+        "entrer en eux. Elle leur a donné le rayon de feu. Elle les a aussi rendus fous. Ils ne reconnaissent plus la "
+        "horde : ils brûlent tout ce qui vole, les leurs comme nous. C’est pour cela qu’ils tuent les autres oiseaux.\n\n"
+        "Et maintenant ils se rassemblent. Cinq à la fois, qui chargent ensemble et tirent ensemble : un mur de rayons "
+        "entre Phobos et le grand raid. Il faudra passer entre les rayons. Je regarde le Phenix dans le hangar, et je me "
+        "demande ce que son feu ferait de moi.",
+        "Grok has finished analysing the debris of the Guardians we brought down. Under the black plates, there is the "
+        "flesh of an Avioid. But inside, tangled with the bones and the nerves, there are fragments of a metal we know: "
+        "the same alloy, the same fire matrix as the hull of the Phenix that now sleeps in our hangar.\n\n"
+        "They are hybrids. The Avioids found the technology of the Phenix before us, and they tried to take it into "
+        "themselves. It gave them the beam of fire. It also drove them mad. They no longer know the horde: they burn "
+        "everything that flies, their own kind as well as us. That is why they kill the other birds.\n\n"
+        "And now they gather. Five at a time, charging together and firing together: a wall of beams between Phobos and "
+        "the great raid. I will have to slip between the beams. I look at the Phenix in the hangar, and I wonder what "
+        "its fire would do to me."),
+    "story_scene_gd3": (
+        "Sur la route de Jupiter, les Gardiens ne volent plus au hasard. Ils suivent quelqu’un. Un Gardien plus grand "
+        "que les autres, nimbé d’un halo d’or, qui tire deux rayons à la fois. Grok l’appelle l’Alpha : le premier à "
+        "avoir pris le feu du Phenix, peut-être. Celui que tous les autres ont suivi dans la folie.\n\n"
+        "Les relevés montrent autre chose. Quand les rayons de ses Gardiens le frôlent, ils glissent sur son plumage et "
+        "repartent. Son armure renvoie le feu de sa propre espèce. C’est sans doute pour cela qu’il est encore en "
+        "vie.\n\n"
+        "La Riposte ne partira pas tant qu’il gardera la route. Six tirs dans le corps, d’après Grok. Et si je ramène "
+        "ce plumage à Phobos, les techniciens pourront peut-être en couvrir mon vaisseau.",
+        "On the road to Jupiter, the Guardians no longer fly at random. They follow someone. A Guardian bigger than the "
+        "others, in a golden halo, that fires two beams at once. Grok calls it the Alpha: the first to take the fire of "
+        "the Phenix, perhaps. The one all the others followed into madness.\n\n"
+        "The scans show something else. When the beams of its Guardians brush against it, they slide off its plumage "
+        "and fly away. Its armour sends back the fire of its own kind. That is probably why it is still alive.\n\n"
+        "The Counterstrike will not leave while it guards the road. Six shots in the body, Grok says. And if I bring "
+        "that plumage back to Phobos, the technicians may be able to cover my ship with it."),
+    "story_scene_coat_t": ("Le revêtement réfléchissant", "The reflective coating"),
+    "story_scene_coat": (
+        "L’Alpha est tombé, et son plumage avec lui. Il a fallu trois jours aux techniciens de Phobos pour le découper, "
+        "le fondre et en tirer une fine pellicule dorée, à peine plus épaisse qu’une couche de peinture. Wallems "
+        "lui-même n’aurait pas fait mieux, et il l’aurait dit en jouant de la trompette.\n\n"
+        "La pellicule couvre maintenant le générateur du dôme du Shield et la matrice de la forme Phenix. Quand l’un ou "
+        "l’autre est actif, le rayon d’un Gardien meurt dessus dans un éclair. Sans eux, la coque reste nue : le feu la "
+        "traverse toujours.\n\n"
+        "Ce n’est pas une armure. C’est une seconde de plus, au bon moment. Mais contre les Gardiens, une seconde, "
+        "c’est tout ce qui manquait.",
+        "The Alpha is down, and its plumage with it. It took the technicians of Phobos three days to cut it, melt it and "
+        "draw from it a thin golden film, barely thicker than a coat of paint. Wallems himself could not have done "
+        "better, and he would have said so with his trumpet.\n\n"
+        "The film now covers the generator of the Shield’s dome and the matrix of the Phenix form. When either one is "
+        "active, the beam of a Guardian dies on it in a flash. Without them, the hull is bare: the fire still goes "
+        "through.\n\n"
+        "It is not armour. It is one more second, at the right moment. But against the Guardians, one second is all "
+        "that was missing."),
     "story_b_guardian": ("GARDIEN", "GUARDIAN"),
     "story_b_guardian_t": (
         "Un oiseau de feu cuirassé. Trois tirs au corps l'abattent, et ses ailes repoussent. Son laser, annoncé par une "
@@ -7453,9 +7540,9 @@ _SCRAMBLE_TEXTS = {
     "story_b_alpha": ("GARDIEN ALPHA", "ALPHA GUARDIAN"),
     "story_b_alpha_t": (
         "Le chef des Gardiens, plus grand, nimbé d'un halo d'or. Six tirs au corps l'abattent. Il tire deux lasers à la "
-        "fois.",
+        "fois. Son plumage renvoie le feu des Gardiens.",
         "The leader of the Guardians, bigger, in a golden halo. Six shots in the body bring it down. It fires two lasers "
-        "at once."),
+        "at once. Its plumage sends back the fire of the Guardians."),
     "story_scramble_clear": ("Base ennemie détruite ! Tu peux recommencer à volonté.",
                              "Enemy base destroyed! Replay whenever you like."),
     "story_scramble_retry": ("Le vaisseau a été détruit. Aucun progrès perdu : tu peux réessayer.",
