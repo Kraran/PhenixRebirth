@@ -1,9 +1,11 @@
 """Build the pictures of the asteroids of the BONUS mission "Asteroids" (src/asteroids.py).
 
-    python tools/make_asteroids.py [--frames 24] [--variants 2] [out_dir]
+    python tools/make_asteroids.py [--frames 24] [out_dir]
 
 Writes assets/sprites/asteroids/rock_<size>_<variant>.png, size = L (large), M (medium) or S (small): a strip of
-FRAMES cells side by side, one turn of the rock on its own axis. The rocks are NOT drawn as vectors: each one is a lumpy
+FRAMES cells side by side, one turn of the rock on its own axis. Three shapes per size (SHAPES, one variant each):
+0 the lumpy ball, 1 a long potato, 2 an angular chunk with flat faces; the game draws one of them at random for each
+rock that appears. The rocks are NOT drawn as vectors: each one is a lumpy
 ball, lit from the upper left, whose surface (grey rock, pits, craters, small bumps that catch the light) is made of
 3D noise and turns under the light, so the shadows stay where they are while the rock spins. Everything is
 deterministic (fixed seeds): running the tool again gives the same files.
@@ -24,6 +26,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 OUT = os.path.join(ROOT, "assets", "sprites", "asteroids")
 SIZES = {"L": 132, "M": 78, "S": 44}       # the pixels of one cell: large, medium, small
+SHAPES = ("lumpy", "long", "chunk")        # variant 0, 1, 2
 
 
 def _lattice(seed, n=32):
@@ -55,21 +58,55 @@ def _craters(rng, count):
         out.append((v, rng.uniform(0.18, 0.42)))
     return out
 
-def make_rock(size, seed, frames=24, tint=(1.0, 0.97, 0.93)):
+def _edge(shape, rng, ang):
+    """The silhouette: the radius (0..1 of the half cell) at each angle."""
+    if shape == "long":
+        # a potato: an ellipse turned at random, a little uneven
+        a, b, turn = 0.95, rng.uniform(0.52, 0.60), rng.uniform(0, math.pi)
+        phi = ang - turn
+        edge = a * b / np.sqrt((b * np.cos(phi)) ** 2 + (a * np.sin(phi)) ** 2)
+        for k in (3, 5):
+            edge = edge + rng.uniform(0.03, 0.06) * np.sin(k * ang + rng.uniform(0, 6.283))
+        return np.clip(edge, 0.40, 0.98)
+    if shape == "chunk":
+        # an angular chunk: a polygon of 6 or 7 corners (straight faces between them), a few small dents
+        n = int(rng.randint(6, 8))
+        corners = np.sort(np.mod(np.arange(n) * 2 * math.pi / n + rng.uniform(-0.35, 0.35, n), 2 * math.pi))
+        radii = rng.uniform(0.70, 0.96, n)
+        pts = np.stack([np.cos(corners) * radii, np.sin(corners) * radii], axis=1)
+        a2 = np.mod(ang, 2 * math.pi)
+        edge = np.full(ang.shape, 0.9, np.float32)
+        for i in range(n):
+            p, q = pts[i], pts[(i + 1) % n]
+            t0, t1 = corners[i], corners[(i + 1) % n]
+            span = (t1 - t0) % (2 * math.pi)
+            on = ((a2 - t0) % (2 * math.pi)) <= span
+            # where the ray at this angle meets the straight face p-q
+            dxs, dys = np.cos(a2), np.sin(a2)
+            ex, ey = q[0] - p[0], q[1] - p[1]
+            den = dxs * ey - dys * ex
+            r = (p[0] * ey - p[1] * ex) / np.where(np.abs(den) < 1e-6, 1e-6, den)
+            edge = np.where(on, r, edge)
+        edge = edge + 0.012 * np.sin(9 * ang + rng.uniform(0, 6.283))
+        return np.clip(edge, 0.45, 0.98)
+    # the lumpy ball: a few random harmonics
+    harm = [(k, rng.uniform(0.07, 0.19) / (k ** 0.55), rng.uniform(0, 6.283)) for k in (2, 3, 4, 5, 7)]
+    edge = np.ones_like(ang) * 0.80
+    for k, a, ph in harm:
+        edge += a * np.sin(k * ang + ph)
+    return np.clip(edge, 0.50, 0.98)
+
+
+def make_rock(size, seed, frames=24, tint=(1.0, 0.97, 0.93), shape="lumpy"):
     """-> list of `frames` Surfaces (size x size, alpha) of one rock turning on its axis."""
     rng = np.random.RandomState(seed)
     lat = _lattice(seed)
     lat2 = _lattice(seed + 101)
-    # lumpy silhouette: radius as a function of the angle, a few random harmonics
-    harm = [(k, rng.uniform(0.07, 0.19) / (k ** 0.55), rng.uniform(0, 6.283)) for k in (2, 3, 4, 5, 7)]
     R = size / 2.0
     ys, xs = np.mgrid[0:size, 0:size].astype(np.float32)
     dx = (xs + 0.5 - R) / R; dy = (ys + 0.5 - R) / R
     ang = np.arctan2(dy, dx); rr = np.sqrt(dx * dx + dy * dy)
-    edge = np.ones_like(rr) * 0.80
-    for k, a, ph in harm:
-        edge += a * np.sin(k * ang + ph)
-    edge = np.clip(edge, 0.50, 0.98)
+    edge = _edge(shape, rng, ang)
     u = rr / edge                                  # 0 centre .. 1 silhouette
     alpha = np.clip((1.0 - u) * R * 1.4, 0, 1)     # soft 1-px edge
     inside = u < 1.0
@@ -124,14 +161,14 @@ def make_rock(size, seed, frames=24, tint=(1.0, 0.97, 0.93)):
     return surfaces
 
 
-def build(out_dir, frames=24, variants=2):
+def build(out_dir, frames=24, variants=len(SHAPES)):
     pygame.init()
     pygame.display.set_mode((8, 8))
     os.makedirs(out_dir, exist_ok=True)
     written = []
     for k, (name, size) in enumerate(SIZES.items()):
-        for v in range(variants):
-            cells = make_rock(size, 10 * (k + 1) + v, frames=frames)
+        for v, shape in enumerate(SHAPES[:variants]):
+            cells = make_rock(size, 10 * (k + 1) + v, frames=frames, shape=shape)
             strip = pygame.Surface((size * frames, size), pygame.SRCALPHA)
             for i, cell in enumerate(cells):
                 strip.blit(cell, (i * size, 0))
@@ -145,7 +182,6 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("out_dir", nargs="?", default=OUT)
     ap.add_argument("--frames", type=int, default=24)
-    ap.add_argument("--variants", type=int, default=2)
     args = ap.parse_args()
-    for p in build(args.out_dir, args.frames, args.variants):
+    for p in build(args.out_dir, args.frames):
         print(p, os.path.getsize(p))
