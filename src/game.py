@@ -56,6 +56,7 @@ import antimatter
 import arcade_style
 import escort
 import gyro
+import laser_split
 import galaga
 from guardian import GuardianFormation
 from galaga import GalagaFormation
@@ -2011,6 +2012,7 @@ class Game:
         if spec.get("modules") and spec.get("training") and not dome:
             dome = True                                           # the test of the modules: the Shield has its dome (to see them
             self.player.adventure_dome = True                     # move out of its way) even if not yet bought
+        laser_split.reset(self)                   # (no half of a split laser from the mission before)
         self.adventure["dome"] = dome
         # the loot items bought in the hangar for this mission (they are used up when it ends, see _end_adventure)
         items = [] if spec.get("training") else list(spec.get("items") or [])
@@ -4613,6 +4615,7 @@ class Game:
         else:
             self.formation.update(self.dt, self.player.x)
         self._tick_guardian_squad()               # the Guardians that came with this wave (a few missions only)
+        laser_split.tick(self)                    # the halves of the lasers split on the reflective coating
         escort.tick(self)                         # the VIP rescue: the cruise ship (nothing in any other mission)
         asteroids.tick(self)                      # the Asteroids mission: rocks, saucer, shots (nothing elsewhere)
         spacewar.tick(self)                       # the SpaceWar test: the birds, the torpedoes, the levels (nothing elsewhere)

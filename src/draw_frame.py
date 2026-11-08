@@ -13,6 +13,7 @@ import credits_screen
 import crt
 import escort
 import gyro
+import laser_split
 import fonts
 import highscores_screen
 import hint_bar
@@ -116,6 +117,7 @@ def draw_play(game):
     game.formation.draw(game.game_surface)
     if getattr(game, "guardian_squad", None) is not None:
         game.guardian_squad.draw(game.game_surface)      # the Guardians that came with the wave
+    laser_split.draw(game, game.game_surface)        # the halves of the lasers split on the reflective coating
     antimatter.draw(game, game.game_surface)        # the missile in flight, over the enemies
     if getattr(game, "loot", None) is not None:
         game.loot.draw(game.game_surface)
