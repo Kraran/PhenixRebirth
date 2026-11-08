@@ -69,6 +69,7 @@ ENDING_MISSION = "act4_alcyone"        # the only mission of the pseudo Act IV: 
 ENDING_FILM = "theend"
 ENDING_MUSIC = "lyra_no_mercy_left"    # Lyra Voss, played in a loop from the scene to the workshop
 ENDING_ACT = 4
+ENDLESS_BEST = "endless_best"          # {mission id: the best score} of the endless missions (BONUS - Asteroids)
 HULLS = ("shield", "phoenix")
 
 GALAGA_STAGE = 6                       # arcade stage the BONUS mission plays at: level 2 (x1.1 speed, +10 points a bird)
@@ -723,6 +724,16 @@ MISSIONS = [
         "title": "story_m_lander_bonus", "hud_title": "story_m_lander_hud", "blurb": "story_m_lander_bonus_b",
         "need": ENDING_DONE, "content": 1, "speed": 1.0,
     },
+    # BONUS: Asteroids, the endless level (src/asteroids.py, `endless`): pure Asteroids, level after level (4, 6, 8, 10,
+    # then 11 big rocks, all there from the start of the level), the saucer firing 10 % faster each level, until the ship
+    # is lost. It is never won nor lost: its points pay in credits when it ends (by the loss of the ship or by leaving
+    # it), without a penalty nor a fall, and the best score of the save is kept (ENDLESS_BEST, shown at the top of the
+    # screen, not in the high scores). Secret until the game is finished; then on the map of every act, replayable.
+    {
+        "id": "bonus_asteroids", "acts": (1, 2, 3), "secret": True, "extra": True, "asteroids": True, "endless": True,
+        "title": "story_m_ast_bonus", "hud_title": "story_m_ast_bonus_hud", "blurb": "story_m_ast_bonus_b",
+        "need": ENDING_DONE, "content": 1, "speed": 1.0,
+    },
     # EDF - Opération Sentinelles silencieuses (I-IV): a stealth spy satellite to put in orbit round each gas giant, built on the
     # SpaceWar level (src/spacewar.py) but for real: the birds and the saucers pay their normal points and a failure costs what
     # it always costs. Flown in order (I from the start of Act 1, II and III in Act 2, IV in Act 3), once each, until the
@@ -1183,6 +1194,11 @@ def migrate_state(data):
         for mid, n in data["mission_clears"].items():
             if isinstance(mid, str) and is_hunt(mission_by_id(mid)):
                 base["mission_clears"][mid] = max(0, int(_num(n, 0)))
+    if isinstance(data.get(ENDLESS_BEST), dict):
+        best = {mid: max(0, int(_num(n, 0))) for mid, n in data[ENDLESS_BEST].items()
+                if isinstance(mid, str) and is_endless(mission_by_id(mid))}
+        if best:
+            base[ENDLESS_BEST] = best
     if isinstance(data.get("paint"), dict):
         base["paint"] = paint_state(data)
     if isinstance(data.get("items"), dict):
@@ -2624,6 +2640,16 @@ def failure_penalty(credits, mode="normal"):
     return int(credits * rate + 0.5)
 
 
+def endless_best(state, mission_id):
+    """The best score of an endless mission in this save (0 before its first run)."""
+    best = (state or {}).get(ENDLESS_BEST)
+    return max(0, int(_num((best or {}).get(mission_id), 0))) if isinstance(best, dict) else 0
+
+
+def is_endless(mission):
+    return bool((mission or {}).get("endless"))
+
+
 def record_result(state, mission_id, score, cleared, kills=None, loot=None, used=None):
     """Apply the end of a mission.
 
@@ -2648,6 +2674,13 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
         return res  # the simulation never changes progression, items or Veteran saves
     record_kills(state, kills)            # the enemies met count whatever the outcome
     record_mission_kills(state, mission_id, kills)
+    if is_endless(mission_by_id(mission_id)):
+        # an endless mission ends with the ship (or when it is left): never a failure, its points pay, the best is kept
+        cleared = True
+        res["cleared"] = True
+        res["best"] = score > endless_best(state, mission_id)
+        if res["best"]:
+            state[ENDLESS_BEST] = dict(state.get(ENDLESS_BEST) or {}, **{mission_id: score})
     res["used"] = story_items.consume(state, used)           # before the Act can change: they belong to this one
     if loot in story_items.REACTOR_IDS and not cleared:
         res["reactor_lost"] = loot if story_items.status(state, loot) is None else None

@@ -18,6 +18,13 @@ _update_asteroid) and draws it turned (Player._draw_asteroid). Everything else i
 - Shots: at most MAX_SHOTS on the screen, they carry the speed of the ship and die after SHOT_LIFE seconds.
 - Points (paid in the hangar like any mission, see story_state): ROCK_POINTS, SAUCER_POINTS.
 
+THE ENDLESS LEVEL (`endless`: the mission "BONUS - Asteroids", once the game is finished): pure Asteroids, level after
+level until the ship is lost. Every big rock of a level is there from its start (ENDLESS_ROCKS: 4, 6, 8, 10, then 11
+from level 5 on), nothing comes in from outside; a level ends when no rock is left, not even a small one, and the next
+one starts after LEVEL_PAUSE. The saucer comes as in the belts and fires SAUCER_LEVEL_STEP (10 %) faster each level.
+There is no target and the mission is never won: its score is banked when it ends (story_state.record_result), and
+the best one is kept in the save and shown at the top of the screen (not in the high scores).
+
 `AsteroidFormation` is the formation of the mission (nothing a bird has: no enemy, no bullet in the generic lists);
 `tick(game)` runs it every frame and `draw(surface)` draws it. The pictures of the rocks are made by
 tools/make_asteroids.py (assets/sprites/asteroids/).
@@ -64,6 +71,10 @@ SAUCER_SHOT_SPEED = 340.0
 SAUCER_SHOT_LIFE = 2.2
 SAUCER_HALF = (46, 19)               # what a shot of the ship must touch
 SPAWN_CLEAR = 190                    # a rock never comes in this close to the ship
+ENDLESS_ROCKS = (4, 6, 8, 10, 11)    # the endless level: big rocks of levels 1, 2, 3, 4, then 5 and up (the cap)
+LEVEL_PAUSE = 1.6                    # seconds between the last rock of a level and the next level
+LEVEL_BANNER = 2.0                   # seconds the number of a new level is shown
+SAUCER_LEVEL_STEP = 0.10             # the saucer fires this much faster at each level (level 3: 20 % faster than level 1)
 
 _strips = {}
 _saucer_cache = {}
@@ -202,7 +213,7 @@ class AsteroidFormation:
     """The field: rocks, the saucer, the shots, the debris. It looks like a formation without enemies to the rest of
     the game (`all_dead()` says when the mission is won)."""
 
-    def __init__(self, speed_mult=1.0, rng=None, target=TARGET):
+    def __init__(self, speed_mult=1.0, rng=None, target=TARGET, endless=False):
         self.enemies = []
         self.bullets = []
         self.swarm = None
@@ -225,6 +236,12 @@ class AsteroidFormation:
         self.end_timer = 0.0              # seconds since the last rock and the saucer are gone (target reached)
         self.tip = (180, 220, 255)        # the colour of the shots: the hull's
         self.started = False
+        self.endless = bool(endless)      # the endless level: no target, a level after the other (see the docstring)
+        self.level = 1
+        self.next_in = 0.0                # seconds since the last rock of the level is gone (endless)
+        self.banner = 0.0                 # seconds the number of the level is still shown (endless)
+        if self.endless:
+            self.repop = False
 
     # --- what the rest of the game asks of a formation ---
     def update(self, dt, player_x):
@@ -238,29 +255,45 @@ class AsteroidFormation:
 
     @property
     def reached(self):
-        return self.destroyed >= self.target
+        return not self.endless and self.destroyed >= self.target
 
     def remaining(self):
-        """Rocks still on the screen once the target is reached; before it, the rocks still to be destroyed."""
-        return len(self.rocks) if self.reached else max(0, self.target - self.destroyed)
+        """Rocks still on the screen once the target is reached (and in the endless level); before it, the rocks still
+        to be destroyed."""
+        return len(self.rocks) if (self.reached or self.endless) else max(0, self.target - self.destroyed)
 
     def swarm_remaining(self):
         return self.remaining()
 
     def all_dead(self):
-        """The mission is won: the target reached, the screen empty, and a short pause to see the last explosion."""
+        """The mission is won: the target reached, the screen empty, and a short pause to see the last explosion. (The
+        endless level is never won: it ends with the ship.)"""
         return self.reached and not self.rocks and self.saucer is None and self.end_timer >= END_DELAY
 
     def field_mass(self):
         """What is left of the field (see ROCK_MASS)."""
         return sum(ROCK_MASS[r.size] for r in self.rocks)
 
+    def rocks_for_level(self, level=None):
+        """The big rocks a level of the endless level starts with (FIRST_WAVE in the belts)."""
+        if not self.endless:
+            return FIRST_WAVE
+        level = max(1, int(self.level if level is None else level))
+        return ENDLESS_ROCKS[min(level, len(ENDLESS_ROCKS)) - 1]
+
+    def saucer_fire_gap(self):
+        """Seconds between two shots of the saucer: SAUCER_LEVEL_STEP faster at each level of the endless level."""
+        if not self.endless:
+            return SAUCER_FIRE_GAP
+        return SAUCER_FIRE_GAP / (1.0 + SAUCER_LEVEL_STEP * (max(1, self.level) - 1))
+
     # --- the field ---
     def new_wave(self, player=None):
-        """The first rocks of the mission: FIRST_WAVE big ones, at the edges but already in, never close to the ship."""
+        """The first rocks of the mission (or of a level of the endless level): big ones, at the edges but already in,
+        never close to the ship."""
         self.waves += 1
         px, py = (player.x, player.y) if player is not None else (BASE_WIDTH / 2, BASE_HEIGHT / 2)
-        for _ in range(FIRST_WAVE):
+        for _ in range(self.rocks_for_level()):
             for _try in range(12):
                 side = self.rng.choice("lrtb")
                 x = self.rng.uniform(0, BASE_WIDTH) if side in "tb" else (0.0 if side == "l" else BASE_WIDTH - 1.0)
@@ -478,6 +511,8 @@ def tick(game):
     form.started = True
     if form.waves == 0:
         form.new_wave(p)
+        form.banner = LEVEL_BANNER if form.endless else 0.0
+    form.banner = max(0.0, form.banner - dt)
     # --- the ship fires
     form.fire_cd = max(0.0, form.fire_cd - dt)
     if p.alive and not p.dying and getattr(p, "ast_fire", False) and form.fire_cd <= 0 and \
@@ -521,7 +556,7 @@ def tick(game):
         if s.update(dt, form.rng):
             form.saucer = None
         elif s.fire_in <= 0 and p.alive and not p.dying:
-            s.fire_in = SAUCER_FIRE_GAP
+            s.fire_in = form.saucer_fire_gap()
             dx, dy = wrapped_delta(s.x, s.y, p.x, p.y)
             a = math.atan2(dy, dx) + form.rng.uniform(-SAUCER_AIM_ERROR, SAUCER_AIM_ERROR)
             form.shots.append(Shot(s.x, s.y, math.cos(a) * SAUCER_SHOT_SPEED, math.sin(a) * SAUCER_SHOT_SPEED,
@@ -590,3 +625,26 @@ def tick(game):
         form.end_timer += dt
     else:
         form.end_timer = 0.0
+    if form.endless:
+        _next_level(game, form, p)
+
+
+def _next_level(game, form, p):
+    """The endless level: once no rock is left (not even a small one), the next level comes after LEVEL_PAUSE."""
+    if form.rocks:
+        form.next_in = 0.0
+        return
+    form.next_in += game.dt
+    if form.next_in < LEVEL_PAUSE:
+        return
+    form.next_in = 0.0
+    form.level += 1
+    form.new_wave(p)
+    form.banner = LEVEL_BANNER
+    adv = getattr(game, "adventure", None)
+    if isinstance(adv, dict):
+        adv["level"] = form.level                    # (the HUD shows it after the name of the mission)
+    try:
+        game.sounds.play("menu_confirm", volume=0.5)
+    except Exception:
+        log_exc("asteroids._next_level")

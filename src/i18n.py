@@ -7341,6 +7341,19 @@ _SCRAMBLE_TEXTS = {
     "scramble_won": ("BASE DÉTRUITE !", "BASE DESTROYED!"),
     "scramble_wall": ("MUR {p} %", "WALL {p}%"),
     "scramble_boss_hp": ("CHEF", "MASTER"),
+    "story_m_ast_bonus": ("BONUS - Asteroids", "BONUS - Asteroids"),
+    "story_m_ast_bonus_hud": ("BONUS - ASTEROIDS", "BONUS - ASTEROIDS"),
+    "story_m_ast_bonus_b": (
+        "Asteroids à l'infini : niveau après niveau (4, 6, 8, 10 puis 11 gros astéroïdes, tous là dès le départ), un niveau "
+        "se termine quand il ne reste plus aucun astéroïde, et la soucoupe tire 10 % plus vite à chaque niveau. La partie "
+        "dure jusqu'à la perte du vaisseau : ses points rapportent des crédits, sans pénalité. Ton record est gardé. "
+        "Ouverte une fois le jeu terminé.",
+        "Endless Asteroids: level after level (4, 6, 8, 10 then 11 big asteroids, all there from the start), a level ends "
+        "when no asteroid is left, and the saucer fires 10 % faster each level. The run lasts until the ship is lost: its "
+        "points pay in credits, without a penalty. Your best score is kept. Opens once the game is finished."),
+    "story_ast_record": ("RECORD {pts}", "BEST {pts}"),
+    "story_ast_end": ("Partie terminée  +{pts} PTS", "Run over  +{pts} PTS"),
+    "story_ast_new_best": ("NOUVEAU RECORD", "NEW BEST"),
     "story_m_scramble_bonus": ("BONUS - Scramble", "BONUS - Scramble"),
     "story_m_scramble_bonus_b": (
         "Le Scramble du test, pour de vrai : traverse la roche jusqu'à la base ennemie et abats son commandant avioïde rouge. Les points "

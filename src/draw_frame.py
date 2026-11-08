@@ -132,6 +132,26 @@ def draw_play(game):
         ship.draw(game.game_surface)
 
 
+def endless_record(game, adv):
+    """The best score of the endless mission being flown: the save's, or the run's once it is beaten."""
+    state = getattr(getattr(game, "story", None), "state", None) or {}
+    return max(story_state.endless_best(state, adv.get("id")), int(getattr(game, "score", 0) or 0))
+
+
+def _draw_endless_asteroids_hud(game, adv, form):
+    """BONUS - Asteroids: the record at the top right, the rocks left under it, the number of a new level."""
+    tc = game.text_cache
+    rec = tc.get(game.font, t("story_ast_record").format(pts=game.format_score(endless_record(game, adv))),
+                 announce.REWARD)
+    game.game_surface.blit(rec, (BASE_WIDTH - 16 - rec.get_width(), 16))
+    left = tc.get(game.font, t("story_swarm_left").format(n=len(getattr(form, "rocks", []) or [])), announce.INFO)
+    game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
+    if getattr(form, "banner", 0.0) > 0:
+        a = int(255 * min(1.0, form.banner / 0.4))
+        announce.draw(game, game.game_surface, t("story_level").format(n=int(getattr(form, "level", 1))), "special",
+                      "major", (BASE_WIDTH // 2, BASE_HEIGHT // 2 - 120), alpha=a)
+
+
 def draw_hud(game):
     """Scores, gauges, mission counters, loot notices and lives under enemies."""
     # UI (cached text — re-render only when string/color changes)
@@ -211,6 +231,8 @@ def draw_hud(game):
         pct = int(game.formation.cruise.progress() * 100)
         left = tc.get(game.font, t("story_vip_hud").format(p=pct), announce.INFO)
         game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
+    elif adv and adv.get("asteroids") and adv.get("endless"):
+        _draw_endless_asteroids_hud(game, adv, game.formation)
     elif adv and adv.get("asteroids") and game.play_mode != "coop":
         form = game.formation
         if getattr(form, "reached", False):

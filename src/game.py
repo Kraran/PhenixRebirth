@@ -2131,7 +2131,7 @@ class Game:
         story = getattr(self, "story", None)
         state = getattr(story, "state", None) or {}
         adv = getattr(self, "adventure", None) or {}
-        return bool(adv) and not adv.get("training") and state.get("mode") == "veteran"
+        return bool(adv) and not adv.get("training") and not adv.get("endless") and state.get("mode") == "veteran"
 
     def _bank_adventure(self, cleared):
         """Write the result of the mission into the save (once)."""
@@ -2279,7 +2279,8 @@ class Game:
             # the Asteroids mission (src/asteroids.py): rocks that break, the miniature saucer, a ship that flies free
             self.stage = 1
             mult = float(adv.get("speed") or 1.0) * self.difficulty_speed_mult()
-            self.formation = asteroids.AsteroidFormation(speed_mult=mult, target=int(adv.get("target") or asteroids.TARGET))
+            self.formation = asteroids.AsteroidFormation(speed_mult=mult, target=int(adv.get("target") or asteroids.TARGET),
+                                                         endless=bool(adv.get("endless")))
             self.formation.sounds = self.sounds
             self.formation.font = self.font
             self.sounds.prepare_invader_sfx(invaders.STEP_PITCHES, invaders.STEP_PITCH_GAP, invaders.SAUCER_PASS)
@@ -4220,8 +4221,8 @@ class Game:
         if getattr(self, "adventure", None) and getattr(self, "story", None):
             story_slot = self.story.slot_no
             try:
-                if self.stage_transition == "fly_up":
-                    # the mission was already won: bank it
+                if self.stage_transition == "fly_up" or self.adventure.get("endless"):
+                    # the mission was already won (or it is endless: its points pay when it is left): bank it
                     self.story.apply_result(self.adventure.get("id"), int(self.score), True,
                                             self.adventure.get("kills"), loot=self.adventure.get("loot"),
                                             used=self.adventure.get("items"),
@@ -4578,7 +4579,8 @@ class Game:
                         self._bank_adventure(False)
                         self._hotseat_arm_hold("adventure_over", self.HOTSEAT_HOLD_FINAL)
                         return
-                    self._end_adventure(False)
+                    # (an endless mission ends with the ship: its points pay, see story_state.record_result)
+                    self._end_adventure(bool(self.adventure.get("endless")))
                     return
                 if self.hotseat:
                     self._hotseat_arm_hold("eliminated", self.HOTSEAT_HOLD_FINAL)

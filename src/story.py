@@ -1794,6 +1794,9 @@ class StoryHub:
         if mission.get("asteroids"):
             spec["asteroids"] = True                  # the Asteroids level (src/asteroids.py)
             spec["target"] = int(mission.get("target") or 40)
+            if mission.get("endless"):
+                spec["endless"] = True                # BONUS - Asteroids: level after level until the ship is lost
+                spec["level"] = 1
         if mission.get("escort"):
             spec["escort"] = True                 # the VIP rescue: the cruise ship to bring across (src/escort.py)
             spec["stage"] = int(mission.get("stage") or 6)
@@ -1827,7 +1830,12 @@ class StoryHub:
             self.toast = t("story_clear").format(pts=res["score"])
             self.toast_kind = "success"
             fought = ss.mission_by_id(mission_id) or {}
-            if not fought.get("hunt"):
+            if fought.get("endless"):
+                self.toast = t("story_ast_end").format(pts=res["score"])       # BONUS - Asteroids: the run is over
+                if res.get("best"):
+                    self.toast += "   " + t("story_ast_new_best")
+                    self.toast_kind = "reward"
+            if not fought.get("hunt") and not fought.get("endless"):
                 self.focus_next()                    # a story mission is won once: the cursor goes on to the next one
             if res.get("act"):
                 self.focus_next()                    # a new act has a new map
