@@ -16,6 +16,8 @@ import os
 
 import pygame
 
+import pic_cache
+
 try:                         # the pictures between the drawn ones need numpy; without it the drawn ones are used as they are
     import numpy as np
 except ImportError:          # pragma: no cover - exercised by a test that hides numpy
@@ -221,11 +223,16 @@ def morph_sequence(ship, drawn, flight, steps=MORPH_STEPS, flash=False, flash_ra
     keys = [ship] + list(drawn) + [flight]
     if not drawn or any(k is None for k in keys):
         return []
+    key = ("morph", tuple(pic_cache.key_of(k) for k in keys), steps, flash, flash_radius, use_flow)
+    return pic_cache.kept(key, lambda: _morph_sequence(keys, steps, flash, flash_radius, use_flow))
+
+
+def _morph_sequence(keys, steps, flash, flash_radius, use_flow):
     size = (max(k.get_width() for k in keys), max(k.get_height() for k in keys))
     plain = dissolve(keys, steps, morph_flow() if use_flow else None)
     if not flash:
         return plain
-    colour = flash_colour(flight)
+    colour = flash_colour(keys[-1])
     big = (max(size[0], 2 * flash_radius), max(size[1], 2 * flash_radius))
     last = float(len(plain) - 1)
     return [_with_flash(pic, flash_level(i / last), colour, big, flash_radius) for i, pic in enumerate(plain)]

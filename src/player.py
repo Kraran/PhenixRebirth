@@ -17,6 +17,7 @@ from settings import *
 from settings import asset_path
 from errlog import log_exc
 import bindings
+import pic_cache
 import engine_flame
 from phenix_art import (PHENIX_MORPH_IN_SEC, PHENIX_MORPH_OUT_SEC, SHIELD_IN_SEC, SHIELD_IN_STEPS, SHIELD_OUT_SEC,
                         SHIELD_OUT_STEPS, dissolve, lead_in, morph_sequence)
@@ -37,6 +38,11 @@ def shift_fire_hsv(surf, h_add, s_mul=1.0, v_mul=1.0):
     """Hue-shift warm / fire pixels only. Leaves chrome and outlines."""
     if surf is None:
         return surf
+    return pic_cache.kept(("fire_hsv", pic_cache.key_of(surf), h_add, s_mul, v_mul),
+                          lambda: _shift_fire_hsv(surf, h_add, s_mul, v_mul))
+
+
+def _shift_fire_hsv(surf, h_add, s_mul, v_mul):
     out = surf.copy()
     try:
         rgb = pygame.surfarray.pixels3d(out)

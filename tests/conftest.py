@@ -34,6 +34,30 @@ import scramble_view  # noqa: E402
 scramble_view.BACKGROUND = False     # (the rock of the Scramble ahead of the screen would be made in a thread: not in the tests)
 
 
+import pygame  # noqa: E402
+
+_load = pygame.image.load
+_LOADED = {}
+
+
+def _load_kept(file, *args, **kwargs):
+    """The tests build a Game hundreds of times: each picture file is read from the disk once, then copied."""
+    if args or kwargs or not isinstance(file, (str, os.PathLike)):
+        return _load(file, *args, **kwargs)
+    try:
+        st = os.stat(file)
+    except OSError:
+        return _load(file)
+    key = (os.path.abspath(file), st.st_mtime_ns, st.st_size)
+    pic = _LOADED.get(key)
+    if pic is None:
+        pic = _LOADED[key] = _load(file)
+    return pic.copy()
+
+
+pygame.image.load = _load_kept
+
+
 _FAILURES = []
 
 

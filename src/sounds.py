@@ -35,6 +35,8 @@ LYRA_MUSIC = {
 }
 
 
+_PROBED = {}                 # (path, mtime, size) -> the length of a music file in seconds (or None)
+
 class SoundManager:
     FADE_MS = 350          # crossfade when switching themes
     MENU_RETURN_MS = 900   # quit run → title
@@ -187,9 +189,20 @@ class SoundManager:
             self._music_durations = {}
 
     def _probe_duration(self, path):
-        """Best-effort MP3 length in seconds (ffprobe > mutagen > size estimate)."""
+        """Best-effort MP3 length in seconds (ffprobe > mutagen > size estimate). Kept for the file as it is (a new
+        game, a new Sounds, do not ask ffprobe again)."""
         if not path or not os.path.exists(path):
             return None
+        try:
+            st = os.stat(path)
+            key = (os.path.abspath(path), st.st_mtime_ns, st.st_size)
+        except OSError:
+            return self._probe_duration_now(path)
+        if key not in _PROBED:
+            _PROBED[key] = self._probe_duration_now(path)
+        return _PROBED[key]
+
+    def _probe_duration_now(self, path):
         try:
             import subprocess
             r = subprocess.run(
