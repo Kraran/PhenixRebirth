@@ -153,5 +153,57 @@
     "start": 34.12
    }
   ]
+ },
+ "story_scene_sortie": {
+  "file": "story_scene_sortie.ogg",
+  "length": 67.63,
+  "marks": [
+   {
+    "end": 26.67,
+    "line": 0,
+    "start": 0.07
+   },
+   {
+    "end": 47.22,
+    "line": 2,
+    "start": 27.29
+   },
+   {
+    "end": 67.45,
+    "line": 4,
+    "start": 47.69
+   }
+  ]
+ },
+ "story_scene_vip": {
+  "file": "story_scene_vip.ogg",
+  "length": 20.27,
+  "marks": [
+   {
+    "end": 2.92,
+    "line": 0,
+    "start": 0.06
+   },
+   {
+    "end": 6.53,
+    "line": 2,
+    "start": 3.29
+   },
+   {
+    "end": 13.68,
+    "line": 3,
+    "start": 6.75
+   },
+   {
+    "end": 15.81,
+    "line": 4,
+    "start": 14.16
+   },
+   {
+    "end": 20.14,
+    "line": 5,
+    "start": 16.13
+   }
+  ]
  }
 }

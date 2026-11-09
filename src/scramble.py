@@ -531,6 +531,7 @@ class ScrambleFormation:
         self.endless = bool(endless)        # BONUS FINAL - Scramble: course after course until the last life
         self.loop = max(1, int(loop))       # the course of the endless raid (1, 2, 3...): BOOST_STEP more enemies each
         self.loop_timer = 0.0               # seconds since the base blew up (the endless raid)
+        self.approach_cried = False         # the red commander has cried as the approach of its base came in sight
         self.course = Course(self.style, seed, level, endless_boost(self.loop) if self.endless else 1.0)
         self.tune = self.course.tune
         self.enemies = []
@@ -815,6 +816,17 @@ def tick(game):
                 form.push_out(p)
             else:
                 _ship_hit(game, form)
+    # --- the approach of the base comes in sight: the red commander's cry rings out once, far ahead
+    if not form.approach_cried and form.phase == "flying" and course.section_at(form.cam + W) == "approach":
+        form.approach_cried = True
+        cry = getattr(game, "_play_boss_cry", None)
+        try:
+            if cry is not None:
+                cry("boss_yell", volume=0.85, x=W * 0.95)
+            else:
+                _play(getattr(game, "sounds", None), "boss_yell", volume=0.85, x=W * 0.95)
+        except Exception:
+            log_exc("scramble.tick")
     # --- the end: the scroll has stopped in the arena, the base fights; its boss dead and the base blown up, it is won
     if form.phase == "flying" and form.cam >= course.stop:
         form.phase = "arena"

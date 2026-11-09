@@ -16,7 +16,8 @@ from sounds import SoundManager
 from story import StoryHub
 from test_smoke import run  # noqa: F401  (fixture)
 
-KEYS = ("story_intro_1", "story_intro_2", "story_intro_3", "story_intro_4", "story_intro_4v")
+KEYS = ("story_intro_1", "story_intro_2", "story_intro_3", "story_intro_4", "story_intro_4v",
+        "story_scene_sortie", "story_scene_vip")       # (and the scenes read aloud: Bestiaire I, the VIP was Lyra Voss)
 SURF = (1280, 720)
 
 
@@ -75,7 +76,15 @@ def test_every_slide_of_the_intro_has_a_voice_in_french():
 def test_there_is_no_voice_in_the_other_languages_nor_for_other_texts():
     for lang in ("en", "de", "es", ""):
         assert ss.intro_voice("story_intro_1", lang) is None
-    assert ss.intro_voice("story_scene_sortie", "fr") is None and ss.intro_voice("nothing", "fr") is None
+    assert ss.intro_voice("story_scene_best2", "fr") is None and ss.intro_voice("nothing", "fr") is None
+    assert ss.intro_voice("story_scene_sortie_v", "fr") is None          # (the Veteran text is not the one recorded)
+
+
+@pytest.mark.parametrize("scene, key", [("ch1_sortie", "story_scene_sortie"), (ss.VIP_SCENE, "story_scene_vip")])
+def test_the_scenes_read_aloud_have_their_voice(scene, key):
+    assert [k for _p, k in ss.scene_slides(scene, "normal")] == [key]
+    voice = ss.intro_voice(key, "fr")
+    assert voice and voice["path"].endswith(key + ".ogg") and 10.0 < voice["length"] < 90.0
 
 
 @pytest.mark.parametrize("key", KEYS)
@@ -452,3 +461,18 @@ def test_the_credits_name_the_voice_service_in_every_language():
             assert len(at) == 1 and lines[at[0] - 1][0] == "header", code          # a line under its own header
     finally:
         i18n.set_lang(before)
+
+
+@pytest.mark.parametrize("scene, key", [("ch1_sortie", "story_scene_sortie"), (ss.VIP_SCENE, "story_scene_vip")])
+def test_a_scene_read_aloud_plays_its_voice_and_keeps_the_text_with_it(run, scene, key):
+    st = ss.create_slot(1, "NOVA", "normal")
+    ss.mark_intro_seen(st)
+    ss.save_state(ss.story_path(1), st)
+    fake = FakeSounds()
+    hub = StoryHub(sounds=fake)
+    hub.open_slot(1)
+    hub.start_scene(scene)
+    _wait(hub, run, story.VOICE_DELAY + 0.3)
+    assert fake.played == [ss.intro_voice(key, "fr")["path"]]
+    _wait(hub, run, 6.0)
+    assert hub._voice is not None and hub._voice_curve                     # (the text follows the voice)
