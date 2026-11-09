@@ -65,6 +65,7 @@ def test_the_base_blown_up_starts_the_course_again_harder(run):
     g._play_level_vo = lambda n: said.append(n)
     run.frames(2)
     form = g.formation
+    g.player.invulnerable = 1e9                                          # (nothing of the course may cost a life here)
     lives = g.player.lives
     form.cam = form.course.stop
     form.speed = 0.0
@@ -78,7 +79,7 @@ def test_the_base_blown_up_starts_the_course_again_harder(run):
     assert new is not form and isinstance(new, sc.ScrambleFormation)
     assert new.loop == 2 and new.cam == pytest.approx(0.0, abs=20) and new.phase == "flying"
     assert new.style == form.style and new.tune.boost == pytest.approx(1.1)
-    assert g.player.scramble is new and g.player.lives == lives and g.adventure is not None
+    assert g.player.scramble is new and g.player.lives == lives and g.adventure is not None      # (its lives go on)
     assert g.adventure["level"] == 2 and said == [2]
 
 
