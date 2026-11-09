@@ -72,6 +72,8 @@ class Turret:
         self.x, self.y = float(x), float(y)
         self.alive = True
         self.fire_in = first
+        self.fired = None                         # seconds since its last missile left (its look: scramble_launchers)
+        self.dead_for = 0.0                       # seconds since it was shot down (its wreck smokes)
 
     def box(self):
         return self.x - TURRET_W / 2, self.y - TURRET_H / 2, self.x + TURRET_W / 2, self.y + TURRET_H / 2
@@ -187,10 +189,14 @@ class Base:
         # the turrets fire their missiles
         for t in self.turrets:
             if not t.alive:
+                t.dead_for += dt
                 continue
+            if t.fired is not None:
+                t.fired += dt
             t.fire_in -= dt
             if t.fire_in <= 0 and ship_alive and len(self.missiles) < TURRET_MISSILES:
                 t.fire_in = f.rng.uniform(*TURRET_GAP)
+                t.fired = 0.0
                 self.missiles.append(BaseMissile(t.x - TURRET_W / 2 - 8, t.y))
                 sc._play(getattr(game, "sounds", None), "scramble_launch", volume=0.55, x=t.x - f.cam)
         # the boss fires, as in the saucer, from the face of the wall

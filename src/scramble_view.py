@@ -745,16 +745,26 @@ def _draw_base(surface, form, cam_i):
     # the wall
     wall, wx, wy = _wall_picture(base)
     surface.blit(wall, (round(wx - cam_i), round(wy)))
-    tur = _turret_sprite()
-    for t in base.turrets:
-        if t.alive:
+    import scramble_launchers as sl
+    look = sl.LOOK
+    if look == "current":
+        tur = _turret_sprite()
+        for t in base.turrets:
+            if t.alive:
+                l, tp, r, b = t.box()
+                surface.blit(tur, (round(l - cam_i), round(tp)))
+    else:
+        for t in base.turrets:
             l, tp, r, b = t.box()
-            surface.blit(tur, (round(l - cam_i), round(tp)))
+            sl.draw(surface, t, l - cam_i, tp, form.time, look, base.dead_for is None)
     for m in base.missiles:
         sx = m.x - cam_i
         flick = 0.75 + 0.25 * math.sin(m.age * 60.0)
         asteroids._add_glow(surface, (255, 150, 50), (sx + 22, m.y), int(26 * flick))
-        pic = _base_missile(m.tilt())
+        if look == "current":
+            pic = _base_missile(m.tilt())
+        else:
+            pic = sl.flying(look, int(round(math.degrees(m.tilt()) / 3.0)) * 3)
         surface.blit(pic, (round(sx - pic.get_width() / 2), round(m.y - pic.get_height() / 2)))
     for b in base.bullets:
         x, y = int(b.x - cam_i), int(b.y)

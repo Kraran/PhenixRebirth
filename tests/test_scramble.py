@@ -1835,3 +1835,37 @@ def test_the_saucer_alien_is_a_solid_creature():
         deep = eroded(eroded(a >= 128))                                            # (inside, away from the edge)
         assert deep.sum() > 1000 and ((a < 255) & deep).sum() <= 2
         assert ((a == 255) & (rgb.max(axis=2) == 0)).sum() > 60                    # the inside of the mouth
+
+
+def test_the_three_looks_of_the_base_launchers_are_drawn_in_every_state_in_the_box_of_the_turret():
+    import scramble_launchers as sl
+    f, ship, g = _arena()
+    base = f.base
+    assert sl.LOOK == "current"                         # (the first version stays until one is chosen)
+    for look in ("A", "B", "C"):
+        for dead in (False, True):
+            assert sl.picture(look, dead).get_size() == (scb.TURRET_W, scb.TURRET_H)
+        t = base.turrets[0]
+        for kw, want in ((dict(fire_in=3.0, fired=None), "idle"), (dict(fire_in=0.2), "warn"),
+                         (dict(fired=0.05), "fire"), (dict(fired=0.6), "reload")):
+            for k, v in kw.items():
+                setattr(t, k, v)
+            assert sl.state(t)[0] == want
+        surf = pygame.Surface((sc.W, sc.H))
+        surf.fill((0, 0, 0))
+        l, tp, r, b = t.box()
+        sl.draw(surf, t, l - f.cam, tp, 1.0, look)
+        assert surf.get_at((int(r - 5 - f.cam), int(t.y)))[:3] != (0, 0, 0)     # (its mount on the wall)
+        t.alive = False
+        assert sl.state(t)[0] == "dead"
+        t.alive, t.fired = True, None
+
+
+def test_a_turret_keeps_the_time_since_its_missile_left_and_since_it_fell():
+    f, ship, g = _arena()
+    base = f.base
+    t0, t1 = base.turrets[0], base.turrets[1]
+    t0.fire_in = 0.0
+    t1.alive = False
+    sc.tick(g)
+    assert t0.fired is not None and t0.fired < 0.1 and t1.dead_for > 0
