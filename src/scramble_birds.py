@@ -16,7 +16,8 @@ it meets. No wave in the comets section, nor once the scroll brakes (the base is
 THE COMETS. In the comets section (the stretch with almost no rock, as in the original) comets streak across the screen from
 right to left, slanting a little, one every COMET_GAP seconds. They are the comets of the game's sky (assets/sprites/comet),
 smaller. Nothing destroys them: a shot dies on their head. Touching one costs a life (the Phenix form and the dome go through,
-the dome breaks it).
+the dome breaks it). From a quarter of the section on (BEHIND_FROM), traitors come too: every BEHIND_GAP seconds one or two
+comets come in from the LEFT of the screen and streak to the right, at the back of the ship.
 """
 import math
 
@@ -51,6 +52,10 @@ COMET_SLANT = 0.47                # dy/dx of a comet (the slant of the picture)
 COMET_RADIUS = 15.0               # its head
 COMET_SCALE = 0.55                # the comets of the sky, at this size
 COMET_HEAD = (350.0, 185.0)       # where the head is in the picture of the sky (480 x 270), going down to the right
+BEHIND_FROM = 0.25                # the traitors: from this share of the comets section on ...
+BEHIND_GAP = (2.2, 3.6)           # ... one or two comets from the left every so often (seconds) ...
+BEHIND_PAIR = 0.4                 # ... two of them this often ...
+BEHIND_SPEED = (380.0, 520.0)     # ... a little slower than the others (px/s, to the right)
 
 
 class Bird:
@@ -82,11 +87,13 @@ class BirdShot:
 
 
 class Comet:
-    """A comet of the comets section, on the screen; `down`: it slants down as it goes left (else up)."""
+    """A comet of the comets section, on the screen; `down`: it slants down as it goes (else up); `right`: a traitor, it comes
+    from the left and goes right, at the back of the ship (else it goes left)."""
 
-    def __init__(self, x, y, speed, down):
+    def __init__(self, x, y, speed, down, right=False):
         self.x, self.y = float(x), float(y)
-        self.vx = -float(speed)
+        self.right = bool(right)
+        self.vx = float(speed) if self.right else -float(speed)
         self.vy = float(speed) * COMET_SLANT * (1 if down else -1)
         self.down = bool(down)
         self.alive = True
@@ -103,6 +110,8 @@ class Sky:
         self.comets = []
         self.wave_in = form.rng.uniform(*form.tune.wave_gap) * 0.5
         self.comet_in = 0.0
+        self.behind_in = 0.0               # seconds before the next traitors (from the left)
+        self.behind_queue = []             # (seconds, y, speed, down) of the second traitor of a pair
         self.waves = 0
 
     # --- the waves
@@ -186,12 +195,22 @@ class Sky:
             if self.comet_in <= 0:
                 self._comet()
                 self.comet_in = f.rng.uniform(*COMET_GAP) / max(0.05, f.tune.comets)
+        if self.behind_due():
+            self.behind_in -= dt
+            if self.behind_in <= 0:
+                self._traitors()
+                self.behind_in = f.rng.uniform(*BEHIND_GAP) / max(0.05, f.tune.comets)
+        for item in list(self.behind_queue):
+            item[0] -= dt
+            if item[0] <= 0:
+                self.behind_queue.remove(item)
+                self.comets.append(Comet(-30, item[1], item[2], item[3], right=True))
         for c in self.comets:
             c.age += dt
             c.x += c.vx * dt
             c.y += c.vy * dt
             wx = f.cam + c.x
-            if c.x < -60 or c.y < -60 or c.y > H + 60:
+            if c.x < -60 or c.x > W + 60 or c.y < -60 or c.y > H + 60:
                 c.alive = False
             elif c.y <= f.course.ceiling(wx) or c.y >= f.course.ground(wx):
                 c.alive = False
@@ -207,6 +226,35 @@ class Sky:
         k = keys.index("comets")
         x = f.cam + W
         return f.course.starts[k] + 300.0 < x < f.course.starts[k + 1]
+
+    def behind_due(self):
+        """True while traitors come in from the left: the ship is past the first quarter of the comets section (and the
+        right edge of the screen still in it)."""
+        f = self.form
+        keys = f.course.tune.keys
+        if "comets" not in keys or f.tune.comets <= 0:
+            return False
+        k = keys.index("comets")
+        start, end = f.course.starts[k], f.course.starts[k + 1]
+        return start + (end - start) * BEHIND_FROM < f.cam + W * 0.5 and f.cam + W < end
+
+    def _traitors(self):
+        """One comet (two now and then, the second a moment later) comes in from the left, at the height of the passage
+        behind the ship, and streaks to the right."""
+        f = self.form
+        count = 2 if f.rng.random() < BEHIND_PAIR else 1
+        for i in range(count):
+            down = f.rng.random() < 0.5
+            speed = f.rng.uniform(*BEHIND_SPEED)
+            mid, gap = f.course.passage(f.cam + W * 0.3)
+            top, bottom = mid - gap / 2 + 20, mid + gap / 2 - 20
+            span = W * 0.4 * COMET_SLANT
+            y = f.rng.uniform(top, max(top, bottom - span)) if down else f.rng.uniform(min(bottom, top + span), bottom)
+            if i == 0:
+                self.comets.append(Comet(-30, y, speed, down, right=True))
+            else:
+                self.behind_queue.append([f.rng.uniform(0.25, 0.6), y, speed, down])
+        sc._play(getattr(f, "sounds", None), "scramble_comet", volume=0.35, x=W * 0.1)
 
     def _comet(self):
         f = self.form

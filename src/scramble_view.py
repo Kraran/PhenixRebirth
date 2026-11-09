@@ -389,9 +389,11 @@ def bird_frames(stage):
     return got
 
 
-def comet_frames(down):
-    """The comet of the game's sky, smaller, heading left (and down, or up): (its pictures, where its head is in them)."""
-    got = _COMETS.get(bool(down))
+def comet_frames(down, right=False):
+    """The comet of the game's sky, smaller, heading left (and down, or up), or right for a traitor: (its pictures, where its
+    head is in them)."""
+    key = (bool(down), bool(right))
+    got = _COMETS.get(key)
     if got is None:
         import scramble_birds as sb
         from starfield import Comet
@@ -401,10 +403,10 @@ def comet_frames(down):
         for fr in Comet._load():
             size = fr.get_size()
             w, h = max(8, int(size[0] * sb.COMET_SCALE)), max(8, int(size[1] * sb.COMET_SCALE))
-            img = pygame.transform.flip(pygame.transform.smoothscale(fr, (w, h)), True, not down)
+            img = pygame.transform.flip(pygame.transform.smoothscale(fr, (w, h)), not right, not down)
             frames.append(img)
-        head = ((size[0] - hx) * sb.COMET_SCALE, (hy if down else size[1] - hy) * sb.COMET_SCALE)
-        got = _COMETS[bool(down)] = (frames, head)
+        head = ((hx if right else size[0] - hx) * sb.COMET_SCALE, (hy if down else size[1] - hy) * sb.COMET_SCALE)
+        got = _COMETS[key] = (frames, head)
     return got
 
 
@@ -455,7 +457,7 @@ def _draw_sky(surface, form):
     if sky is None:
         return
     for c in sky.comets:
-        frames, (hx, hy) = comet_frames(c.down)
+        frames, (hx, hy) = comet_frames(c.down, getattr(c, "right", False))
         if frames:
             pic = frames[int(c.age * 10.0) % len(frames)]
             surface.blit(pic, (round(c.x - hx), round(c.y - hy)))
@@ -760,8 +762,9 @@ def warm_sky():
         bird_frames(stage)
         loading.report()
     for down in (True, False):
-        comet_frames(down)
-        loading.report()
+        for right in (False, True):
+            comet_frames(down, right)                  # (and the traitors, from the left)
+            loading.report()
 
 
 def draw_items(surface, form):
