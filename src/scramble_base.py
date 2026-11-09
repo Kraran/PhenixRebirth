@@ -10,7 +10,8 @@ Until the scroll has stopped its shields are up: a shot sparks off it.
   down brick by brick.
 - THE TURRETS: TURRETS missile launchers on the face of the wall. Each one fires now and then a missile to the left that homes
   in a little on the height of the ship (like the missiles of the stations, sideways). A shot destroys a missile (10 points)
-  or a turret (the points of a station: a green bird).
+  or a turret (the points of a station: a green bird). A turret shot down leaves its wreck on the wall, smoking: it stops
+  the shots of the ship (not those of the base) until a second shot blows it away (no points).
 - THE BOSS: the alien of the boss saucer, red here, behind the wall in its chamber; it rises and sinks slowly. It fires as
   it does in the saucer: up to BULLET_MAX shots on the screen, one every BULLET_GAP seconds, each from the face of the wall
   (the first brick of a row near the height of the ship), straight on, to the left. Only a shot through a hole in the wall
@@ -73,6 +74,7 @@ class Turret:
         self.alive = True
         self.fire_in = first
         self.fired = None                         # seconds since its last missile left (its look: scramble_launchers)
+        self.wreck = False                        # shot down, its wreck still on the wall (a second shot blows it away)
         self.dead_for = 0.0                       # seconds since it was shot down (its wreck smokes)
 
     def box(self):
@@ -152,7 +154,7 @@ class Base:
         self.bullet_in = BULLET_START
         self.dead_for = None                        # seconds since the boss died (None: alive)
         self.done = False
-        self.kills = {"brick": 0, "turret": 0, "missile": 0, "boss": 0}
+        self.kills = {"brick": 0, "turret": 0, "wreck": 0, "missile": 0, "boss": 0}
 
     # --- asking it
     def row_of(self, y):
@@ -189,7 +191,8 @@ class Base:
         # the turrets fire their missiles
         for t in self.turrets:
             if not t.alive:
-                t.dead_for += dt
+                if t.wreck:
+                    t.dead_for += dt
                 continue
             if t.fired is not None:
                 t.fired += dt
@@ -263,7 +266,7 @@ class Base:
             if t - 3 <= y <= b + 3:
                 offer(m, l)
         for t in self.turrets:
-            if t.alive:
+            if t.alive or t.wreck:                   # (a wreck stops the shots of the ship)
                 l, tp, r, b = t.box()
                 if tp <= y <= b:
                     offer(t, l)
@@ -303,8 +306,15 @@ class Base:
                                          f.rng.uniform(0.2, 0.45), f.rng.uniform(1.5, 3.0)))
             sc._play(snd, "scramble_brick", volume=0.5, x=thing.x - f.cam)
             game.shake_amount = max(getattr(game, "shake_amount", 0.0), 3.0)
+        elif isinstance(thing, Turret) and not thing.alive:
+            if thing.wreck:                          # the second shot: the wreck blows up and is gone (no points)
+                thing.wreck = False
+                self.kills["wreck"] += 1
+                sc._blast(game, f, thing.x, thing.y, small=True)
         elif isinstance(thing, Turret):
             thing.alive = False
+            thing.wreck = True
+            thing.dead_for = 0.0
             self.kills["turret"] += 1
             sc.charge(p)
             game._add_score(p, sc.bestiary_points(game, sc.STATION_BESTIARY, game._enemy_points(sc.STATION_KIND)))
@@ -357,7 +367,7 @@ class Base:
                 d = math.hypot(b.x - boss.x, b.y - boss.y) / math.hypot(W * 0.4, H * 0.6)
                 b.blow_at = 0.25 + BLOW_TIME * min(1.0, d) + f.rng.uniform(0.0, 0.25)
         for i, t in enumerate(self.turrets):
-            t.blow_at = 0.4 + 0.3 * i if t.alive else None
+            t.blow_at = 0.4 + 0.3 * i if t.alive or t.wreck else None      # (the wrecks go with the base)
 
     def _blow_up(self, game, dt):
         f = self.form
@@ -373,8 +383,8 @@ class Base:
                 if f.rng.random() < 0.3:
                     self._boom(game, b.x, b.y, "enemy")
         for t in self.turrets:
-            if t.alive and getattr(t, "blow_at", None) is not None and self.dead_for >= t.blow_at:
-                t.alive = False
+            if (t.alive or t.wreck) and getattr(t, "blow_at", None) is not None and self.dead_for >= t.blow_at:
+                t.alive = t.wreck = False
                 self._boom(game, t.x, t.y, "collision")
         if self.dead_for >= 0.5 and int((self.dead_for - dt) * 3) != int(self.dead_for * 3) and self.dead_for < 2.5:
             self._boom(game, boss.x + f.rng.uniform(-90, 90), boss.y + f.rng.uniform(-90, 90), "gameover")

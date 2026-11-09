@@ -1237,7 +1237,7 @@ def test_a_turret_is_destroyed_for_the_points_of_a_station():
     f.shots = [sc.Shot(t.box()[0] - 30, t.y, 1200.0, 0.0)]
     g.dt = 1 / 30
     sc.tick(g)
-    assert not t.alive and g.score == 20 and base.kills["turret"] == 1
+    assert not t.alive and t.wreck and g.score == 20 and base.kills["turret"] == 1
 
 
 def test_the_base_shots_and_missiles_cost_a_life_but_not_through_the_dome():
@@ -1837,28 +1837,24 @@ def test_the_saucer_alien_is_a_solid_creature():
         assert ((a == 255) & (rgb.max(axis=2) == 0)).sum() > 60                    # the inside of the mouth
 
 
-def test_the_three_looks_of_the_base_launchers_are_drawn_in_every_state_in_the_box_of_the_turret():
+def test_the_launchers_of_the_base_are_drawn_in_every_state_in_the_box_of_the_turret():
     import scramble_launchers as sl
     f, ship, g = _arena()
-    base = f.base
-    assert sl.LOOK == "current"                         # (the first version stays until one is chosen)
-    for look in ("A", "B", "C"):
-        for dead in (False, True):
-            assert sl.picture(look, dead).get_size() == (scb.TURRET_W, scb.TURRET_H)
-        t = base.turrets[0]
-        for kw, want in ((dict(fire_in=3.0, fired=None), "idle"), (dict(fire_in=0.2), "warn"),
-                         (dict(fired=0.05), "fire"), (dict(fired=0.6), "reload")):
-            for k, v in kw.items():
-                setattr(t, k, v)
-            assert sl.state(t)[0] == want
+    t = f.base.turrets[0]
+    for dead in (False, True):
+        assert sl.picture(dead).get_size() == (scb.TURRET_W, scb.TURRET_H)
+    for kw, want in ((dict(fire_in=3.0, fired=None), "idle"), (dict(fire_in=0.2), "warn"),
+                     (dict(fired=0.05), "fire"), (dict(fired=0.6), "reload"),
+                     (dict(alive=False, wreck=True), "wreck"), (dict(wreck=False), "gone")):
+        for k, v in kw.items():
+            setattr(t, k, v)
+        assert sl.state(t)[0] == want
         surf = pygame.Surface((sc.W, sc.H))
         surf.fill((0, 0, 0))
         l, tp, r, b = t.box()
-        sl.draw(surf, t, l - f.cam, tp, 1.0, look)
-        assert surf.get_at((int(r - 5 - f.cam), int(t.y)))[:3] != (0, 0, 0)     # (its mount on the wall)
-        t.alive = False
-        assert sl.state(t)[0] == "dead"
-        t.alive, t.fired = True, None
+        sl.draw(surf, t, l - f.cam, tp, 1.0)
+        lit = surf.get_at((int(r - 5 - f.cam), int(t.y)))[:3] != (0, 0, 0)     # (its mount on the wall)
+        assert lit == (want != "gone")
 
 
 def test_a_turret_keeps_the_time_since_its_missile_left_and_since_it_fell():
@@ -1866,6 +1862,56 @@ def test_a_turret_keeps_the_time_since_its_missile_left_and_since_it_fell():
     base = f.base
     t0, t1 = base.turrets[0], base.turrets[1]
     t0.fire_in = 0.0
-    t1.alive = False
+    t1.alive, t1.wreck = False, True
     sc.tick(g)
     assert t0.fired is not None and t0.fired < 0.1 and t1.dead_for > 0
+
+
+def _shoot_turret(f, g, t):
+    f.shots = [sc.Shot(t.box()[0] - 30, t.y, 1200.0, 0.0)]
+    g.dt = 1 / 30
+    sc.tick(g)
+
+
+def test_the_wreck_of_a_turret_stops_a_shot_then_a_second_shot_blows_it_away():
+    f, ship, g = _arena()
+    base = f.base
+    t = base.turrets[0]
+    t.fire_in = 1e9
+    row = base.row_of(t.y)
+    _shoot_turret(f, g, t)
+    assert not t.alive and t.wreck and g.score == 20
+    standing, booms = base.standing(), len(g.explosions)
+    _shoot_turret(f, g, t)                                  # the wreck takes the shot: no brick behind it breaks
+    assert not f.shots and not t.wreck and base.standing() == standing
+    assert len(g.explosions) > booms and g.score == 20      # (it blows up, for no points)
+    assert base.kills == dict(base.kills, turret=1, wreck=1, brick=0)
+    _shoot_turret(f, g, t)                                  # gone: the next shot breaks the first brick of the row
+    for _ in range(3):
+        sc.tick(g)
+    assert base.standing() == standing - 1 and base.front_brick(row).col == 1
+
+
+def test_the_wreck_does_not_stop_the_shots_of_the_base():
+    f, ship, g = _arena()
+    base = f.base
+    t = base.turrets[0]
+    t.alive, t.wreck = False, True
+    base.bullet_in = 1e9
+    m = scb.BaseMissile(t.x + 2, t.y)
+    b = scb.BaseBullet(t.x + 2, t.y)
+    base.missiles, base.bullets = [m], [b]
+    for _ in range(20):
+        sc.tick(g)
+    assert m.alive and b.alive and m.x < t.box()[0] and b.x < t.box()[0] and t.wreck
+
+
+def test_the_wrecks_go_with_the_base():
+    f, ship, g = _arena()
+    base = f.base
+    t = base.turrets[0]
+    t.alive, t.wreck = False, True
+    base._kill_boss(g)
+    for _ in range(int(60 * scb.DONE_AFTER) + 5):
+        sc.tick(g)
+    assert not t.wreck and not any(tt.alive or tt.wreck for tt in base.turrets)

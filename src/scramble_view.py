@@ -669,25 +669,6 @@ def station_portrait():
     return got
 
 
-def _turret_sprite():
-    got = _BASE.get("turret")
-    if got is None:
-        import scramble_base as sb
-
-        def draw(pic, k):
-            w, h = pic.get_size()
-            steel, dark, edge = (90, 94, 108), (40, 42, 52), (170, 176, 192)
-            body = pygame.Rect(w // 3, 2 * k, w - w // 3, h - 4 * k)
-            pygame.draw.rect(pic, steel, body, border_radius=3 * k)
-            pygame.draw.rect(pic, edge, body, max(1, k), border_radius=3 * k)
-            tube = pygame.Rect(0, h // 2 - 4 * k, w // 2, 8 * k)
-            pygame.draw.rect(pic, dark, tube)
-            pygame.draw.rect(pic, edge, tube, max(1, k))
-            pygame.draw.circle(pic, (255, 70, 50), (w - 7 * k, h // 2), int(2.5 * k))
-        got = _BASE["turret"] = _aa(draw, (30, 26), (sb.TURRET_W, sb.TURRET_H))
-    return got
-
-
 def _base_missile(lean):
     """A missile of a turret, its nose to the left, leaning by `lean` (steps of 3 degrees)."""
     deg = int(round(math.degrees(lean) / 3.0)) * 3
@@ -746,25 +727,14 @@ def _draw_base(surface, form, cam_i):
     wall, wx, wy = _wall_picture(base)
     surface.blit(wall, (round(wx - cam_i), round(wy)))
     import scramble_launchers as sl
-    look = sl.LOOK
-    if look == "current":
-        tur = _turret_sprite()
-        for t in base.turrets:
-            if t.alive:
-                l, tp, r, b = t.box()
-                surface.blit(tur, (round(l - cam_i), round(tp)))
-    else:
-        for t in base.turrets:
-            l, tp, r, b = t.box()
-            sl.draw(surface, t, l - cam_i, tp, form.time, look, base.dead_for is None)
+    for t in base.turrets:                                         # (and their wrecks)
+        l, tp, r, b = t.box()
+        sl.draw(surface, t, l - cam_i, tp, form.time)
     for m in base.missiles:
         sx = m.x - cam_i
         flick = 0.75 + 0.25 * math.sin(m.age * 60.0)
         asteroids._add_glow(surface, (255, 150, 50), (sx + 22, m.y), int(26 * flick))
-        if look == "current":
-            pic = _base_missile(m.tilt())
-        else:
-            pic = sl.flying(look, int(round(math.degrees(m.tilt()) / 3.0)) * 3)
+        pic = _base_missile(m.tilt())
         surface.blit(pic, (round(sx - pic.get_width() / 2), round(m.y - pic.get_height() / 2)))
     for b in base.bullets:
         x, y = int(b.x - cam_i), int(b.y)
