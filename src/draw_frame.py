@@ -135,7 +135,8 @@ def draw_play(game):
 def endless_record(game, adv):
     """The best score of the endless mission being flown: the save's, or the run's once it is beaten."""
     state = getattr(getattr(game, "story", None), "state", None) or {}
-    return max(story_state.endless_best(state, adv.get("id")), int(getattr(game, "score", 0) or 0))
+    key = game.endless_key() if hasattr(game, "endless_key") else adv.get("id")
+    return max(story_state.endless_best(state, key), int(getattr(game, "score", 0) or 0))
 
 
 def _draw_endless_record(game, adv):
@@ -224,6 +225,8 @@ def draw_hud(game):
         game.game_surface.blit(hint, (BASE_WIDTH // 2 - hint.get_width() // 2, BASE_HEIGHT - 34))
     elif adv and adv.get("lander"):
         lander_view.draw_hud(game, game.formation)
+        if adv.get("endless"):
+            _draw_endless_record(game, adv)                 # BONUS FINAL - Lunar Lander: the record of this setting
     elif adv and adv.get("scramble") and scramble.active(game) is not None:
         scramble_view.draw_hud(game, game.formation)
     elif adv and adv.get("spacewar"):

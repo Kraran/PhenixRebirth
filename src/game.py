@@ -2171,6 +2171,20 @@ class Game:
         adv = getattr(self, "adventure", None) or {}
         return bool(adv) and not adv.get("training") and not adv.get("endless") and state.get("mode") == "veteran"
 
+    def _endless_over(self, cleared=True):
+        """The end of an endless mission (the ship lost, the Lander out of fuel) or of a fallen Veteran: the result written
+        at once, then the GAME OVER of the game, then back to the map (or to the slot list)."""
+        self._bank_adventure(cleared)
+        self._hotseat_arm_hold("adventure_over", self.HOTSEAT_HOLD_FINAL)
+
+    def endless_key(self):
+        """Where the record of the endless mission being flown is kept: its id; the Lunar Lander one for each setting."""
+        adv = getattr(self, "adventure", None) or {}
+        form = getattr(self, "formation", None)
+        if adv.get("lander") and adv.get("endless") and getattr(form, "style", None):
+            return "%s:%s" % (adv.get("id"), form.style)
+        return adv.get("id")
+
     def _bank_adventure(self, cleared):
         """Write the result of the mission into the save (once)."""
         spec = getattr(self, "adventure", None) or {}
@@ -2180,7 +2194,8 @@ class Game:
         spec["banked"] = True
         try:
             story.apply_result(spec.get("id"), int(getattr(self, "score", 0) or 0), bool(cleared), spec.get("kills"),
-                               loot=spec.get("loot"), used=spec.get("items"), flawless=not spec.get("life_lost"))
+                               loot=spec.get("loot"), used=spec.get("items"), flawless=not spec.get("life_lost"),
+                               best_key=self.endless_key() if spec.get("endless") else None)
         except Exception:
             log_exc("game._end_adventure")
 
@@ -2287,7 +2302,8 @@ class Game:
         elif adv and adv.get("lander"):
             # Lunar Lander (src/lander.py): a ground to land on, the ship (always in the middle) falls to it
             self.stage = 1
-            self.formation = lander.LanderFormation(style=adv.get("body"), seed=adv.get("seed"), fuel=adv.get("fuel"))
+            self.formation = lander.LanderFormation(style=adv.get("body"), seed=adv.get("seed"), fuel=adv.get("fuel"),
+                                                    endless=bool(adv.get("endless")))
             self.formation.sounds = self.sounds
             self.formation.font = self.font
             self.formation.text_cache = self.text_cache
@@ -4621,10 +4637,9 @@ class Game:
                     if self._veteran_adventure() or endless:
                         # a fallen Veteran gets the real GAME OVER of the game (explosion, card, voice), then the slot list.
                         # The fall is written down at once: closing the game during the card does not save him. An
-                        # endless mission (BONUS - Asteroids) ends the same way, its points paid at once (see
+                        # endless mission (BONUS FINAL) ends the same way, its points paid at once (see
                         # story_state.record_result), then back to the map.
-                        self._bank_adventure(endless)
-                        self._hotseat_arm_hold("adventure_over", self.HOTSEAT_HOLD_FINAL)
+                        self._endless_over(endless)
                         return
                     self._end_adventure(False)
                     return

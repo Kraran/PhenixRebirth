@@ -1745,6 +1745,8 @@ class StoryHub:
             body = mission.get("body") or body                      # (a landing has its own setting, no menu)
             if body in lander.BODIES:
                 spec["body"] = body                   # the setting chosen in the menu of the test (else drawn at random)
+            if mission.get("endless"):
+                spec.update(endless=True, level=1)    # BONUS FINAL - Lunar Lander: landing after landing until out of fuel
         if mission.get("scramble"):
             spec.update(scramble=True, items=[])                     # (src/scramble.py)
             if mission.get("training"):
@@ -1809,11 +1811,11 @@ class StoryHub:
                 spec["swarm_screens"] = float(mission["swarm_screens"])    # a smaller swarm
         return spec
 
-    def apply_result(self, mission_id, score, cleared, kills=None, loot=None, used=None, flawless=False):
+    def apply_result(self, mission_id, score, cleared, kills=None, loot=None, used=None, flawless=False, best_key=None):
         """End of a mission: credits, penalty or fall (see story_state.record_result). `loot` is the item caught
         during the mission, `used` the items that were installed for it; `flawless`: no life was lost."""
         had_missile = ss.has_antimatter(self.state)
-        res = ss.record_result(self.state, mission_id, score, cleared, kills, loot=loot, used=used)
+        res = ss.record_result(self.state, mission_id, score, cleared, kills, loot=loot, used=used, best_key=best_key)
         if res.get("training"):
             if (ss.mission_by_id(mission_id) or {}).get("lander"):
                 self.toast = t("story_lander_clear") if cleared else t("story_lander_retry")

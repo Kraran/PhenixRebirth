@@ -14,6 +14,12 @@ The rules:
   The points are multiplied by the bonus of the zone (not the fuel bonus).
 - Beeps warn that the fuel is low (`tick`), and the thruster and the crash are heard.
 
+THE ENDLESS LEVEL (`endless`: BONUS FINAL - Lunar Lander): the flight goes on until the fuel runs out. After a landing the
+level starts again from the top, on a new ground, with the fuel left plus REFUEL (50 for a perfect landing, 25 for a rough
+one), and fewer of the big zones (ENDLESS_PADS: the x1 get rarer over levels 1 to 3, then are gone and the x2 get rarer
+over levels 4 to 6; from level 7 only x5 zones, rarer and rarer). A crash, or a tank empty for more than EMPTY_GRACE
+seconds (time enough for a landing at the last moment), ends the run with the GAME OVER of the game.
+
 The player flies the real Player of the game (`Player.asteroid_mode` with `Player.lander` set to the formation below), with ONE life.
 The formation looks like one without enemies to the rest of the game; `tick(game)` runs it every frame; the view is in
 src/lander_view.py. The unit of length is the pixel at the maximum zoom (the normal size of the ship).
@@ -79,7 +85,13 @@ PERFECT = (22.0, 14.0, math.radians(4.0))
 ROUGH = (48.0, 30.0, math.radians(12.0))
 PERFECT_POINTS, ROUGH_POINTS = 500, 100
 PERFECT_FUEL, ROUGH_FUEL = 50, 10
-LAND_PAUSE = 3.2                  # seconds the message stays before the mission ends
+LAND_PAUSE = 3.2                  # seconds the message stays before the mission ends (or the next level starts)
+REFUEL = {"perfect": 50.0, "rough": 25.0}   # the endless level: fuel won by a landing
+EMPTY_GRACE = 2.0                 # the endless level: seconds with an empty tank before the run is over
+# the endless level: the landing zones of each level (from level 9 on: the last one)
+ENDLESS_PADS = (("x1", "x1", "x1", "x2"), ("x1", "x1", "x2", "x5"), ("x1", "x2", "x5"),
+                ("x2", "x2", "x2", "x5"), ("x2", "x2", "x5"), ("x2", "x5"),
+                ("x5", "x5", "x5"), ("x5", "x5"), ("x5",))
 BEEP_FAR, BEEP_NEAR = 1.0, 0.18
 THRUST_SOUND_GAP = 0.2
 
@@ -111,6 +123,11 @@ def landing_points(kind, result, fuel):
     return 0, 0
 
 
+def endless_pads(level):
+    """The kinds of the landing zones of a level of the endless level."""
+    return ENDLESS_PADS[min(max(1, int(level)), len(ENDLESS_PADS)) - 1]
+
+
 def zoom_for(alt, current):
     """The index of the zoom level for the altitude `alt`; `current` (the index now) gives the hysteresis."""
     want = 0
@@ -129,8 +146,9 @@ class Terrain:
     """The ground: a height every STEP px (y down: smaller = higher), looping, with its flat landing zones, its craters and
     its boulders."""
 
-    def __init__(self, style, seed=None):
+    def __init__(self, style, seed=None, kinds=None):
         self.style = style
+        self.kinds = list(kinds) if kinds else None             # (the endless level: the zones of the level)
         self.seed = random.getrandbits(32) if seed is None else int(seed)
         rng = np.random.default_rng(self.seed)
         n = WORLD // STEP
@@ -182,16 +200,21 @@ class Terrain:
         return min(d, WORLD - d)
 
     def _place_pads(self, rng):
-        count = int(rng.integers(1, 4))
-        kinds = [str(k) for k in rng.choice(list(PAD_SIZES), size=count)]
+        if self.kinds:
+            kinds = [str(k) for k in self.kinds]
+            count = len(kinds)
+        else:
+            count = int(rng.integers(1, 4))
+            kinds = [str(k) for k in rng.choice(list(PAD_SIZES), size=count)]
         pads = []
         tries = 0
-        while len(pads) < count and tries < 400:
+        while len(pads) < count and tries < 800:
             tries += 1
             cx = float(rng.uniform(0, WORLD))
             if self.dx(cx, WORLD / 2) < 700:                    # (not under the start)
                 continue
-            if any(self.dx(cx, p["x"]) < 1100 for p in pads):
+            gap = 1100 if tries <= 400 else 800                 # (four zones: a little closer if they do not fit)
+            if any(self.dx(cx, p["x"]) < gap for p in pads):
                 continue
             pads.append({"kind": kinds[len(pads)], "x": cx, "w": float(PAD_SIZES[kinds[len(pads)]])})
         for p in pads:
@@ -235,12 +258,17 @@ class LanderFormation:
     """The field of the level: the ground, the ship's flight (world position, speed, fuel), the zoom and the end. Looks like
     a formation without enemies to the rest of the game."""
 
-    def __init__(self, style=None, seed=None, speed_mult=1.0, rng=None, fuel=None):
+    def __init__(self, style=None, seed=None, speed_mult=1.0, rng=None, fuel=None, endless=False):
         self.rng = rng if rng is not None else random.Random()
         self.style = style if style in BODIES else self.rng.choice(BODY_KEYS)
         self.fuel_max = float(fuel) if fuel else FUEL_START     # (a landing of the Adventure may fill the tank higher)
         self.gravity = BODIES[self.style]["gravity"]
-        self.terrain = Terrain(self.style, seed)
+        self.endless = bool(endless)        # BONUS FINAL - Lunar Lander: level after level until the fuel runs out
+        self.level = 1
+        self.refuel = 0.0                   # the fuel the last landing won (endless)
+        self.empty_for = 0.0                # seconds the tank has been empty while flying (endless)
+        self.over = False                   # the run is over (endless: a crash, or the tank empty too long)
+        self.terrain = Terrain(self.style, seed, kinds=endless_pads(1) if self.endless else None)
         self.enemies = []
         self.bullets = []
         self.swarm = None
@@ -277,6 +305,24 @@ class LanderFormation:
 
     def get_hittable_enemies(self):
         return []
+
+    def next_level(self, player=None):
+        """The endless level: the next level, from the top, on a new ground with fewer big zones; the fuel is kept."""
+        self.level += 1
+        self.terrain = Terrain(self.style, self.rng.getrandbits(32), kinds=endless_pads(self.level))
+        if self.view is not None:
+            self.view.slopes.clear()                        # (the tables of the old ground)
+            self.view.boulder_cols.clear()
+        self.x, self.y = WORLD / 2.0, START_Y
+        self.vx, self.vy = self.rng.uniform(*START_VX), 0.0
+        self.zoom_i, self.zoom = 0, ZOOMS[0]
+        self.phase, self.result, self.pad, self.touch = "flying", None, None, None
+        self.points = self.bonus = 0
+        self.refuel = 0.0
+        self.end_timer = self.empty_for = 0.0
+        self.thrusting = False
+        if player is not None:
+            player.ast_angle = -math.pi / 2                 # (nose up again)
 
     def remaining(self):
         return 0 if self.won else 1
@@ -403,13 +449,34 @@ def tick(game):
             pts, bonus = landing_points(pad["kind"], result, form.fuel)
             form.points, form.bonus = pts, bonus
             game._add_score(p, pts + bonus)
+            if form.endless:
+                form.refuel = REFUEL[result]                     # (the endless level: fuel for the next one)
+                form.fuel += form.refuel
             _play(snd, "lander_land" if result == "perfect" else "lander_rough", volume=0.8)
             if result == "perfect":
                 _play(snd, "1up", volume=0.5)
     if form.phase == "landed":
         form.end_timer += dt
         if form.end_timer >= LAND_PAUSE:
-            form.won = True
+            if form.endless:
+                form.next_level(p)                              # (the next level: never "won")
+                adv = getattr(game, "adventure", None)
+                if isinstance(adv, dict):
+                    adv["level"] = form.level
+                try:
+                    game._play_level_vo(form.level)
+                except Exception:
+                    log_exc("lander.tick")
+            else:
+                form.won = True
+    if form.endless and form.phase == "flying" and not form.over:
+        form.empty_for = form.empty_for + dt if form.fuel <= 0.0 else 0.0
+        if form.empty_for > EMPTY_GRACE and p.alive and not p.dying:
+            form.over = True                                    # (out of fuel for good: the run is over)
+            try:
+                game._endless_over()
+            except Exception:
+                log_exc("lander.tick")
 
 
 def _crash(game, form):

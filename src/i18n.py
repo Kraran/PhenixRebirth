@@ -7270,13 +7270,17 @@ _LANDER_TEXTS = {
     "lander_rough": ("Atterrissage réussi, mais rude", "Landed, but hard"),
     "story_m_lander_bonus": ("BONUS FINAL - Lunar Lander", "FINAL BONUS - Lunar Lander"),
     "story_m_lander_bonus_b": (
-        "Le Lunar Lander : pose le vaisseau sur une zone plane d'un astéroïde, de Titan, d'Europe, de "
-        "Déimos ou de Triton. L'atterrissage rapporte ses points (plus le carburant restant) ; un crash coûte ce que coûte "
-        "un échec. Tu choisis le décor au départ. Ouverte une fois le jeu terminé.",
-        "The Lunar Lander: set the ship down on a flat zone of an asteroid, Titan, Europa, Deimos or Triton. "
-        "The landing pays its points (plus the fuel left); a crash costs what a failure costs. You choose the setting at the "
-        "start. Open once the game is finished."),
+        "Le Lunar Lander jusqu'à la dernière goutte : pose le vaisseau sur une zone plane d'un astéroïde, de Titan, "
+        "d'Europe, de Déimos ou de Triton, puis repars avec le carburant restant (+50 pour un atterrissage parfait, +25 "
+        "pour un rude), sur un sol où les grandes zones se font de plus en plus rares. La partie s'arrête sur un crash ou "
+        "une panne sèche : ses points rapportent des crédits, sans pénalité. Un record par décor. Tu choisis le décor au "
+        "départ. Ouverte une fois le jeu terminé.",
+        "The Lunar Lander to the last drop: set the ship down on a flat zone of an asteroid, Titan, Europa, Deimos or "
+        "Triton, then fly again with the fuel left (+50 for a perfect landing, +25 for a rough one), over a ground where the "
+        "big zones get rarer and rarer. The run ends with a crash or an empty tank: its points pay in credits, without a "
+        "penalty. One record per setting. You choose the setting at the start. Open once the game is finished."),
     "lander_crash": ("CRASH !", "CRASH!"),
+    "lander_refuel": ("+{n} CARBURANT", "+{n} FUEL"),
     "lander_points": ("{p} points  +  carburant {b}   (zone \u00d7{z})", "{p} points  +  fuel {b}   (zone \u00d7{z})"),
     "story_lander_clear": ("Atterrissage réussi ! Tu peux recommencer à volonté.",
                            "Landing made! Replay whenever you like."),
