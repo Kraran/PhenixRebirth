@@ -267,6 +267,9 @@ class BossBullet:
         pygame.draw.rect(surface, (255, 180, 255), (int(self.x) - 1, int(self.y), 3, 14))
 
 
+MOUTH_BLACK = 8          # an opaque pixel this dark is the inside of the alien's mouth (boss_core_*.png): never see-through, kept black when it flashes
+
+
 class BossCore:
     """Cthulhu-esque alien core in the saucer center — 200 / 300 pts."""
     _image = None
@@ -282,7 +285,9 @@ class BossCore:
         for yy in range(h):
             for xx in range(w):
                 r, g, b, a = src.get_at((xx, yy))
-                if a > 20:
+                if a == 255 and max(r, g, b) <= MOUTH_BLACK:
+                    white.set_at((xx, yy), (0, 0, 0, 255))     # the inside of its mouth stays black
+                elif a > 20:
                     white.set_at((xx, yy), (255, 255, 255, a))
         return white
 

@@ -586,7 +586,7 @@ def base_panel(width, height):
 RED_SKIN_HUE = 358.0 / 360.0         # the red commander: the hue of its skin ...
 RED_SKIN_SAT = 0.72                  # ... its saturation ...
 RED_SKIN_GAIN = 1.45                 # ... and how much lighter than the green it was painted in
-RED_ALPHA = (22.0, 2.4)              # its picture made solid: alpha = (alpha - 22) * 2.4 (the green one is see-through)
+RED_ALPHA = (22.0, 2.4)              # its edges made crisp: alpha = (alpha - 22) * 2.4 (boss_core_*.png is already solid)
 
 
 def redden(pic):
@@ -615,6 +615,16 @@ def redden(pic):
     return pic
 
 
+def _keep_mouth_black(pic, white):
+    """The inside of the alien's mouth (opaque black in boss_core_*.png) stays black when it flashes white."""
+    from boss import MOUTH_BLACK
+    rgb = pygame.surfarray.array3d(pic)
+    mouth = (pygame.surfarray.array_alpha(pic) == 255) & (rgb.max(axis=2) <= MOUTH_BLACK)
+    pixels = pygame.surfarray.pixels3d(white)
+    pixels[mouth] = 0
+    del pixels
+
+
 def boss_frames(size=None):
     """The alien of the boss saucer, in red (its green skin turned red, the rest kept: redden), at the size of the base
     (or `size` px: the Bestiary shows it at the size of the saucer's): (frames, white frames)."""
@@ -632,6 +642,7 @@ def boss_frames(size=None):
             frames.append(pic)
             white = pic.copy()
             white.fill((255, 255, 255, 0), special_flags=pygame.BLEND_RGBA_MAX)
+            _keep_mouth_black(pic, white)
             whites.append(white)
         got = _BASE[key] = (frames, whites)
     return got
