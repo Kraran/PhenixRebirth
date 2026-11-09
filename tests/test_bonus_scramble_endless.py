@@ -47,10 +47,29 @@ def test_more_missile_stations_on_a_boosted_course():
     import random
     one = sc.ScrambleFormation(style="rock", seed=11, rng=random.Random(1))
     four = sc.ScrambleFormation(style="rock", seed=11, rng=random.Random(1), endless=True, loop=4)
-    assert four.tune.boost == pytest.approx(1.3) and len(four.stations) > len(one.stations)
+    assert four.tune.boost == pytest.approx(0.8 * 1.3) and len(four.stations) > len(one.stations)
 
 
 # ------------------------------------------------------------------ in the game
+@pytest.mark.parametrize("loop, boost", [(1, 0.80), (2, 0.88), (3, 0.96), (4, 1.04), (6, 1.20)])
+def test_the_first_course_has_20_percent_fewer_enemies_then_10_percent_more_each(loop, boost):
+    import random
+    assert sc.endless_boost(loop) == pytest.approx(boost)
+    f = sc.ScrambleFormation(style="rock", seed=5, rng=random.Random(1), endless=True, loop=loop)
+    raid = sc.Tune(sc.LEVEL_MAX)
+    assert f.tune.boost == pytest.approx(boost)
+    assert f.tune.stations == pytest.approx(raid.stations * boost) and f.tune.comets == pytest.approx(raid.comets * boost)
+    assert f.tune.reload == pytest.approx(raid.reload / boost)
+    assert f.tune.wave_gap == pytest.approx(tuple(g / boost for g in raid.wave_gap))
+
+
+def test_the_first_course_has_fewer_stations_than_a_raid():
+    import random
+    raid = sc.ScrambleFormation(style="rock", seed=11, rng=random.Random(1))
+    first = sc.ScrambleFormation(style="rock", seed=11, rng=random.Random(1), endless=True, loop=1)
+    assert len(first.stations) < len(raid.stations)
+
+
 def test_the_launch_is_endless(run):
     spec = _launch(run, body="europa")
     g = run.game
@@ -78,7 +97,7 @@ def test_the_base_blown_up_starts_the_course_again_harder(run):
     new = g.formation
     assert new is not form and isinstance(new, sc.ScrambleFormation)
     assert new.loop == 2 and new.cam == pytest.approx(0.0, abs=20) and new.phase == "flying"
-    assert new.style == form.style and new.tune.boost == pytest.approx(1.1)
+    assert new.style == form.style and new.tune.boost == pytest.approx(0.88)          # (10 % more than the first)
     assert g.player.scramble is new and g.player.lives == lives and g.adventure is not None      # (its lives go on)
     assert g.adventure["level"] == 2 and said == [2]
 

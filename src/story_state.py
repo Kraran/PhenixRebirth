@@ -710,7 +710,8 @@ MISSIONS = [
         "need": None, "content": 6, "waves": [6, 7, 8, 9, 10, 11], "speed": 1.0,
     },
     # BONUS: Scramble, the same level as the test (the menu of the five settings included) but for real, and endless
-    # (scramble.py `endless`): the base blown up, the course starts again with 10 % more enemies, until the last life (the
+    # (scramble.py `endless`): the base blown up, the course starts again with more enemies (20 % fewer than a raid at the
+    # first course, then 10 % more each time), until the last life (the
     # GAME OVER); its points pay without a penalty nor a fall, leaving it gains nothing, one record for all the settings
     # (ENDLESS_BEST); its launchers and its red commander go into the Bestiary.
     # Secret until the game is finished (the open ending of Act IV has been told); then at the end of Act IV, under END
