@@ -1667,7 +1667,7 @@ def test_the_red_commander_is_solid_and_only_its_skin_turns_red():
     r = pygame.surfarray.array3d(red).astype(int)
     a_g, a_r = pygame.surfarray.array_alpha(green), pygame.surfarray.array_alpha(red)
     seen = a_g > 40
-    assert (a_r[seen] > 200).mean() > 2 * (a_g[seen] > 200).mean() and (a_r[seen] > 200).mean() > 0.6     # solid
+    assert (a_r[seen] > 200).mean() >= (a_g[seen] > 200).mean() and (a_r[seen] > 200).mean() > 0.9         # solid (the green too now)
     assert (a_r[a_g == 0] == 0).all()                                            # (nothing appears around it)
     skin = seen & (g[..., 1] > np.maximum(g[..., 0], g[..., 2]) + 8)
     brown = seen & (g[..., 0] > np.maximum(g[..., 1], g[..., 2]) + 8)            # the beak and the mouth
@@ -1804,3 +1804,23 @@ def test_the_red_commander_cries_once_as_the_approach_comes_in_sight(level):
         sc.tick(g)
         f.recentre(ship)
     assert cries == ["boss_yell"]
+
+
+def test_the_saucer_alien_is_a_solid_creature():
+    """boss_core*.png: opaque inside its silhouette (only a thin antialiased edge), the inside of its mouth black."""
+    from boss import BossCore
+    BossCore._load_images()
+
+    def eroded(m):                                                                 # (3x3 erosion, numpy only)
+        p = np.pad(m, 1)
+        out = np.ones_like(m)
+        for dx in (0, 1, 2):
+            for dy in (0, 1, 2):
+                out &= p[dx:dx + m.shape[0], dy:dy + m.shape[1]]
+        return out
+    for fr in BossCore._frames:
+        a = pygame.surfarray.array_alpha(fr).astype(int)
+        rgb = pygame.surfarray.array3d(fr).astype(int)
+        deep = eroded(eroded(a >= 128))                                            # (inside, away from the edge)
+        assert deep.sum() > 1000 and ((a < 255) & deep).sum() <= 2
+        assert ((a == 255) & (rgb.max(axis=2) == 0)).sum() > 60                    # the inside of the mouth
