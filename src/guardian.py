@@ -1,7 +1,5 @@
-"""Sentinelle test encounter: telegraphed, finite fire-laser bolts.
-
-The formation implements the ordinary enemy/bullet interface. Its timing is in
-seconds and independent of adventure act, difficulty and arcade random state.
+"""The Guardians: telegraphed, finite fire-laser bolts. GuardianSquad: the Guardians that come with the waves of some
+missions of the Adventure. Their timing is in seconds and independent of act, difficulty and arcade random state.
 """
 import math
 import random
@@ -10,9 +8,8 @@ import pygame
 
 import fire_death
 import guardian_parts
-from enemy import Enemy, EnemyBullet
 
-from settings import BASE_HEIGHT, BASE_WIDTH, ENEMY_DIVE_SPEED, asset_path
+from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
 
 CHARGE_SECONDS = 0.95
 LASER_SPEED = 780.0
@@ -26,9 +23,7 @@ FIRE_STAGGER = 0.18
 DIVE_WARNING = 0.55
 DIVE_SPEED = 340.0
 RETURN_SPEED = 300.0
-WAVES = 1
 PER_WAVE = 5
-BIRDS_PER_COLOUR = 5
 MAX_HP = 3                       # three hits on the body
 WING_REGEN = 3.2                 # same as the gargoyles' wings: a destroyed wing is back after 3.2 s
 WING_GROW = 0.8                  # ...and its last 0.8 s are the regrowth animation
@@ -640,7 +635,6 @@ class AlphaGuardian(Guardian):
 # Burning frames are prepared once per colour, never transformed during draw.
 BURN_SECONDS = 1.35
 BURN_FRAME_COUNT = 28
-_BIRD_ART = {}
 _BURN_ART = {}
 
 
@@ -726,53 +720,6 @@ class BurningBird:
             index = min(len(self.frames) - 1, int(self.age / BURN_SECONDS * len(self.frames)))
             frame = self.frames[index]
             surface.blit(frame, frame.get_rect(center=(round(self.x), round(self.y))))
-
-
-class EscortBird(Enemy):
-    """Ordinary blue/green birds, with local deterministic attack timings."""
-    def _load_bird_frames(self, stage=1):
-        if stage not in _BIRD_ART:
-            _BIRD_ART[stage] = super()._load_bird_frames(stage)
-        return _BIRD_ART[stage]
-
-    def __init__(self, x, y, index, stage):
-        rng_state = random.getstate()
-        try:
-            super().__init__(x, y, formation_index=index, stage=stage)
-        finally:
-            random.setstate(rng_state)
-        self.owner_id = ("bird", index)
-        self.anim_phase = index * 0.73
-        self.flap_rate = 5.2
-        self.glow_period = 2.0
-        self.glow_len = 0.35
-        self.attack_wait = 3.2 + index * 0.43
-        self.shot_wait = 2.0 + index * 0.27
-        burning_frames(stage, self.frames[0])
-
-    def update_encounter(self, dt, clock, player_x):
-        self.attack_wait = max(0.0, self.attack_wait - dt)
-        self.shot_wait = max(0.0, self.shot_wait - dt)
-        if not self.dying and self.attack_wait <= 0 and self.state == "formation":
-            # Own lanes prevent all ten birds from stacking on the ship.
-            self.state = "diving"
-            self.dive_lane = max(28, min(BASE_WIDTH - 28, player_x + (self.formation_index % 5 - 2) * 90))
-            self.dive_target_x = self.dive_lane
-            self.attack_wait = 6.0 + self.formation_index * 0.2
-        # The base bird animation/death remains unchanged. Its random dive wrap
-        # is replaced here so this encounter never consumes arcade RNG per tick.
-        if self.state == "diving" and not self.dying:
-            self._tick_wings(dt)
-            self.y += ENEMY_DIVE_SPEED * dt
-            self.x += (self.dive_lane - self.x) * 0.55 * dt
-            self.x += math.sin(self.time * 5.5 + self.formation_index) * 36 * dt
-            self.x = max(20, min(BASE_WIDTH - 20, self.x))
-            if self.y > BASE_HEIGHT + 50:
-                self.y = -40
-                self.state = "returning"
-            self.rect.center = (round(self.x), round(self.y))
-        else:
-            super().update(dt, math.sin(clock * 0.7) * 45, player_x)
 
 
 def burn_birds(owner, birds, previous_boxes):
@@ -865,9 +812,8 @@ VOLLEY_GAP = 2.6                 # Gardiens II: the whole squad charges together
 
 class GuardianSquad:
     """Guardians flying with the birds of an arcade wave of the Adventure (story_state.MISSIONS "guardians_at"): they
-    come down from the top, patrol above the birds, charge and fire their lasers (which burn the birds they cross, like in
-    the test) and dive. They live beside the formation, whatever it is (a wave, the swarm, the Galaga chains, a boss):
-    the game adds them to the targets of the shots, to the attacks against the ship and to the end of the wave
+    come down from the top, patrol above the birds, charge and fire their lasers (which burn the birds they cross) and
+    dive. They live beside the formation, whatever it is (a wave, the swarm, the Galaga chains, a boss): the game adds them to the targets of the shots, to the attacks against the ship and to the end of the wave
     (`targets`, `clear`). Their lasers go into the formation's own list of shots (so they are cleared with it)."""
 
     def __init__(self, count, sounds=None, y=SQUAD_Y, volley=False, alpha=False, alphas=0):
@@ -965,87 +911,3 @@ def targets(game):
     if sq is not None:
         out += sq.targets()
     return out
-
-
-class GuardianFormation:
-    def __init__(self):
-        self.enemies = []
-        self.bullets = []
-        self.sounds = None
-        self.wave = 0
-        self.waves = WAVES
-        self.wait = 1.5
-        self.clock = 0.0
-        self.next_charge = 0.0
-        self.next_fire = 0.0
-        self.destroyed = 0
-        self.burned = 0
-        self.effects = []
-        self._spawn()
-
-    def _spawn(self):
-        self.wave += 1
-        self.guardians = [Guardian(BASE_WIDTH * (i + 1) / (PER_WAVE + 1), 130, i)
-                          for i in range(PER_WAVE)]
-        self.birds = [EscortBird(BASE_WIDTH * (i + 1) / (BIRDS_PER_COLOUR + 1),
-                                 250 + (stage - 1) * 85,
-                                 (stage - 1) * BIRDS_PER_COLOUR + i, stage)
-                      for stage in (1, 2) for i in range(BIRDS_PER_COLOUR)]
-        self.enemies = self.guardians + self.birds
-
-    @property
-    def total(self):
-        return PER_WAVE + BIRDS_PER_COLOUR * 2
-
-    def _burn_birds(self, previous_boxes):
-        self.burned += burn_birds(self, self.birds, previous_boxes)
-
-    def update(self, dt, player_x, player_y=BASE_HEIGHT - 95):
-        self.clock += dt
-        for effect in self.effects:
-            effect.update(dt)
-        self.effects = [effect for effect in self.effects if effect.alive]
-        previous_boxes = {bird: bird.get_hitbox() for bird in self.birds
-                          if bird.alive and not bird.dying}
-        self.bullets = [bolt for bolt in self.bullets if bolt.alive]
-        for bolt in self.bullets:
-            bolt.update(dt)
-        for bird in self.guardians:
-            if bird.alive:
-                bird.update(dt, player_x, player_y)
-            else:
-                bird.tick_fx(dt)             # smoke, embers and the wings it shed keep falling after its death
-        for bird in self.birds:
-            if bird.alive:
-                bird.update_encounter(dt, self.clock, player_x)
-        self._burn_birds(previous_boxes)
-        self.bullets = [bolt for bolt in self.bullets if bolt.alive]
-        self.destroyed = self.total - len(self.get_alive_enemies())
-        for bird in self.birds:
-            if (bird.alive and not bird.dying and bird.shot_wait <= 0
-                    and 0 < bird.y < player_y - 50
-                    and not any(b.owner_id == bird.owner_id for b in self.bullets)):
-                bolt = EnemyBullet(bird.x, bird.y + bird.height / 2, stage=bird.stage)
-                bolt.owner_id = bird.owner_id
-                self.bullets.append(bolt)
-                bird.shot_wait = 2.4 + bird.formation_index * 0.1
-        guardian_attacks(self, dt, player_x, player_y)
-
-    def draw(self, surface):
-        for bird in self.enemies:
-            bird.draw(surface)
-        for effect in self.effects:
-            effect.draw(surface)
-        for bolt in self.bullets:
-            bolt.draw(surface)
-
-    def get_alive_enemies(self):
-        return [bird for bird in self.enemies if bird.alive and not bird.dying]
-
-    def get_hittable_enemies(self):
-        return self.get_alive_enemies()
-
-    def all_dead(self):
-        return (not any(b.alive for b in self.enemies) and not self.effects
-                and not any(b.alive for b in self.bullets)
-                and not any(g.fx_active() for g in self.guardians))

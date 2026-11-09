@@ -119,19 +119,6 @@ def test_dome_one_has_the_name_of_its_scene():
     assert _say("story_m_dome1", "fr") == "Dôme I : l'épave du Shield"
 
 
-def test_the_guardians_hint_says_phenix_without_an_accent():
-    assert "Phénix" not in _say("story_guardians_hint", "fr") and "Phenix" in _say("story_guardians_hint", "fr")
-
-
-# ------------------------------------------------------------------ "tu"
-def test_the_guardians_and_the_lander_speak_to_tu():
-    for key in ("story_guardians_clear", "story_guardians_retry", "story_lander_clear", "story_lander_retry"):
-        text = _say(key, "fr")
-        assert not re.search(r"\b[Vv]ous\b|\bvotre\b", text), key
-        assert re.search(r"\b[Tt]u peux\b", text), key
-    assert _say("story_lander_clear", "fr") == "Atterrissage réussi ! Tu peux recommencer à volonté."
-
-
 # ------------------------------------------------------------------ the paint shop names the hull it works on
 def _poor_hub(hull):
     st = ss.create_slot(1, "NOVA", "normal")

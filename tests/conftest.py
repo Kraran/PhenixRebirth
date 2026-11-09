@@ -88,21 +88,3 @@ def _spacewar_test_missions(request, monkeypatch):
         monkeypatch.setattr(story_state, "MISSIONS", story_state.MISSIONS + TEST_MISSIONS)
     yield
 
-
-import pytest  # noqa: E402
-
-
-@pytest.fixture
-def training_missions():
-    """The four TEST missions taken out of the Adventure, put back for a test that flies one of them (tests/training_missions.py),
-    where they stood: just before the BONUS FINAL - Scramble."""
-    import story_state as ss
-    from training_missions import TRAINING
-    at = next(i for i, m in enumerate(ss.MISSIONS) if m["id"] == "bonus_scramble")
-    added = [dict(m) for m in TRAINING]
-    ss.MISSIONS[at:at] = added
-    try:
-        yield added
-    finally:
-        for m in added:
-            ss.MISSIONS.remove(m)

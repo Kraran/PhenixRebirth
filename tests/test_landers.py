@@ -1,15 +1,12 @@
 """Atterrissages: the five landing missions of the Adventure (story_state.MISSIONS "lander_*"), the Lunar Lander on one
 setting each with its own tank."""
 
-import pytest
 import pygame
 
 import lander
 import lander_view as lv
 import story_state as ss
 from test_smoke import run  # noqa: F401,F811  (fixture)
-
-pytestmark = pytest.mark.usefixtures("training_missions")   # (the TEST missions, out of the Adventure)
 
 WANT = {"lander_deimos": ("deimos", 150, (1, 2, 3), "raid_deimos"), "lander_rock": ("rock", 150, (1, 2, 3), "raid_rock"),
         "lander_europa": ("europa", 120, (2, 3), "raid_europa"), "lander_titan": ("ice", 120, (2, 3), "raid_titan"),
@@ -21,7 +18,7 @@ def test_the_five_landings_are_on_the_maps_of_their_acts_before_their_raids():
     for mid, (body, fuel, acts, raid) in WANT.items():
         m, r = ss.mission_by_id(mid), ss.mission_by_id(raid)
         assert m["lander"] and m["body"] == body and m["body"] in lander.BODIES and m["fuel"] == fuel
-        assert tuple(m["acts"]) == acts and m["once"] and m["extra"] and not m.get("training") and not m.get("secret")
+        assert tuple(m["acts"]) == acts and m["once"] and m["extra"] and not m.get("secret")
         assert ss.mission_group(m) == ss.GROUP_EXTRA
         assert m["need"] == r["need"] and m["acts"] == r["acts"] and r["body"] == body
         assert ids.index(mid) + 1 == ids.index(raid)                   # (side by side on the map)
@@ -95,19 +92,19 @@ def test_a_landing_launches_its_setting_and_its_tank_without_a_menu(run):
         g.story.map_index = ids.index(mid)
         spec = g.story.confirm()
         assert spec and spec["lander"] and spec["body"] == body and spec["fuel"] == fuel
-        assert not spec.get("training") and g.story.screen != "lander_pick"
+        assert g.story.screen != "lander_pick"
     g._begin_adventure(spec)
     run.frames(2)
     form = g.formation
     assert isinstance(form, lander.LanderFormation) and form.style == "ice" and form.fuel_max == 120.0
 
 
-def test_the_test_and_the_bonus_keep_their_menu_and_their_tank(run):
+def test_the_bonus_keep_their_menu_and_their_tank(run):
     g = run.game
-    from test_spacewar import _state
-    ss.save_state(ss.story_path(1), _state())
+    from test_spacewar import _open_bonus, _state
+    ss.save_state(ss.story_path(1), _open_bonus(_state(), "bonus_lander"))
     g.story.open_slot(1)
-    g.story.map_index = [m["id"] for m in g.story.missions()].index("test_lander")
+    g.story.map_index = [m["id"] for m in g.story.missions()].index("bonus_lander")
     g.story.lander_index = 2
     g.story.screen = "lander_pick"
     g.story.pick_for = "lander"

@@ -6782,14 +6782,8 @@ def _load_lang_files():
 _load_lang_files()
 _build_adv_feats()
 
-# Prototype encounter: English fallback for languages without a dedicated text.
+# SpaceWar: English fallback for languages without a dedicated text.
 _GUARDIAN_TEXTS = {
-    "story_guardians_hud": ("ENNEMIS {n}/{total}", "ENEMIES {n}/{total}"),
-    "story_guardians_hint": ("Laser : aucune protection, même en Shield ou Phenix !", "Laser: no protection, even Shield or Phenix!"),
-    "story_guardians_clear": ("Test réussi ! Tu peux recommencer à volonté.",
-                              "Test complete! Replay whenever you like."),
-    "story_guardians_retry": ("Test terminé. Aucun progrès perdu : tu peux réessayer.",
-                              "Test ended. No progress lost: you can try again."),
     # SpaceWar (src/spacewar.py)
     "story_spacewar_hud": ("NIVEAU {n}/{m}   TORPILLES {t}", "LEVEL {n}/{m}   TORPEDOES {t}"),
     "story_spacewar_level": ("NIVEAU {n} / {m}", "LEVEL {n} / {m}"),
@@ -7215,10 +7209,9 @@ for _k, (_fr, _en) in _MODULE_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}
     T[_k]["fr"] = _fr
 
-# The Lunar Lander test level (src/lander.py, src/lander_view.py): French and English; the other languages show the English text.
+# The Lunar Lander levels (src/lander.py, src/lander_view.py): French and English; the other languages show the English text.
 _LANDER_TEXTS = {
     "story_m_lander_hud": ("Lunar Lander", "Lunar Lander"),
-    "lander_pick_title": ("Lunar Lander : choix du décor", "Lunar Lander: choose the setting"),
     "lander_pick_title_final": ("BONUS FINAL - Lunar Lander : choix du décor", "FINAL BONUS - Lunar Lander: choose the setting"),
     "lander_body_rock": ("Astéroïde", "Asteroid"),
     "lander_body_ice": ("Titan", "Titan"),
@@ -7270,35 +7263,15 @@ _LANDER_TEXTS = {
     "lander_crash": ("CRASH !", "CRASH!"),
     "lander_refuel": ("+{n} CARBURANT", "+{n} FUEL"),
     "lander_points": ("{p} points  +  carburant {b}   (zone \u00d7{z})", "{p} points  +  fuel {b}   (zone \u00d7{z})"),
-    "story_lander_clear": ("Atterrissage réussi ! Tu peux recommencer à volonté.",
-                           "Landing made! Replay whenever you like."),
-    "story_lander_retry": ("Le vaisseau s'est écrasé. Aucun progrès perdu : tu peux réessayer.",
-                           "The ship crashed. No progress lost: you can try again."),
 }
 for _k, (_fr, _en) in _LANDER_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}
     T[_k]["fr"] = _fr
 
-# The Scramble test level (src/scramble.py, src/scramble_view.py): French and English; the other languages show the English text.
+# The Scramble levels (src/scramble.py, src/scramble_view.py): French and English; the other languages show the English text.
 _SCRAMBLE_TEXTS = {
     "story_m_scramble_hud": ("Scramble", "Scramble"),
-    "scramble_pick_title": ("Scramble : choix du décor", "Scramble: choose the setting"),
     "scramble_pick_title_final": ("BONUS FINAL - Scramble : choix du décor", "FINAL BONUS - Scramble: choose the setting"),
-    "modules_pick_title": ("Modules : l'escorte", "Modules: the escort"),
-    "modules_pick_count_1": ("1 MODULE", "1 MODULE"),
-    "modules_pick_count_2": ("2 MODULES", "2 MODULES"),
-    "modules_pick_armour_1": ("Normale : détruit au 1er tir", "Normal: lost to the 1st shot"),
-    "modules_pick_armour_2": ("Accrue : détruit au 2e tir", "Reinforced: lost to the 2nd shot"),
-    "modules_pick_info_1": (
-        "Tirs ×{shots}. Un tir ennemi détruit un module ; une collision ou le mur électrique aussi. (Les tirs et les "
-        "dégâts des modules arrivent dans les prochaines étapes.)",
-        "Shots ×{shots}. One enemy shot destroys a module; so does a collision or the electric wall. (The shots and the "
-        "harm of the modules come in the next steps.)"),
-    "modules_pick_info_2": (
-        "Tirs ×{shots}. Il faut deux tirs ennemis pour détruire un module ; une collision ou le mur électrique le "
-        "détruit toujours du premier coup. (Les tirs et les dégâts des modules arrivent dans les prochaines étapes.)",
-        "Shots ×{shots}. It takes two enemy shots to destroy a module; a collision or the electric wall always destroys "
-        "it at once. (The shots and the harm of the modules come in the next steps.)"),
     "scramble_info_rock": ("Une caverne dans la roche grise d'un astéroïde, au milieu de ses semblables.",
                            "A cavern in the grey rock of an asteroid, among its kind."),
     "scramble_info_ice": ("Les falaises de glace et de roche brunâtre de Titan, sous la brume orange et Saturne.",
@@ -7555,10 +7528,6 @@ _SCRAMBLE_TEXTS = {
         "fois. Son plumage renvoie le feu des Gardiens.",
         "The leader of the Guardians, bigger, in a golden halo. Six shots in the body bring it down. It fires two lasers "
         "at once. Its plumage sends back the fire of the Guardians."),
-    "story_scramble_clear": ("Base ennemie détruite ! Tu peux recommencer à volonté.",
-                             "Enemy base destroyed! Replay whenever you like."),
-    "story_scramble_retry": ("Le vaisseau a été détruit. Aucun progrès perdu : tu peux réessayer.",
-                             "The ship was destroyed. No progress lost: you can try again."),
 }
 for _k, (_fr, _en) in _SCRAMBLE_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}

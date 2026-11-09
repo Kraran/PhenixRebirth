@@ -1,4 +1,4 @@
-"""The test level "Lunar Lander" (src/lander.py, src/lander_view.py): the ship lands by its thruster on the ice of Titan or
+"""The Lunar Lander levels (src/lander.py, src/lander_view.py): the ship lands by its thruster on the ice of Titan or
 the rock of an asteroid, with a limited fuel, three zooms, flat zones of three sizes, a terrain that loops."""
 import math
 import random
@@ -9,11 +9,8 @@ import pytest
 
 import lander as ld
 import lander_view as lv
-import story_state as ss
 from test_smoke import run  # noqa: F401,F811  (fixture)
 from test_spacewar import _launch
-
-pytestmark = pytest.mark.usefixtures("training_missions")   # (the TEST missions, out of the Adventure)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -30,18 +27,13 @@ class _Ship:
         self.ast_vx = self.ast_vy = 0.0
 
 
-def test_the_mission_is_a_training_test_in_the_list():
-    m = ss.mission_by_id("test_lander")
-    assert m and m["training"] and m["test"] and m["lander"]
-
-
 def test_a_flight_starts_high_with_a_full_tank_and_can_be_drawn(run):
-    spec = _launch(run, "test_lander")
+    spec = _launch(run, "lander_deimos")
     g = run.game
-    assert spec.get("lander") and spec.get("training")
+    assert spec.get("lander") and spec["fuel"] == 150
     form = g.formation
     assert isinstance(form, ld.LanderFormation)
-    assert form.fuel == ld.FUEL_START and form.phase == "flying"
+    assert form.fuel == form.fuel_max == 150 and form.phase == "flying"
     assert form.altitude() > 1000 and form.zoom_i == 0 and abs(form.y - ld.START_Y) < 30   # (a few frames have passed)
     assert abs(form.x - ld.WORLD / 2) < 10 and abs(form.vx) <= 70
     run.frames(30)
@@ -50,12 +42,12 @@ def test_a_flight_starts_high_with_a_full_tank_and_can_be_drawn(run):
 
 
 def test_it_ends_with_a_crash_when_nothing_is_done(run):
-    _launch(run, "test_lander")
+    _launch(run, "lander_deimos")
     g = run.game
     form = g.formation
     run.frames(60 * 40)
     assert form.phase == "crashed" and form.result == "crash"
-    assert not g.adventure                           # the mission is over (a training: nothing lost)
+    assert not g.adventure                           # the mission is over
 
 
 def _form(style="rock", seed=7):
@@ -292,7 +284,7 @@ def test_the_texts_exist_in_french_and_english_and_the_other_languages():
     import i18n
     for key in ("story_m_lander_hud", "story_m_lander_bonus", "lander_alt", "lander_hs", "lander_vs",
                 "lander_tilt", "lander_fuel", "lander_empty", "lander_perfect", "lander_rough", "lander_crash",
-                "lander_points", "story_lander_clear", "story_lander_retry"):
+                "lander_points", "lander_pick_title_final"):
         for code in i18n.LANG_CODES:
             assert i18n.T[key][code], (key, code)
     assert "{p}" in i18n.T["lander_points"]["fr"] and "{b}" in i18n.T["lander_points"]["en"]
@@ -493,7 +485,7 @@ def test_a_sound_that_fails_does_not_stop_the_game():
 
 
 def _land_in_game(run, seed_pad=0, vy=3.0):
-    _launch(run, "test_lander")
+    _launch(run, "lander_deimos")
     g = run.game
     form = g.formation
     p = g.player
@@ -513,7 +505,7 @@ def test_a_landing_in_the_game_adds_the_score_then_ends_the_mission(run):
     assert g.player.alive and not g.player.dying
     run.frames(int(ld.LAND_PAUSE * 60) + 240)
     assert form.won and not g.adventure
-    assert any(m for m in [ss.mission_by_id("test_lander")])
+    assert "lander_deimos" in g.story.state["cleared"]
 
 
 def test_the_hud_and_the_end_message_are_drawn(run):
@@ -638,7 +630,7 @@ def test_the_texture_does_not_jump_while_the_view_zooms():
 
 
 def test_there_is_no_ring_round_the_ship(run):
-    _launch(run, "test_lander")
+    _launch(run, "lander_deimos")
     g = run.game
     run.frames(5)
     assert g.formation.zoom == ld.ZOOMS[0]                            # (the small ship: the ring used to be drawn)

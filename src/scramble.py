@@ -78,7 +78,7 @@ SECTION_KEYS = tuple(s[0] for s in SECTIONS)
 SECTION_LOOK = {key: look for key, _, look in SECTIONS}
 
 # The difficulty of a course: five levels ("paliers"), for the raids of the Adventure on the five settings. 5 is the full
-# Scramble of the test (the constants of the modules: every key left out of a level takes them). The sections: (name,
+# Full Scramble (the BONUS FINAL and the last raid level; the constants of the modules: every key left out of a level takes them). The sections: (name,
 # seconds at full speed), in order. "gap": the lowest passage in ship heights; "stations": the share of missile stations
 # (1: as many as at 5); "homing": how hard their missiles home in (0: they fly straight); "comets": the share of comets;
 # "wave_gap" / "green": the waves of birds; "columns" / "turrets": the wall of the base and its turrets (rows of bricks);
@@ -136,7 +136,7 @@ class Tune:
             self.reload /= self.boost
             self.comets *= self.boost
             self.wave_gap = tuple(g / self.boost for g in self.wave_gap)
-MENU_ORDER = lander.MENU_ORDER    # the choice of the test (story.py, screen "lander_pick" for the Scramble)
+MENU_ORDER = lander.MENU_ORDER    # the choice of the BONUS FINAL (story.py, screen "lander_pick" for the Scramble)
 BODY_KEYS = lander.BODY_KEYS
 MAX_SHOTS = 3                     # the ship's shots on the screen
 SHOT_GAP = 0.14                   # seconds between two shots

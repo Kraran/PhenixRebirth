@@ -46,7 +46,7 @@ def _belt(st, mid):
 def test_the_missions_are_made_for_their_act(mid, first, flag, target, act):
     m = ss.mission_by_id(mid)
     assert m["acts"] == (act,) and m["asteroids"] is True and m["target"] == target and m["unlock"] == [flag]
-    assert not m.get("once") and not m.get("test") and not m.get("hunt") and m["content"] == 1
+    assert not m.get("once") and not m.get("hunt") and m["content"] == 1
     assert ss.mission_by_id(first)["need"] == flag
     assert ss.mission_group(m) == ss.GROUP_STORY
 

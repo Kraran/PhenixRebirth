@@ -8,6 +8,7 @@ import pytest
 import fire_death as fd
 import guardian as gd
 import ship_burn as sb
+from enemy import Enemy
 from player import Player
 
 
@@ -29,7 +30,7 @@ def ship_frames():
 def bird_frames():
     pygame.display.init()
     pygame.display.set_mode((1280, 720))
-    bird = gd.EscortBird(100, 100, 0, 1)
+    bird = Enemy(100, 100, 0, 1)
     return bird, gd.burning_frames(1, bird.frames[0])
 
 

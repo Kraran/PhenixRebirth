@@ -3,7 +3,6 @@ birds of the game. A star that pulls the ships, inertia, a screen joined on its 
 not pull, three levels of birds, one life."""
 NEEDS_SW_MISSIONS = True        # the old SpaceWar test missions (tests/sw_missions.py)
 
-import copy
 import math
 import random
 
@@ -62,9 +61,21 @@ def _state(mode="normal", act=1, hull="shield"):
     return st
 
 
+def _open_bonus(st, mission):
+    """A BONUS FINAL (bonus_scramble, bonus_lander...): on the map once the ending is told; a landing or a raid: its
+    briefing told before and the dome that opens it cleared."""
+    m = ss.mission_by_id(mission)
+    if m and m.get("final_bonus"):
+        st["flags"][ss.ENDING_DONE] = True
+    elif m and m.get("body"):
+        st["flags"][m["need"]] = True
+        ss.mark_scene_seen(st, mission)
+    return st
+
+
 def _launch(run, mission="test_spacewar", **kw):
     g = run.game
-    st = _state(**kw)
+    st = _open_bonus(_state(**kw), mission)
     ss.save_state(ss.story_path(1), st)
     g.story.open_slot(1)
     g.story.map_index = [m["id"] for m in g.story.missions()].index(mission)
@@ -1599,21 +1610,6 @@ def test_uranus_and_neptune_are_plain_discs(planet):
     out = [1 for x in range(img.get_width()) for y in range(img.get_height())
            if img.get_at((x, y))[3] > 40 and math.hypot(x - c, y - c) > sw.STAR_R + 3]
     assert not out
-
-
-@pytest.mark.parametrize("planet", sw.PLANET_KEYS)
-def test_each_planet_has_its_mission_on_the_map_of_every_act(planet):
-    mission = ss.mission_by_id(PLANET_MISSIONS[planet])
-    assert mission["planet"] == planet and mission["spacewar"] and mission["training"]
-    for act in (1, 2, 3):
-        for mode in ss.MODES:
-            state = ss.default_state()
-            state.update(act=act, mode=mode)
-            assert mission in ss.visible_missions(state) and ss.mission_playable(state, mission)
-            assert ss.mission_group(mission) == ss.GROUP_EXTRA
-            before = copy.deepcopy(state)
-            result = ss.record_result(state, mission["id"], 9999, True, {"bird1": 6}, used=["genesis"])
-            assert state == before and result["training"] and not result["fallen"]
 
 
 @pytest.mark.parametrize("planet", sw.PLANET_KEYS)

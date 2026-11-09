@@ -162,10 +162,7 @@ def tick(game):
 def _burn(game, slices, before):
     sq = guardian.squad(game)
     form = game.formation
-    if isinstance(form, guardian.GuardianFormation):
-        owner, birds = form, form.birds
-    else:
-        owner, birds = (sq if sq is not None else form), form.get_hittable_enemies()
+    owner, birds = (sq if sq is not None else form), form.get_hittable_enemies()
     birds = [bird for bird in birds if bird.alive and not bird.dying]
     if not birds:
         return

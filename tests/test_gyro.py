@@ -4,12 +4,9 @@ import pygame
 import pytest
 
 import gyro
-import i18n
 import story_state as ss
 from settings import BASE_WIDTH
 from test_smoke import run  # noqa: F401  (fixture)
-
-pytestmark = pytest.mark.usefixtures("training_missions")   # (the TEST missions, out of the Adventure)
 
 
 @pytest.fixture(autouse=True)
@@ -154,10 +151,14 @@ def test_they_blink_with_the_ship_and_vanish_with_it():
 
 
 # ------------------------------------------------------------------ the mission and its menu
-def _hub(run, hull="shield"):
+def _hub(run, hull="shield", count=2):
+    """The first mission on the map, the pilot's `count` modules in working order flying with the ship (story_state.module_spec)."""
     g = run.game
     st = ss.create_slot(1, "NOVA", "normal")
     ss.mark_intro_seen(st)
+    st["modules_built"] = 2
+    st["modules"] = count
+    st["slots"][0]["dome"] = True                               # (the Shield's dome, bought: they move out in it)
     if hull == "phoenix":
         st["slots"][1]["owned"] = True
         st["selected_slot"] = 1
@@ -165,64 +166,18 @@ def _hub(run, hull="shield"):
     g.menu_screen = "story_hub"
     g.story.open_slot(1)
     g.story.screen, g.story.pane = "hub", "map"
-    g.story.map_index = [m["id"] for m in g.story.missions()].index("test_modules")
+    g.story.map_index = [m["id"] for m in g.story.missions()].index("ch1_sortie")
     return g
-
-
-def test_the_mission_is_a_test_on_the_maps_of_the_three_acts():
-    m = ss.mission_by_id("test_modules")
-    assert m["acts"] == (1, 2, 3) and m["training"] and m["test"]
-    assert ss.mission_waves(m) == [6, 7, 8, 9, 10, 11]                           # a run of the levels 6 to 11
-    for act in (1, 2, 3):
-        ids = [x["id"] for x in ss.MISSIONS if act in tuple(x.get("acts", ()))]
-        assert ids.index("test_modules") == ids.index("test_scramble") + 1
-    for lang in ("fr", "en"):
-        i18n.set_lang(lang)
-        for key in ("modules_pick_title",
-                    "modules_pick_count_1", "modules_pick_count_2", "modules_pick_armour_1", "modules_pick_armour_2"):
-            assert i18n.t(key) != key
-        for armour in (1, 2):
-            assert "{" not in i18n.t("modules_pick_info_%d" % armour).format(shots=3)
-    i18n.set_lang("fr")
-
-
-def test_the_menu_chooses_how_many_and_how_tough(run):
-    g = _hub(run)
-    hub = g.story
-    assert hub.confirm() is None and hub.screen == "lander_pick" and hub._pick_modules()
-    import story
-    assert story.MODULE_PICKS[hub.lander_index] == (2, 1)                        # (two, normal: the first choice lit)
-    surf = pygame.Surface((1280, 720))
-    hub._draw_gate(surf, g.font, g.medium_font, g.font)                          # (the menu draws)
-    picks = []
-    for _ in range(len(story.MODULE_PICKS)):
-        picks.append(story.MODULE_PICKS[hub.lander_index])
-        hub.nav_v(1)
-    assert sorted(picks) == [(1, 1), (1, 2), (2, 1), (2, 2)]
-    while story.MODULE_PICKS[hub.lander_index] != (1, 2):
-        hub.nav_v(1)
-    spec = hub.confirm()
-    assert spec["id"] == "test_modules" and spec["modules"] == {"count": 1, "armour": 2}
-    assert spec["training"] and spec["waves"] == [6, 7, 8, 9, 10, 11] and hub.screen == "hub"
-
-
-def test_back_leaves_the_menu_without_launching(run):
-    g = _hub(run)
-    g.story.confirm()
-    g.story.back()
-    assert g.story.screen == "hub" and not g.started
 
 
 @pytest.mark.parametrize("hull", ("shield", "phoenix"))
 def test_the_mission_flies_with_its_modules(run, hull):
     g = _hub(run, hull)
-    g.story.confirm()
-    spec = g.story.confirm()
+    spec = g.story._launch_selected()
+    assert spec["modules"] == {"count": 2, "armour": 1, "owned": True}
     g._request_adventure(dict(spec, first_help_read=True))
-    assert g.started and g.gyro is not None
+    assert g.started and g.gyro is not None and g.gyro.owned
     assert g.gyro.hull == ("phoenix" if hull == "phoenix" else "shield") and len(g.gyro.modules) == 2
-    if hull == "shield":
-        assert g.player.adventure_dome                                           # (the test: the dome, to see them move out)
     run.frames(30)
     left = g.gyro.modules[0]
     assert left.x == pytest.approx(g.player.x - gyro.ANCHOR[0], abs=20)
@@ -262,12 +217,8 @@ def test_a_module_grazes_the_ship_never_touches_it(wide):
 
 
 def _flying(run, count=2, hull="shield"):
-    g = _hub(run, hull)
-    g.story.confirm()
-    import story
-    while story.MODULE_PICKS[g.story.lander_index] != (count, 1):
-        g.story.nav_v(1)
-    spec = g.story.confirm()
+    g = _hub(run, hull, count)
+    spec = g.story._launch_selected()
     g._request_adventure(dict(spec, first_help_read=True))
     g.input_grace = 0.0
     g.player.infinite_lives = True
@@ -506,7 +457,7 @@ def test_the_boss_its_shots_take_a_point_its_hull_destroys(run):
 def test_nothing_hits_them_while_sheltered_in_the_mission(run):
     g = _flying(run, 2)
     p = g.player
-    p.try_activate_phenix()                                                  # (the dome of the test)
+    assert p.try_activate_phenix()                                           # (the dome of the Shield)
     run.frames(30)
     left = g.gyro.modules[0]
     b = _Bullet(left.x, left.y)

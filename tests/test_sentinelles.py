@@ -47,7 +47,7 @@ def test_four_missions_one_per_planet_with_their_levels():
     found = [m for m in ss.MISSIONS if m["id"].startswith("sentinelle_")]
     assert [m["id"] for m in found] == IDS
     for m, planet in zip(found, PLANETS):
-        assert m["spacewar"] and m["planet"] == planet and not m.get("training") and not m.get("test")
+        assert m["spacewar"] and m["planet"] == planet
         assert [tuple(lv) for lv in m["sw_levels"]] == LEVELS[m["id"]]
         assert m["acts"] == ACTS[m["id"]] and m["once"] and m["replay"] == ss.SENTINELLE_DONE
         assert ss.mission_group(m) == ss.GROUP_STORY
@@ -57,7 +57,6 @@ def test_four_missions_one_per_planet_with_their_levels():
 def test_the_four_missions_are_not_tests_and_the_old_spacewar_tests_are_gone():
     from sw_missions import TEST_MISSIONS                         # (only the tests add them, see tests/conftest.py)
     assert not [m for m in ss.MISSIONS if m["id"].startswith("test_spacewar") and m not in TEST_MISSIONS]
-    assert not [m for m in ss.MISSIONS if m["id"].startswith("sentinelle_") and m.get("training")]
 
 
 @pytest.mark.parametrize("mid", IDS)
@@ -137,7 +136,7 @@ def test_a_lost_one_can_be_tried_again_and_loses_the_normal_penalty():
     st = _state(act=1, credits=2000)
     res = ss.record_result(st, "sentinelle_1", 300, False)
     assert res["lost"] == ss.failure_penalty(2000) == 100 and st["credits"] == 1900
-    assert not res.get("training") and not ss.flag(st, "sentinelle_1")
+    assert not ss.flag(st, "sentinelle_1")
     assert ss.mission_playable(st, ss.mission_by_id("sentinelle_1"))
 
 
@@ -151,7 +150,7 @@ def test_the_points_are_paid_at_every_win_and_the_replays_are_normal():
     st = _state(act=3, credits=0)
     for mid in IDS:
         res = ss.record_result(st, mid, 250, True)
-        assert res["cleared"] and res["score"] == 250 and not res.get("training")
+        assert res["cleared"] and res["score"] == 250
     assert st["credits"] == 1000
     res = ss.record_result(st, "sentinelle_2", 400, True)
     assert st["credits"] == 1400 and not res["first"]
@@ -177,17 +176,9 @@ def test_the_launch_spec_is_a_real_mission(mid):
     hub.state["items"]["got"]["genesis"] = "installed"
     hub.map_index = next(i for i, m in enumerate(hub.missions()) if m["id"] == mid)
     spec = hub._launch_selected()
-    assert spec["spacewar"] and not spec.get("training") and spec["items"] == []
+    assert spec["spacewar"] and spec["items"] == []
     assert [tuple(lv) for lv in spec["sw_levels"]] == LEVELS[mid]
     assert spec["planet"] == PLANETS[IDS.index(mid)]
-
-
-def test_the_test_mission_keeps_its_three_levels_and_its_training():
-    hub = StoryHub()
-    hub.state = ss.default_state()
-    hub.map_index = next(i for i, m in enumerate(hub.missions()) if m["id"] == "test_spacewar")
-    spec = hub._launch_selected()
-    assert spec["training"] and "sw_levels" not in spec
 
 
 def test_a_won_mission_toasts_its_points(monkeypatch):
@@ -259,18 +250,8 @@ def test_a_sentinelle_mission_runs_its_own_levels_with_its_planet(run, monkeypat
     form = g.formation
     assert isinstance(form, sw.SpaceWarFormation) and form.points
     assert form.levels == LEVELS["sentinelle_3"] and sw.PLANET == "uranus"
-    assert g.player.lives == 1 and not g.adventure.get("training")
+    assert g.player.lives == 1
     assert not g.adventure.get("loot_plan")
-    g._end_adventure(False)
-
-
-def test_the_test_mission_pays_nothing(run):
-    g, spec = _mission(run, "test_spacewar")
-    form = g.formation
-    assert not form.points
-    b = _bird(form, 1)
-    sw._kill_bird(g, form, b)
-    assert g.score == 0
     g._end_adventure(False)
 
 

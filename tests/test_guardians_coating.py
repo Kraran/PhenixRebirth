@@ -10,8 +10,6 @@ import update_play
 from i18n import T, t
 from story import StoryHub
 
-pytestmark = pytest.mark.usefixtures("training_missions")   # (the TEST missions, out of the Adventure)
-
 DT = 1 / 60
 SCENED = ("guardians_1", "best_guardians", "guardians_2", "guardians_3")
 
@@ -71,7 +69,6 @@ def _laser_on_the_ship(game, hull="shield", special=True):
 def test_the_launch_carries_the_coating_once_gardiens_iii_is_won(game):
     assert "reflect" not in _fly(game, "guardians_1", coated=False)
     assert _fly(game, "guardians_1", coated=True)["reflect"] is True
-    assert "reflect" not in _fly(game, "test_guardians", coated=True)                  # (the TEST: the bare ship)
 
 
 @pytest.mark.parametrize("hull", ["shield", "phoenix"])

@@ -628,7 +628,7 @@ MISSIONS = [
     # no menu, before the raid of the same setting (same acts, same flags, same rules: optional, once until the ending, the
     # points in credits). `fuel`: the tank (lander.FUEL_START when left out): fuller on the two settings of Act 1.
     # Raid sur les bases avioïdes (I-V): the Scramble level (src/scramble.py) for real, on one setting each and at its own level
-    # of difficulty (`raid`: scramble.LEVELS, 1 the easiest, 5 the full Scramble of the test), no menu. Optional (on the map
+    # of difficulty (`raid`: scramble.LEVELS, 1 the easiest, 5 the full Scramble), no menu. Optional (on the map
     # with the BONUS missions), flown once until the ending has been told; the points pay in credits, a failure costs what a
     # failure always costs. Deimos and the asteroid in Act 1, Europa and Titan in Act 2, Triton in Act 3 (the earlier ones
     # stay on the map of the later acts).
@@ -695,7 +695,7 @@ MISSIONS = [
         "title": "story_m_scramble_bonus", "hud_title": "story_m_scramble_hud", "blurb": "story_m_scramble_bonus_b",
         "need": ENDING_DONE, "content": 1, "speed": 1.0,
     },
-    # BONUS: Lunar Lander, the same level as the test (the menu of the five settings included) but for real: the landing pays its
+    # BONUS: Lunar Lander, the full level (the menu of the five settings included), for real: the landing pays its
     # points (+ the fuel left) in credits. Endless (lander.py `endless`): landing after landing, with the fuel left (+50 / +25)
     # and fewer big zones each level, until a crash or an empty tank (the GAME OVER); its points pay without a penalty nor
     # a fall, leaving it gains nothing, one record per setting (ENDLESS_BEST "bonus_lander:<setting>"). Secret until the
@@ -1555,7 +1555,7 @@ def module_spec(state, mission):
     """The modules a mission launches with ({"count", "armour", "owned"}), or None: those in working order, in every
     mission that counts (src/gyro.py leaves them out of the Lander, Scramble, SpaceWar, the asteroids and the coop)."""
     n = modules_alive(state)
-    if n <= 0 or not mission or mission.get("training") or mission.get("modules"):
+    if n <= 0 or not mission:
         return None
     return {"count": n, "armour": module_armour(state), "owned": True}
 
@@ -2061,7 +2061,7 @@ def mission_group(mission):
         return GROUP_FINAL
     if m.get("hunt"):
         return GROUP_HUNT
-    if (m.get("training") or m.get("extra") or m.get("reactor") or m.get("drop") or m.get("needs_reactor") or m.get("reward")
+    if (m.get("extra") or m.get("reactor") or m.get("drop") or m.get("needs_reactor") or m.get("reward")
             or m.get("paint") or m.get("carry")):
         return GROUP_EXTRA
     return GROUP_STORY
@@ -2148,8 +2148,8 @@ def next_mission(state, missions):
     """The mission the map suggests: the first one of the list that can be flown and is not won yet. None when there is
     none."""
     for m in missions:
-        if m.get("training") or m.get("extra"):
-            continue                       # (a test or a BONUS is never what the map suggests)
+        if m.get("extra"):
+            continue                       # (a BONUS is never what the map suggests)
         if not mission_playable(state, m):
             continue
         if not mission_done(state, m):
@@ -2688,9 +2688,6 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
     score = max(0, int(score or 0))
     res = {"score": score, "cleared": bool(cleared), "first": False, "lost": 0, "fallen": False, "act": 0,
            "loot": None, "used": [], "opened": [], "reactor_lost": None, "no_item": None}
-    if (mission_by_id(mission_id) or {}).get("training"):
-        res.update(score=0, training=True)
-        return res  # the simulation never changes progression, items or Veteran saves
     record_kills(state, kills)            # the enemies met count whatever the outcome
     record_mission_kills(state, mission_id, kills)
     if is_endless(mission_by_id(mission_id)):

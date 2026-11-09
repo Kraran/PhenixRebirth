@@ -5,6 +5,7 @@ import pygame
 import pytest
 
 import guardian as gd
+from guardian_rig import Rig
 import guardian_parts as gp
 
 
@@ -92,7 +93,7 @@ def test_no_wing_no_shot_and_no_dive_like_the_gargoyles(display):
 
 
 def test_formation_cancels_a_charge_when_the_last_wing_goes(display):
-    form = gd.GuardianFormation()
+    form = Rig()
     b = form.guardians[0]
     b.charge = 0.3
     b.hit_wing("left")
@@ -107,7 +108,7 @@ def test_formation_cancels_a_charge_when_the_last_wing_goes(display):
 
 
 def test_wingless_bird_does_not_block_the_others_dives(display):
-    form = gd.GuardianFormation()
+    form = Rig()
     b = form.guardians[0]
     b.hit_wing("left")
     b.dive_wait = 0
@@ -185,7 +186,7 @@ def test_effects_never_touch_the_arcade_random_state(display):
 
 
 def test_death_sheds_the_wings_and_the_encounter_waits_for_the_fall(display):
-    form = gd.GuardianFormation()
+    form = Rig(birds=(1, 2))
     for g in form.guardians:
         g.kill()
     for e in form.birds:
@@ -256,7 +257,7 @@ def test_bullets_in_game_wing_first_then_three_body_hits(display):
         def _enemy_kill_points(self, e): return 1
         def _note_bird_kill(self): pass
         def _note_scalable(self, *a, **k): pass
-    form = gd.GuardianFormation()
+    form = Rig()
     g = form.guardians[2]
     game, ship = Game(form), Ship()
     left = g.get_left_wing_hitbox()

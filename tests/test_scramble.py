@@ -1,4 +1,4 @@
-"""The test level "Scramble" (src/scramble.py, src/scramble_view.py): a side-scrolling shoot'em up through the rock of one of
+"""The Scramble levels (src/scramble.py, src/scramble_view.py): a side-scrolling shoot'em up through the rock of one of
 the five settings of the Lunar Lander, the ship nose to the right, a passage always wide enough, the lives of the workshop."""
 import math
 import random
@@ -13,8 +13,6 @@ import scramble_view as sv
 import story_state as ss
 from test_smoke import run  # noqa: F401,F811  (fixture)
 from test_spacewar import _Keys, _launch
-
-pytestmark = pytest.mark.usefixtures("training_missions")   # (the TEST missions, out of the Adventure)
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -47,13 +45,14 @@ def _hold(run, frames, *names):
 
 
 def _launch_scramble(run, body=None, **kw):
-    spec = _launch(run, "test_scramble", **kw) if body is None else None
+    """The BONUS FINAL Scramble (the full level, a setting of the menu: `body`, else drawn at random)."""
+    spec = _launch(run, "bonus_scramble", **kw) if body is None else None
     if body is not None:
         g = run.game
-        from test_spacewar import _state
-        ss.save_state(ss.story_path(1), _state(**kw))
+        from test_spacewar import _open_bonus, _state
+        ss.save_state(ss.story_path(1), _open_bonus(_state(**kw), "bonus_scramble"))
         g.story.open_slot(1)
-        g.story.map_index = [m["id"] for m in g.story.missions()].index("test_scramble")
+        g.story.map_index = [m["id"] for m in g.story.missions()].index("bonus_scramble")
         g.story.lander_index = list(lander.MENU_ORDER).index(body)
         g.story.screen = "lander_pick"
         g.story.pick_for = "scramble"
@@ -66,37 +65,31 @@ def _launch_scramble(run, body=None, **kw):
 
 
 # ------------------------------------------------------------------ the mission
-def test_the_mission_is_a_training_test_in_the_list_of_every_act():
-    m = ss.mission_by_id("test_scramble")
-    assert m and m["training"] and m["test"] and m["scramble"]
-    assert tuple(m["acts"]) == (1, 2, 3)
-
-
 def test_the_mission_opens_the_menu_of_the_setting_then_flies_it(run):
     g = run.game
-    from test_spacewar import _state
-    ss.save_state(ss.story_path(1), _state())
+    from test_spacewar import _open_bonus, _state
+    ss.save_state(ss.story_path(1), _open_bonus(_state(), "bonus_scramble"))
     g.story.open_slot(1)
     g.story.pane = "map"
-    g.story.map_index = [m["id"] for m in g.story.missions()].index("test_scramble")
+    g.story.map_index = [m["id"] for m in g.story.missions()].index("bonus_scramble")
     g.story.screen = "hub"
     assert g.story.confirm() is None                    # A on the mission: the choice of the setting first
     assert g.story.screen == "lander_pick" and g.story.pick_for == "scramble"
     g.story.nav_h(1)
     spec = g.story.confirm()
-    assert spec and spec["scramble"] and spec["training"] and spec["body"] == lander.MENU_ORDER[1]
+    assert spec and spec["scramble"] and spec["endless"] and spec["body"] == lander.MENU_ORDER[1]
     assert g.story.screen == "hub"
 
 
 def test_the_lander_menu_still_opens_for_the_lander(run):
     g = run.game
-    from test_spacewar import _state
-    ss.save_state(ss.story_path(1), _state())
+    from test_spacewar import _open_bonus, _state
+    ss.save_state(ss.story_path(1), _open_bonus(_state(), "bonus_lander"))
     g.story.open_slot(1)
     g.story.pane = "map"
     g.story.screen = "hub"
     g.story.pick_for = "scramble"
-    g.story.map_index = [m["id"] for m in g.story.missions()].index("test_lander")
+    g.story.map_index = [m["id"] for m in g.story.missions()].index("bonus_lander")
     g.story.confirm()
     assert g.story.screen == "lander_pick" and g.story.pick_for == "lander"
 
@@ -369,7 +362,7 @@ def test_a_shot_dies_in_the_rock_with_sparks():
 
 # ------------------------------------------------------------------ the end
 def test_killing_the_boss_of_the_base_wins_the_mission(run):
-    _launch_scramble(run)
+    _launch(run, "raid_deimos")                         # (a raid: the mission ends there; the BONUS goes on, endless)
     g = run.game
     form, p = g.formation, g.player
     p.invulnerable = 1e9
@@ -380,8 +373,8 @@ def test_killing_the_boss_of_the_base_wins_the_mission(run):
     assert g.adventure
     form.base._kill_boss(g)
     run.frames(int(60 * (scb.DONE_AFTER + 2.5)))      # (and its last explosions have ended)
-    assert not g.adventure                              # over, and won (a training: nothing won either)
-    assert g.story.toast == __import__("i18n").t("story_scramble_clear")
+    assert not g.adventure                              # over, and won
+    assert "raid_deimos" in g.story.state["cleared"]
 
 
 # ------------------------------------------------------------------ the picture
@@ -427,8 +420,7 @@ def test_the_menu_has_a_picture_of_each_setting(style):
 
 def test_the_texts_are_there_in_french_and_english():
     import i18n
-    keys = ["story_m_scramble_hud", "story_m_scramble_bonus", "scramble_pick_title", "scramble_arena",
-            "story_scramble_clear", "story_scramble_retry"]
+    keys = ["story_m_scramble_hud", "story_m_scramble_bonus", "scramble_pick_title_final", "scramble_arena"]
     keys += ["scramble_info_" + k for k in lander.MENU_ORDER] + ["scramble_sec_" + k for k in sc.SECTION_KEYS]
     for code in ("fr", "en"):
         i18n.set_lang(code)
@@ -1550,14 +1542,6 @@ def test_in_the_real_game_a_kill_fills_the_gauge_of_the_phenix(run):
     assert p.uses_shield or p.phenix_gauge >= 3.0 or before is None
 
 
-def test_the_test_mission_gives_the_shield_its_dome(run):
-    _launch_scramble(run)                                 # (the pilot of the tests has not bought the dome)
-    g = run.game
-    p = g.player
-    assert p.uses_shield and p.adventure_dome and g.adventure["dome"]
-    assert p.can_activate_phenix()
-
-
 def test_the_launchers_and_the_red_master_are_in_the_bestiary():
     ids = {e["id"]: e for e in ss.BESTIARY}
     assert "station" in ids and "redboss" in ids and ids["redboss"].get("boss") and not ids["station"].get("boss")
@@ -1603,7 +1587,7 @@ def test_a_mission_that_counts_records_the_launchers_and_the_master(run):
     g.story.screen = "lander_pick"
     g.story.pick_for = "scramble"
     spec = g.story.confirm()
-    assert spec and spec["scramble"] and not spec.get("training") and not spec.get("antimatter")
+    assert spec and spec["scramble"] and not spec.get("antimatter")
     g._begin_adventure(spec)
     g.input_grace = 0.0
     run.frames(2)
@@ -1620,7 +1604,7 @@ def test_a_mission_that_counts_records_the_launchers_and_the_master(run):
 def test_the_bonus_is_secret_until_the_game_is_finished():
     from test_spacewar import _state
     m = ss.mission_by_id("bonus_scramble")
-    assert m and m["scramble"] and m["secret"] and m["extra"] and not m.get("training")
+    assert m and m["scramble"] and m["secret"] and m["extra"]
     assert tuple(m["acts"]) == (ss.ENDING_ACT,) and m["need"] == ss.ENDING_DONE
     st = _state()
     assert not ss.mission_open(st, m)
