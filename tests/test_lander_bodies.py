@@ -175,15 +175,16 @@ def _hub():
     st = ss.create_slot(1, "NOVA", "normal")
     ss.mark_intro_seen(st)
     ss.jump_to_act2(st)
+    ss.complete_ending(st)                                      # (the menu of the settings: the BONUS FINAL Lander)
     ss.save_state(ss.story_path(1), st)
     hub = StoryHub()
     hub.open_slot(1)
     hub.screen, hub.pane = "hub", "map"
-    hub.map_index = [m["id"] for m in hub.missions()].index("test_lander")
+    hub.map_index = [m["id"] for m in hub.missions()].index("bonus_lander")
     return hub
 
 
-def test_launching_the_test_opens_the_menu_of_the_settings_first():
+def test_launching_the_bonus_opens_the_menu_of_the_settings_first():
     hub = _hub()
     assert hub.confirm() is None
     assert hub.screen == "lander_pick" and hub.lander_index == 0
@@ -210,7 +211,7 @@ def test_the_setting_chosen_is_the_one_launched(index):
     hub.confirm()
     hub.lander_index = index
     spec = hub.confirm()
-    assert spec and spec["lander"] and spec["training"] and spec["body"] == ld.MENU_ORDER[index]
+    assert spec and spec["lander"] and spec["endless"] and spec["body"] == ld.MENU_ORDER[index]
     assert hub.screen == "hub"
 
 
@@ -223,7 +224,7 @@ def test_back_leaves_the_menu_without_launching():
 
 
 def test_a_launch_without_a_choice_still_draws_a_setting_at_random(run):
-    spec = _launch(run, "test_lander")
+    spec = _launch(run, "bonus_lander")
     assert "body" not in spec
     assert run.game.formation.style in ld.BODIES
 
@@ -234,9 +235,10 @@ def test_the_game_flies_the_setting_of_the_spec(run, style):
     st = ss.create_slot(1, "NOVA", "normal")
     ss.mark_intro_seen(st)
     ss.jump_to_act2(st)
+    ss.complete_ending(st)
     ss.save_state(ss.story_path(1), st)
     g.story.open_slot(1)
-    g.story.map_index = [m["id"] for m in g.story.missions()].index("test_lander")
+    g.story.map_index = [m["id"] for m in g.story.missions()].index("bonus_lander")
     spec = g.story._launch_selected(body=style)
     assert spec["body"] == style
     g._begin_adventure(spec)
@@ -284,7 +286,7 @@ def test_the_texts_of_the_settings_exist_in_french_and_english():
         for key in ld.BODIES:
             for name in ("lander_body_", "lander_planet_", "lander_info_"):
                 assert i18n.T[name + key][lang]
-    assert i18n.T["lander_pick_title"]["fr"] != i18n.T["lander_pick_title"]["en"]
+    assert i18n.T["lander_pick_title_final"]["fr"] != i18n.T["lander_pick_title_final"]["en"]
     for style in ld.BODIES:
         assert "..." not in i18n.T["lander_info_" + style]["fr"] and "..." not in i18n.T["lander_info_" + style]["en"]
 
@@ -308,7 +310,7 @@ def test_the_two_texts_of_the_end_do_not_overlap(run):
     import announce
 
     g = run.game
-    spec = _launch(run, "test_lander")
+    spec = _launch(run, "lander_deimos")
     g._begin_adventure(spec)
     g.input_grace = 0.0
     run.frames(2)
@@ -462,14 +464,14 @@ def _bonus_hub(done=True):
 def test_the_bonus_lander_is_secret_until_the_game_is_finished():
     assert "bonus_lander" not in [m["id"] for m in _bonus_hub(done=False).missions()]
     rows = [m["id"] for m in _bonus_hub().missions()]
-    assert rows.count("bonus_lander") == 1 and "test_lander" in rows
+    assert rows.count("bonus_lander") == 1 and "lander_deimos" in rows
 
 
 def test_the_bonus_lander_is_a_bonus_of_the_map_and_never_what_the_map_suggests():
     hub = _bonus_hub()
     hub.state["cleared"] = [c for c in hub.state["cleared"] if c != "bonus_lander"]       # (the ACT2 shortcut of the helper won it)
     m = ss.mission_by_id("bonus_lander")
-    assert ss.mission_group(m) == ss.GROUP_FINAL and not m.get("training") and not m.get("test") and m["lander"]
+    assert ss.mission_group(m) == ss.GROUP_FINAL and m["lander"]
     assert ss.next_mission(hub.state, [m]) is None                # (alone on the map, it is still not suggested)
     assert ss.mission_playable(hub.state, m) and not ss.mission_playable(_bonus_hub(done=False).state, m)
     for lang in ("fr", "en"):
@@ -487,7 +489,7 @@ def test_the_bonus_lander_has_the_same_menu_and_a_real_spec():
     assert hub.confirm() is None and hub.screen == "lander_pick"
     hub.lander_index = 3
     spec = hub.confirm()
-    assert spec["lander"] and spec["body"] == ld.MENU_ORDER[3] and not spec.get("training") and spec["id"] == "bonus_lander"
+    assert spec["lander"] and spec["body"] == ld.MENU_ORDER[3] and spec["id"] == "bonus_lander"
 
 
 def test_the_bonus_lander_pays_its_points_and_a_crash_costs_nothing_more():
@@ -500,5 +502,3 @@ def test_the_bonus_lander_pays_its_points_and_a_crash_costs_nothing_more():
     assert ss.mission_playable(hub.state, ss.mission_by_id("bonus_lander"))
     hub.apply_result("bonus_lander", 0, False)
     assert hub.state["credits"] == 12000                         # (endless now: the end of a run is never a failure)
-    test = ss.mission_by_id("test_lander")
-    assert test["training"] and ss.record_result(hub.state, "test_lander", 999, True)["score"] == 0   # (the test still pays nothing)

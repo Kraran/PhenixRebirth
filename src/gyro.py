@@ -13,7 +13,7 @@ wears silver modules lit in blue (the light of its engines), the Shield copper-r
   the shots  each salvo of the ship gets one more shot from the cannon of each module in working order (x2, then x3);
               a shot of a module that hits charges the Phenix gauge as the others do, one that misses costs nothing
 
-Steps (claude/aventure-modules-plan.md): 1. on screen (this file, the TEST - Modules mission and its menu); 2. their shots
+Steps (claude/aventure-modules-plan.md): 1. on screen (this file); 2. their shots
 (player.py: Player.shoot, gun_points); 3. the harm done to them. The state of a mission is `game.gyro` (a Gyro, or None).
 """
 import math
@@ -458,7 +458,7 @@ def start(game, spec):
     try:
         hull = "phoenix" if getattr(game.player, "ship_id", "") == "phoenix" else "shield"
         game.gyro = Gyro(hull, want.get("count", 2), want.get("armour", 1), game.player)
-        game.gyro.owned = bool(want.get("owned"))                # the pilot's modules (not those of the test)
+        game.gyro.owned = bool(want.get("owned"))                # the pilot's modules (not those of an arcade game in Adventure style)
         game.player.gun_points = game.gyro.gun_points            # each salvo of the ship gets a shot from each module
         game.player.gun_colours = SHOT_COLOURS[hull]
     except Exception:

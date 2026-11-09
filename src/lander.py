@@ -1,4 +1,4 @@
-"""The test level "Lunar Lander" (story_state.py, id `test_lander`): a remake of Atari's Lunar Lander (1979) with the ship of the
+"""The level "Lunar Lander" (story_state.py: the landings and the BONUS FINAL - Lunar Lander): a remake of Atari's Lunar Lander (1979) with the ship of the
 hangar, on the ice of Titan or on the rock of an asteroid.
 
 The rules:
@@ -63,7 +63,7 @@ BODIES = {
                "relief": 0.7, "rough": 16.0, "craters": (30, (60, 150), 0.4), "boulders": (45, (4, 11))},
 }
 BODY_KEYS = tuple(BODIES)
-MENU_ORDER = ("rock", "ice", "europa", "deimos", "triton")      # the choice of the test (story.py, screen "lander_pick")
+MENU_ORDER = ("rock", "ice", "europa", "deimos", "triton")      # the choice of the BONUS FINAL (story.py, screen "lander_pick")
 
 THRUST = 190.0                    # px/s^2 along the axis of the ship
 TURN_SPEED = 2.0                  # rad/s

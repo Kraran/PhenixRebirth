@@ -106,7 +106,7 @@ def _spec(g, mid):
     return g.story._launch_selected()
 
 
-@pytest.mark.parametrize("mid", ("ch1_sortie", "test_guardians", "test_scramble", "test_lander"))
+@pytest.mark.parametrize("mid", ("ch1_sortie", "guardians_1", "bonus_scramble", "lander_deimos"))
 def test_a_mission_starts_behind_the_bar(run, mid, monkeypatch):
     g = run.game
     spec = _spec(g, mid)
@@ -151,7 +151,7 @@ def test_the_warm_ups_are_waited_for_not_raced(run):
     """A warm-up of the Lander holding its lock: the launch waits for it while the bar moves on, then goes."""
     import lander_view
     g = run.game
-    spec = _spec(g, "test_lander")
+    spec = _spec(g, "lander_deimos")
     taken = threading.Event()
 
     def warm_up():                                           # (another thread holds the lock for 0.3 s)

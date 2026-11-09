@@ -160,9 +160,6 @@ def test_only_the_adventure_missions_with_the_flag_carry_the_missile(run):
     g, spec = _launch(run, "ch1_sortie", antimatter=False)
     assert "antimatter" not in spec and g.antimatter is None
     g._end_adventure(False)
-    g, spec = _launch(run, "test_spacewar")                           # a test is not a mission of the story
-    assert "antimatter" not in spec and g.antimatter is None
-    g._end_adventure(False)
 
 
 def test_a_new_mission_has_its_missile_again(run):

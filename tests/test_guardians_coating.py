@@ -69,7 +69,6 @@ def _laser_on_the_ship(game, hull="shield", special=True):
 def test_the_launch_carries_the_coating_once_gardiens_iii_is_won(game):
     assert "reflect" not in _fly(game, "guardians_1", coated=False)
     assert _fly(game, "guardians_1", coated=True)["reflect"] is True
-    assert "reflect" not in _fly(game, "test_guardians", coated=True)                  # (the TEST: the bare ship)
 
 
 @pytest.mark.parametrize("hull", ["shield", "phoenix"])

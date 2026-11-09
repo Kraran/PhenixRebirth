@@ -5,6 +5,7 @@ import pygame
 import pytest
 
 import guardian as gd
+from guardian_rig import Rig
 import ship_burn as sb
 from player import Player
 import update_play
@@ -25,7 +26,7 @@ def _ship(hull, active=False):
 
 
 def _game(ship, bolt, guardians=True):
-    form = gd.GuardianFormation()
+    form = Rig()
     form.bullets = [bolt]
     sounds = SimpleNamespace(play=lambda *a, **kw: None)
     return SimpleNamespace(

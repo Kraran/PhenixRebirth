@@ -5,7 +5,7 @@ tests/conftest.py puts them in story_state.MISSIONS for the length of each of it
 
 def _mission(planet, suffix, blurb_suffix):
     return {
-        "id": "test_spacewar" + suffix, "acts": (1, 2, 3), "training": True, "test": True, "spacewar": True,
+        "id": "test_spacewar" + suffix, "acts": (1, 2, 3), "extra": True, "spacewar": True,
         "planet": planet,
         "title": "story_m_sent_hud", "hud_title": "story_m_sent_hud", "blurb": "story_m_sent_hud",
         "need": None, "content": 1, "speed": 1.0,

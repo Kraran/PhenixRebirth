@@ -1,4 +1,4 @@
-"""The codes LIVE and PHEN in the Adventure (and in its Scramble test level): typed on the mission map, in the hangar or on the
+"""The codes LIVE and PHEN in the Adventure (and in its Scramble levels): typed on the mission map, in the hangar or on the
 high scores, they give infinite lives / a Phenix gauge always full to every mission flown, and the Adventure is a cheated one
 (nothing saved, the banner on)."""
 import pygame
@@ -38,7 +38,7 @@ def test_a_mission_flown_after_live_has_infinite_lives(run):
     g = _hub(run)
     _type(g.story, "LIVE")
     cheat = g.story.cheat_live
-    spec = _launch(run, "test_scramble")            # (_launch opens the slot again: the code is typed once more after)
+    spec = _launch(run, "raid_deimos")            # (_launch opens the slot again: the code is typed once more after)
     assert spec
     g.story.cheat_live = cheat
     g._begin_adventure(spec)
@@ -48,7 +48,7 @@ def test_a_mission_flown_after_live_has_infinite_lives(run):
 
 def _scramble_with(run, code):
     g = run.game
-    _launch(run, "test_scramble")
+    _launch(run, "raid_deimos")
     _type(g.story, code)
     g.story.pane = "map"
     spec = g.story._launch_selected()
@@ -121,13 +121,13 @@ def test_a_cheated_adventure_is_not_saved(run):
 
 
 def test_without_a_code_the_missions_are_as_before(run):
-    _launch(run, "test_scramble")
+    _launch(run, "raid_deimos")
     g = run.game
     assert not g.player.infinite_lives and g.player.lives < 99 and not g.player.phenix_auto_refill
 
 
 def test_the_scramble_hit_still_costs_a_life_without_the_code(run):
-    _launch(run, "test_scramble")
+    _launch(run, "raid_deimos")
     g = run.game
     p, form = g.player, g.formation
     p.lives = 3

@@ -93,7 +93,7 @@ def test_next_mission_is_the_first_playable_not_won_one():
     assert nxt is not None and ss.mission_playable(st, nxt) and not ss.mission_done(st, nxt)
     assert not nxt.get("test")
     before = rows[: rows.index(nxt)]
-    assert not any(ss.mission_playable(st, m) and not ss.mission_done(st, m) and not m.get("test") for m in before)
+    assert not any(ss.mission_playable(st, m) and not ss.mission_done(st, m) for m in before)
 
 
 def test_next_mission_is_none_when_nothing_is_left():

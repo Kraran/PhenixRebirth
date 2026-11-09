@@ -323,7 +323,7 @@ _PREVIEWS = {}
 
 
 def preview(style):
-    """A picture of a setting for the menu of the test (made once): the sky with its mother planet, a stretch of the ground and a
+    """A picture of a setting for the menu of the BONUS FINAL (made once): the sky with its mother planet, a stretch of the ground and a
     landing zone, seen from the middle zoom."""
     pic = _PREVIEWS.get(style)
     if pic is None:

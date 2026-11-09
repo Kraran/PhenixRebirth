@@ -153,7 +153,7 @@ def test_without_the_video_the_credits_come_at_once():
 
 def test_after_the_ending_all_acts_and_missions_are_there(fake_clip):
     hub = _hub()
-    before = [m["id"] for m in ss.MISSIONS if m.get("once") and m.get("acts") and not m.get("test")]
+    before = [m["id"] for m in ss.MISSIONS if m.get("once") and m.get("acts")]
     _to_film(hub)
     hub.film_wait_t = 5.0
     hub.press()

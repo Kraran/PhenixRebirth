@@ -157,8 +157,6 @@ def test_the_workshop_draws_the_rows_and_the_line_under_them(run):
 def test_the_modules_in_service_fly_in_the_missions_that_count():
     st = _st(parts=("bonus_armour",), built=2, alive=1)
     assert ss.module_spec(st, ss.mission_by_id("ch1_sortie")) == {"count": 1, "armour": 2, "owned": True}
-    assert ss.module_spec(st, ss.mission_by_id("test_guardians")) is None          # (a test: nothing won, nothing lost)
-    assert ss.module_spec(st, ss.mission_by_id("test_modules")) is None            # (its own, from its menu)
     assert ss.module_spec(_st(built=1, alive=0), ss.mission_by_id("ch1_sortie")) is None
     assert ss.module_spec(_st(built=2, alive=2), ss.mission_by_id("ch1_sortie"))["armour"] == 1
 
@@ -184,16 +182,6 @@ def test_a_module_destroyed_in_a_mission_is_lost_at_once(run):
     assert ss.modules_alive(g.story.state) == 1 and ss.modules_built(g.story.state) == 2
     assert ss.load_state(ss.story_path(1))["modules"] == 1                          # (written at once)
     run.frames(5)
-
-
-def test_the_test_of_the_modules_never_touches_the_pilots_modules(run):
-    g, spec = _fly(run, "test_modules", _st(built=2, alive=1))
-    g.story.screen = "hub"
-    assert spec["modules"] == {"count": 2, "armour": 1}
-    assert g.gyro is not None and not g.gyro.owned
-    run.frames(5)
-    g.gyro.hit(g, g.gyro.modules[0], "crash")
-    assert ss.modules_alive(g.story.state) == 1
 
 
 def test_no_modules_in_the_lander_nor_the_scramble(run):

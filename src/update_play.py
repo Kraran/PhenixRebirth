@@ -16,7 +16,7 @@ from settings import (BASE_HEIGHT, BASE_WIDTH, SCREEN_SHAKE_DECAY, stage_speed_m
 from achievements import BOLDLY_GO_STAGE
 from enemy import BigBird, Enemy
 import guardian
-from guardian import FireLaser, Guardian, GuardianFormation
+from guardian import FireLaser, Guardian
 import laser_split
 from explosion import Explosion, TeslaCoilFx
 from i18n import t
@@ -184,10 +184,7 @@ def tick_arrive(game):
             ship.engine_intensity = 1.0
             ship.boost_engines(game.dt, False)              # the long jets die back as the ship arrives
     game._tick_stars(follow=True)
-    if isinstance(game.formation, GuardianFormation):
-        game.formation.update(game.dt, game.player.x, game.player.y)
-    else:
-        game.formation.update(game.dt, game.player.x)
+    game.formation.update(game.dt, game.player.x)
     game._drain_detach_pops()
     if all((not s.alive) or s.y <= target_y for s in game._ships()):
         for ship in game._ships():
@@ -593,7 +590,7 @@ def enemy_attacks_vs_players(game):
             if id(bullet) in held:
                 continue
             if bullet.alive and bullet.get_hitbox().colliderect(player_hitbox):
-                if isinstance(bullet, FireLaser):              # a Guardian's laser (the test, or a wave with Guardians)
+                if isinstance(bullet, FireLaser):              # a Guardian's laser (a wave with Guardians)
                     if ship.burn_by_guardian(blaze=True):
                         _life_lost(game)
                         game.shake_amount = max(game.shake_amount, 22.0)

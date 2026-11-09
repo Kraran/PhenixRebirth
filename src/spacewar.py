@@ -467,7 +467,7 @@ class SpaceWarFormation:
 
     def __init__(self, speed_mult=1.0, rng=None, levels=None, points=False):
         self.levels = [tuple(int(n) for n in lv) for lv in (levels or LEVELS)]    # (blue, green, saucers) of each level
-        self.points = bool(points)          # the birds pay their points (the Sentinelle missions); the test pays nothing
+        self.points = bool(points)          # the birds pay their points (the Sentinelle missions)
         self.enemies = []
         self.bullets = []
         self.swarm = None

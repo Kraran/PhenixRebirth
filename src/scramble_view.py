@@ -844,7 +844,7 @@ def _draw_sections(game, surface, font, form):
     surface.blit(name, (x + w - name.get_width(), y - name.get_height() - 4))
 
 
-# ------------------------------------------------------------------ the menu of the test
+# ------------------------------------------------------------------ the menu of the BONUS FINAL
 PREVIEW_SIZE = lander_view.PREVIEW_SIZE
 _PREVIEWS = {}
 _LOCK = threading.RLock()
@@ -852,7 +852,7 @@ _warming = False
 
 
 def preview(style):
-    """A picture of a setting for the menu of the test (made once): its sky and a stretch of the cavern."""
+    """A picture of a setting for the menu of the BONUS FINAL (made once): its sky and a stretch of the cavern."""
     pic = _PREVIEWS.get(style)
     if pic is None:
         with _LOCK:

@@ -65,7 +65,7 @@ def test_the_nine_missions_and_their_guardians():
         m = ss.mission_by_id(mid)
         waves = m.get("waves") or [m.get("stage")]
         assert set(plan) <= set(waves), mid                     # (a wave the mission plays)
-    for mid in ("bonus_vip", "test_guardians", "dome_1", "paint_1", "phenix_1", "lander_deimos", "raid_deimos",
+    for mid in ("bonus_vip", "dome_1", "paint_1", "phenix_1", "lander_deimos", "raid_deimos",
                 "sentinelle_1", "ast_2"):
         assert "guardians_at" not in ss.mission_by_id(mid), mid
 

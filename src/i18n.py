@@ -47,12 +47,12 @@ T = {
         "tr": "MACERA", "sv": "ÄVENTYR", "no": "EVENTYR", "da": "EVENTYR",
         "ru": "ПРИКЛЮЧЕНИЕ",
     },
-    # the main-menu entry of the Adventure (it is still in beta): the name followed by (BETA)
+    # the main-menu entry of the Adventure: its name
     "story_menu": {
-        "fr": "AVENTURE (BETA)", "en": "ADVENTURE (BETA)", "es": "AVENTURA (BETA)", "de": "ABENTEUER (BETA)",
-        "it": "AVVENTURA (BETA)", "pt": "AVENTURA (BETA)", "nl": "AVONTUUR (BETA)", "pl": "PRZYGODA (BETA)",
-        "tr": "MACERA (BETA)", "sv": "ÄVENTYR (BETA)", "no": "EVENTYR (BETA)", "da": "EVENTYR (BETA)",
-        "ru": "ПРИКЛЮЧЕНИЕ (БЕТА)",
+        "fr": "AVENTURE", "en": "ADVENTURE", "es": "AVENTURA", "de": "ABENTEUER",
+        "it": "AVVENTURA", "pt": "AVENTURA", "nl": "AVONTUUR", "pl": "PRZYGODA",
+        "tr": "MACERA", "sv": "ÄVENTYR", "no": "EVENTYR", "da": "EVENTYR",
+        "ru": "ПРИКЛЮЧЕНИЕ",
     },
     "addon": {
         "fr": "ADD-ON", "en": "ADD-ON", "es": "ADD-ON", "de": "ADD-ON",
@@ -6782,18 +6782,8 @@ def _load_lang_files():
 _load_lang_files()
 _build_adv_feats()
 
-# Prototype encounter: English fallback for languages without a dedicated text.
+# SpaceWar: English fallback for languages without a dedicated text.
 _GUARDIAN_TEXTS = {
-    "story_m_guardians_test": ("TEST - Avioïdes Gardiens", "TEST - Avioid Guardians"),
-    "story_m_guardians_test_b": (
-        "5 Gardiens, 5 oiseaux bleus et 5 verts. Les lasers brûlent aussi les oiseaux. 3 vies min., bords sûrs. Sans gain ni perte.",
-        "5 Guardians, 5 blue birds and 5 green birds. Lasers burn birds too. At least 3 lives, safe edges. No gain or loss."),
-    "story_guardians_hud": ("ENNEMIS {n}/{total}", "ENEMIES {n}/{total}"),
-    "story_guardians_hint": ("Laser : aucune protection, même en Shield ou Phenix !", "Laser: no protection, even Shield or Phenix!"),
-    "story_guardians_clear": ("Test réussi ! Tu peux recommencer à volonté.",
-                              "Test complete! Replay whenever you like."),
-    "story_guardians_retry": ("Test terminé. Aucun progrès perdu : tu peux réessayer.",
-                              "Test ended. No progress lost: you can try again."),
     # SpaceWar (src/spacewar.py)
     "story_spacewar_hud": ("NIVEAU {n}/{m}   TORPILLES {t}", "LEVEL {n}/{m}   TORPEDOES {t}"),
     "story_spacewar_level": ("NIVEAU {n} / {m}", "LEVEL {n} / {m}"),
@@ -7219,18 +7209,9 @@ for _k, (_fr, _en) in _MODULE_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}
     T[_k]["fr"] = _fr
 
-# The Lunar Lander test level (src/lander.py, src/lander_view.py): French and English; the other languages show the English text.
+# The Lunar Lander levels (src/lander.py, src/lander_view.py): French and English; the other languages show the English text.
 _LANDER_TEXTS = {
-    "story_m_lander": ("TEST - Lunar Lander", "TEST - Lunar Lander"),
     "story_m_lander_hud": ("Lunar Lander", "Lunar Lander"),
-    "story_m_lander_b": (
-        "Remake du Lunar Lander d'Atari (1979) : pose le vaisseau en douceur sur une zone plane d'un astéroïde, de Titan, d'Europe, de Déimos ou de Triton, "
-        "avec un carburant limité. La vue zoome quand tu descends. Sans gain ni perte. Tu choisis le décor au départ : astéroïde, "
-        "Titan, Europe, Déimos ou Triton.",
-        "Remake of Atari's Lunar Lander (1979): set the ship down gently on a flat zone of an asteroid, Titan, Europa, Deimos "
-        "or Triton, with a limited fuel. The view zooms in as you come down. No gain or loss. You choose the setting at the "
-        "start."),
-    "lander_pick_title": ("TEST - Lunar Lander : choix du décor", "TEST - Lunar Lander: choose the setting"),
     "lander_pick_title_final": ("BONUS FINAL - Lunar Lander : choix du décor", "FINAL BONUS - Lunar Lander: choose the setting"),
     "lander_body_rock": ("Astéroïde", "Asteroid"),
     "lander_body_ice": ("Titan", "Titan"),
@@ -7282,52 +7263,15 @@ _LANDER_TEXTS = {
     "lander_crash": ("CRASH !", "CRASH!"),
     "lander_refuel": ("+{n} CARBURANT", "+{n} FUEL"),
     "lander_points": ("{p} points  +  carburant {b}   (zone \u00d7{z})", "{p} points  +  fuel {b}   (zone \u00d7{z})"),
-    "story_lander_clear": ("Atterrissage réussi ! Tu peux recommencer à volonté.",
-                           "Landing made! Replay whenever you like."),
-    "story_lander_retry": ("Le vaisseau s'est écrasé. Aucun progrès perdu : tu peux réessayer.",
-                           "The ship crashed. No progress lost: you can try again."),
 }
 for _k, (_fr, _en) in _LANDER_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}
     T[_k]["fr"] = _fr
 
-# The Scramble test level (src/scramble.py, src/scramble_view.py): French and English; the other languages show the English text.
+# The Scramble levels (src/scramble.py, src/scramble_view.py): French and English; the other languages show the English text.
 _SCRAMBLE_TEXTS = {
-    "story_m_scramble": ("TEST - Scramble", "TEST - Scramble"),
     "story_m_scramble_hud": ("Scramble", "Scramble"),
-    "story_m_scramble_b": (
-        "Remake du Scramble de Konami (1981) : le décor défile de droite à gauche, ton vaisseau vole nez à droite entre le "
-        "plafond et le sol jusqu'à la base ennemie. Tout contact avec la roche coûte une vie. Sans gain ni perte. Tu choisis "
-        "le décor au départ : astéroïde, Titan, Europe, Déimos ou Triton.",
-        "Remake of Konami's Scramble (1981): the setting scrolls from right to left, your ship flies nose to the right "
-        "between the ceiling and the ground to the enemy base. Any touch of the rock costs a life. No gain or loss. You "
-        "choose the setting at the start: asteroid, Titan, Europa, Deimos or Triton."),
-    "scramble_pick_title": ("TEST - Scramble : choix du décor", "TEST - Scramble: choose the setting"),
     "scramble_pick_title_final": ("BONUS FINAL - Scramble : choix du décor", "FINAL BONUS - Scramble: choose the setting"),
-    "story_m_modules": ("TEST - Modules", "TEST - Modules"),
-    "story_m_modules_hud": ("Modules", "Modules"),
-    "story_m_modules_b": (
-        "Les modules d'escorte : deux petits satellites gyroscopes de part et d'autre du vaisseau. Un run des niveaux 6 "
-        "à 11. Ils s'écartent dans le dôme et en forme Phenix ; le mur électrique les détruit. Rien n'est gagné ni "
-        "perdu. Au départ, tu choisis combien de modules et leur résistance.",
-        "The escort modules: two small gyroscope satellites on each side of the ship. A run of levels 6 to 11. They "
-        "move out in the dome and in the Phenix form; the electric wall destroys them. No gain or loss. At the start, "
-        "you choose how many modules and how tough they are."),
-    "modules_pick_title": ("TEST - Modules : l'escorte", "TEST - Modules: the escort"),
-    "modules_pick_count_1": ("1 MODULE", "1 MODULE"),
-    "modules_pick_count_2": ("2 MODULES", "2 MODULES"),
-    "modules_pick_armour_1": ("Normale : détruit au 1er tir", "Normal: lost to the 1st shot"),
-    "modules_pick_armour_2": ("Accrue : détruit au 2e tir", "Reinforced: lost to the 2nd shot"),
-    "modules_pick_info_1": (
-        "Tirs ×{shots}. Un tir ennemi détruit un module ; une collision ou le mur électrique aussi. (Les tirs et les "
-        "dégâts des modules arrivent dans les prochaines étapes.)",
-        "Shots ×{shots}. One enemy shot destroys a module; so does a collision or the electric wall. (The shots and the "
-        "harm of the modules come in the next steps.)"),
-    "modules_pick_info_2": (
-        "Tirs ×{shots}. Il faut deux tirs ennemis pour détruire un module ; une collision ou le mur électrique le "
-        "détruit toujours du premier coup. (Les tirs et les dégâts des modules arrivent dans les prochaines étapes.)",
-        "Shots ×{shots}. It takes two enemy shots to destroy a module; a collision or the electric wall always destroys "
-        "it at once. (The shots and the harm of the modules come in the next steps.)"),
     "scramble_info_rock": ("Une caverne dans la roche grise d'un astéroïde, au milieu de ses semblables.",
                            "A cavern in the grey rock of an asteroid, among its kind."),
     "scramble_info_ice": ("Les falaises de glace et de roche brunâtre de Titan, sous la brume orange et Saturne.",
@@ -7584,10 +7528,6 @@ _SCRAMBLE_TEXTS = {
         "fois. Son plumage renvoie le feu des Gardiens.",
         "The leader of the Guardians, bigger, in a golden halo. Six shots in the body bring it down. It fires two lasers "
         "at once. Its plumage sends back the fire of the Guardians."),
-    "story_scramble_clear": ("Base ennemie détruite ! Tu peux recommencer à volonté.",
-                             "Enemy base destroyed! Replay whenever you like."),
-    "story_scramble_retry": ("Le vaisseau a été détruit. Aucun progrès perdu : tu peux réessayer.",
-                             "The ship was destroyed. No progress lost: you can try again."),
 }
 for _k, (_fr, _en) in _SCRAMBLE_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}

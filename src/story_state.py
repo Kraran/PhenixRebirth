@@ -628,7 +628,7 @@ MISSIONS = [
     # no menu, before the raid of the same setting (same acts, same flags, same rules: optional, once until the ending, the
     # points in credits). `fuel`: the tank (lander.FUEL_START when left out): fuller on the two settings of Act 1.
     # Raid sur les bases avioïdes (I-V): the Scramble level (src/scramble.py) for real, on one setting each and at its own level
-    # of difficulty (`raid`: scramble.LEVELS, 1 the easiest, 5 the full Scramble of the test), no menu. Optional (on the map
+    # of difficulty (`raid`: scramble.LEVELS, 1 the easiest, 5 the full Scramble), no menu. Optional (on the map
     # with the BONUS missions), flown once until the ending has been told; the points pay in credits, a failure costs what a
     # failure always costs. Deimos and the asteroid in Act 1, Europa and Titan in Act 2, Triton in Act 3 (the earlier ones
     # stay on the map of the later acts).
@@ -682,34 +682,7 @@ MISSIONS = [
         "title": "story_m_raid5", "hud_title": "story_m_raid_hud", "blurb": "story_m_raid5_b",
         "need": "act3", "content": 1, "speed": 1.0,
     },
-    {
-        "id": "test_guardians", "training": True, "test": True, "guardians": True,
-        "title": "story_m_guardians_test", "blurb": "story_m_guardians_test_b",
-        "need": None, "content": 3, "speed": 1.0,
-    },
-    # TEST: Lunar Lander (src/lander.py), a remake of Atari's 1979 arcade game: the ship lands by its thruster on the ice of
-    # Titan or the rock of an asteroid (drawn at random). A training mission: the score is shown, nothing won, nothing lost.
-    {
-        "id": "test_lander", "acts": (1, 2, 3), "training": True, "test": True, "lander": True,
-        "title": "story_m_lander", "hud_title": "story_m_lander_hud", "blurb": "story_m_lander_b",
-        "need": None, "content": 1, "speed": 1.0,
-    },
-    # TEST: Scramble (src/scramble.py), a remake of Konami's 1981 arcade game: a side-scrolling shoot'em up through the rock of
-    # one of the five settings of the Lunar Lander (chosen in a menu), to the enemy base. A training mission: the score is shown,
-    # nothing won, nothing lost.
-    {
-        "id": "test_scramble", "acts": (1, 2, 3), "training": True, "test": True, "scramble": True,
-        "title": "story_m_scramble", "hud_title": "story_m_scramble_hud", "blurb": "story_m_scramble_b",
-        "need": None, "content": 1, "speed": 1.0,
-    },
-    # TEST: the escort modules (src/gyro.py): a run of the arcade levels 6 to 11 with the gyroscope satellites on each side
-    # of the ship (how many, how tough: a menu first). A training mission: the score is shown, nothing won, nothing lost.
-    {
-        "id": "test_modules", "acts": (1, 2, 3), "training": True, "test": True, "modules": True,
-        "title": "story_m_modules", "hud_title": "story_m_modules_hud", "blurb": "story_m_modules_b",
-        "need": None, "content": 6, "waves": [6, 7, 8, 9, 10, 11], "speed": 1.0,
-    },
-    # BONUS: Scramble, the same level as the test (the menu of the five settings included) but for real, and endless
+    # BONUS: Scramble (the menu of the five settings included), endless
     # (scramble.py `endless`): the base blown up, the course starts again with more enemies (20 % fewer than a raid at the
     # first course, then 10 % more each time), until the last life (the
     # GAME OVER); its points pay without a penalty nor a fall, leaving it gains nothing, one record for all the settings
@@ -722,7 +695,7 @@ MISSIONS = [
         "title": "story_m_scramble_bonus", "hud_title": "story_m_scramble_hud", "blurb": "story_m_scramble_bonus_b",
         "need": ENDING_DONE, "content": 1, "speed": 1.0,
     },
-    # BONUS: Lunar Lander, the same level as the test (the menu of the five settings included) but for real: the landing pays its
+    # BONUS: Lunar Lander, the full level (the menu of the five settings included), for real: the landing pays its
     # points (+ the fuel left) in credits. Endless (lander.py `endless`): landing after landing, with the fuel left (+50 / +25)
     # and fewer big zones each level, until a crash or an empty tank (the GAME OVER); its points pay without a penalty nor
     # a fall, leaving it gains nothing, one record per setting (ENDLESS_BEST "bonus_lander:<setting>"). Secret until the
@@ -888,6 +861,11 @@ def record_kills(state, kills):
     for kind, n in kills.items():
         if kind in known:
             data[kind] = encounters(state, kind) + max(0, int(_num(n, 0)))
+
+
+# The four TEST missions of the first versions (the Guardians, the Lunar Lander, the Scramble, the escort modules), taken out
+# of the Adventure: a save that still names one forgets it (migrate_state).
+REMOVED_MISSIONS = ("test_guardians", "test_lander", "test_scramble", "test_modules")
 
 
 # ---------------------------------------------------------------- hunt missions
@@ -1204,7 +1182,7 @@ def migrate_state(data):
         flags.update({k: v for k, v in data["flags"].items() if isinstance(k, str) and isinstance(v, bool)})
     base["flags"] = flags
     if isinstance(data.get("cleared"), list):
-        base["cleared"] = [mid for mid in data["cleared"] if isinstance(mid, str)]
+        base["cleared"] = [mid for mid in data["cleared"] if isinstance(mid, str) and mid not in REMOVED_MISSIONS]
     if isinstance(data.get("log"), list):
         base["log"] = [entry for entry in data["log"] if isinstance(entry, str)
                        or (isinstance(entry, dict) and isinstance(entry.get("key"), str))]
@@ -1577,7 +1555,7 @@ def module_spec(state, mission):
     """The modules a mission launches with ({"count", "armour", "owned"}), or None: those in working order, in every
     mission that counts (src/gyro.py leaves them out of the Lander, Scramble, SpaceWar, the asteroids and the coop)."""
     n = modules_alive(state)
-    if n <= 0 or not mission or mission.get("training") or mission.get("modules"):
+    if n <= 0 or not mission:
         return None
     return {"count": n, "armour": module_armour(state), "owned": True}
 
@@ -2083,7 +2061,7 @@ def mission_group(mission):
         return GROUP_FINAL
     if m.get("hunt"):
         return GROUP_HUNT
-    if (m.get("training") or m.get("extra") or m.get("reactor") or m.get("drop") or m.get("needs_reactor") or m.get("reward")
+    if (m.get("extra") or m.get("reactor") or m.get("drop") or m.get("needs_reactor") or m.get("reward")
             or m.get("paint") or m.get("carry")):
         return GROUP_EXTRA
     return GROUP_STORY
@@ -2170,8 +2148,8 @@ def next_mission(state, missions):
     """The mission the map suggests: the first one of the list that can be flown and is not won yet. None when there is
     none."""
     for m in missions:
-        if m.get("training") or m.get("extra"):
-            continue                       # (a test or a BONUS is never what the map suggests)
+        if m.get("extra"):
+            continue                       # (a BONUS is never what the map suggests)
         if not mission_playable(state, m):
             continue
         if not mission_done(state, m):
@@ -2710,9 +2688,6 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
     score = max(0, int(score or 0))
     res = {"score": score, "cleared": bool(cleared), "first": False, "lost": 0, "fallen": False, "act": 0,
            "loot": None, "used": [], "opened": [], "reactor_lost": None, "no_item": None}
-    if (mission_by_id(mission_id) or {}).get("training"):
-        res.update(score=0, training=True)
-        return res  # the simulation never changes progression, items or Veteran saves
     record_kills(state, kills)            # the enemies met count whatever the outcome
     record_mission_kills(state, mission_id, kills)
     if is_endless(mission_by_id(mission_id)):

@@ -58,7 +58,6 @@ import escort
 import gyro
 import laser_split
 import galaga
-from guardian import GuardianFormation
 from galaga import GalagaFormation
 from boss import BossSaucer
 from explosion import Explosion, TeslaCoilFx
@@ -1934,12 +1933,12 @@ class Game:
         made there), then a first picture drawn off screen (the textures of the Lander and of Scramble are made there)."""
         title = t(spec["title"]) if spec.get("title") else None
         heavy_view = bool(spec.get("lander") or spec.get("scramble"))
-        first, second = (0.15, 0.85) if heavy_view else (0.85, 0.15) if spec.get("guardians") else (0.5, 0.5)
+        first, second = (0.15, 0.85) if heavy_view else (0.5, 0.5)
         ash = self.guardians_meet_gargoyles(spec)
         if ash:
             first, second = first * 0.6, second * 0.6                # (the rest of the bar: the ash of the gargoyles)
         with loading.Loading(self, "adventure", title=title, delay=self.LOADING_DELAY) as ld:
-            ld.step(first, lambda: self._begin_adventure(spec), 1.5 if spec.get("guardians") else 0.3)
+            ld.step(first, lambda: self._begin_adventure(spec), 0.3)
             ld.step(second, self._prewarm_mission, 1.0 if heavy_view else 0.2)
             if ash:
                 import guardian
@@ -2004,8 +2003,6 @@ class Game:
         self.player.sounds = self.sounds
         self.player.pid = 1
         self.player.lives = int(loadout.get("lives") or 1)
-        if spec.get("training"):
-            self.player.lives = max(3, self.player.lives)
         self.player.infinite_lives = False
         pct = int(loadout.get("speed_pct") or 40)
         self.player.speed = PLAYER_SPEED * (pct / 100.0)
@@ -2015,8 +2012,6 @@ class Game:
             # the Phenix form lasts a share of the arcade one: 60 % at first, more after the workshop
             self.player.phenix_sec_per_point *= max(0.1, int(loadout.get("phenix_pct") or 60) / 100.0)
         self.player.adventure_wall = loadout.get("wall") or "instant"
-        if spec.get("training"):
-            self.player.adventure_wall = "immune"
         if loadout.get("vertical"):
             # the two-dimensional impulse reactor (BONUS mission): up and down in the lower third, for the rest of the Adventure
             self.player.vertical_range = (PLAYER_VERTICAL_TOP, PLAYER_VERTICAL_BOTTOM)
@@ -2037,9 +2032,6 @@ class Game:
             self.player.vertical_range = None
             self.player.ast_angle = 0.0
             self.player.lives = int(loadout.get("lives") or 1)
-            if spec.get("training") and not dome:
-                dome = True                                       # the test: the Shield has its dome even if not yet bought
-                self.player.adventure_dome = True
         if spec.get("spacewar"):
             # SpaceWar (src/spacewar.py): the ship flies free by the pull of a star, with ONE life (pixel dust at its end)
             spacewar.set_planet(spec.get("planet"))                 # (Jupiter, Saturn, Uranus or Neptune: its pull and its disc)
@@ -2047,13 +2039,10 @@ class Game:
             self.player.sw_physics = True
             self.player.vertical_range = None
             self.player.lives = 1
-        if spec.get("modules") and spec.get("training") and not dome:
-            dome = True                                           # the test of the modules: the Shield has its dome (to see them
-            self.player.adventure_dome = True                     # move out of its way) even if not yet bought
         laser_split.reset(self)                   # (no half of a split laser from the mission before)
         self.adventure["dome"] = dome
         # the loot items bought in the hangar for this mission (they are used up when it ends, see _end_adventure)
-        items = [] if spec.get("training") else list(spec.get("items") or [])
+        items = list(spec.get("items") or [])
         fx = story_items.effects(items)
         self.adventure["items"] = items
         self.player.lives += fx["extra_lives"]
@@ -2064,7 +2053,7 @@ class Game:
         # never carry one, and do not count in the gap between two drops; the items bought still work in them.
         story = getattr(self, "story", None)
         can_loot = (story is not None and not spec.get("invaders") and not spec.get("asteroids")
-                    and not spec.get("training") and not spec.get("spacewar") and not spec.get("lander")
+                    and not spec.get("spacewar") and not spec.get("lander")
                     and not spec.get("scramble"))
         if can_loot and spec.get("reactor"):
             # a BONUS mission: the reactor of its hull falls once, whenever in the waves (the random loot is off)
@@ -2173,7 +2162,7 @@ class Game:
         story = getattr(self, "story", None)
         state = getattr(story, "state", None) or {}
         adv = getattr(self, "adventure", None) or {}
-        return bool(adv) and not adv.get("training") and not adv.get("endless") and state.get("mode") == "veteran"
+        return bool(adv) and not adv.get("endless") and state.get("mode") == "veteran"
 
     def _endless_over(self, cleared=True):
         """The end of an endless mission (the ship lost, the Lander out of fuel) or of a fallen Veteran: the result written
@@ -2240,7 +2229,7 @@ class Game:
         alphas = 0
         if adv.get("endless_guardians"):
             count, alphas = story_state.endless_guardians(int(self.stage))   # (BONUS FINAL - Gardiens)
-        if (count > 0 or alphas > 0) and not adv.get("guardians"):
+        if count > 0 or alphas > 0:
             from guardian import GuardianSquad
             from ship_burn import prepare as prepare_ship_burn
             prepare_ship_burn(self.player)                  # (the burning ship of a laser, made before it is needed)
@@ -2270,14 +2259,6 @@ class Game:
         self.stage_touched_edge = False
         adv = getattr(self, "adventure", None)
         waves = (adv or {}).get("waves")
-        if adv and adv.get("guardians"):
-            self.stage = 3
-            from ship_burn import prepare as prepare_ship_burn
-            prepare_ship_burn(self.player)
-            self.formation = GuardianFormation()
-            self.formation.sounds = self.sounds
-            self.boss_saucer = None
-            return
         if adv and waves:
             # a mission of several waves: each one plays like that stage of the arcade game
             number = int(waves[max(0, min(len(waves) - 1, int(adv.get("wave_i", 0) or 0)))])
@@ -2332,7 +2313,7 @@ class Game:
             self.stage = 1
             mult = float(adv.get("speed") or 1.0) * self.difficulty_speed_mult()
             self.formation = spacewar.SpaceWarFormation(speed_mult=mult, levels=adv.get("sw_levels"),
-                                                        points=not adv.get("training"))
+                                                        points=True)
             self.formation.sounds = self.sounds
             self.formation.font = self.font
             self.formation.text_cache = self.text_cache
@@ -2371,7 +2352,7 @@ class Game:
             content = stage_content(stage)
             mult = stage_speed_mult(stage) * self.difficulty_speed_mult()
         if isinstance(self.formation, (InvaderFormation, GalagaFormation, escort.EscortFormation,
-                                       asteroids.AsteroidFormation, spacewar.SpaceWarFormation, GuardianFormation,
+                                       asteroids.AsteroidFormation, spacewar.SpaceWarFormation,
                                        scramble.ScrambleFormation)):
             self.formation = EnemyFormation()            # back to the ordinary grids
         self.formation.enemies = []
@@ -4683,10 +4664,7 @@ class Game:
             update_play.tick_arrive(self)
             return
         
-        if isinstance(self.formation, GuardianFormation):
-            self.formation.update(self.dt, self.player.x, self.player.y)
-        else:
-            self.formation.update(self.dt, self.player.x)
+        self.formation.update(self.dt, self.player.x)
         self._tick_guardian_squad()               # the Guardians that came with this wave (a few missions only)
         laser_split.tick(self)                    # the halves of the lasers split on the reflective coating
         escort.tick(self)                         # the VIP rescue: the cruise ship (nothing in any other mission)

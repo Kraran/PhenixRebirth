@@ -87,3 +87,4 @@ def _spacewar_test_missions(request, monkeypatch):
         from sw_missions import TEST_MISSIONS
         monkeypatch.setattr(story_state, "MISSIONS", story_state.MISSIONS + TEST_MISSIONS)
     yield
+

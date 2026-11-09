@@ -189,7 +189,7 @@ def test_the_five_raids_are_on_the_maps_of_their_acts():
     for mid, (body, level, acts) in want.items():
         m = ss.mission_by_id(mid)
         assert m["scramble"] and m["body"] == body and m["body"] in lander.BODIES and m["raid"] == level
-        assert tuple(m["acts"]) == acts and m["once"] and m["extra"] and not m.get("training") and not m.get("secret")
+        assert tuple(m["acts"]) == acts and m["once"] and m["extra"] and not m.get("secret")
         assert ss.mission_group(m) == ss.GROUP_EXTRA
     st = ss.create_slot(1, "NOVA", "normal")
     m = ss.mission_by_id("raid_deimos")
@@ -214,7 +214,7 @@ def test_a_raid_launches_its_setting_and_its_level_without_a_menu(run):
     g.story.map_index = ids.index("raid_titan")
     spec = g.story.confirm()
     assert spec and spec["scramble"] and spec["body"] == "ice" and spec["raid"] == 4
-    assert not spec.get("training") and g.story.screen != "lander_pick"
+    assert g.story.screen != "lander_pick"
     g._begin_adventure(spec)
     g.input_grace = 0.0
     run.frames(3)
@@ -223,12 +223,12 @@ def test_a_raid_launches_its_setting_and_its_level_without_a_menu(run):
     assert form.speed == 172.0
 
 
-def test_the_test_and_the_bonus_stay_at_the_full_scramble(run):
+def test_the_bonus_stay_at_the_full_scramble(run):
     g = run.game
-    from test_spacewar import _state
-    ss.save_state(ss.story_path(1), _state())
+    from test_spacewar import _open_bonus, _state
+    ss.save_state(ss.story_path(1), _open_bonus(_state(), "bonus_scramble"))
     g.story.open_slot(1)
-    g.story.map_index = [m["id"] for m in g.story.missions()].index("test_scramble")
+    g.story.map_index = [m["id"] for m in g.story.missions()].index("bonus_scramble")
     g.story.lander_index = 3
     g.story.screen = "lander_pick"
     g.story.pick_for = "scramble"
