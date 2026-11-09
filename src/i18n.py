@@ -47,12 +47,12 @@ T = {
         "tr": "MACERA", "sv": "ÄVENTYR", "no": "EVENTYR", "da": "EVENTYR",
         "ru": "ПРИКЛЮЧЕНИЕ",
     },
-    # the main-menu entry of the Adventure (it is still in beta): the name followed by (BETA)
+    # the main-menu entry of the Adventure: its name
     "story_menu": {
-        "fr": "AVENTURE (BETA)", "en": "ADVENTURE (BETA)", "es": "AVENTURA (BETA)", "de": "ABENTEUER (BETA)",
-        "it": "AVVENTURA (BETA)", "pt": "AVENTURA (BETA)", "nl": "AVONTUUR (BETA)", "pl": "PRZYGODA (BETA)",
-        "tr": "MACERA (BETA)", "sv": "ÄVENTYR (BETA)", "no": "EVENTYR (BETA)", "da": "EVENTYR (BETA)",
-        "ru": "ПРИКЛЮЧЕНИЕ (БЕТА)",
+        "fr": "AVENTURE", "en": "ADVENTURE", "es": "AVENTURA", "de": "ABENTEUER",
+        "it": "AVVENTURA", "pt": "AVENTURA", "nl": "AVONTUUR", "pl": "PRZYGODA",
+        "tr": "MACERA", "sv": "ÄVENTYR", "no": "EVENTYR", "da": "EVENTYR",
+        "ru": "ПРИКЛЮЧЕНИЕ",
     },
     "addon": {
         "fr": "ADD-ON", "en": "ADD-ON", "es": "ADD-ON", "de": "ADD-ON",
@@ -6784,10 +6784,6 @@ _build_adv_feats()
 
 # Prototype encounter: English fallback for languages without a dedicated text.
 _GUARDIAN_TEXTS = {
-    "story_m_guardians_test": ("TEST - Avioïdes Gardiens", "TEST - Avioid Guardians"),
-    "story_m_guardians_test_b": (
-        "5 Gardiens, 5 oiseaux bleus et 5 verts. Les lasers brûlent aussi les oiseaux. 3 vies min., bords sûrs. Sans gain ni perte.",
-        "5 Guardians, 5 blue birds and 5 green birds. Lasers burn birds too. At least 3 lives, safe edges. No gain or loss."),
     "story_guardians_hud": ("ENNEMIS {n}/{total}", "ENEMIES {n}/{total}"),
     "story_guardians_hint": ("Laser : aucune protection, même en Shield ou Phenix !", "Laser: no protection, even Shield or Phenix!"),
     "story_guardians_clear": ("Test réussi ! Tu peux recommencer à volonté.",
@@ -7221,16 +7217,8 @@ for _k, (_fr, _en) in _MODULE_TEXTS.items():
 
 # The Lunar Lander test level (src/lander.py, src/lander_view.py): French and English; the other languages show the English text.
 _LANDER_TEXTS = {
-    "story_m_lander": ("TEST - Lunar Lander", "TEST - Lunar Lander"),
     "story_m_lander_hud": ("Lunar Lander", "Lunar Lander"),
-    "story_m_lander_b": (
-        "Remake du Lunar Lander d'Atari (1979) : pose le vaisseau en douceur sur une zone plane d'un astéroïde, de Titan, d'Europe, de Déimos ou de Triton, "
-        "avec un carburant limité. La vue zoome quand tu descends. Sans gain ni perte. Tu choisis le décor au départ : astéroïde, "
-        "Titan, Europe, Déimos ou Triton.",
-        "Remake of Atari's Lunar Lander (1979): set the ship down gently on a flat zone of an asteroid, Titan, Europa, Deimos "
-        "or Triton, with a limited fuel. The view zooms in as you come down. No gain or loss. You choose the setting at the "
-        "start."),
-    "lander_pick_title": ("TEST - Lunar Lander : choix du décor", "TEST - Lunar Lander: choose the setting"),
+    "lander_pick_title": ("Lunar Lander : choix du décor", "Lunar Lander: choose the setting"),
     "lander_pick_title_final": ("BONUS FINAL - Lunar Lander : choix du décor", "FINAL BONUS - Lunar Lander: choose the setting"),
     "lander_body_rock": ("Astéroïde", "Asteroid"),
     "lander_body_ice": ("Titan", "Titan"),
@@ -7293,27 +7281,10 @@ for _k, (_fr, _en) in _LANDER_TEXTS.items():
 
 # The Scramble test level (src/scramble.py, src/scramble_view.py): French and English; the other languages show the English text.
 _SCRAMBLE_TEXTS = {
-    "story_m_scramble": ("TEST - Scramble", "TEST - Scramble"),
     "story_m_scramble_hud": ("Scramble", "Scramble"),
-    "story_m_scramble_b": (
-        "Remake du Scramble de Konami (1981) : le décor défile de droite à gauche, ton vaisseau vole nez à droite entre le "
-        "plafond et le sol jusqu'à la base ennemie. Tout contact avec la roche coûte une vie. Sans gain ni perte. Tu choisis "
-        "le décor au départ : astéroïde, Titan, Europe, Déimos ou Triton.",
-        "Remake of Konami's Scramble (1981): the setting scrolls from right to left, your ship flies nose to the right "
-        "between the ceiling and the ground to the enemy base. Any touch of the rock costs a life. No gain or loss. You "
-        "choose the setting at the start: asteroid, Titan, Europa, Deimos or Triton."),
-    "scramble_pick_title": ("TEST - Scramble : choix du décor", "TEST - Scramble: choose the setting"),
+    "scramble_pick_title": ("Scramble : choix du décor", "Scramble: choose the setting"),
     "scramble_pick_title_final": ("BONUS FINAL - Scramble : choix du décor", "FINAL BONUS - Scramble: choose the setting"),
-    "story_m_modules": ("TEST - Modules", "TEST - Modules"),
-    "story_m_modules_hud": ("Modules", "Modules"),
-    "story_m_modules_b": (
-        "Les modules d'escorte : deux petits satellites gyroscopes de part et d'autre du vaisseau. Un run des niveaux 6 "
-        "à 11. Ils s'écartent dans le dôme et en forme Phenix ; le mur électrique les détruit. Rien n'est gagné ni "
-        "perdu. Au départ, tu choisis combien de modules et leur résistance.",
-        "The escort modules: two small gyroscope satellites on each side of the ship. A run of levels 6 to 11. They "
-        "move out in the dome and in the Phenix form; the electric wall destroys them. No gain or loss. At the start, "
-        "you choose how many modules and how tough they are."),
-    "modules_pick_title": ("TEST - Modules : l'escorte", "TEST - Modules: the escort"),
+    "modules_pick_title": ("Modules : l'escorte", "Modules: the escort"),
     "modules_pick_count_1": ("1 MODULE", "1 MODULE"),
     "modules_pick_count_2": ("2 MODULES", "2 MODULES"),
     "modules_pick_armour_1": ("Normale : détruit au 1er tir", "Normal: lost to the 1st shot"),

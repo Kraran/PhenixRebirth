@@ -1,4 +1,4 @@
-"""The test level "Scramble" (story_state.py, id `test_scramble`): a remake of Konami's Scramble (1981) with the ships of the
+"""The level "Scramble" (story_state.py: the raids and the BONUS FINAL - Scramble): a remake of Konami's Scramble (1981) with the ships of the
 hangar, in the settings of the Lunar Lander (the asteroid, Titan, Europa, Deimos, Triton: lander.BODIES).
 
 The rules:
@@ -532,6 +532,7 @@ class ScrambleFormation:
         self.loop = max(1, int(loop))       # the course of the endless raid (1, 2, 3...): BOOST_STEP more enemies each
         self.loop_timer = 0.0               # seconds since the base blew up (the endless raid)
         self.approach_cried = False         # the red commander has cried as the approach of its base came in sight
+        self.cry_wait = 0.0                 # seconds since the last station of the course has left the screen (CRY_AFTER)
         self.course = Course(self.style, seed, level, endless_boost(self.loop) if self.endless else 1.0)
         self.tune = self.course.tune
         self.enemies = []
@@ -816,9 +817,11 @@ def tick(game):
                 form.push_out(p)
             else:
                 _ship_hit(game, form)
-    # --- the approach of the base comes in sight: the red commander's cry rings out once, far ahead, echoing through its
-    #     fortress (boss_yell_far: boss_yell with a big reverb and echoes, about 4.9 s; nothing waits on it)
-    if not form.approach_cried and form.phase == "flying" and course.section_at(form.cam + W) == "approach":
+    # --- the approach of the base is in sight and the last station of the course has left the screen (CRY_AFTER seconds
+    #     ago): the red commander's cry rings out once, far ahead, echoing through its fortress (boss_yell_far: boss_yell
+    #     with a big reverb and echoes, about 4.9 s; nothing waits on it)
+    due = not form.approach_cried and form.phase == "flying" and _cry_due(form, dt)
+    if due and course.section_at(form.cam + W) == "approach":
         form.approach_cried = True
         cry = getattr(game, "_play_boss_cry", None)
         try:
@@ -848,6 +851,27 @@ def tick(game):
         form.loop_timer += dt
         if form.loop_timer >= LOOP_PAUSE:
             next_loop(game, form)
+
+
+CRY_AFTER = 2.0                   # seconds from the last station leaving the screen to the red commander's far cry
+
+
+def last_station_gone_at(form):
+    """The world x the left edge of the screen must pass for the last station of the course to be off the screen (its right
+    edge, shot down or not: where it stood), or None without stations (the cry comes with the approach in sight)."""
+    if not form.stations:
+        return None
+    return max(st.box()[2] for st in form.stations)
+
+
+def _cry_due(form, dt):
+    """Counts the game time (pause, slow motion: as the rest of the level) since the last station left the screen."""
+    gone = last_station_gone_at(form)
+    if gone is None:
+        return True
+    if form.cam > gone:
+        form.cry_wait += dt
+    return form.cry_wait >= CRY_AFTER
 
 
 def next_loop(game, form):

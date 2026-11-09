@@ -10,6 +10,8 @@ import update_play
 from i18n import T, t
 from story import StoryHub
 
+pytestmark = pytest.mark.usefixtures("training_missions")   # (the TEST missions, out of the Adventure)
+
 DT = 1 / 60
 SCENED = ("guardians_1", "best_guardians", "guardians_2", "guardians_3")
 

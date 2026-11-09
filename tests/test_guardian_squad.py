@@ -8,6 +8,8 @@ import guardian as gd
 import story_state as ss
 import update_play
 
+pytestmark = pytest.mark.usefixtures("training_missions")   # (the TEST missions, out of the Adventure)
+
 PLANS = {"phenix_3": {19: 2}, "act3_gate": {23: 2, 24: 2, 25: 3}, "up_shield_4": {20: 2}, "up_phenix_3": {20: 2},
          "final_1": {22: 1}, "final_2": {21: 2}, "final_3": {21: 2}, "final_4": {25: 3}, "final_5": {30: 4}}
 DT = 1 / 60

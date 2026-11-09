@@ -17,6 +17,8 @@ from story import StoryHub
 from test_smoke import run  # noqa: F401,F811  (fixture)
 from test_spacewar import _launch
 
+pytestmark = pytest.mark.usefixtures("training_missions")   # (the TEST missions, out of the Adventure)
+
 NEW = ("europa", "deimos", "triton")
 PLANETS = {"ice": "saturn", "europa": "jupiter", "deimos": "mars", "triton": "neptune", "rock": "asteroids"}
 

@@ -9,6 +9,8 @@ import story_state as ss
 from test_smoke import run  # noqa: F401,F811  (fixture)
 from test_spacewar import _launch, _state
 
+pytestmark = pytest.mark.usefixtures("training_missions")   # (the TEST missions, out of the Adventure)
+
 
 def _hub(run, **kw):
     g = run.game

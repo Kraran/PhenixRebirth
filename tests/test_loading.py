@@ -9,6 +9,8 @@ import loading
 import story_state as ss
 from test_smoke import run  # noqa: F401  (fixture)
 
+pytestmark = pytest.mark.usefixtures("training_missions")   # (the TEST missions, out of the Adventure)
+
 
 class _Game:
     """Stands for the game: a canvas and a flip that counts."""

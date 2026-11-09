@@ -1,12 +1,15 @@
 """The escort modules in the Adventure (step 4c): their pieces won by the landings and the raids, the bonuses of the asteroid,
 the workshop rows (assemble, buy again), the save, and the pilot's modules flying with the ship and lost when destroyed."""
 
+import pytest
 import pygame
 
 import story_state as ss
 from i18n import t
 import story_vn
 from test_smoke import run  # noqa: F401,F811  (fixture)
+
+pytestmark = pytest.mark.usefixtures("training_missions")   # (the TEST missions, out of the Adventure)
 
 PIECES = {"lander_deimos": "m1_lander", "raid_deimos": "m1_raid", "lander_europa": "m2_lander",
           "raid_europa": "m2_raid", "lander_rock": "bonus_cheap", "raid_rock": "bonus_armour"}

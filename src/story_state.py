@@ -682,34 +682,7 @@ MISSIONS = [
         "title": "story_m_raid5", "hud_title": "story_m_raid_hud", "blurb": "story_m_raid5_b",
         "need": "act3", "content": 1, "speed": 1.0,
     },
-    {
-        "id": "test_guardians", "training": True, "test": True, "guardians": True,
-        "title": "story_m_guardians_test", "blurb": "story_m_guardians_test_b",
-        "need": None, "content": 3, "speed": 1.0,
-    },
-    # TEST: Lunar Lander (src/lander.py), a remake of Atari's 1979 arcade game: the ship lands by its thruster on the ice of
-    # Titan or the rock of an asteroid (drawn at random). A training mission: the score is shown, nothing won, nothing lost.
-    {
-        "id": "test_lander", "acts": (1, 2, 3), "training": True, "test": True, "lander": True,
-        "title": "story_m_lander", "hud_title": "story_m_lander_hud", "blurb": "story_m_lander_b",
-        "need": None, "content": 1, "speed": 1.0,
-    },
-    # TEST: Scramble (src/scramble.py), a remake of Konami's 1981 arcade game: a side-scrolling shoot'em up through the rock of
-    # one of the five settings of the Lunar Lander (chosen in a menu), to the enemy base. A training mission: the score is shown,
-    # nothing won, nothing lost.
-    {
-        "id": "test_scramble", "acts": (1, 2, 3), "training": True, "test": True, "scramble": True,
-        "title": "story_m_scramble", "hud_title": "story_m_scramble_hud", "blurb": "story_m_scramble_b",
-        "need": None, "content": 1, "speed": 1.0,
-    },
-    # TEST: the escort modules (src/gyro.py): a run of the arcade levels 6 to 11 with the gyroscope satellites on each side
-    # of the ship (how many, how tough: a menu first). A training mission: the score is shown, nothing won, nothing lost.
-    {
-        "id": "test_modules", "acts": (1, 2, 3), "training": True, "test": True, "modules": True,
-        "title": "story_m_modules", "hud_title": "story_m_modules_hud", "blurb": "story_m_modules_b",
-        "need": None, "content": 6, "waves": [6, 7, 8, 9, 10, 11], "speed": 1.0,
-    },
-    # BONUS: Scramble, the same level as the test (the menu of the five settings included) but for real, and endless
+    # BONUS: Scramble (the menu of the five settings included), endless
     # (scramble.py `endless`): the base blown up, the course starts again with more enemies (20 % fewer than a raid at the
     # first course, then 10 % more each time), until the last life (the
     # GAME OVER); its points pay without a penalty nor a fall, leaving it gains nothing, one record for all the settings
@@ -893,6 +866,11 @@ def record_kills(state, kills):
 # ---------------------------------------------------------------- hunt missions
 # The four Act 1 sorties that each face one kind of enemy ("hunt" missions) can be flown again
 # as often as the pilot likes. The journal keeps the total of enemies destroyed in all their runs.
+# The four TEST missions of the first versions (the Guardians, the Lunar Lander, the Scramble, the escort modules), taken out
+# of the Adventure: a save that still names one forgets it (load_state).
+REMOVED_MISSIONS = ("test_guardians", "test_lander", "test_scramble", "test_modules")
+
+
 def mission_by_id(mission_id):
     return next((m for m in MISSIONS if m["id"] == mission_id), None)
 
@@ -1204,7 +1182,7 @@ def migrate_state(data):
         flags.update({k: v for k, v in data["flags"].items() if isinstance(k, str) and isinstance(v, bool)})
     base["flags"] = flags
     if isinstance(data.get("cleared"), list):
-        base["cleared"] = [mid for mid in data["cleared"] if isinstance(mid, str)]
+        base["cleared"] = [mid for mid in data["cleared"] if isinstance(mid, str) and mid not in REMOVED_MISSIONS]
     if isinstance(data.get("log"), list):
         base["log"] = [entry for entry in data["log"] if isinstance(entry, str)
                        or (isinstance(entry, dict) and isinstance(entry.get("key"), str))]

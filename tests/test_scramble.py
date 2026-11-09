@@ -14,6 +14,8 @@ import story_state as ss
 from test_smoke import run  # noqa: F401,F811  (fixture)
 from test_spacewar import _Keys, _launch
 
+pytestmark = pytest.mark.usefixtures("training_missions")   # (the TEST missions, out of the Adventure)
+
 
 @pytest.fixture(scope="module", autouse=True)
 def _screen():
@@ -425,7 +427,7 @@ def test_the_menu_has_a_picture_of_each_setting(style):
 
 def test_the_texts_are_there_in_french_and_english():
     import i18n
-    keys = ["story_m_scramble", "story_m_scramble_hud", "story_m_scramble_b", "scramble_pick_title", "scramble_arena",
+    keys = ["story_m_scramble_hud", "story_m_scramble_bonus", "scramble_pick_title", "scramble_arena",
             "story_scramble_clear", "story_scramble_retry"]
     keys += ["scramble_info_" + k for k in lander.MENU_ORDER] + ["scramble_sec_" + k for k in sc.SECTION_KEYS]
     for code in ("fr", "en"):
@@ -1915,3 +1917,49 @@ def test_the_wrecks_go_with_the_base():
     for _ in range(int(60 * scb.DONE_AFTER) + 5):
         sc.tick(g)
     assert not t.wreck and not any(tt.alive or tt.wreck for tt in base.turrets)
+
+
+@pytest.mark.parametrize("level", [1, 2, 3, 4, sc.LEVEL_MAX])
+@pytest.mark.parametrize("shot_down", [False, True])
+def test_the_far_cry_comes_two_seconds_after_the_last_station_has_left_the_screen(level, shot_down):
+    f = _form("rock", level)
+    assert f.stations
+    gone = sc.last_station_gone_at(f)
+    last = max(f.stations, key=lambda st: st.box()[2])
+    assert gone == last.box()[2]
+    if shot_down:
+        last.alive = False                             # (shot down before: the cry keeps to where it stood)
+    ship = _Pilot()
+    ship.invulnerable = 1e9
+    f.recentre(ship)
+    g = _Game(f, ship)
+    cries = []
+    g._play_boss_cry = lambda name, volume=0.9, x=None: cries.append((name, f.time, f.cam))
+    f.sky.wave_in = f.sky.comet_in = 1e9
+    f.cam = gone - 200.0
+    left_at = None
+    while not cries and f.phase == "flying":
+        sc.tick(g)
+        f.recentre(ship)
+        if left_at is None and f.cam > gone:
+            left_at = f.time
+    assert [c[0] for c in cries] == ["boss_yell_far"]
+    assert abs(cries[0][1] - left_at - sc.CRY_AFTER) <= g.dt + 1e-9
+    # still well before the arena: the scroll stops more than 10 s later
+    assert f.course.section_at(cries[0][2] + sc.W) == "approach"
+    rest = 0.0
+    while f.phase == "flying":
+        sc.tick(g)
+        f.recentre(ship)
+        rest += g.dt
+    assert rest > 10.0 and [c[0] for c in cries] == ["boss_yell_far", "boss_ready"]    # (once; then the arena)
+
+
+def test_the_wait_of_the_far_cry_is_game_time_slow_motion_included():
+    f = _form("rock", sc.LEVEL_MAX)
+    gone = sc.last_station_gone_at(f)
+    f.cam = gone + 1.0                                 # (the last station has just left the screen)
+    for dt in [1 / 144] * 144 + [1 / 240] * 120:       # 1 s at 144 Hz, then 0.5 s of slow motion
+        assert not sc._cry_due(f, dt)
+    assert not sc._cry_due(f, 0.49) and sc._cry_due(f, 0.02)
+

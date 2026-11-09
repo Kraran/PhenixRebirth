@@ -13,6 +13,8 @@ import story_state as ss
 from test_smoke import run  # noqa: F401,F811  (fixture)
 from test_scramble import _Game, _Pilot, _station_ahead
 
+pytestmark = pytest.mark.usefixtures("training_missions")   # (the TEST missions, out of the Adventure)
+
 RAIDS = ("raid_deimos", "raid_rock", "raid_europa", "raid_titan", "raid_triton")
 
 

@@ -13,6 +13,8 @@ import story_state as ss
 from test_smoke import run  # noqa: F401,F811  (fixture)
 from test_spacewar import _launch
 
+pytestmark = pytest.mark.usefixtures("training_missions")   # (the TEST missions, out of the Adventure)
+
 
 @pytest.fixture(scope="module", autouse=True)
 def _screen():
@@ -288,7 +290,7 @@ def test_the_messages_of_the_end():
 
 def test_the_texts_exist_in_french_and_english_and_the_other_languages():
     import i18n
-    for key in ("story_m_lander", "story_m_lander_hud", "story_m_lander_b", "lander_alt", "lander_hs", "lander_vs",
+    for key in ("story_m_lander_hud", "story_m_lander_bonus", "lander_alt", "lander_hs", "lander_vs",
                 "lander_tilt", "lander_fuel", "lander_empty", "lander_perfect", "lander_rough", "lander_crash",
                 "lander_points", "story_lander_clear", "story_lander_retry"):
         for code in i18n.LANG_CODES:

@@ -9,6 +9,8 @@ import guardian as gd
 import story_state as ss
 from story import StoryHub
 
+pytestmark = pytest.mark.usefixtures("training_missions")   # (the TEST missions, out of the Adventure)
+
 
 @pytest.fixture
 def display():

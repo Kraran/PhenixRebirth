@@ -1,4 +1,4 @@
-"""The test level "Lunar Lander" (story_state.py, id `test_lander`): a remake of Atari's Lunar Lander (1979) with the ship of the
+"""The level "Lunar Lander" (story_state.py: the landings and the BONUS FINAL - Lunar Lander): a remake of Atari's Lunar Lander (1979) with the ship of the
 hangar, on the ice of Titan or on the rock of an asteroid.
 
 The rules:

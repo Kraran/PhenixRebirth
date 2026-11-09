@@ -16,7 +16,7 @@ PHENIX = ["phenix_1", "phenix_2", "phenix_3", "phenix_4", "phenix_5"]
 PAINT = ["paint_1", "paint_2", "paint_3"]
 SENT1 = ["sentinelle_1"]                # the Silent Sentinels on the map of Act 1
 SENT2 = ["sentinelle_1", "sentinelle_2", "sentinelle_3"]      # ... of Act 2
-TRAINING = ["test_guardians", "test_lander", "test_scramble", "test_modules"]
+TRAINING = []                           # (the four TEST missions are out of the Adventure: story_state.REMOVED_MISSIONS)
 # the landings and the raids of Act 1 (optional: with the BONUS missions)
 RAID1 = ["lander_deimos", "raid_deimos", "lander_rock", "raid_rock"]
 RAID2 = RAID1 + ["lander_europa", "raid_europa", "lander_titan", "raid_titan"]   # ... of Act 2
@@ -298,7 +298,7 @@ def test_the_map_cursor_walks_the_act_2_list_only():
     hub.pane = "map"
     for _ in range(40):
         hub.nav_v(1)
-    assert hub._mission()["id"] == "test_modules" and hub.map_index == len(BELT2 + GD1 + PHENIX + GD2 + GATE3 + SENT2 + HUNTS + BOSS + BONUS + PAINT + RAID2 + TRAINING) - 1
+    assert hub._mission()["id"] == "raid_titan" and hub.map_index == len(BELT2 + GD1 + PHENIX + GD2 + GATE3 + SENT2 + HUNTS + BOSS + BONUS + PAINT + RAID2 + TRAINING) - 1
 
 
 def test_winning_the_gate_puts_the_cursor_on_the_new_map():
@@ -430,3 +430,18 @@ def test_the_shield_keeps_the_full_arcade_timing(run):
     st["selected_slot"] = 0
     _launch(g, st, "ch1_sortie")
     assert g.player.ship_id == "shield" and g.player.phenix_sec_per_point == pytest.approx(0.6)
+
+
+def test_the_test_missions_are_out_of_the_adventure_and_an_old_save_forgets_them(tmp_path):
+    assert not any(ss.mission_by_id(m) for m in ss.REMOVED_MISSIONS)
+    assert not any(m.get("test") or m["id"].startswith("test_") for m in ss.MISSIONS)
+    data = ss.default_state()
+    data["cleared"] = ["test_scramble", "test_guardians", "ch1_sortie", "test_lander", "test_modules"]
+    data["scenes_seen"] = ["test_modules"]
+    st = ss.migrate_state(data)
+    assert st["cleared"] == ["ch1_sortie"]
+    hub = _hub(st)                                       # (the map opens without them)
+    hub.pane = "map"
+    assert not set(ss.REMOVED_MISSIONS) & set(_ids(hub.missions()))
+    for _ in range(80):
+        hub.nav_v(1)

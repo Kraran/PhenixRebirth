@@ -9,6 +9,8 @@ import story_state as ss
 from settings import BASE_WIDTH
 from test_smoke import run  # noqa: F401  (fixture)
 
+pytestmark = pytest.mark.usefixtures("training_missions")   # (the TEST missions, out of the Adventure)
+
 
 @pytest.fixture(autouse=True)
 def _screen():
@@ -176,7 +178,7 @@ def test_the_mission_is_a_test_on_the_maps_of_the_three_acts():
         assert ids.index("test_modules") == ids.index("test_scramble") + 1
     for lang in ("fr", "en"):
         i18n.set_lang(lang)
-        for key in ("story_m_modules", "story_m_modules_hud", "story_m_modules_b", "modules_pick_title",
+        for key in ("modules_pick_title",
                     "modules_pick_count_1", "modules_pick_count_2", "modules_pick_armour_1", "modules_pick_armour_2"):
             assert i18n.t(key) != key
         for armour in (1, 2):

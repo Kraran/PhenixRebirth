@@ -1,12 +1,15 @@
 """Atterrissages: the five landing missions of the Adventure (story_state.MISSIONS "lander_*"), the Lunar Lander on one
 setting each with its own tank."""
 
+import pytest
 import pygame
 
 import lander
 import lander_view as lv
 import story_state as ss
 from test_smoke import run  # noqa: F401,F811  (fixture)
+
+pytestmark = pytest.mark.usefixtures("training_missions")   # (the TEST missions, out of the Adventure)
 
 WANT = {"lander_deimos": ("deimos", 150, (1, 2, 3), "raid_deimos"), "lander_rock": ("rock", 150, (1, 2, 3), "raid_rock"),
         "lander_europa": ("europa", 120, (2, 3), "raid_europa"), "lander_titan": ("ice", 120, (2, 3), "raid_titan"),
