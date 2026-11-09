@@ -586,7 +586,7 @@ def base_panel(width, height):
 RED_SKIN_HUE = 358.0 / 360.0         # the red commander: the hue of its skin ...
 RED_SKIN_SAT = 0.72                  # ... its saturation ...
 RED_SKIN_GAIN = 1.45                 # ... and how much lighter than the green it was painted in
-RED_ALPHA = (22.0, 2.4)              # its picture made solid: alpha = (alpha - 22) * 2.4 (the green one is see-through)
+RED_ALPHA = (22.0, 2.4)              # its edges made crisp: alpha = (alpha - 22) * 2.4 (boss_core_*.png is already solid)
 
 
 def redden(pic):
