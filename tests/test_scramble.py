@@ -1799,11 +1799,22 @@ def test_the_red_commander_cries_once_as_the_approach_comes_in_sight(level):
     for _ in range(60):
         sc.tick(g)
         f.recentre(ship)
-    assert cries == ["boss_yell"]                       # (once, not every frame)
+    assert cries == ["boss_yell_far"]                   # (once, not every frame)
     for _ in range(60):
         sc.tick(g)
         f.recentre(ship)
-    assert cries == ["boss_yell"]
+    assert cries == ["boss_yell_far"]
+
+
+def test_the_far_cry_is_the_red_commanders_cry_echoing_in_its_fortress():
+    import wave
+    from settings import asset_path
+    with wave.open(asset_path("sounds", "boss_yell.wav")) as dry, wave.open(asset_path("sounds", "boss_yell_far.wav")) as far:
+        assert (far.getframerate(), far.getnchannels(), far.getsampwidth()) == \
+            (dry.getframerate(), dry.getnchannels(), dry.getsampwidth())
+        dry_s = dry.getnframes() / dry.getframerate()
+        far_s = far.getnframes() / far.getframerate()
+    assert dry_s + 2.5 < far_s < 7.0                    # (a long tail that fades, never as long as the approach)
 
 
 def test_the_saucer_alien_is_a_solid_creature():
