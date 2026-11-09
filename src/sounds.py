@@ -107,6 +107,7 @@ class SoundManager:
                 ("boss_ready", 0.90),
                 ("boss_angry", 0.88),
                 ("boss_yell", 0.86),
+                ("boss_yell_far", 0.86),          # Scramble: its cry at the approach of the base (tools/make_boss_yell_far.py)
                 ("level1", 0.88),
                 ("level2", 0.88),
                 ("level3", 0.88),

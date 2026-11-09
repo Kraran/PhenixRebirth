@@ -816,15 +816,16 @@ def tick(game):
                 form.push_out(p)
             else:
                 _ship_hit(game, form)
-    # --- the approach of the base comes in sight: the red commander's cry rings out once, far ahead
+    # --- the approach of the base comes in sight: the red commander's cry rings out once, far ahead, echoing through its
+    #     fortress (boss_yell_far: boss_yell with a big reverb and echoes, about 4.9 s; nothing waits on it)
     if not form.approach_cried and form.phase == "flying" and course.section_at(form.cam + W) == "approach":
         form.approach_cried = True
         cry = getattr(game, "_play_boss_cry", None)
         try:
             if cry is not None:
-                cry("boss_yell", volume=0.85, x=W * 0.95)
+                cry("boss_yell_far", volume=0.85, x=W * 0.95)
             else:
-                _play(getattr(game, "sounds", None), "boss_yell", volume=0.85, x=W * 0.95)
+                _play(getattr(game, "sounds", None), "boss_yell_far", volume=0.85, x=W * 0.95)
         except Exception:
             log_exc("scramble.tick")
     # --- the end: the scroll has stopped in the arena, the base fights; its boss dead and the base blown up, it is won
