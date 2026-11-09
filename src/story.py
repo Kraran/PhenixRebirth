@@ -1765,7 +1765,8 @@ class StoryHub:
             spec["modules"] = owned                  # the escort modules in working order fly with the ship (src/gyro.py)
         if ss.flag(self.state, ss.REFLECT_FLAG) and not mission.get("training"):
             spec["reflect"] = True                    # Gardiens III is won: the dome and the Phenix form stop the lasers
-        if ss.missile_ready(self.state) and not mission.get("training") and not mission.get("scramble"):
+        if (ss.missile_ready(self.state) and not mission.get("training") and not mission.get("scramble")
+                and not mission.get("lander")):            # (nothing to shoot in a landing: no missile, no reminder)
             spec["antimatter"] = True                 # the launcher is bought and a missile is held: one in this mission
         if ship:
             spec["ship"] = ship                       # a mission that imposes its hull

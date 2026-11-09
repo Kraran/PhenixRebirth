@@ -371,6 +371,8 @@ def draw_hud(game):
     arm = _armory(game)
     if arm is None or getattr(game, "attract_mode", False):
         return
+    if (getattr(game, "adventure", None) or {}).get("lander"):
+        return                                   # (the Lunar Lander: its own HUD is there, and nothing to shoot)
     ready = arm.ready
     if getattr(game, "arcade_style", False) and not getattr(game, "adventure", None):
         label = t("antimatter_hud_n").format(n=arm.count, key=key_text())      # (an arcade game: the missiles left)

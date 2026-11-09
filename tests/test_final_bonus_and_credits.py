@@ -123,8 +123,8 @@ def test_the_menu_of_the_setting_is_made_behind_a_loading_bar(mid, kind, monkeyp
         menu_actions.menu_confirm(g)
         assert g.story.screen == "lander_pick"
         assert bars == [("adventure", i18n.t(ss.mission_by_id(mid)["title"]))]
-        assert made == [(lander.MENU_ORDER[0], True)]                     # (the first picture, behind the bar)
-        assert warmed == [list(lander.MENU_ORDER)]                        # (then the others, in the background)
+        assert made == [(key, True) for key in lander.MENU_ORDER]         # (all the pictures, behind the bar)
+        assert warmed == [list(lander.MENU_ORDER)]                        # (anything left: in the background)
     finally:
         g.running = False
 

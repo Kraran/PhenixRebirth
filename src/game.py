@@ -1905,25 +1905,29 @@ class Game:
     LOADING_DELAY = 0.25            # a mission ready sooner than this shows no loading bar
 
     def _load_pick_menu(self, kind):
-        """The menu of the setting of the Lunar Lander or of Scramble (their test and their final BONUS): its first picture
-        is made behind the loading bar of the Adventure (nothing shows when it is already made), then the pictures of the
-        other settings are made in the background while the player reads it."""
+        """The menu of the setting of the Lunar Lander or of Scramble (their test and their final BONUS): the pictures of
+        all the settings are made behind the loading bar of the Adventure (nothing shows when they are already made), so
+        moving the cursor in the menu never slows down."""
         view = scramble_view if kind == "scramble" else lander_view
         mission = self.story._mission() if getattr(self, "story", None) else None
         title = t(mission["title"]) if mission and mission.get("title") else None
 
-        def first_picture():
-            while not view._LOCK.acquire(timeout=0.03):       # (a warm-up already running: the bar moves on meanwhile)
-                loading.report()
-            view._LOCK.release()
-            view.preview(lander.MENU_ORDER[0])
+        def picture(style):
+            def make():
+                while not view._LOCK.acquire(timeout=0.03):   # (a warm-up already running: the bar moves on meanwhile)
+                    loading.report()
+                view._LOCK.release()
+                view.preview(style)
+            return make
 
         try:
             with loading.Loading(self, "adventure", title=title, delay=self.LOADING_DELAY) as ld:
-                ld.step(1.0, first_picture, 1.2)
+                share = 1.0 / len(lander.MENU_ORDER)
+                for style in lander.MENU_ORDER:
+                    ld.step(share, picture(style), 1.2)
         except Exception:
             log_exc("game._load_pick_menu")
-        view.warm(lander.MENU_ORDER)
+        view.warm(lander.MENU_ORDER)                          # (anything left: in the background)
 
     def _launch_adventure(self, spec):
         """Start a mission behind the loading bar of the Adventure (src/loading.py): the setup (the flames of the Guardians are
