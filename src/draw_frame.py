@@ -139,11 +139,11 @@ def endless_record(game, adv):
     return max(story_state.endless_best(state, key), int(getattr(game, "score", 0) or 0))
 
 
-def _draw_endless_record(game, adv):
+def _draw_endless_record(game, adv, y=16):
     """An endless mission: its record (the save's, or the run's once beaten) at the top right."""
     rec = game.text_cache.get(game.font, t("story_ast_record").format(pts=game.format_score(endless_record(game, adv))),
                               announce.REWARD)
-    game.game_surface.blit(rec, (BASE_WIDTH - 16 - rec.get_width(), 16))
+    game.game_surface.blit(rec, (BASE_WIDTH - 16 - rec.get_width(), y))
 
 
 def _draw_endless_asteroids_hud(game, adv, form):
@@ -229,6 +229,8 @@ def draw_hud(game):
             _draw_endless_record(game, adv)                 # BONUS FINAL - Lunar Lander: the record of this setting
     elif adv and adv.get("scramble") and scramble.active(game) is not None:
         scramble_view.draw_hud(game, game.formation)
+        if adv.get("endless"):
+            _draw_endless_record(game, adv, y=72)           # BONUS FINAL - Scramble: the record, under the bar of the course
     elif adv and adv.get("spacewar"):
         form = game.formation
         label = t("story_spacewar_hud").format(n=int(getattr(form, "level", 1)), m=len(getattr(form, "levels", spacewar.LEVELS)),

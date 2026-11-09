@@ -709,12 +709,15 @@ MISSIONS = [
         "title": "story_m_modules", "hud_title": "story_m_modules_hud", "blurb": "story_m_modules_b",
         "need": None, "content": 6, "waves": [6, 7, 8, 9, 10, 11], "speed": 1.0,
     },
-    # BONUS: Scramble, the same level as the test (the menu of the five settings included) but for real: its points pay in
-    # credits, a failure costs what a failure always costs, its launchers and its red commander go into the Bestiary.
+    # BONUS: Scramble, the same level as the test (the menu of the five settings included) but for real, and endless
+    # (scramble.py `endless`): the base blown up, the course starts again with 10 % more enemies, until the last life (the
+    # GAME OVER); its points pay without a penalty nor a fall, leaving it gains nothing, one record for all the settings
+    # (ENDLESS_BEST); its launchers and its red commander go into the Bestiary.
     # Secret until the game is finished (the open ending of Act IV has been told); then at the end of Act IV, under END
     # BONUS (GROUP_FINAL), with the two other final BONUS missions.
     {
         "id": "bonus_scramble", "acts": (ENDING_ACT,), "secret": True, "extra": True, "final_bonus": True, "scramble": True,
+        "endless": True,
         "title": "story_m_scramble_bonus", "hud_title": "story_m_scramble_hud", "blurb": "story_m_scramble_bonus_b",
         "need": ENDING_DONE, "content": 1, "speed": 1.0,
     },
