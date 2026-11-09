@@ -863,14 +863,14 @@ def record_kills(state, kills):
             data[kind] = encounters(state, kind) + max(0, int(_num(n, 0)))
 
 
-# ---------------------------------------------------------------- hunt missions
-# The four Act 1 sorties that each face one kind of enemy ("hunt" missions) can be flown again
-# as often as the pilot likes. The journal keeps the total of enemies destroyed in all their runs.
 # The four TEST missions of the first versions (the Guardians, the Lunar Lander, the Scramble, the escort modules), taken out
-# of the Adventure: a save that still names one forgets it (load_state).
+# of the Adventure: a save that still names one forgets it (migrate_state).
 REMOVED_MISSIONS = ("test_guardians", "test_lander", "test_scramble", "test_modules")
 
 
+# ---------------------------------------------------------------- hunt missions
+# The four Act 1 sorties that each face one kind of enemy ("hunt" missions) can be flown again
+# as often as the pilot likes. The journal keeps the total of enemies destroyed in all their runs.
 def mission_by_id(mission_id):
     return next((m for m in MISSIONS if m["id"] == mission_id), None)
 
