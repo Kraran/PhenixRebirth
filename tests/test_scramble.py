@@ -1778,3 +1778,29 @@ def test_a_traitor_from_behind_costs_a_life_and_is_drawn_heading_right():
     c.x = sc.W + 61
     sc.tick(g)
     assert not f.sky.comets                               # (gone once off the right edge)
+
+
+# ------------------------------------------------------------------ the cry of the red commander at the approach of its base
+@pytest.mark.parametrize("level", [1, 3, sc.LEVEL_MAX])
+def test_the_red_commander_cries_once_as_the_approach_comes_in_sight(level):
+    f = _form("rock", level)
+    f.stations = []
+    ship = _Pilot()
+    ship.invulnerable = 1e9
+    f.recentre(ship)
+    g = _Game(f, ship)
+    cries = []
+    g._play_boss_cry = lambda name, volume=0.9, x=None: cries.append(name)
+    k = f.course.tune.keys.index("approach")
+    f.cam = f.course.starts[k] - sc.W - 30.0           # (just before it reaches the right edge of the screen)
+    f.sky.wave_in = f.sky.comet_in = 1e9
+    sc.tick(g)
+    assert cries == []
+    for _ in range(60):
+        sc.tick(g)
+        f.recentre(ship)
+    assert cries == ["boss_yell"]                       # (once, not every frame)
+    for _ in range(60):
+        sc.tick(g)
+        f.recentre(ship)
+    assert cries == ["boss_yell"]
