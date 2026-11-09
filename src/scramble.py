@@ -21,6 +21,10 @@ The rules:
   missile, the Phenix form burns both).
 - Waves of birds and, in the comets section, comets (src/scramble_birds.py).
 
+THE ENDLESS RAID (BONUS FINAL - Scramble, `endless`): the base blown up, the run goes on: after LOOP_PAUSE the course starts
+again from its beginning, a new one, with BOOST_STEP (10 %) more enemies each time (more missile stations firing sooner,
+more waves of birds, more comets: Tune `boost`), until the last life is lost (the GAME OVER).
+
 The player flies the real Player of the game (`Player.asteroid_mode` with `Player.scramble` set to the formation below). The
 formation looks like one without enemies to the rest of the game; `tick(game)` runs it every frame; the view is in
 src/scramble_view.py. The world is the course: x runs along it (0 = the start, the camera `cam` is the world x of the left
@@ -79,6 +83,8 @@ SECTION_LOOK = {key: look for key, _, look in SECTIONS}
 # "wave_gap" / "green": the waves of birds; "columns" / "turrets": the wall of the base and its turrets (rows of bricks);
 # "bullets": the boss's shots on the screen at once; "boss_hp": shots through a hole to kill it (never fewer than 3).
 LEVEL_MAX = 5
+BOOST_STEP = 0.10                 # the endless raid: this many more enemies at each new course (10 %)
+LOOP_PAUSE = 3.5                  # seconds between the base blown up and the next course (the endless raid)
 LEVELS = {
     1: {"sections": (("hills", 30.0), ("cavern", 36.0), ("approach", 12.0)),
         "scroll": 150.0, "gap": 3.6, "stations": 0.6, "reload": 3.6, "homing": 0.0, "comets": 0.0,
@@ -100,10 +106,12 @@ LEVELS = {
 class Tune:
     """The numbers of one level of difficulty (LEVELS), read by the course, the sky and the base."""
 
-    def __init__(self, level=LEVEL_MAX):
+    def __init__(self, level=LEVEL_MAX, boost=1.0):
+        """`boost`: the endless raid makes its enemies that much more numerous (1.1 = 10 % more stations, waves, comets)."""
         import scramble_birds as sb
         import scramble_base as sbase
         self.level = max(1, min(LEVEL_MAX, int(level or LEVEL_MAX)))
+        self.boost = max(1.0, float(boost or 1.0))
         d = LEVELS[self.level]
         plan = d.get("sections") or tuple((key, seconds) for key, seconds, _ in SECTIONS)
         self.sections = tuple((key, float(seconds), SECTION_LOOK[key]) for key, seconds in plan)
@@ -120,6 +128,11 @@ class Tune:
         self.turret_rows = tuple(d.get("turrets", sbase.TURRET_ROWS))
         self.bullets = int(d.get("bullets", sbase.BULLET_MAX))
         self.boss_hp = int(d.get("boss_hp", sbase.BOSS_HP))
+        if self.boost > 1.0:                       # (the endless raid: more stations, firing sooner; more birds, more comets)
+            self.stations *= self.boost
+            self.reload /= self.boost
+            self.comets *= self.boost
+            self.wave_gap = tuple(g / self.boost for g in self.wave_gap)
 MENU_ORDER = lander.MENU_ORDER    # the choice of the test (story.py, screen "lander_pick" for the Scramble)
 BODY_KEYS = lander.BODY_KEYS
 MAX_SHOTS = 3                     # the ship's shots on the screen
@@ -172,10 +185,10 @@ class Course:
     """The rock of the whole course: the y of the ceiling (`ceil`: its lower edge) and of the ground (`floor`: its upper edge)
     every STEP px, with where each section begins, where the scroll stops (`stop`) and the length of the world (`length`)."""
 
-    def __init__(self, style, seed=None, level=LEVEL_MAX):
+    def __init__(self, style, seed=None, level=LEVEL_MAX, boost=1.0):
         self.style = style
         self.seed = random.getrandbits(32) if seed is None else int(seed)
-        self.tune = tune = Tune(level)
+        self.tune = tune = Tune(level, boost)
         self.sections = tune.sections                # (name, seconds, look) of this level
         self.scroll = tune.scroll
         self.gap_min = tune.gap_min
@@ -503,10 +516,14 @@ class ScrambleFormation:
     """The field of the level: the course, the scroll, the ship's shots and the end. Looks like a formation without enemies to
     the rest of the game."""
 
-    def __init__(self, style=None, seed=None, speed_mult=1.0, rng=None, level=LEVEL_MAX):
+    def __init__(self, style=None, seed=None, speed_mult=1.0, rng=None, level=LEVEL_MAX, endless=False, loop=1):
         self.rng = rng if rng is not None else random.Random()
         self.style = style if style in lander.BODIES else self.rng.choice(BODY_KEYS)
-        self.course = Course(self.style, seed, level)
+        self.level = level
+        self.endless = bool(endless)        # BONUS FINAL - Scramble: course after course until the last life
+        self.loop = max(1, int(loop))       # the course of the endless raid (1, 2, 3...): BOOST_STEP more enemies each
+        self.loop_timer = 0.0               # seconds since the base blew up (the endless raid)
+        self.course = Course(self.style, seed, level, 1.0 + BOOST_STEP * (self.loop - 1))
         self.tune = self.course.tune
         self.enemies = []
         self.bullets = []
@@ -805,7 +822,34 @@ def tick(game):
         form.arena_time += dt
         if form.base.done:
             form.phase = "won"
-            form.won = True
+            form.won = not form.endless             # (the endless raid: never won, the next course comes)
+    if form.endless and form.phase == "won":
+        form.loop_timer += dt
+        if form.loop_timer >= LOOP_PAUSE:
+            next_loop(game, form)
+
+
+def next_loop(game, form):
+    """The endless raid: the next course, from its beginning, a new one with BOOST_STEP more enemies; the ship goes on with
+    its lives."""
+    new = ScrambleFormation(style=form.style, seed=form.rng.getrandbits(32), rng=form.rng, level=form.level,
+                            endless=True, loop=form.loop + 1)
+    new.sounds, new.font, new.text_cache = form.sounds, form.font, form.text_cache
+    new.deaths = form.deaths
+    game.formation = new
+    p = game.player
+    p.scramble = new
+    p.x, p.y, p.ast_angle = START_X, H / 2.0, 0.0
+    new.recentre(p)
+    p.invulnerable = max(float(getattr(p, "invulnerable", 0.0) or 0.0), 1.5)
+    adv = getattr(game, "adventure", None)
+    if isinstance(adv, dict):
+        adv["level"] = new.loop                     # (the HUD shows it after the name of the mission)
+    try:
+        game._play_level_vo(new.loop)
+    except Exception:
+        log_exc("scramble.next_loop")
+    return new
 
 
 def _shot_target(form, x0, x1, y):

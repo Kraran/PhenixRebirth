@@ -2318,7 +2318,8 @@ class Game:
             # Scramble (src/scramble.py): the course scrolls from right to left, the ship flies through it
             self.stage = 1
             self.formation = scramble.ScrambleFormation(style=adv.get("body"), seed=adv.get("seed"),
-                                                        level=adv.get("raid") or scramble.LEVEL_MAX)
+                                                        level=adv.get("raid") or scramble.LEVEL_MAX,
+                                                        endless=bool(adv.get("endless")))
             self.formation.sounds = self.sounds
             self.formation.font = self.font
             self.formation.text_cache = self.text_cache

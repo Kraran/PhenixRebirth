@@ -1756,6 +1756,8 @@ class StoryHub:
             body = mission.get("body") or body                      # (a raid flies over its own setting, no menu)
             if body in lander.BODIES:
                 spec["body"] = body                   # the setting chosen in the menu (else drawn at random)
+            if mission.get("endless"):
+                spec.update(endless=True, level=1)    # BONUS FINAL - Scramble: course after course until the last life
         if mission.get("modules"):
             spec["modules"] = {"count": 2, "armour": 1}             # (the menu of the test changes them; src/gyro.py)
             if mission.get("training"):

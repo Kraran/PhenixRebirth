@@ -7376,12 +7376,14 @@ _SCRAMBLE_TEXTS = {
     "story_ast_new_best": ("NOUVEAU RECORD", "NEW BEST"),
     "story_m_scramble_bonus": ("BONUS FINAL - Scramble", "FINAL BONUS - Scramble"),
     "story_m_scramble_bonus_b": (
-        "Le Scramble : traverse la roche jusqu'à la base ennemie et abats son commandant avioïde rouge. Les points "
-        "rapportent des crédits ; un échec coûte ce que coûte un échec. Les lance-missiles et le commandant avioïde rouge entrent au "
-        "Bestiaire. Tu choisis le décor au départ. Ouverte une fois le jeu terminé.",
-        "The Scramble: fly through the rock to the enemy base and shoot down its red Avioid commander. The points "
-        "pay in credits; a failure costs what a failure costs. The missile launchers and the red Avioid commander go into the "
-        "Bestiary. You choose the setting at the start. Open once the game is finished."),
+        "Le Scramble sans fin : traverse la roche jusqu'à la base ennemie et abats son commandant avioïde rouge, puis "
+        "recommence avec 10 % d'ennemis en plus (oiseaux, missiles, comètes), et ainsi de suite jusqu'à ta dernière vie. "
+        "Les points rapportent des crédits, sans pénalité. Un seul record pour tous les décors. Les lance-missiles et le "
+        "commandant avioïde rouge entrent au Bestiaire. Tu choisis le décor au départ. Ouverte une fois le jeu terminé.",
+        "Endless Scramble: fly through the rock to the enemy base and shoot down its red Avioid commander, then go again with "
+        "10 % more enemies (birds, missiles, comets), and so on until your last life. The points pay in credits, without a "
+        "penalty. One record for all the settings. The missile launchers and the red Avioid commander go into the Bestiary. "
+        "You choose the setting at the start. Open once the game is finished."),
     # Atterrissages (story_state.MISSIONS "lander_*"): the Lunar Lander on one setting, with its own tank
     "story_m_land1": ("Atterrissage sur Déimos", "Landing on Deimos"),
     "story_m_land1_b": (
