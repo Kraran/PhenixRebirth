@@ -23,7 +23,8 @@ The rules:
 
 THE ENDLESS RAID (BONUS FINAL - Scramble, `endless`): the base blown up, the run goes on: after LOOP_PAUSE the course starts
 again from its beginning, a new one, with BOOST_STEP (10 %) more enemies each time (more missile stations firing sooner,
-more waves of birds, more comets: Tune `boost`), until the last life is lost (the GAME OVER).
+more waves of birds, more comets: Tune `boost`), until the last life is lost (the GAME OVER). The first course is a little
+easier than a raid (BOOST_START: 20 % fewer enemies); each course then has 10 % of the first one's enemies more.
 
 The player flies the real Player of the game (`Player.asteroid_mode` with `Player.scramble` set to the formation below). The
 formation looks like one without enemies to the rest of the game; `tick(game)` runs it every frame; the view is in
@@ -83,7 +84,8 @@ SECTION_LOOK = {key: look for key, _, look in SECTIONS}
 # "wave_gap" / "green": the waves of birds; "columns" / "turrets": the wall of the base and its turrets (rows of bricks);
 # "bullets": the boss's shots on the screen at once; "boss_hp": shots through a hole to kill it (never fewer than 3).
 LEVEL_MAX = 5
-BOOST_STEP = 0.10                 # the endless raid: this many more enemies at each new course (10 %)
+BOOST_START = 0.80                # the endless raid: its first course has 20 % fewer enemies than a raid ...
+BOOST_STEP = 0.10                 # ... then this many more enemies at each new course (10 %)
 LOOP_PAUSE = 3.5                  # seconds between the base blown up and the next course (the endless raid)
 LEVELS = {
     1: {"sections": (("hills", 30.0), ("cavern", 36.0), ("approach", 12.0)),
@@ -107,11 +109,12 @@ class Tune:
     """The numbers of one level of difficulty (LEVELS), read by the course, the sky and the base."""
 
     def __init__(self, level=LEVEL_MAX, boost=1.0):
-        """`boost`: the endless raid makes its enemies that much more numerous (1.1 = 10 % more stations, waves, comets)."""
+        """`boost`: the endless raid makes its enemies that much more numerous (1.1 = 10 % more stations, waves, comets;
+        0.8 = 20 % fewer)."""
         import scramble_birds as sb
         import scramble_base as sbase
         self.level = max(1, min(LEVEL_MAX, int(level or LEVEL_MAX)))
-        self.boost = max(1.0, float(boost or 1.0))
+        self.boost = max(0.1, float(boost or 1.0))
         d = LEVELS[self.level]
         plan = d.get("sections") or tuple((key, seconds) for key, seconds, _ in SECTIONS)
         self.sections = tuple((key, float(seconds), SECTION_LOOK[key]) for key, seconds in plan)
@@ -128,7 +131,7 @@ class Tune:
         self.turret_rows = tuple(d.get("turrets", sbase.TURRET_ROWS))
         self.bullets = int(d.get("bullets", sbase.BULLET_MAX))
         self.boss_hp = int(d.get("boss_hp", sbase.BOSS_HP))
-        if self.boost > 1.0:                       # (the endless raid: more stations, firing sooner; more birds, more comets)
+        if self.boost != 1.0:                      # (the endless raid: more stations, firing sooner; more birds, more comets)
             self.stations *= self.boost
             self.reload /= self.boost
             self.comets *= self.boost
@@ -512,6 +515,11 @@ class Spark:
         self.size = float(size)
 
 
+def endless_boost(loop):
+    """The endless raid: how many enemies its course `loop` has, against a raid (the first one 0.8, then 0.88, 0.96...)."""
+    return BOOST_START * (1.0 + BOOST_STEP * (max(1, int(loop)) - 1))
+
+
 class ScrambleFormation:
     """The field of the level: the course, the scroll, the ship's shots and the end. Looks like a formation without enemies to
     the rest of the game."""
@@ -523,7 +531,7 @@ class ScrambleFormation:
         self.endless = bool(endless)        # BONUS FINAL - Scramble: course after course until the last life
         self.loop = max(1, int(loop))       # the course of the endless raid (1, 2, 3...): BOOST_STEP more enemies each
         self.loop_timer = 0.0               # seconds since the base blew up (the endless raid)
-        self.course = Course(self.style, seed, level, 1.0 + BOOST_STEP * (self.loop - 1))
+        self.course = Course(self.style, seed, level, endless_boost(self.loop) if self.endless else 1.0)
         self.tune = self.course.tune
         self.enemies = []
         self.bullets = []
