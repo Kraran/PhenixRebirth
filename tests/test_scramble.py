@@ -1712,3 +1712,69 @@ def test_the_launcher_is_chrome_and_its_missile_has_a_blue_nose():
     mi = sv.sprite("missile", False)
     nose = mi.get_at((mi.get_width() // 2, 4))
     assert nose.b > nose.r + 40 and nose.a > 150
+
+
+# ------------------------------------------------------------------ the traitors: comets from the left, at the back of the ship
+def _section_span(f, key="comets"):
+    k = sc.SECTION_KEYS.index(key)
+    return f.course.starts[k], f.course.starts[k + 1]
+
+
+def test_the_traitors_come_only_after_a_quarter_of_the_comets_section():
+    f = _sky_form("comets", 0.0)
+    start, end = _section_span(f)
+    f.cam = start + (end - start) * 0.1 - sc.W * 0.5
+    assert not f.sky.behind_due()
+    f.cam = start + (end - start) * 0.3 - sc.W * 0.5
+    assert f.sky.behind_due()
+    f.cam = end - sc.W + 10                              # (the end of the section is on the screen: no more)
+    assert not f.sky.behind_due()
+    assert not _sky_form("cavern", 900.0).sky.behind_due()
+
+
+def test_one_or_two_comets_come_from_the_left_and_go_right_regularly():
+    f = _sky_form("comets", 0.0)
+    start, end = _section_span(f)
+    f.cam = start + (end - start) * 0.4 - sc.W * 0.5
+    ship = _Pilot()
+    ship.invulnerable = 1e9
+    ship.y = 60.0
+    g = _BirdGame(f, ship)
+    f.sky.comet_in = 1e9                                  # (only the traitors)
+    seen = []
+    cam = f.cam
+    for _ in range(60 * 12):
+        sc.tick(g)
+        f.cam = cam                                      # (stay in the stretch of the traitors)
+        ship.y = 60.0
+        for c in f.sky.comets:
+            if c.right and c not in seen:
+                seen.append(c)
+    assert len(seen) >= 3                                 # (regularly, not once)
+    assert all(c.vx > 0 and c.x < sc.W for c in seen)     # (from the left, going right)
+    assert all(c.age > 0 for c in seen)
+
+
+def test_a_traitor_from_behind_costs_a_life_and_is_drawn_heading_right():
+    f = _sky_form("comets", 400.0)
+    ship = _Pilot()
+    f.recentre(ship)
+    g = _BirdGame(f, ship)
+    f.sky.comet_in = f.sky.behind_in = 1e9
+    f.sky.comets = [sb.Comet(ship.x - 5, ship.y, 450.0, True, right=True)]
+    sc.tick(g)
+    assert ship.lives == 2
+    surf = pygame.Surface((sc.W, sc.H))
+    surf.fill((0, 0, 0))
+    c = sb.Comet(300, 400, 450, False, right=True)
+    f.sky.comets = [c]
+    f.sky.birds, f.sky.shots = [], []
+    sv.draw_items(surf, f)
+    assert surf.get_at((300, 400))[:3] != (0, 0, 0)       # (its head where it is)
+    frames, (hx, hy) = sv.comet_frames(False, True)
+    left, _ = sv.comet_frames(False, False)
+    assert frames and pygame.image.tobytes(frames[0], "RGBA") != pygame.image.tobytes(left[0], "RGBA")
+    assert hx > frames[0].get_width() / 2                 # (heading right: the head on the right of the picture)
+    c.x = sc.W + 61
+    sc.tick(g)
+    assert not f.sky.comets                               # (gone once off the right edge)
