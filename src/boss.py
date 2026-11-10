@@ -980,7 +980,7 @@ class BossSaucer:
         return len(items) >= 2 and all(not d.alive for d in items)
 
     def _apply_pair_effects(self):
-        """Both decos of a type down → saucer system drops out."""
+        """Both decos of a type down → that saucer system drops out or weakens."""
         done = self._pair_done
         if "gen" not in done and self._pair_dead("gen"):
             done.add("gen")
@@ -1001,7 +1001,7 @@ class BossSaucer:
             self.can_shoot = False
         if "dish" not in done and self._pair_dead("dish"):
             done.add("dish")
-            self.descend_speed = 0.0
+            self.descend_speed *= 0.5
 
     def _invalidate_cells(self):
         self._hit_order = None
