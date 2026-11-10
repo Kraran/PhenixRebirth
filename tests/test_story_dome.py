@@ -28,7 +28,7 @@ def test_the_series_is_four_chained_missions_after_the_bestiary_hunts_in_the_lis
     assert ids[after:after + 3] == ["bonus_2d", "bonus_2d_phenix", "bonus_vip"]   # the BONUS missions after the last hunt
     assert ids[after + 3] == "ast_1" and ids[after + 4:after + 8] == list(DOME)      # the belt, then the series
     chain = [ss.mission_by_id(i) for i in DOME]
-    assert chain[0]["need"] == "ast_s1"                        # Dome I waits for the belt (ast_1), open from the start
+    assert chain[0]["need"] == "ast_s1"                        # Dome I waits for the belt (ast_1)
     assert ss.mission_by_id("ch1_sortie")["need"] is None
     for prev, nxt in zip(chain, chain[1:]):
         assert nxt["need"] in prev["unlock"], nxt["id"]       # each one opens the next
@@ -60,12 +60,15 @@ def test_the_old_gate_mission_is_gone_and_the_teaser_waits_for_act_two():
 def test_the_belt_and_the_first_sortie_can_be_flown_on_a_new_save_and_dome_one_waits_for_the_belt():
     st = ss.create_slot(1, "NOVA", "normal")
     assert st["flags"].get("bestiary_s4") is None and not st["cleared"]
-    assert ss.mission_playable(st, ss.mission_by_id("ast_1"))
     assert ss.mission_playable(st, ss.mission_by_id("ch1_sortie"))
+    assert not ss.mission_playable(st, ss.mission_by_id("ast_1"))           # the belt waits for the first sortie
     assert not ss.mission_playable(st, ss.mission_by_id("dome_1"))
+    ss.record_result(st, "ch1_sortie", 100, True)
+    assert ss.mission_playable(st, ss.mission_by_id("ast_1"))
     ss.record_result(st, "ast_1", 100, True)
     assert ss.mission_playable(st, ss.mission_by_id("dome_1"))
-    for mid in ("best_s2", "best_s3", "best_s4", "dome_2", "dome_3", "dome_4", "dome_5", "act2_gate"):
+    assert ss.mission_playable(st, ss.mission_by_id("best_s2"))             # the first sortie opened the next hunt
+    for mid in ("best_s3", "best_s4", "dome_2", "dome_3", "dome_4", "dome_5", "act2_gate"):
         assert not ss.mission_playable(st, ss.mission_by_id(mid)), mid      # the rest still waits its turn
 
 

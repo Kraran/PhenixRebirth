@@ -62,6 +62,8 @@ MISSILE_PRICE = 1000                      # one missile, a consumable: it is car
 MISSILE_MAX = 9                          # the most missiles the hangar holds
 MISSILE_ROWS = ("missile_launcher", "missile_ammo")
 SENTINELLE_DONE = "sentinelles_done"   # the last Sentinelle mission is won: all four can be flown again
+# Winning the first Bestiary sortie opens the Act 1 asteroid belt and Sentinelle I (they are no longer open from the start).
+CH1_SIDES = "ch1_sides"
 REFLECT_FLAG = "reflective_coating"    # Gardiens III is won: the reflective coating (the dome and the Phenix stop the lasers)
 COAT_SCENE = "guardians_coat"          # ... told after that first victory (STORY_SCENES)
 GAME_WON = "game_won"                  # the last mission of Act 3 is won: the Adventure is over (it can still be played)
@@ -89,7 +91,7 @@ MISSIONS = [
         "need": None,
         "content": 1,
         "speed": 1.0,
-        "unlock": ["ch1_sortie", "ch1_speed"],
+        "unlock": ["ch1_sortie", "ch1_speed", CH1_SIDES],
         "log": "story_log_sortie",
     },
     {
@@ -195,14 +197,14 @@ MISSIONS = [
     {
         # the prelude of each act's main series (Act 1: the Dome; Act 2: the Phenix; Act 3: la Riposte): the Asteroids level
         # (src/asteroids.py) that opens a road through the belt. Replayable and paid every time; its first victory opens the
-        # first mission of the series
+        # first mission of the series. Ceinture I opens once the first Bestiary sortie is won (CH1_SIDES).
         "id": "ast_1",
         "acts": (1,),
         "asteroids": True,
         "title": "story_m_ast1",
         "hud_title": "story_m_ast_hud",
         "blurb": "story_m_ast_b",
-        "need": None,                       # open from the start, like the first Bestiary sortie
+        "need": CH1_SIDES,                  # after Bestiaire I - Première sortie
         "content": 1,
         "target": 60,
         "speed": 1.0,
@@ -740,14 +742,15 @@ MISSIONS = [
     },
     # EDF - Opération Sentinelles silencieuses (I-IV): a stealth spy satellite to put in orbit round each gas giant, built on the
     # SpaceWar level (src/spacewar.py) but for real: the birds and the saucers pay their normal points and a failure costs what
-    # it always costs. Flown in order (I from the start of Act 1, II and III in Act 2, IV in Act 3), once each, until the
-    # last one is won (flag SENTINELLE_DONE): then they can all be flown again, for the same points and the same penalties.
-    # `sw_levels`: (blue birds, green birds, boss saucers) of each level; a level with a saucer is won when it is destroyed.
+    # it always costs. Flown in order (I once the first Bestiary sortie is won, II and III in Act 2, IV in Act 3), once
+    # each, until the last one is won (flag SENTINELLE_DONE): then they can all be flown again, for the same points and the
+    # same penalties. `sw_levels`: (blue birds, green birds, boss saucers) of each level; a level with a saucer is won
+    # when it is destroyed.
     {
         "id": "sentinelle_1", "acts": (1, 2, 3), "once": True, "spacewar": True, "planet": "jupiter", "replay": SENTINELLE_DONE,
         "sw_levels": [(1, 0, 0), (0, 0, 1)],
         "title": "story_m_sent1", "hud_title": "story_m_sent_hud", "blurb": "story_m_sent1_b",
-        "need": None, "content": 1, "speed": 1.0, "unlock": ["sentinelle_1"],
+        "need": CH1_SIDES, "content": 1, "speed": 1.0, "unlock": ["sentinelle_1"],
     },
     {
         "id": "sentinelle_2", "acts": (2, 3), "once": True, "spacewar": True, "planet": "saturn", "replay": SENTINELLE_DONE,
@@ -1161,6 +1164,25 @@ def _open_started_series(state):
             flags[mission_id.replace("guardians_", "guardians_s")] = True
 
 
+# Ceinture I and Sentinelle I now wait for the first Bestiary sortie. A save that already won that sortie (before
+# CH1_SIDES existed), or already flew or won either mission, keeps them open.
+def _started_side_mission(state, mid):
+    if mid in (state.get("cleared") or []) or scene_seen(state, mid):
+        return True
+    mission = mission_by_id(mid)
+    return any(flag(state, name) for name in (mission or {}).get("unlock") or [])
+
+
+def _open_sides_after_sortie(state):
+    """Grant CH1_SIDES when the first sortie is already won, or when the belt or Sentinelle I was already started."""
+    flags = state.setdefault("flags", {})
+    if flags.get("ch1_sortie") or "ch1_sortie" in (state.get("cleared") or []):
+        flags[CH1_SIDES] = True
+        return
+    if any(_started_side_mission(state, mid) for mid in ("ast_1", "sentinelle_1")):
+        flags[CH1_SIDES] = True
+
+
 def migrate_state(data):
     """Migrate older saves and validate fields for the current save version.
 
@@ -1252,6 +1274,7 @@ def migrate_state(data):
             flags["ch1_wall"] = True
         flags.pop("dome_online", None)
     _open_started_series(base)
+    _open_sides_after_sortie(base)
     base["version"] = SAVE_VERSION
     return base
 

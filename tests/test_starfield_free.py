@@ -174,6 +174,7 @@ def _launch(run):
     g = run.game
     st = ss.create_slot(1, "NOVA", "normal")
     ss.mark_intro_seen(st)
+    st["flags"][ss.CH1_SIDES] = True
     ss.save_state(ss.story_path(1), st)
     g.story.open_slot(1)
     g.story.map_index = [m["id"] for m in g.story.missions()].index("ast_1")

@@ -28,9 +28,10 @@ GD2 = ["guardians_2"]           # ... II before the great raid
 def _act2():
     st = ss.create_slot(1, "NOVA", "normal")
     ss.mark_intro_seen(st)
-    st["flags"].update(bestiary_s2=True, bestiary_s3=True, bestiary_s4=True, ch1_speed=True, ch1_life_2=True,
-                       ch1_wall=True, ast_s1=True, ast_s2=True, dome_s1=True, dome_s2=True, dome_s3=True,
-                       dome_s4=True, dome_s5=True, dome_online=True, act2=True, guardians_s1=True)
+    st["flags"].update(ch1_sortie=True, ch1_sides=True, bestiary_s2=True, bestiary_s3=True, bestiary_s4=True,
+                       ch1_speed=True, ch1_life_2=True, ch1_wall=True, ast_s1=True, ast_s2=True, dome_s1=True,
+                       dome_s2=True, dome_s3=True, dome_s4=True, dome_s5=True, dome_online=True, act2=True,
+                       guardians_s1=True)
     st["cleared"] = ["ch1_sortie", "best_s2", "best_s3", "best_s4"] + BELT1 + DOME + BELT2 + GD1
     st["act"] = 2
     return st
