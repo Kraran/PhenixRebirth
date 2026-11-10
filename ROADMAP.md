@@ -39,6 +39,11 @@ Current release: **v1.7.0**
   the refresh cap lists 144 Hz
 - Details: [docs/DEV_LOG_1.7.0.md](docs/DEV_LOG_1.7.0.md)
 
+## After 1.7.0
+
+- END BONUS: FINAL BONUS - Space War, around the gas giant chosen in the menu (Jupiter, Saturn, Uranus or Neptune),
+  level after level, 20 torpedoes renewed each time, one record per planet
+
 ## Done in 1.6.2
 
 **Adventure** — a Scramble level, and Lyra Voss sings again.

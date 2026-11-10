@@ -25,6 +25,7 @@ when the player is destroyed, when the three levels are won (`all_dead()`), or w
 import math
 import types
 import random
+import threading
 
 import pygame
 
@@ -45,6 +46,7 @@ PLANETS = {
     "neptune": {"gm": 1.6e6, "r": 38.0, "draw": 100, "power": 0.6, "start": 260.0, "glow": (80, 130, 255)},
 }
 PLANET_KEYS = tuple(PLANETS)
+MENU_ORDER = PLANET_KEYS                          # BONUS FINAL - Space War: the four gas giants in the pick menu
 PLANET = "jupiter"
 GM = PLANETS["jupiter"]["gm"]                           # its pull: g = GM / r^2
 MIN_R = 20.0                                            # (the pull stops growing inside this: never infinite)
@@ -123,6 +125,19 @@ def set_planet(key):
 
 
 # ------------------------------------------------------------------ physics
+def endless_wave(level):
+    """BONUS FINAL - Space War: (blue birds, green birds, boss saucers) at this level. 1 blue, then 2 blue, then 2 blue
+    and 1 green, then 2 and 2; from level 5 on, 2 blue and 2 green, and a saucer every multiple of 5."""
+    level = max(1, int(level or 1))
+    if level == 1:
+        return (1, 0, 0)
+    if level == 2:
+        return (2, 0, 0)
+    if level == 3:
+        return (2, 1, 0)
+    return (2, 2, 1 if level % 5 == 0 else 0)
+
+
 def gravity(x, y):
     """The pull of the star on (x, y): (ax, ay), towards the middle of the screen."""
     dx, dy = CX - x, CY - y
@@ -465,8 +480,9 @@ class SpaceWarFormation:
     """The field of the level: the star, the birds, the torpedoes, the dust. Looks like a formation without enemies to
     the rest of the game."""
 
-    def __init__(self, speed_mult=1.0, rng=None, levels=None, points=False):
-        self.levels = [tuple(int(n) for n in lv) for lv in (levels or LEVELS)]    # (blue, green, saucers) of each level
+    def __init__(self, speed_mult=1.0, rng=None, levels=None, points=False, endless=False):
+        self.endless = bool(endless)        # BONUS FINAL - Space War: level after level until the ship is lost
+        self.levels = [tuple(int(n) for n in lv) for lv in (levels or ([] if self.endless else LEVELS))]
         self.points = bool(points)          # the birds pay their points (the Sentinelle missions)
         self.enemies = []
         self.bullets = []
@@ -492,6 +508,7 @@ class SpaceWarFormation:
         self.exhaust_timer = 0.0
         self.won = False
         self.exhausted = False
+        self.over = False                   # BONUS FINAL: the run has already been ended (exhaustion)
         self.started = False
         self.tip = (180, 220, 255)
 
@@ -525,15 +542,23 @@ class SpaceWarFormation:
 
     # --- the levels ---
     def start_level(self, number, player=None):
-        """Put the birds of level `number` (1..3) in orbit and the player back at the start, with a full stock."""
-        self.level = max(1, min(len(self.levels), int(number)))
-        blue, green, boss = self.levels[self.level - 1]
+        """Put the birds of level `number` in orbit and the player back at the start, with a full stock."""
+        if self.endless:
+            self.level = max(1, int(number or 1))
+            blue, green, boss = endless_wave(self.level)
+        else:
+            self.level = max(1, min(len(self.levels), int(number)))
+            blue, green, boss = self.levels[self.level - 1]
         scale = LEVEL_SCALE[min(self.level, len(LEVEL_SCALE)) - 1] * max(0.5, self.speed_mult)
         kinds = [1] * blue + [2] * green + [SAUCER] * boss
         self.rng.shuffle(kinds)
-        angles = [0.0, math.pi / 2, -math.pi / 2, math.pi / 4][:len(kinds)]
+        # four orbits are enough for the Sentinelle missions; a fifth (160 px) for the 2+2+saucer waves of the BONUS
+        angles = [0.0, math.pi / 2, -math.pi / 2, math.pi / 4, 3 * math.pi / 4][:len(kinds)]
         sense = 1.0 if self.rng.random() < 0.5 else -1.0          # all the birds go round the same way (none meets another head on)
         lanes = list(LANES)
+        if len(kinds) > len(lanes):
+            lanes = list(LANES) + [160.0]
+        lanes = lanes[:len(kinds)]
         self.rng.shuffle(lanes)
         self.birds = []
         for kind, a, r in zip(kinds, angles, lanes):
@@ -616,7 +641,11 @@ class SpaceWarFormation:
                 asteroids._add_glow(surface, (255, 60, 40), (tp.x, tp.y), 24)
                 pygame.draw.circle(surface, (255, 200, 180), (int(tp.x), int(tp.y)), 3)
         if self.level_time < ANNOUNCE and self.started:
-            self._say(surface, _label("story_spacewar_level").format(n=self.level, m=len(self.levels)), (255, 215, 120), 150)
+            if self.endless:
+                msg = _label("story_spacewar_level_endless").format(n=self.level)
+            else:
+                msg = _label("story_spacewar_level").format(n=self.level, m=len(self.levels))
+            self._say(surface, msg, (255, 215, 120), 150)
         if self.level_time < ANNOUNCE and self.started and any(b.kind == SAUCER for b in self.birds):
             self._say(surface, _label("story_spacewar_boss"), (255, 120, 100), 182)
         if self.pause > 0 and self.level < len(self.levels):
@@ -869,18 +898,34 @@ def tick(game):
         form.pause -= dt
         if form.pause <= 0:
             form.start_level(form.level + 1, p)
+            if form.endless:
+                _note_endless_level(game, form)
         return
     if form.won:
         form.end_timer += dt
         return
     if form.level_done() and form.level_time > 0.5:
-        if form.level >= len(form.levels):
+        if form.endless or form.level < len(form.levels):
+            form.pause = LEVEL_PAUSE
+        else:
             form.won = True
             form.end_timer = 0.0
-        else:
-            form.pause = LEVEL_PAUSE
         return
-    # nobody has a torpedo left (and none is in the air): the level is over
+    if form.endless:
+        # BONUS FINAL: GAME OVER once the player has no missile left (the 20 torpedoes, and the workshop
+        # antimatter if it is unlocked and unused) while enemies remain, after the last shots in the air
+        # have resolved (a last torpedo can still win the level). The Sentinelle missions keep the old rule.
+        if _player_stock_empty(game, form) and not form.level_done() and _player_shots_in_air(game, form) == 0:
+            form.exhausted = True
+            form.exhaust_timer += dt
+            if form.exhaust_timer >= EXHAUST_PAUSE and not form.over:
+                form.over = True
+                game._endless_over(True)
+        else:
+            form.exhausted = False
+            form.exhaust_timer = 0.0
+        return
+    # nobody has a torpedo left (and none is in the air): the Sentinelle mission is over
     if form.torpedoes_left() == 0 and not form.torpedoes:
         form.exhausted = True
         form.exhaust_timer += dt
@@ -889,3 +934,94 @@ def tick(game):
     else:
         form.exhausted = False
         form.exhaust_timer = 0.0
+
+
+def _player_stock_empty(game, form):
+    """True when the player has no torpedo left in stock, and no unused workshop antimatter missile."""
+    if int(getattr(form, "player_torpedoes", 0) or 0) > 0:
+        return False
+    arm = getattr(game, "antimatter", None)
+    if arm is not None and (getattr(arm, "ready", False) or int(getattr(arm, "count", 0) or 0) > 0):
+        return False
+    return True
+
+
+def _player_shots_in_air(game, form):
+    """The player's torpedoes and workshop antimatter missiles still in flight."""
+    n = sum(1 for tp in (form.torpedoes or []) if tp.owner == "player")
+    arm = getattr(game, "antimatter", None)
+    if arm is not None:
+        n += len(getattr(arm, "missiles", None) or [])
+    return n
+
+
+def _note_endless_level(game, form):
+    """The announcer says the new level of the BONUS FINAL, and the HUD follows it."""
+    adv = getattr(game, "adventure", None)
+    if isinstance(adv, dict):
+        adv["level"] = form.level
+    game.stage = form.level
+    try:
+        game._play_level_vo(form.level)
+    except Exception:
+        log_exc("spacewar._note_endless_level")
+
+
+# ------------------------------------------------------------------ the pick menu of the BONUS FINAL
+PREVIEW_SIZE = (720, 405)
+_PREVIEWS = {}
+_LOCK = threading.Lock()
+_warming = False
+WARM_UP = True
+
+
+def preview(key):
+    """A picture of a planet for the menu of the BONUS FINAL (made once): the disc on a dark sky, with its glow."""
+    if key not in PLANETS:
+        key = "jupiter"
+    pic = _PREVIEWS.get(key)
+    if pic is None:
+        with _LOCK:
+            pic = _PREVIEWS.get(key) or _make_preview(key)
+    return pic
+
+
+def _make_preview(key):
+    w, h = PREVIEW_SIZE
+    surf = pygame.Surface((w, h))
+    surf.fill((4, 6, 16))
+    rng = random.Random(hash(key) & 0xFFFFFFFF)
+    for _ in range(90):
+        x, y = rng.randint(0, w - 1), rng.randint(0, h - 1)
+        b = rng.randint(140, 255)
+        surf.set_at((x, y), (b, b, min(255, b + 20)))
+    old = PLANET
+    set_planet(key)
+    try:
+        img = star_image()
+        glow = PLANETS[key]["glow"]
+    finally:
+        set_planet(old)
+    asteroids._add_glow(surf, glow, (w / 2, h / 2), img.get_width() // 2 + 50)
+    surf.blit(img, (w // 2 - img.get_width() // 2, h // 2 - img.get_height() // 2))
+    _PREVIEWS[key] = surf
+    return surf
+
+
+def warm(order):
+    """Make the pictures of the menu in the background, in this order, once per run."""
+    global _warming
+    if not WARM_UP or _warming:
+        return None
+    _warming = True
+
+    def work():
+        for key in order:
+            try:
+                preview(key)
+            except Exception:
+                return
+
+    thread = threading.Thread(target=work, name="spacewar-warm-up", daemon=True)
+    thread.start()
+    return thread

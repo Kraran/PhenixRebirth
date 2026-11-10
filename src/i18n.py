@@ -7708,6 +7708,48 @@ for _k, (_fr, _en) in _SCRAMBLE_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}
     T[_k]["fr"] = _fr
 
+# BONUS FINAL - Space War: French and English; the other languages show the English text.
+_SPACEWAR_BONUS_TEXTS = {
+    "story_m_sw_bonus": ("BONUS FINAL - Space War", "FINAL BONUS - Space War"),
+    "story_m_sw_bonus_hud": ("BONUS FINAL - SPACE WAR", "FINAL BONUS - SPACE WAR"),
+    "story_m_sw_bonus_b": (
+        "Space War à l'infini, autour de la géante gazeuse que tu choisis (Jupiter, Saturne, Uranus ou Neptune) "
+        "et de sa gravité. 20 torpilles, renouvelées à chaque niveau. Un bleu, puis deux, un vert, deux verts, "
+        "et une soucoupe tous les cinq niveaux. Une vie. Jusqu'à la perte du vaisseau ou de tes missiles : les "
+        "points rapportent des crédits, sans pénalité. Un record par planète. Ouverte une fois le jeu terminé.",
+        "Endless Space War, around the gas giant you choose (Jupiter, Saturn, Uranus or Neptune) and its gravity. "
+        "20 torpedoes, renewed at each level. One blue, then two, a green, two greens, and a saucer every five "
+        "levels. One life. Until the ship or your missiles are lost: its points pay in credits, without a penalty. "
+        "One record per planet. Opens once the game is finished."),
+    "spacewar_pick_title_final": ("BONUS FINAL - Space War : choisis la planète",
+                                  "FINAL BONUS - Space War: choose the planet"),
+    "spacewar_planet_jupiter": ("Jupiter", "Jupiter"),
+    "spacewar_planet_saturn": ("Saturne", "Saturn"),
+    "spacewar_planet_uranus": ("Uranus", "Uranus"),
+    "spacewar_planet_neptune": ("Neptune", "Neptune"),
+    "spacewar_planet_sub_jupiter": ("La plus forte gravité", "The strongest gravity"),
+    "spacewar_planet_sub_saturn": ("Anneaux inoffensifs", "Its rings are harmless"),
+    "spacewar_planet_sub_uranus": ("Gravité plus faible", "Weaker gravity"),
+    "spacewar_planet_sub_neptune": ("Au bout du système", "At the system's edge"),
+    "spacewar_info_jupiter": (
+        "La plus massive des quatre. Sa gravité attire fortement les vaisseaux : une orbite serrée tombe vite vers le disque.",
+        "The most massive of the four. Its gravity pulls the ships hard: a tight orbit falls quickly towards the disc."),
+    "spacewar_info_saturn": (
+        "Moins massive que Jupiter, les vaisseaux poussent plus doucement. Ses anneaux sont inoffensifs : seul le disque détruit un vaisseau.",
+        "Less massive than Jupiter, the ships thrust more gently. Its rings are harmless: only the disc destroys a ship."),
+    "spacewar_info_uranus": (
+        "Une géante plus légère. La gravité est plus faible et les vaisseaux plus lents : les orbites se tiennent plus facilement.",
+        "A lighter giant. The gravity is weaker and the ships slower: orbits are easier to hold."),
+    "spacewar_info_neptune": (
+        "La dernière géante, au bout du système. Sa gravité est proche de celle d'Uranus, un peu plus forte.",
+        "The last giant, at the edge of the system. Its gravity is close to that of Uranus, a little stronger."),
+    "story_spacewar_hud_endless": ("TORPILLES {t}", "TORPEDOES {t}"),
+    "story_spacewar_level_endless": ("NIVEAU {n}", "LEVEL {n}"),
+}
+for _k, (_fr, _en) in _SPACEWAR_BONUS_TEXTS.items():
+    T[_k] = {_code: _en for _code in LANG_CODES}
+    T[_k]["fr"] = _fr
+
 # The concert of Lyra Voss after the two best endings of the visual novel (story_state.CONCERT_SCENES): French and
 # English; the other languages show the English text. {name} = the pilot's name.
 _CONCERT_TEXTS = {

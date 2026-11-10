@@ -1878,10 +1878,15 @@ class Game:
     LOADING_DELAY = 0.25            # a mission ready sooner than this shows no loading bar
 
     def _load_pick_menu(self, kind):
-        """The menu of the setting of the Lunar Lander or of Scramble (their test and their final BONUS): the pictures of
-        all the settings are made behind the loading bar of the Adventure (nothing shows when they are already made), so
-        moving the cursor in the menu never slows down."""
-        view = scramble_view if kind == "scramble" else lander_view
+        """The menu of the setting of the Lunar Lander or of Scramble, or of the planet of Space War (their final BONUS):
+        the pictures of all the choices are made behind the loading bar of the Adventure (nothing shows when they are
+        already made), so moving the cursor in the menu never slows down."""
+        if kind == "scramble":
+            view, order = scramble_view, lander.MENU_ORDER
+        elif kind == "spacewar":
+            view, order = spacewar, spacewar.MENU_ORDER
+        else:
+            view, order = lander_view, lander.MENU_ORDER
         mission = self.story._mission() if getattr(self, "story", None) else None
         title = t(mission["title"]) if mission and mission.get("title") else None
 
@@ -1895,12 +1900,12 @@ class Game:
 
         try:
             with loading.Loading(self, "adventure", title=title, delay=self.LOADING_DELAY) as ld:
-                share = 1.0 / len(lander.MENU_ORDER)
-                for style in lander.MENU_ORDER:
+                share = 1.0 / len(order)
+                for style in order:
                     ld.step(share, picture(style), 1.2)
         except Exception:
             log_exc("game._load_pick_menu")
-        view.warm(lander.MENU_ORDER)                          # (anything left: in the background)
+        view.warm(order)                                      # (anything left: in the background)
 
     def _launch_adventure(self, spec):
         """Start a mission behind the loading bar of the Adventure (src/loading.py): the setup (the flames of the Guardians are
@@ -2145,11 +2150,14 @@ class Game:
         self._hotseat_arm_hold("adventure_over", self.HOTSEAT_HOLD_FINAL)
 
     def endless_key(self):
-        """Where the record of the endless mission being flown is kept: its id; the Lunar Lander one for each setting."""
+        """Where the record of the endless mission being flown is kept: its id; the Lunar Lander one for each setting,
+        the Space War one for each planet."""
         adv = getattr(self, "adventure", None) or {}
         form = getattr(self, "formation", None)
         if adv.get("lander") and adv.get("endless") and getattr(form, "style", None):
             return "%s:%s" % (adv.get("id"), form.style)
+        if adv.get("spacewar") and adv.get("endless") and adv.get("planet"):
+            return "%s:%s" % (adv.get("id"), adv.get("planet"))
         return adv.get("id")
 
     def _bank_adventure(self, cleared):
@@ -2294,7 +2302,7 @@ class Game:
             self.stage = 1
             mult = float(adv.get("speed") or 1.0) * self.difficulty_speed_mult()
             self.formation = spacewar.SpaceWarFormation(speed_mult=mult, levels=adv.get("sw_levels"),
-                                                        points=True)
+                                                        points=True, endless=bool(adv.get("endless")))
             self.formation.sounds = self.sounds
             self.formation.font = self.font
             self.formation.text_cache = self.text_cache

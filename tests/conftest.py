@@ -33,6 +33,10 @@ import scramble_view  # noqa: E402
 
 scramble_view.BACKGROUND = False     # (the rock of the Scramble ahead of the screen would be made in a thread: not in the tests)
 
+import spacewar  # noqa: E402
+
+spacewar.WARM_UP = False             # (the menu of BONUS FINAL - Space War would make its pictures in a thread: not in the tests)
+
 
 import pygame  # noqa: E402
 
