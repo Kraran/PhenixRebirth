@@ -5,7 +5,6 @@ Run from the repo root: python tools/make_guardian_laser.py
 import math
 import os
 import random
-import sys
 
 os.environ.setdefault("SDL_VIDEODRIVER", "dummy")
 import pygame
@@ -45,7 +44,6 @@ def tongue(surf, x, y, length, width, color, alpha, lean=0.0):
         w = width * math.sin(math.pi * min(1.0, t * 0.9 + 0.1)) * (1 - t * 0.35)
         cx = x + lean * t * t * length * 0.25
         pts.append((cx - w / 2, y - t * length))
-    right = [(2 * x - px + 2 * lean * 0, py) for px, py in pts]
     poly = [(p[0], p[1]) for p in pts] + [(x + (x - p[0]) + 2 * lean * ((i / n) ** 2) * length * 0.25, p[1])
                                          for i, p in enumerate(reversed(pts))]
     s = pygame.Surface(surf.get_size(), pygame.SRCALPHA)

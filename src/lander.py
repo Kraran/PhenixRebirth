@@ -342,9 +342,6 @@ class LanderFormation:
         """Height of the feet over the ground under the ship (px), never below 0."""
         return max(0.0, float(self.terrain.ground(self.x)) - (self.y + FOOT_Y))
 
-    def lean_now(self, angle):
-        return lean(angle)
-
     def ship_scale(self):
         return self.zoom
 

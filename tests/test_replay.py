@@ -7,9 +7,11 @@ If the change is wanted (new feature, balance change), regenerate the file:
 
     python tests/replay.py tests/golden_replay.json
 
-The saved fingerprints were produced on Linux (what GitHub CI uses). Other
-systems may differ in the last bits of math functions, so the test is skipped
-there unless you set PHENIX_REPLAY=1.
+The saved fingerprints were produced on Linux with Python 3.12 (what GitHub CI
+uses). Other systems may differ in the last bits of math functions, so the test
+is skipped there unless you set PHENIX_REPLAY=1. One scenario, boss_fight, also
+differs between Python 3.12 and 3.13 on Linux (from frame 560, with the same
+code): it is checked on Python 3.12 only, unless PHENIX_REPLAY=1.
 """
 import json
 import os
@@ -42,8 +44,14 @@ if CHECK_PIXELS:
         _GOLDEN_PIXELS = json.load(fh)
 
 
+# Scenarios whose fingerprints depend on the version of Python (made with 3.12, the version of the CI).
+PYTHON_312_ONLY = {"boss_fight"}
+
+
 @pytest.mark.parametrize("name", sorted(replay.SCENARIOS))
 def test_replay_matches_golden(name):
+    if name in PYTHON_312_ONLY and sys.version_info[:2] != (3, 12) and not os.environ.get("PHENIX_REPLAY"):
+        pytest.skip(f"{name}: fingerprints made with Python 3.12 (the CI); set PHENIX_REPLAY=1 to force")
     pixels = [] if CHECK_PIXELS else None
     replay.PARTS_LOG.clear()
     got = replay.run_scenario(name, pixels_out=pixels, **replay.SCENARIOS[name])

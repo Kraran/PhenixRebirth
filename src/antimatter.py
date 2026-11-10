@@ -1,7 +1,9 @@
-"""The antimatter missile: the reward of Silent Sentinels IV, once it is won, for every mission of the Adventure.
+"""The antimatter missile: the reward of Silent Sentinels IV, once it is won, for every mission of the Adventure;
+and the missiles of a solo arcade game in Adventure style (Options > GAMEPLAY, src/arcade_style.py).
 
 One missile per mission (the stock is `game.antimatter`, made by `begin` when the mission starts and only if the
-mission spec says `antimatter`). A key / a pad button (bindings action "missile") fires it straight ahead of the ship:
+mission spec says `antimatter`); in an arcade game in Adventure style, the number chosen in the options, for the
+whole game. A key / a pad button (bindings action "missile") fires it straight ahead of the ship:
 up in the missions that scroll, along the heading of the ship in the Asteroids and SpaceWar missions. It is the torpedo
 of SpaceWar, a little bigger. It flies in a straight line until it touches an enemy: then a blast destroys every enemy
 within BLAST_RADIUS (a quarter of the height of the screen), the usual points paid. On the armour of the boss saucer the

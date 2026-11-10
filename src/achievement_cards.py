@@ -121,5 +121,3 @@ def card(aid, state, size):
     return img
 
 
-def has_picture(aid):
-    return os.path.isfile(picture_path(aid))

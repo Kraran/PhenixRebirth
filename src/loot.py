@@ -4,7 +4,6 @@ assets/items/<id>.png is the falling sprite: FRAMES cells side by side, one loop
 assets/items/<id>_icon.png is the bigger picture the hangar shop shows. The rules (what falls, when, what it does)
 are in story_items.py.
 """
-import os
 import random
 
 import pygame

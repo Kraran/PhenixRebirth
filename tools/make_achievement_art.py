@@ -837,7 +837,6 @@ def adv_wreck(s):
 
 
 def adv_convoy(s):
-    rnd = random.Random(206)
     pts = [(10 + i * 14, 40 + math.sin(i * 0.8) * 22) for i in range(9)]
     for x, y in pts:
         blit_c(s, spr("bird2_flap0.png" if int(x) % 2 else "bird1_flap0.png", 15), x, y)

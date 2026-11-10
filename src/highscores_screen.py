@@ -10,7 +10,7 @@ import pygame
 import hint_bar
 import menu_ui
 
-from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
+from settings import BASE_WIDTH, asset_path
 from i18n import t
 from highscores import load_highscores
 from errlog import log_exc

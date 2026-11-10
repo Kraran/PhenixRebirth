@@ -17,7 +17,6 @@ import pygame
 import loading
 
 import announce
-import lander
 import lander_view
 import scramble
 from settings import BASE_HEIGHT, BASE_WIDTH
@@ -804,7 +803,6 @@ WALL_BAR = (BASE_WIDTH - 340 - 10 - 190, 50, 190, 10)     # (in front of the wal
 def _draw_wall_hud(game, surface, font, base):
     """In the arena: what is left of the wall (a gauge and its share), and under it the life of the boss (its bar)."""
     from i18n import t
-    import scramble_base as sb
     x, y, w, h = WALL_BAR
     boss = base.boss
     by = y + h + 10

@@ -492,7 +492,6 @@ class View:
 
     def _ground(self, surface, form, sxs, sy, wx, z, cam_x, cam_y):
         top = max(0, int(float(sy.min())) - 14)
-        region = pygame.Rect(0, top, W, H - top)
         band_h = max(3.0, min(46.0, 34.0 * z))
         # under `edge` the ground is whole (the outline and the lit slopes are all above it): the work of the outline (light,
         # cut-out) is done on the band above it only

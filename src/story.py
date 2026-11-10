@@ -1195,9 +1195,6 @@ class StoryHub:
         return ss.mission_playable(self.state, mission, cheat=self.cheat_unlock)
 
     # --- input: every screen answers to the same four calls ---
-    def text_input_active(self):
-        return self.screen == "name"
-
     def type_key(self, event):
         """Real keyboard while typing a name. True when the key was used."""
         if self.screen == "hub" and self.pane in ("map", "hangar"):
@@ -2586,7 +2583,6 @@ class StoryHub:
         return [pygame.Rect(x0 + k * (w + gap), 140, w, h) for k in range(len(ss.MODES))]
 
     def _draw_gate_mode(self, surface, font, medium, small):
-        cx = BASE_WIDTH // 2
         self._caption(surface, small, f"{t('story_pilot')} : {self.new_name}", (200, 205, 222), 100)
         for k, (key, r) in enumerate(zip(ss.MODES, self.mode_card_rects())):
             focus = k == self.mode_index

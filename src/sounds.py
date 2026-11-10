@@ -41,9 +41,6 @@ class SoundManager:
     FADE_MS = 350          # crossfade when switching themes
     MENU_RETURN_MS = 900   # quit run → title
     LOOP_GAP_SEC = 1.5     # silence before re-looping any track
-    # Soft end-fade length (seconds before track end). Credits gets a longer one.
-    END_FADE_DEFAULT = 2.5
-    END_FADE_CREDITS = 12.0  # long soft landing — track ends hard otherwise
     # Sounds that play over the music and are worth hearing alone: while they sound the music fades down (to `level`
     # of what it was, in `down` seconds), stays low, and comes back in `up` seconds just before the sound ends.
     MUSIC_FADE = {"paint_fanfare": {"level": 0.12, "down": 0.5, "up": 2.0}}      # the trumpets of the paint shop
@@ -809,11 +806,6 @@ class SoundManager:
             path = self._music_paths.get(pending)
             if path and os.path.exists(path):
                 self._start_track(path, pending, fade_ms=fade)
-
-    def _end_fade_seconds(self, key):
-        if key == "credits":
-            return self.END_FADE_CREDITS
-        return self.END_FADE_DEFAULT
 
     def _tick_duck(self, dt):
         """Ramp OST down for announcer VO and in-game pause."""

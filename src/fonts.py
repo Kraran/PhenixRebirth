@@ -15,7 +15,6 @@ A missing letter: a title in a language its font cannot write (Audiowide has no 
 Play Bold, never two alphabets in one word. A missing symbol (← ↑ ↓ →) comes from DejaVu, the rest of the line staying
 in its font. A missing or broken file: the system fonts used before take over, the game never stops for a font.
 """
-import os
 import struct
 
 import pygame
