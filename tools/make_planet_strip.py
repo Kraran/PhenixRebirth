@@ -10,9 +10,7 @@ the size of the main body relative to the cell, to keep the rock the size it had
 Needs (not for the game, only for this tool): numpy, Pillow, scipy, and ffmpeg (imageio-ffmpeg).
 """
 import argparse
-import glob
 import os
-import subprocess
 import sys
 import tempfile
 

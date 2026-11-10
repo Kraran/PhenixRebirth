@@ -4,13 +4,11 @@ Menu actions: change the highlighted option (left/right) and confirm it.
 Extracted from game.py (Game._menu_adjust, Game._menu_confirm). Functions take
 the Game object as `game` and behave exactly as before.
 """
-import addon as mame_addon
 import controls
 import keybind_screen
-from highscores import load_highscores, reset_highscores
+from highscores import reset_highscores
 from i18n import LANG_CODES, set_lang
 from ingame_music import cycle as ingame_cycle
-from settings import BASE_HEIGHT
 from errlog import log_exc
 import main_menu
 

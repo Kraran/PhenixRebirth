@@ -855,12 +855,6 @@ class Player:
             shot["resolved"] = True
         self.shots.pop(index)
 
-    def _clamp_phenix_gauge(self):
-        """Respect difficulty floor (novice: never below 1)."""
-        self.phenix_gauge = max(float(self.phenix_min_gauge), float(self.phenix_gauge))
-        if self.phenix_gauge > 10:
-            self.phenix_gauge = 10.0
-
     def register_miss(self):
         """Shot left the screen with no valid/neutral contact — -1 gauge."""
         if self.is_phenix or self.uses_shield:
@@ -1365,11 +1359,6 @@ class Player:
             pad = 5 if shot.get("flame") else 4
             out.append((i, pygame.Rect(int(bx) - pad, int(top), pad * 2, int(h))))
         return out
-
-    def get_bullet_rect(self):
-        """Primary shot rect (compat)."""
-        rects = self.get_bullet_rects()
-        return rects[0][1] if rects else None
 
     @property
     def bullet(self):

@@ -10,13 +10,12 @@ The formation looks like `enemy.EnemyFormation` for the rest of the game (enemie
 all_dead), so the shots, the scoring and the stage clear of the arcade code work unchanged.
 """
 import math
-import os
 import random
 
 import pygame
 
 import announce
-from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
+from settings import BASE_WIDTH, asset_path
 from enemy import Enemy, EnemyBullet
 
 COLS = 11
@@ -222,7 +221,7 @@ def saucer_points(shot_x, saucer_x):
 class Invader(Enemy):
     """One enemy of the grid. Dying, drawing and killing are the arcade enemy's own."""
 
-    def __init__(self, x, y, kind, col, row):          # noqa: super().__init__ builds a bird we do not want
+    def __init__(self, x, y, kind, col, row):          # (no super().__init__: it builds a bird we do not want)
         self.x = float(x)
         self.y = float(y)
         self.start_x = self.x

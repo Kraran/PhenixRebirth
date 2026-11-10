@@ -39,14 +39,12 @@ def open_display(game):
     def _set(size, flags, display=None):
         # SCALED must not keep display= after a CPU fullscreen: SDL then
         # fails with "failed to create renderer" and stays stuck on CPU.
-        last = None
         if display is not None and not (flags & getattr(pygame, "SCALED", 0)):
             try:
                 return pygame.display.set_mode(size, flags, display=int(display))
             except TypeError:
                 pass
             except pygame.error as e:
-                last = e
                 print("set_mode(display=) failed:", e)
         want_vs = 1 if getattr(game, "vsync_mode", "adaptive") == "on" else 0
         try:
@@ -65,7 +63,6 @@ def open_display(game):
         try:
             return _mode(want_vs)
         except pygame.error as e:
-            last = e
             print("set_mode failed:", e)
         game._reset_video()
         try:

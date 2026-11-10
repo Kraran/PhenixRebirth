@@ -8,6 +8,8 @@ Play modes: solo, hot-seat (alternating), coop (simultaneous). Options cover
 controls, autofire, volumes, session audio mix, rumble, display, GPU present,
 VSync, refresh cap, bezels, FPS counter, CRT scanlines and language.
 Cheats on the high-score menu: LV02–LV99, LIVE, PHEN, VNOV.
+v1.7.0 — escort modules, landings and raids, the Guardians series, the END BONUS missions, the Adventure style of the
+arcade game, the loading bar.
 v1.6.2 — Scramble (TEST and BONUS), the concert of Lyra Voss after the visual novel, the jukebox with the lyrics.
 v1.6.1 — menus of the Adventure as the station of Phobos, the four endings, Lunar Lander settings. v1.6.0 — Adventure: visual novel, open ending (Act IV), SpaceWar / Lander / Guardians, missile launcher, AZERTY codes.
 v1.5.0 — Adventure (beta): Acts 1-3, rebindable controls, music, announcer to level 31.
@@ -34,14 +36,13 @@ import sys
 import time
 import random
 import os
-import json
 import subprocess
 import threading
 from datetime import datetime
 from settings import *
 from settings import stage_content, stage_speed_mult, level_points_bonus
-from player import Player, recolor_phenix_frames
-from enemy import EnemyFormation, BigBird, Enemy
+from player import Player
+from enemy import EnemyFormation
 import invaders
 from invaders import InvaderFormation
 import crt
@@ -57,29 +58,23 @@ import arcade_style
 import escort
 import gyro
 import laser_split
-import galaga
 from galaga import GalagaFormation
 from boss import BossSaucer
-from explosion import Explosion, TeslaCoilFx
-from starfield import Starfield, prepare_assets as prepare_background_assets
-from sounds import SoundManager
+from explosion import Explosion
+from starfield import prepare_assets as prepare_background_assets
 from pheq import load_pheq, resolve_path as pheq_resolve, sample as pheq_sample, tick as pheq_tick
 import custom_music
-from ingame_music import cycle as ingame_cycle, label as ingame_label, normalize as ingame_normalize
+from ingame_music import label as ingame_label, normalize as ingame_normalize
 from mp3_title import title_from_path, title_for_key
-from i18n import set_lang, get_lang, t, t_help, t_list, get_credits_lines, LANGS, LANG_CODES
-from story import StoryHub
+from i18n import set_lang, get_lang, t, LANGS
 import story_state
 import story_items
 import addon as mame_addon
-from highscores import load_highscores, is_highscore, insert_score, reset_highscores
+from highscores import load_highscores, is_highscore, insert_score
 from achievements import (
-    CATALOG, CATALOG_ADV, PAGES as ACH_PAGES, load_achievements, unlock_achievement, unlocked_count,
-    add_scalable, set_scalable_at_least, scalable_tier, scalable_progress,
-    scalable_thresholds,
+    CATALOG_ADV, PAGES as ACH_PAGES, load_achievements, unlock_achievement, add_scalable, set_scalable_at_least,
 )
-from gpu_present import GpuPresenter
-from desktop_cover import show_cover, hide_cover
+from desktop_cover import show_cover
 from intro import play_intro
 import help_screen
 import achievements_screen
@@ -87,7 +82,6 @@ import story_feats
 import ship_select_screen
 import highscores_screen
 import credits_screen
-import fonts
 import update_idle
 import anchor_fx
 import update_play
@@ -113,8 +107,7 @@ import hud_gauge
 import menu_actions
 
 from settings import user_data_dir, asset_path, project_root
-from user_settings import SETTINGS_FILE, load_user_settings, save_user_settings
-from text_cache import TextCache
+from user_settings import save_user_settings
 from pacing import FramePacer
 from errlog import log_exc
 import videoclip
@@ -922,10 +915,6 @@ class Game:
         if all(is_unlocked(a, data) for a in need):
             self._unlock_ach_meta("listen_music_all")
 
-    def _ach_icon(self, kind, unlocked):
-        """32px catalog icon, color or grey."""
-        return ach_helpers.ach_icon(self, kind, unlocked)
-
     def _ach_move(self, dx, dy):
         """The cursor of the achievements grid (see achievements_screen.move)."""
         achievements_screen.move(self, dx, dy)
@@ -1235,18 +1224,6 @@ class Game:
             setattr(self, "shield_tint_p2" if two else "shield_tint", tint)
         else:
             setattr(self, "phoenix_tint_p2" if two else "phoenix_tint", tint)
-
-    def _ensure_p2_free(self):
-        """Snap P2 tints off P1's exact loadout."""
-        if getattr(self, "play_mode", "solo") == "solo":
-            return
-        for sid in ("phoenix", "shield"):
-            av = self._available_tints(sid, 2)
-            if not av:
-                continue
-            cur = self._tint_of(sid, 2)
-            if cur not in av:
-                self._set_tint(sid, 2, av[0])
 
     def _play_ship_welcome(self):
         """English announcer VO for the highlighted hull (reserved mixer channel)."""
@@ -1748,9 +1725,6 @@ class Game:
             if getattr(ship, "edge_flash", 0) > 0.08:
                 return ship.x
         return None
-
-    def _living_ships(self):
-        return [p for p in self._ships() if p.alive and not p.dying]
 
     def _coop_bindings(self):
         """The device of each coop player, from the two choices of the options (auto by default: two pads, or a pad and
@@ -2563,7 +2537,6 @@ class Game:
         veil.fill((90, 0, 0, int((70 + 50 * pulse) * fade)))
         surface.blit(veil, (0, 0))
         # One fast sweep (~0.85 s top → bottom)
-        span = BASE_HEIGHT + 48
         y = int(tcard * 920) - 24
         if -20 <= y <= BASE_HEIGHT + 20:
             pygame.draw.rect(surface, (255, 80, 60), pygame.Rect(0, y, BASE_WIDTH, 3))
@@ -3029,14 +3002,6 @@ class Game:
             out.append((int(w), int(h), 0, 0, i == 0))
         return out
 
-    def _monitor_origins(self, count):
-        """Compat helper — origins from _list_monitors order."""
-        mons = self._list_monitors()
-        origins = [(m[3], m[4]) for m in mons]
-        while len(origins) < count:
-            origins.append((0, 0))
-        return origins[:count]
-
     def _pick_monitor(self):
         """Return (index, width, height, x, y). Default = monitor 1 (index 0, primary)."""
         mons = self._list_monitors()
@@ -3045,10 +3010,6 @@ class Game:
             self.monitor_index = 0
             return mons[0]
         return mons[idx]
-
-    def _pick_monitor_size(self):
-        m = self._pick_monitor()
-        return m[1], m[2]
 
     def _reset_video(self):
         """Drop the SDL window so the next set_mode can create a fresh renderer."""

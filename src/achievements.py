@@ -20,7 +20,7 @@ from errlog import log_exc
 
 ACH_FILE = os.path.join(user_data_dir(), "achievements.json")
 
-# icon: sprite hint used by Game._ach_icon
+# icon: sprite hint used by ach_helpers.ach_icon
 CATALOG = [
     ("first_blood", "bird1"),
     ("stage2", "bird2"),

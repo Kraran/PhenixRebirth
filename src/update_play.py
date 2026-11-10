@@ -651,7 +651,6 @@ def _life_lost(game):
 
 def tick_effects_and_hotseat(game):
     """End of frame: life-lost flags, explosions, Tesla, shake, hot-seat hand-off."""
-    spec = getattr(game, "adventure", None)
     if any(getattr(s, "just_lost_life", False) for s in game._ships()):
         _life_lost(game)
     for s in game._ships():

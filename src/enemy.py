@@ -940,7 +940,6 @@ class BigBird:
         flap_y = -5 if wing_up else 5
         bw = self.body_img.get_width()
         ww = wing_src.get_width()
-        wh = wing_src.get_height()
         wy = self.y + flap_y
         if self.wing_left:
             self.detach_wings.append({

@@ -1,5 +1,43 @@
 # Roadmap — Phenix Rebirth
-Current release: **v1.6.2**
+Current release: **v1.7.0**
+
+## Done in 1.7.0
+
+**Adventure** — escort modules, landings and raids, the Guardians, and endless bonus runs once the game is finished.
+
+- Landings and raids: five optional Lunar Lander missions (Deimos, an asteroid, Europa, Titan, Triton) and five raids on the Avioid
+  bases of the same places, from the gentlest scroll to the full Scramble (the red commander takes 3 to 5 hits), each with its scene
+- Escort modules: two gyroscope satellites that fly beside the ship and fire with it (shots ×2, then ×3). Their pieces are found in the
+  landings and raids, they are assembled at the workshop, they take the shots meant for the ship, and a destroyed one is bought again at
+  half price
+- The Guardians: the series Guardians I, II, III and Bestiary VI, with the Alpha Guardian; once Guardians III is won, a reflective
+  coating lets the dome and the Phenix form split their laser in two; Guardians also come as reinforcements in some waves (Phenix III,
+  the great raid, the repairs, la Riposte); gargoyles burnt by a laser fall in ashes
+- END BONUS, once the game is finished: FINAL BONUS - Asteroids, - Guardians, - Lunar Lander and - Scramble, endless runs that pay their
+  points in credits without a penalty until the ship is lost, each with its record and the voice announcing every level
+- Scramble: armoured casemates for the missile launchers of the base (a first shot leaves a wreck that stops your shots, a second one
+  blows it away); comets that come from behind; the far cry of the red commander echoes through his fortress 2 s after the last
+  missile station has left the screen
+- The scenes of Bestiary I and of the VIP rescue (Lyra Voss) are read aloud in French, like the intro
+- The four TEST missions are gone, and the Adventure is no longer marked "(Beta)"
+- Credits are capped at 99 999
+
+**Game**
+
+- Options > GAMEPLAY: an Adventure style for a solo arcade game, with escort modules, antimatter missiles (1 to 20) and the 2D reactor
+  (no high score; the game always starts in Classic)
+- A loading bar at the start of the game and when a heavy mission of the Adventure starts; the setting menus of Lunar Lander and Scramble
+  are fully prepared behind it
+- A level ends once the last explosions are over (the Guardians' too)
+
+**Fixes**
+
+- The boss alien is solid: no see-through body or tentacles, the inside of its mouth opaque black (green saucer and red commander)
+- Asteroids: three rock shapes per size; the saucer no longer wraps round the screen and its sound no longer stops after a moment
+- Lunar Lander missions no longer carry the antimatter missile
+- Texts: the GAMEPLAY options, the key of the missile and the codes of the high scores are translated in the 13 languages; the help of
+  the refresh cap lists 144 Hz
+- Details: [docs/DEV_LOG_1.7.0.md](docs/DEV_LOG_1.7.0.md)
 
 ## Done in 1.6.2
 

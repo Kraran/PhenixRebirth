@@ -29,9 +29,6 @@ class GpuPresenter:
     def close(self):
         self.enabled = False
 
-    def open_window(self, title, size, mode, pos):
-        return None
-
     def bind(self, enabled=True):
         self.enabled = bool(enabled) and self.available
         return self.enabled
@@ -76,15 +73,5 @@ class GpuPresenter:
             print("GPU present frame failed:", e)
             self.enabled = False
             return False
-
-
-def scaled_flags(mode):
-    """Flags for set_mode when GPU/SCALED is on."""
-    flags = pygame.SCALED | pygame.DOUBLEBUF
-    if mode == "fullscreen":
-        flags |= pygame.FULLSCREEN
-    elif mode == "borderless":
-        flags |= pygame.NOFRAME
-    return flags
 
 

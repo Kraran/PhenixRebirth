@@ -15,7 +15,7 @@ import menu_ui
 
 import hint_bar
 
-from settings import BASE_HEIGHT, BASE_WIDTH, asset_path
+from settings import BASE_WIDTH, asset_path
 from i18n import t
 from player import recolor_phenix_frames
 from phenix_art import PREVIEW_FLASH_RADIUS, PREVIEW_MORPH_IN_SEC, PREVIEW_MORPH_OUT_SEC, morph_sequence
@@ -228,7 +228,6 @@ def draw_ship_select(game, surface):
         tw = max(1, int(img.get_width() * scale))
         th = max(1, int(img.get_height() * scale))
         spr = pygame.transform.smoothscale(img, (tw, th))
-        max_w, max_h = box_w, box_h
         if locked and (not active):
             spr = spr.copy()
             spr.fill((80, 80, 90, 160), special_flags=pygame.BLEND_RGBA_MULT)

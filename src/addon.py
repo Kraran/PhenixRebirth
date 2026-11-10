@@ -115,11 +115,6 @@ def _key_set(vk, down):
         user32.keybd_event(vk, 0, 2, 0)
 
 
-def _key_tap(vk):
-    _key_set(vk, True)
-    _key_set(vk, False)
-
-
 def spectrum_input_tick(prev):
     """Pheenix: pad → LShift / W / Space / Enter. Start = S then K then 1."""
     import time
@@ -164,57 +159,6 @@ def spectrum_input_tick(prev):
     except Exception:
         log_exc("addon.spectrum_input_tick")
     return {"held": target, "start": start, "seq": keep}
-
-
-def c64_input_tick(prev, pid=0):
-    """Eagle Empire: Start sends a real F5 scancode into the MAME window."""
-    if prev is None:
-        prev = {"start": False}
-    b = xinput_buttons()
-    start = bool(b & _XI_START) and not bool(b & _XI_BACK) and not bool(b & _XI_GUIDE)
-    if start and not prev.get("start"):
-        try:
-            _send_f5_to_pid(pid)
-        except Exception:
-            log_exc("addon.c64_input_tick")
-    return {"start": start}
-
-
-def _send_f5_to_pid(pid):
-    if not sys.platform.startswith("win"):
-        _key_tap(0x74)
-        return
-    user32 = ctypes.windll.user32
-    hwnd = _hwnd_for_pid(pid)
-    if hwnd:
-        try:
-            user32.ShowWindow(hwnd, 9)
-            user32.SetForegroundWindow(hwnd)
-        except Exception:
-            log_exc("addon._send_f5_to_pid")
-    # F5 scancode 0x3F. Scan code, not virtual key: RawInput/win32 both see it.
-    extra = ctypes.c_size_t(0)
-    class KEYBDINPUT(ctypes.Structure):
-        _fields_ = [
-            ("wVk", wintypes.WORD),
-            ("wScan", wintypes.WORD),
-            ("dwFlags", wintypes.DWORD),
-            ("time", wintypes.DWORD),
-            ("dwExtraInfo", ctypes.c_size_t),
-        ]
-    class INPUT(ctypes.Structure):
-        _fields_ = [("type", wintypes.DWORD), ("ki", KEYBDINPUT)]
-    def _one(up):
-        inp = INPUT()
-        inp.type = 1
-        inp.ki.wVk = 0
-        inp.ki.wScan = 0x3F
-        inp.ki.dwFlags = 0x0008 | (0x0002 if up else 0)
-        inp.ki.time = 0
-        inp.ki.dwExtraInfo = extra
-        user32.SendInput(1, ctypes.byref(inp), ctypes.sizeof(inp))
-    _one(False)
-    _one(True)
 
 
 def _hwnd_for_pid(pid):
@@ -324,16 +268,6 @@ def _roms_dir():
     if not exe:
         return None
     return os.path.join(os.path.dirname(exe), "roms")
-
-
-def _spectrum_bios_ok():
-    roms = _roms_dir()
-    if not roms:
-        return False
-    for name in ("spectrum.zip", "spectrum.rom"):
-        if os.path.isfile(os.path.join(roms, name)):
-            return True
-    return False
 
 
 def find_spectrum_pheenix():

@@ -447,33 +447,6 @@ class BossSaucer:
         self._pair_done = set()
         self._build()
 
-    _hull_img = None
-    _hull_meta = None
-
-    @classmethod
-    def _load_hull(cls):
-        if cls._hull_img is not None:
-            return cls._hull_img, cls._hull_meta
-        path = asset_path("sprites", "boss_saucer.png")
-        meta_path = asset_path("sprites", "boss_saucer_meta.json")
-        try:
-            img = pygame.image.load(path).convert_alpha()
-            meta = {"w": img.get_width(), "h": img.get_height(),
-                    "hangar": [0, 0, 0, 0], "red": [0, 0]}
-            try:
-                import json
-                with open(meta_path, "r", encoding="utf-8") as f:
-                    meta.update(json.load(f))
-            except Exception:
-                log_exc("boss._load_hull")
-            cls._hull_img = img
-            cls._hull_meta = meta
-            return img, meta
-        except Exception as e:
-            print("boss_saucer load failed:", e)
-            cls._hull_img = False
-            return None, None
-
     def _build(self):
         self.use_art = False
         self.hull_surf = None
@@ -483,7 +456,6 @@ class BossSaucer:
         self._build_legacy()
 
     def _build_legacy(self):
-        saucer_w = int(BASE_WIDTH * 0.75)
         cx = BASE_WIDTH // 2
         top_y = 70
 
@@ -931,7 +903,6 @@ class BossSaucer:
         if self._flick_t >= self._flick_dur:
             self._flick_t = 0.0
             self._flick_dur = random.uniform(1.2, 2.0)
-        band_width = 29 * self.cell_w  # approx purple span
 
         self._sync_positions()
         for d in self.decorations:
@@ -963,12 +934,10 @@ class BossSaucer:
         if self.can_shoot and self.shoot_timer <= 0 and self.boss.alive and not self.boss.dying:
             alive_shots = sum(1 for b in self.bullets if b.alive)
             if alive_shots < 5:
-                # Fire from random points along the purple band underside
-                bx = self.boss.x + random.uniform(-180, 180)
-                by = self.boss.y + 70 + self.offset_y * 0  # relative already in boss.y
-                # Use lower hull y
-                by = min(c.y for c in self.cells if c.alive) if any(c.alive for c in self.cells) else self.boss.y + 80
-                # Actually fire from bottom of living cells near player
+                # (an old random aim along the band, no longer used: still drawn, so that the random stream, and the
+                # replays, stay the same)
+                random.uniform(-180, 180)
+                # Fire from the bottom of the living cells, near the player
                 candidates = [c for c in self.cells if c.alive and c.y > self.boss.y + 40]
                 if candidates:
                     # Prefer near player x
@@ -1197,8 +1166,6 @@ class BossSaucer:
         pulse = (0.55 + 0.45 * math.sin(t * 14.0)) if on else 0.0
         if pulse <= 0.02:
             return
-        ox = int(self.hull_origin[0] + self.offset_x)
-        oy = int(self.hull_origin[1] + self.offset_y)
         cell = getattr(self, "_beacon_cell", None)
         if cell is None or not cell.alive:
             return

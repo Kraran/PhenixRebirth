@@ -1584,8 +1584,9 @@ INTRO_LAST = {
 INTRO_FLAG = "intro_seen"
 
 
-# The Adventure intro is read aloud (French only): `assets/story/voice/<text key>.ogg`, and `marks.json` says when each line of
-# the text is said (made by tools/make_intro_voice.py). The intro scrolls the text with it.
+# The Adventure intro and two scenes (Bestiary I, the VIP rescue) are read aloud (French only):
+# `assets/story/voice/<text key>.ogg`, and `marks.json` says when each line of the text is said (made by
+# tools/make_intro_voice.py). The text scrolls with the voice.
 _VOICE_TABLE = {}
 
 

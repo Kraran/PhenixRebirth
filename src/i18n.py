@@ -60,21 +60,6 @@ T = {
         "tr": "ADD-ON", "sv": "ADD-ON", "no": "ADD-ON", "da": "ADD-ON",
         "ru": "ADD-ON",
     },
-    "addon_hint": {
-        "fr": "Entrée lancer   Échap retour",
-        "en": "Enter launch   Esc back",
-        "es": "Enter lanzar   Esc atrás",
-        "de": "Enter starten   Esc zurück",
-        "it": "Invio avvia   Esc indietro",
-        "pt": "Enter lançar   Esc voltar",
-        "nl": "Enter starten   Esc terug",
-        "pl": "Enter uruchom   Esc wstecz",
-        "tr": "Enter başlat   Esc geri",
-        "sv": "Enter starta   Esc tillbaka",
-        "no": "Enter start   Esc tilbake",
-        "da": "Enter start   Esc tilbage",
-        "ru": "Enter запуск   Esc назад",
-    },
     "addon_missing": {
         "fr": "Place mame.exe et les roms dans addon\\mame",
         "en": "Put mame.exe and the roms in addon\\mame",
@@ -185,18 +170,6 @@ T = {
         "fr": "MURS", "en": "WALLS", "es": "MUROS", "de": "WÄNDE",
         "it": "MURI", "pt": "PAREDES", "nl": "MUREN", "pl": "ŚCIANY",
         "tr": "DUVAR", "sv": "VÄGGAR", "no": "VEGGER", "da": "VÆGGE", "ru": "СТЕНЫ",
-    },
-    "story_offline": {
-        "fr": "HORS LIGNE", "en": "OFFLINE", "es": "DESCONECTADO", "de": "OFFLINE",
-        "it": "OFFLINE", "pt": "OFFLINE", "nl": "OFFLINE", "pl": "OFFLINE",
-        "tr": "ÇEVRİM DIŞI", "sv": "OFFLINE", "no": "OFFLINE", "da": "OFFLINE",
-        "ru": "ОФФЛАЙН",
-    },
-    "story_online": {
-        "fr": "EN LIGNE", "en": "ONLINE", "es": "EN LÍNEA", "de": "ONLINE",
-        "it": "ONLINE", "pt": "ONLINE", "nl": "ONLINE", "pl": "ONLINE",
-        "tr": "ÇEVRİMİÇİ", "sv": "ONLINE", "no": "ONLINE", "da": "ONLINE",
-        "ru": "ОНЛАЙН",
     },
     "story_wall_instant": {
         "fr": "INSTANT", "en": "INSTANT", "es": "INMEDIATO", "de": "SOFORT",
@@ -564,12 +537,6 @@ T = {
         "ru": "Конец акта 2",
     },
 
-    "play_2p": {
-        "fr": "2 JOUEURS", "en": "2 PLAYERS", "es": "2 JUGADORES", "de": "2 SPIELER",
-        "it": "2 GIOCATORI", "pt": "2 JOGADORES", "nl": "2 SPELERS", "pl": "2 GRACZY",
-        "tr": "2 OYUNCU", "sv": "2 SPELARE", "no": "2 SPILLERE", "da": "2 SPILLERE",
-        "ru": "2 ИГРОКА",
-    },
     "choose_ship_p": {
         "fr": "VAISSEAU — JOUEUR {n}", "en": "SHIP — PLAYER {n}",
         "es": "NAVE — JUGADOR {n}", "de": "SCHIFF — SPIELER {n}",
@@ -1671,36 +1638,6 @@ T = {
         "sv": "ENTER / A  —  Bekräfta", "no": "ENTER / A  —  Bekreft", "da": "ENTER / A  —  Bekræft",
         "ru": "ENTER / A  —  Подтвердить",
     },
-    "controls_pad": {
-        "fr": "Stick / D-Pad  =  Naviguer     A  =  Valider",
-        "en": "Stick / D-Pad  =  Navigate     A  =  Confirm",
-        "es": "Stick / D-Pad  =  Navegar     A  =  Confirmar",
-        "de": "Stick / D-Pad  =  Navigieren     A  =  Bestätigen",
-        "it": "Stick / D-Pad  =  Navigare     A  =  Conferma",
-        "pt": "Stick / D-Pad  =  Navegar     A  =  Confirmar",
-        "nl": "Stick / D-Pad  =  Navigeren     A  =  Bevestigen",
-        "pl": "Stick / D-Pad  =  Nawigacja     A  =  Zatwierdź",
-        "tr": "Stick / D-Pad  =  Gezin     A  =  Onayla",
-        "sv": "Stick / D-Pad  =  Navigera     A  =  Bekräfta",
-        "no": "Stick / D-Pad  =  Naviger     A  =  Bekreft",
-        "da": "Stick / D-Pad  =  Naviger     A  =  Bekræft",
-        "ru": "Стик / D-Pad  =  Навигация     A  =  ОК",
-    },
-    "controls_kb": {
-        "fr": "Flèches  =  Naviguer     Entrée  =  Valider",
-        "en": "Arrows  =  Navigate     Enter  =  Confirm",
-        "es": "Flechas  =  Navegar     Enter  =  Confirmar",
-        "de": "Pfeile  =  Navigieren     Enter  =  Bestätigen",
-        "it": "Frecce  =  Navigare     Invio  =  Conferma",
-        "pt": "Setas  =  Navegar     Enter  =  Confirmar",
-        "nl": "Pijlen  =  Navigeren     Enter  =  Bevestigen",
-        "pl": "Strzałki  =  Nawigacja     Enter  =  Zatwierdź",
-        "tr": "Yön tuşları  =  Gezin     Enter  =  Onayla",
-        "sv": "Pilar  =  Navigera     Enter  =  Bekräfta",
-        "no": "Piltaster  =  Naviger     Enter  =  Bekreft",
-        "da": "Pile  =  Naviger     Enter  =  Bekræft",
-        "ru": "Стрелки  =  Навигация     Enter  =  ОК",
-    },
     "subtitle": {
         "fr": "Un remake moderne du classique de l'arcade",
         "en": "A modern remake of the classic arcade game",
@@ -1780,12 +1717,6 @@ T = {
         "no": "Musikk i spillet", "da": "Musik i spillet",
         "ru": "Музыка в игре",
     },
-    "ingame_none": {
-        "fr": "Aucune", "en": "None", "es": "Ninguna", "de": "Keine",
-        "it": "Nessuna", "pt": "Nenhuma", "nl": "Geen", "pl": "Brak",
-        "tr": "Yok", "sv": "Ingen", "no": "Ingen", "da": "Ingen",
-        "ru": "Нет",
-    },
     "opt_rumble": {
         "fr": "Vibrations", "en": "Rumble", "es": "Vibración", "de": "Vibration",
         "it": "Vibrazione", "pt": "Vibração", "nl": "Trilling", "pl": "Wibracje",
@@ -1830,11 +1761,6 @@ T = {
         "it": "Render GPU", "pt": "Render GPU", "nl": "GPU-render", "pl": "Render GPU",
         "tr": "GPU çıktısı", "sv": "GPU-render", "no": "GPU-visning", "da": "GPU-render",
         "ru": "Рендер GPU",
-    },
-    "opt_monitor": {
-        "fr": "Moniteur", "en": "Monitor", "es": "Monitor", "de": "Monitor",
-        "it": "Monitor", "pt": "Monitor", "nl": "Monitor", "pl": "Monitor",
-        "tr": "Monitör", "sv": "Monitor", "no": "Monitor", "da": "Monitor", "ru": "Монитор",
     },
     "opt_bezel": {
         "fr": "Bezel", "en": "Bezel", "es": "Marco", "de": "Bezel",
@@ -2089,19 +2015,19 @@ T = {
         "ru": "Вкл = строгая синхронизация. Адаптив = FreeSync / G-Sync. Выкл = только программный лимит.",
     },
     "opt_help_hz": {
-        "fr": "Plafond d'images par seconde : 60, 75 ou 120. Le jeu reste à la même vitesse.",
-        "en": "Frame cap: 60, 75 or 120. Game speed stays the same.",
-        "es": "Tope de FPS: 60, 75 o 120. La velocidad del juego no cambia.",
-        "de": "FPS-Limit: 60, 75 oder 120. Die Spielgeschwindigkeit bleibt gleich.",
-        "it": "Limite FPS: 60, 75 o 120. La velocità di gioco non cambia.",
-        "pt": "Teto de FPS: 60, 75 ou 120. A velocidade do jogo não muda.",
-        "nl": "FPS-limiet: 60, 75 of 120. Spelsnelheid blijft gelijk.",
-        "pl": "Limit FPS: 60, 75 lub 120. Prędkość gry bez zmian.",
-        "tr": "FPS sınırı: 60, 75 veya 120. Oyun hızı aynı kalır.",
-        "sv": "FPS-tak: 60, 75 eller 120. Spelhastigheten är densamma.",
-        "no": "FPS-tak: 60, 75 eller 120. Spillfarten er den samme.",
-        "da": "FPS-loft: 60, 75 eller 120. Spilhastigheden er den samme.",
-        "ru": "Лимит FPS: 60, 75 или 120. Скорость игры не меняется.",
+        "fr": "Plafond d'images par seconde : 60, 75, 120 ou 144. Le jeu reste à la même vitesse.",
+        "en": "Frame cap: 60, 75, 120 or 144. Game speed stays the same.",
+        "es": "Tope de FPS: 60, 75, 120 o 144. La velocidad del juego no cambia.",
+        "de": "FPS-Limit: 60, 75, 120 oder 144. Die Spielgeschwindigkeit bleibt gleich.",
+        "it": "Limite FPS: 60, 75, 120 o 144. La velocità di gioco non cambia.",
+        "pt": "Teto de FPS: 60, 75, 120 ou 144. A velocidade do jogo não muda.",
+        "nl": "FPS-limiet: 60, 75, 120 of 144. Spelsnelheid blijft gelijk.",
+        "pl": "Limit FPS: 60, 75, 120 lub 144. Prędkość gry bez zmian.",
+        "tr": "FPS sınırı: 60, 75, 120 veya 144. Oyun hızı aynı kalır.",
+        "sv": "FPS-tak: 60, 75, 120 eller 144. Spelhastigheten är densamma.",
+        "no": "FPS-tak: 60, 75, 120 eller 144. Spillfarten er den samme.",
+        "da": "FPS-loft: 60, 75, 120 eller 144. Spilhastigheden er den samme.",
+        "ru": "Лимит FPS: 60, 75, 120 или 144. Скорость игры не меняется.",
     },
     "opt_help_language": {
         "fr": "Langue des menus, de l'aide et des crédits.",
@@ -2297,21 +2223,6 @@ T = {
     "no": {
         "fr": "Non", "en": "No", "es": "No", "de": "Nein", "it": "No", "pt": "Não",
         "nl": "Nee", "pl": "Nie", "tr": "Hayır", "sv": "Nej", "no": "Nei", "da": "Nej", "ru": "Нет",
-    },
-    "opt_hint": {
-        "fr": "Gauche / Droite = régler     Entrée = valider",
-        "en": "Left / Right = adjust     Enter = confirm",
-        "es": "Izquierda / Derecha = ajustar     Enter = validar",
-        "de": "Links / Rechts = anpassen     Enter = bestätigen",
-        "it": "Sinistra / Destra = regola     Invio = conferma",
-        "pt": "Esquerda / Direita = ajustar     Enter = confirmar",
-        "nl": "Links / Rechts = aanpassen     Enter = bevestigen",
-        "pl": "Lewo / Prawo = zmień     Enter = zatwierdź",
-        "tr": "Sol / Sağ = ayarla     Enter = onayla",
-        "sv": "Vänster / Höger = justera     Enter = bekräfta",
-        "no": "Venstre / Høyre = juster     Enter = bekreft",
-        "da": "Venstre / Højre = juster     Enter = bekræft",
-        "ru": "Влево / Вправо = изменить     Enter = ОК",
     },
     "reset_hs_title": {
         "fr": "EFFACER LES HIGH SCORES ?", "en": "RESET HIGH SCORES ?", "es": "¿BORRAR LOS RÉCORDS?",
@@ -3655,28 +3566,6 @@ T = {
         "da": "Tryk på en tast / knap  —  Tilbage",
         "ru": "Нажми клавишу / кнопку  —  Назад",
     },
-    "enter_initials": {
-        "fr": "ENTRE TES INITIALES", "en": "ENTER YOUR INITIALS", "es": "INTRODUCE TUS INICIALES",
-        "de": "INITIALEN EINGEBEN", "it": "INSERISCI LE INIZIALI", "pt": "INTRODUZ AS INICIAIS",
-        "nl": "VOER JE INITIALEN IN", "pl": "WPISZ INICJAŁY", "tr": "BAŞ HARFLERİNİ GİR",
-        "sv": "ANGE DINA INITIALER", "no": "SKRIV INN INITIALER", "da": "INDTAST INITIALER",
-        "ru": "ВВЕДИТЕ ИНИЦИАЛЫ",
-    },
-    "help_return": {
-        "fr": "Une touche / stick  —  Retour",
-        "en": "Any key / stick  —  Back",
-        "es": "Cualquier tecla / stick  —  Volver",
-        "de": "Taste / Stick  —  Zurück",
-        "it": "Tasto / stick  —  Indietro",
-        "pt": "Qualquer tecla / stick  —  Voltar",
-        "nl": "Toets / stick  —  Terug",
-        "pl": "Klawisz / stick  —  Wstecz",
-        "tr": "Tuş / stick  —  Geri",
-        "sv": "Tangent / spak  —  Tillbaka",
-        "no": "Tast / spak  —  Tilbake",
-        "da": "Tast / stick  —  Tilbage",
-        "ru": "Клавиша / стик  —  Назад",
-    },
     "new_record": {
         "fr": "NOUVEAU RECORD", "en": "NEW RECORD", "es": "NUEVO RÉCORD", "de": "NEUER REKORD",
         "it": "NUOVO RECORD", "pt": "NOVO RECORDE", "nl": "NIEUW RECORD", "pl": "NOWY REKORD",
@@ -3707,41 +3596,11 @@ T = {
         "sv": "Ange dina initialer", "no": "Skriv inn initialer", "da": "Indtast initialer",
         "ru": "Введите инициалы",
     },
-    "back_to_menu": {
-        "fr": "ENTRÉE / A  —  Menu principal",
-        "en": "ENTER / A  —  Main menu",
-        "es": "ENTER / A  —  Menú principal",
-        "de": "ENTER / A  —  Hauptmenü",
-        "it": "INVIO / A  —  Menu principale",
-        "pt": "ENTER / A  —  Menu principal",
-        "nl": "ENTER / A  —  Hoofdmenu",
-        "pl": "ENTER / A  —  Menu główne",
-        "tr": "ENTER / A  —  Ana menü",
-        "sv": "ENTER / A  —  Huvudmeny",
-        "no": "ENTER / A  —  Hovedmeny",
-        "da": "ENTER / A  —  Hovedmenu",
-        "ru": "ENTER / A  —  Главное меню",
-    },
 
     "demo": {
         "fr": "DÉMO", "en": "DEMO", "es": "DEMO", "de": "DEMO", "it": "DEMO",
         "pt": "DEMO", "nl": "DEMO", "pl": "DEMO", "tr": "DEMO", "sv": "DEMO",
         "no": "DEMO", "da": "DEMO", "ru": "ДЕМО",
-    },
-    "hs_entry_controls": {
-        "fr": "Clavier : tape tes lettres   |   Manette : stick + A pour valider",
-        "en": "Keyboard: type letters   |   Gamepad: stick + A to confirm",
-        "es": "Teclado: escribe letras   |   Mando: stick + A para confirmar",
-        "de": "Tastatur: Buchstaben tippen   |   Gamepad: Stick + A zum Bestätigen",
-        "it": "Tastiera: digita le lettere   |   Controller: stick + A per confermare",
-        "pt": "Teclado: escreve as letras   |   Comando: stick + A para confirmar",
-        "nl": "Toetsenbord: typ letters   |   Controller: stick + A om te bevestigen",
-        "pl": "Klawiatura: wpisz litery   |   Pad: stick + A aby zatwierdzić",
-        "tr": "Klavye: harfleri yaz   |   Kol: stick + A ile onayla",
-        "sv": "Tangentbord: skriv bokstäver   |   Handkontroll: spak + A för att bekräfta",
-        "no": "Tastatur: skriv bokstaver   |   Kontroller: spak + A for å bekrefte",
-        "da": "Tastatur: skriv bogstaver   |   Controller: stick + A for at bekræfte",
-        "ru": "Клавиатура: введите буквы   |   Геймпад: стик + A для подтверждения",
     },
     "cheat_active": {
         "fr": "Cheat actif", "en": "Cheat active", "es": "Truco activo", "de": "Cheat aktiv",
@@ -4862,11 +4721,7 @@ _ADVENTURE_TEXTS = {
                               "This adventure is over. Delete it to free the slot."),
     "story_slot_damaged_msg": ("Fichier abîmé : supprime-le pour recommencer.",
                                "Damaged file: delete it to start over."),
-    "story_gate_hint": ("Haut / Bas  choisir   A/Entrée  ouvrir   Droite  supprimer   B/Échap  retour",
-                        "Up / Down  choose   A/Enter  open   Right  delete   B/Esc  back"),
     "story_name_title": ("NOM DU PILOTE", "PILOT NAME"),
-    "story_name_hint": ("Tape ton nom ou choisis les lettres   OK  valider   B/Esc  annuler",
-                        "Type your name or pick letters   OK  confirm   B/Esc  cancel"),
     "story_name_empty": ("Entre au moins une lettre.", "Enter at least one letter."),
     "story_mode_title": ("CHOIX DU MODE", "CHOOSE A MODE"),
     "story_mode_novice": ("NOVICE", "NOVICE"),
@@ -4963,8 +4818,6 @@ _ADVENTURE_TEXTS = {
     "story_leave_warn": ("Les sauvegardes de l'aventure sont conservées.", "Your adventure saves are kept."),
     "story_yes": ("OUI", "YES"),
     "story_no": ("NON", "NO"),
-    "story_delete_hint": ("Gauche / Droite  choisir   A/Entrée  valider   B/Échap  annuler",
-                          "Left / Right  choose   A/Enter  confirm   B/Esc  cancel"),
 }
 # Intro of the Adventure and its scenes, in French (the English and the other languages: assets/lang/<code>.json).
 # "\n" ends a line, an empty line is a pause; {name} is the pilot's name.
@@ -5309,8 +5162,6 @@ _ADVENTURE_TEXTS.update({
     "story_paint_violet": ("VIOLET", "VIOLET"),
     "story_paint_worn": ("actuelle", "current"),
     "story_paint_done_series": ("La peinture est prête : va au hangar.", "The paint is ready: go to the hangar."),
-    "story_hint_paint": ("Gauche / Droite  couleur    A/Entrée  peindre    B/Échap  annuler",
-                         "Left / Right  colour    A/Enter  paint    B/Esc  cancel"),
 })
 
 for _k, (_fr, _en) in _ADVENTURE_TEXTS.items():
@@ -6975,14 +6826,14 @@ for _k, (_fr, _en) in _SENT_TEXTS.items():
 
 
 # The antimatter missile (src/antimatter.py): unlocked by Silent Sentinels IV (French and English; the other languages show
-# the English text).
+# the English text, but for the key of the missile: _MENU_LATE_TEXTS).
 _MISSILE_TEXTS = {
     "act_missile": ("Missile antimatière", "Antimatter missile"),
     "kb_help_missile": (
-        "Lance le missile à antimatière, droit devant (lance-missiles et missile à l'atelier). Un seul par mission : il "
-        "détruit tout ce qui se trouve près de l'impact. S'il ne touche rien, il est perdu.",
-        "Fires the antimatter missile straight ahead (unlocked by Silent Sentinels IV). Only one per mission: it destroys "
-        "everything near the impact. If it hits nothing, it is lost."),
+        "Lance le missile antimatière droit devant (Aventure : achat à l'atelier ; arcade : style Aventure). Il détruit tout "
+        "ce qui est près de l'impact ; s'il ne touche rien, il est perdu.",
+        "Fires the antimatter missile straight ahead (Adventure: bought at the workshop; arcade: Adventure style). It "
+        "destroys everything near the impact; if it hits nothing, it is lost."),
     "story_missile_unlocked": ("Missile à antimatière débloqué : achète le lance-missiles à l'atelier (touche {key} en mission).",
                                "Antimatter missile unlocked: buy the launcher in the workshop (key {key} in a mission)."),
     "story_shop_launcher": ("Lance-missiles antimatière", "Antimatter missile launcher"),
@@ -7144,8 +6995,8 @@ for _k, (_fr, _en) in _MODULE_SCENE_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}
     T[_k]["fr"] = _fr
 
-# Options > GAMEPLAY: the Adventure style of a solo game (src/arcade_style.py). French and English; the other languages show
-# the English text.
+# Options > GAMEPLAY: the Adventure style of a solo game (src/arcade_style.py). French and English; the other languages in
+# _MENU_LATE_TEXTS just below.
 _GAMEPLAY_TEXTS = {
     "opt_tab_gameplay": ("GAMEPLAY", "GAMEPLAY"),
     "opt_gp_style": ("Style de jeu", "Play style"),
@@ -7181,6 +7032,274 @@ _GAMEPLAY_TEXTS = {
 for _k, (_fr, _en) in _GAMEPLAY_TEXTS.items():
     T[_k] = {_code: _en for _code in LANG_CODES}
     T[_k]["fr"] = _fr
+
+# The texts of the arcade menus above that are French and English in their own blocks (Options > GAMEPLAY, the key of
+# the antimatter missile, the codes typed on the high scores): the other languages.
+_MENU_LATE_TEXTS = {
+    "opt_gp_style": (
+        "Spielstil",
+        "Estilo de juego",
+        "Stile di gioco",
+        "Estilo de jogo",
+        "Speelstijl",
+        "Styl gry",
+        "Oyun tarzı",
+        "Spelstil",
+        "Spillestil",
+        "Spillestil",
+        "Стиль игры",
+    ),
+    "gp_style_classic": (
+        "Klassisch",
+        "Clásico",
+        "Classico",
+        "Clássico",
+        "Klassiek",
+        "Klasyczny",
+        "Klasik",
+        "Klassisk",
+        "Klassisk",
+        "Klassisk",
+        "Классика",
+    ),
+    "gp_style_adventure": (
+        "Abenteuer",
+        "Aventura",
+        "Avventura",
+        "Aventura",
+        "Avontuur",
+        "Przygoda",
+        "Macera",
+        "Äventyr",
+        "Eventyr",
+        "Eventyr",
+        "Приключение",
+    ),
+    "opt_gp_modules": (
+        "Begleitmodule",
+        "Módulos de escolta",
+        "Moduli di scorta",
+        "Módulos de escolta",
+        "Escortemodules",
+        "Moduły eskorty",
+        "Eskort modülleri",
+        "Eskortmoduler",
+        "Eskortemoduler",
+        "Eskortemoduler",
+        "Модули сопровождения",
+    ),
+    "opt_gp_missiles": (
+        "Antimaterie-Raketen",
+        "Misiles de antimateria",
+        "Missili di antimateria",
+        "Mísseis de antimatéria",
+        "Antimaterieraketten",
+        "Pociski antymaterii",
+        "Antimadde füzeleri",
+        "Antimateriamissiler",
+        "Antimateriemissiler",
+        "Antistofmissiler",
+        "Ракеты антиматерии",
+    ),
+    "opt_gp_reactor": (
+        "2D-Reaktor",
+        "Reactor 2D",
+        "Reattore 2D",
+        "Reator 2D",
+        "2D-reactor",
+        "Reaktor 2D",
+        "2D Reaktör",
+        "2D-reaktor",
+        "2D-reaktor",
+        "2D-reaktor",
+        "2D-реактор",
+    ),
+    "opt_help_gp_style": (
+        "Klassisch: das Arcade-Spiel wie immer. Abenteuer: Ein Solospiel beginnt mit einem Teil der Ausrüstung des "
+        "Abenteuers (die Einstellungen darunter), aber ohne Highscore. Das Spiel startet immer in Klassisch; die Wahl "
+        "gilt für das nächste Spiel, nicht im Hot Seat oder Koop.",
+        "Clásico: el juego arcade de siempre. Aventura: una partida en solitario empieza con parte del equipo de la "
+        "Aventura (los ajustes de abajo), pero sin récord. El juego siempre arranca en Clásico; la elección vale para "
+        "la próxima partida, no en Hot Seat ni en Coop.",
+        "Classico: il gioco arcade di sempre. Avventura: una partita in singolo inizia con parte dell'equipaggiamento "
+        "dell'Avventura (le impostazioni qui sotto), ma senza classifica. Il gioco parte sempre in Classico; la "
+        "scelta vale per la partita successiva, non in Hot Seat né in Coop.",
+        "Clássico: o jogo arcade de sempre. Aventura: um jogo a solo começa com parte do equipamento da Aventura (as "
+        "definições abaixo), mas sem recordes. O jogo começa sempre em Clássico; a escolha conta para o jogo "
+        "seguinte, não em Hot Seat nem em Coop.",
+        "Klassiek: het arcadespel zoals altijd. Avontuur: een solospel begint met een deel van de uitrusting uit het "
+        "Avontuur (de instellingen hieronder), maar zonder highscore. Het spel start altijd in Klassiek; de keuze "
+        "geldt voor het volgende spel, niet in Hot Seat of Coop.",
+        "Klasyczny: gra arcade jak zawsze. Przygoda: gra solo zaczyna się z częścią wyposażenia z Przygody "
+        "(ustawienia poniżej), ale bez rekordów. Gra zawsze startuje w stylu Klasycznym; wybór dotyczy następnej gry, "
+        "nie w Hot Seat ani w Co-op.",
+        "Klasik: her zamanki arcade oyunu. Macera: tek kişilik oyun, Macera'nın donanımının bir kısmıyla başlar "
+        "(aşağıdaki ayarlar), ama yüksek skor yok. Oyun her zaman Klasik ile başlar; seçim bir sonraki oyun için "
+        "geçerlidir, Hot Seat ve Co-op'ta değil.",
+        "Klassisk: arkadspelet som det alltid varit. Äventyr: ett solospel börjar med en del av Äventyrets utrustning "
+        "(inställningarna nedan), men utan topplista. Spelet startar alltid i Klassisk; valet gäller nästa spel, inte "
+        "i Hot Seat eller Co-op.",
+        "Klassisk: arkadespillet slik det alltid har vært. Eventyr: et solospill starter med noe av utstyret fra "
+        "Eventyret (innstillingene under), men uten toppliste. Spillet starter alltid i Klassisk; valget gjelder "
+        "neste spill, ikke i Hot Seat eller Co-op.",
+        "Klassisk: arkadespillet, som det altid har været. Eventyr: et solospil starter med noget af udstyret fra "
+        "Eventyret (indstillingerne nedenfor), men uden high score. Spillet starter altid i Klassisk; valget gælder "
+        "det næste spil, ikke i Hot Seat eller Co-op.",
+        "Классика: аркадная игра, как всегда. Приключение: одиночная игра начинается с частью снаряжения из "
+        "Приключения (настройки ниже), но без рекордов. Игра всегда запускается в Классике; выбор действует на "
+        "следующую игру, не в Hot Seat и не в Кооп.",
+    ),
+    "opt_help_gp_modules": (
+        "Abenteuer-Stil: Zwei Begleitmodule fliegen neben dem Schiff und feuern mit ihm (Schüsse ×3). Jedes wird vom "
+        "ersten Treffer oder beim ersten Zusammenstoß zerstört und kommt erst im nächsten Spiel zurück.",
+        "Estilo Aventura: dos módulos de escolta vuelan junto a la nave y disparan con ella (disparos ×3). Cada uno "
+        "se destruye con el primer disparo o el primer choque, y no vuelve hasta la próxima partida.",
+        "Stile Avventura: due moduli di scorta volano accanto alla nave e sparano con lei (colpi ×3). Ognuno è "
+        "distrutto dal primo colpo o dal primo urto, e non torna prima della partita successiva.",
+        "Estilo Aventura: dois módulos de escolta voam ao lado da nave e disparam com ela (tiros ×3). Cada um é "
+        "destruído pelo primeiro tiro ou pelo primeiro choque, e só volta no jogo seguinte.",
+        "Avontuur-stijl: twee escortemodules vliegen naast het schip en vuren mee (schoten ×3). Elk wordt vernietigd "
+        "door het eerste schot of de eerste botsing en komt pas in het volgende spel terug.",
+        "Styl Przygody: dwa moduły eskorty lecą obok statku i strzelają razem z nim (strzały ×3). Każdy ginie od "
+        "pierwszego trafienia lub pierwszego zderzenia i wraca dopiero w następnej grze.",
+        "Macera tarzı: iki eskort modülü geminin yanında uçar ve onunla birlikte ateş eder (atışlar ×3). Her biri ilk "
+        "atışta veya ilk çarpışmada yok olur ve bir sonraki oyuna kadar geri gelmez.",
+        "Äventyrsstil: två eskortmoduler flyger bredvid skeppet och skjuter med det (skott ×3). Var och en förstörs "
+        "av första skottet eller första kollisionen och kommer inte tillbaka förrän nästa spel.",
+        "Eventyr-stil: to eskortemoduler flyr ved siden av skipet og skyter sammen med det (skudd ×3). Hver av dem "
+        "ødelegges av det første skuddet eller det første sammenstøtet, og kommer ikke tilbake før neste spill.",
+        "Eventyr-stil: to eskortemoduler flyver ved siden af skibet og skyder med det (skud ×3). Hvert af dem "
+        "ødelægges af det første skud eller det første sammenstød og kommer først tilbage i næste spil.",
+        "Стиль Приключения: два модуля сопровождения летят рядом с кораблём и стреляют вместе с ним (выстрелы ×3). "
+        "Каждый уничтожается первым попаданием или первым столкновением и не вернётся до следующей игры.",
+    ),
+    "opt_help_gp_missiles": (
+        "Abenteuer-Stil: Antimaterie-Raketen für das ganze Spiel (1 bis 20 oder keine). Eine Taste feuert sie ab; "
+        "ihre Explosion zerstört alles ringsum. Die verbleibende Anzahl steht oben rechts.",
+        "Estilo Aventura: misiles de antimateria para toda la partida (de 1 a 20, o ninguno). Una tecla los lanza; su "
+        "explosión destruye todo lo que la rodea. Los que quedan se muestran arriba a la derecha.",
+        "Stile Avventura: missili di antimateria per tutta la partita (da 1 a 20, o nessuno). Un tasto li lancia; la "
+        "loro esplosione distrugge tutto ciò che la circonda. Il numero rimasto appare in alto a destra.",
+        "Estilo Aventura: mísseis de antimatéria para todo o jogo (de 1 a 20, ou nenhum). Uma tecla dispara-os; a "
+        "explosão destrói tudo à sua volta. O número restante aparece no canto superior direito.",
+        "Avontuur-stijl: antimaterieraketten voor het hele spel (1 tot 20, of geen). Eén toets vuurt ze af; hun "
+        "explosie vernietigt alles eromheen. Het aantal dat over is staat rechtsboven.",
+        "Styl Przygody: pociski antymaterii na całą grę (od 1 do 20 albo wcale). Jeden klawisz je odpala; ich wybuch "
+        "niszczy wszystko wokół. Pozostała liczba widnieje w prawym górnym rogu.",
+        "Macera tarzı: tüm oyun için antimadde füzeleri (1 ile 20 arası ya da hiç). Tek bir tuş onları fırlatır; "
+        "patlamaları çevresindeki her şeyi yok eder. Kalan sayı sağ üstte görünür.",
+        "Äventyrsstil: antimateriamissiler för hela spelet (1 till 20, eller inga). En tangent avfyrar dem; deras "
+        "explosion förstör allt runt omkring. Antalet som är kvar visas uppe till höger.",
+        "Eventyr-stil: antimateriemissiler for hele spillet (1 til 20, eller ingen). Én tast avfyrer dem; "
+        "eksplosjonen ødelegger alt rundt seg. Antallet som er igjen vises øverst til høyre.",
+        "Eventyr-stil: antistofmissiler til hele spillet (1 til 20, eller ingen). Én tast affyrer dem; eksplosionen "
+        "ødelægger alt omkring sig. Antallet tilbage vises øverst til højre.",
+        "Стиль Приключения: ракеты антиматерии на всю игру (от 1 до 20 или ни одной). Их запускает одна клавиша; "
+        "взрыв уничтожает всё вокруг. Оставшееся число видно справа вверху.",
+    ),
+    "opt_help_gp_reactor": (
+        "Abenteuer-Stil: der zweidimensionale Impulsreaktor. Das Schiff fliegt auch nach oben und unten, im unteren "
+        "Drittel des Bildschirms (hoch / runter auf der Tastatur, dem Steuerkreuz oder dem Stick).",
+        "Estilo Aventura: el reactor de impulso bidimensional. La nave también vuela hacia arriba y hacia abajo, en "
+        "el tercio inferior de la pantalla (arriba / abajo en el teclado, la cruceta o el stick).",
+        "Stile Avventura: il reattore a impulso bidimensionale. La nave vola anche verso l'alto e verso il basso, nel "
+        "terzo inferiore dello schermo (su / giù sulla tastiera, sulla croce o sullo stick).",
+        "Estilo Aventura: o reator de impulso bidimensional. A nave também voa para cima e para baixo, no terço "
+        "inferior do ecrã (cima / baixo no teclado, na cruzeta ou no stick).",
+        "Avontuur-stijl: de tweedimensionale impulsreactor. Het schip vliegt ook omhoog en omlaag, in het onderste "
+        "derde van het scherm (omhoog / omlaag op het toetsenbord, de D-pad of de stick).",
+        "Styl Przygody: dwuwymiarowy reaktor impulsowy. Statek lata też w górę i w dół, w dolnej jednej trzeciej "
+        "ekranu (góra / dół na klawiaturze, krzyżaku lub gałce).",
+        "Macera tarzı: iki boyutlu itki reaktörü. Gemi ekranın alt üçte birinde yukarı ve aşağı da uçar (klavyede, "
+        "yön tuşlarında veya çubukta yukarı / aşağı).",
+        "Äventyrsstil: den tvådimensionella impulsreaktorn. Skeppet flyger också uppåt och nedåt, i skärmens nedre "
+        "tredjedel (upp / ner på tangentbordet, styrkorset eller spaken).",
+        "Eventyr-stil: den todimensjonale impulsreaktoren. Skipet flyr også opp og ned, i den nederste tredjedelen av "
+        "skjermen (opp / ned på tastaturet, styrekorset eller stikken).",
+        "Eventyr-stil: den todimensionelle impulsreaktor. Skibet flyver også op og ned, i den nederste tredjedel af "
+        "skærmen (op / ned på tastaturet, retningskorset eller pinden).",
+        "Стиль Приключения: двумерный импульсный реактор. Корабль летает ещё и вверх-вниз, в нижней трети экрана "
+        "(вверх / вниз на клавиатуре, крестовине или стике).",
+    ),
+    "act_missile": (
+        "Antimaterie-Rakete",
+        "Misil de antimateria",
+        "Missile di antimateria",
+        "Míssil de antimatéria",
+        "Antimaterieraket",
+        "Pocisk antymaterii",
+        "Antimadde füzesi",
+        "Antimateriamissil",
+        "Antimateriemissil",
+        "Antistofmissil",
+        "Ракета антиматерии",
+    ),
+    "kb_help_missile": (
+        "Feuert die Antimaterie-Rakete geradeaus (Abenteuer: in der Werkstatt gekauft; Arcade: Abenteuer-Stil). Sie "
+        "zerstört alles nahe dem Einschlag; trifft sie nichts, ist sie verloren.",
+        "Lanza el misil de antimateria hacia delante (Aventura: se compra en el taller; arcade: estilo Aventura). "
+        "Destruye todo cerca del impacto; si no toca nada, se pierde.",
+        "Lancia il missile di antimateria dritto davanti (Avventura: si compra in officina; arcade: stile Avventura). "
+        "Distrugge tutto vicino all'impatto; se non colpisce nulla, è perso.",
+        "Dispara o míssil de antimatéria em frente (Aventura: compra-se na oficina; arcade: estilo Aventura). Destrói "
+        "tudo perto do impacto; se não acertar em nada, perde-se.",
+        "Vuurt de antimaterieraket recht vooruit (Avontuur: te koop in de werkplaats; arcade: Avontuur-stijl). Hij "
+        "vernietigt alles bij de inslag; raakt hij niets, dan is hij verloren.",
+        "Odpala pocisk antymaterii prosto przed siebie (Przygoda: kupiony w warsztacie; arcade: styl Przygody). "
+        "Niszczy wszystko blisko trafienia; jeśli w nic nie trafi, przepada.",
+        "Antimadde füzesini dümdüz ileri fırlatır (Macera: atölyeden alınır; arcade: Macera tarzı). Çarptığı yerin "
+        "yakınındaki her şeyi yok eder; hiçbir şeye çarpmazsa kaybolur.",
+        "Avfyrar antimateriamissilen rakt fram (Äventyr: köps i verkstaden; arkad: Äventyrsstil). Den förstör allt "
+        "nära nedslaget; träffar den inget är den förlorad.",
+        "Avfyrer antimateriemissilen rett frem (Eventyr: kjøpes i verkstedet; arkade: Eventyr-stil). Den ødelegger "
+        "alt nær nedslaget; treffer den ingenting, er den tapt.",
+        "Affyrer antistofmissilen lige frem (Eventyr: købes i værkstedet; arkade: Eventyr-stil). Den ødelægger alt "
+        "nær nedslaget; rammer den intet, er den tabt.",
+        "Запускает ракету антиматерии вперёд (Приключение: из мастерской; аркада: стиль Приключения). Уничтожает всё "
+        "у места попадания; если ни во что не попадёт, она потеряна.",
+    ),
+    "cheat_vn_on": (
+        "VISUAL NOVEL: ALLE SZENEN",
+        "VISUAL NOVEL: TODAS LAS ESCENAS",
+        "VISUAL NOVEL: TUTTE LE SCENE",
+        "VISUAL NOVEL: TODAS AS CENAS",
+        "VISUAL NOVEL: ALLE SCÈNES",
+        "VISUAL NOVEL: WSZYSTKIE SCENY",
+        "VISUAL NOVEL: TÜM SAHNELER",
+        "VISUAL NOVEL: ALLA SCENER",
+        "VISUAL NOVEL: ALLE SCENER",
+        "VISUAL NOVEL: ALLE SCENER",
+        "VISUAL NOVEL: ВСЕ СЦЕНЫ",
+    ),
+    "cheat_vn_off": (
+        "VISUAL NOVEL: NORMAL",
+        "VISUAL NOVEL: NORMAL",
+        "VISUAL NOVEL: NORMALE",
+        "VISUAL NOVEL: NORMAL",
+        "VISUAL NOVEL: NORMAAL",
+        "VISUAL NOVEL: NORMALNIE",
+        "VISUAL NOVEL: NORMAL",
+        "VISUAL NOVEL: NORMAL",
+        "VISUAL NOVEL: NORMAL",
+        "VISUAL NOVEL: NORMAL",
+        "VISUAL NOVEL: ОБЫЧНО",
+    ),
+    "cheat_story": (
+        "CODE {code}: AKTIV, SOBALD EIN PILOT GEÖFFNET WIRD",
+        "CÓDIGO {code}: ACTIVO AL ABRIR UN PILOTO",
+        "CODICE {code}: ATTIVO ALL'APERTURA DI UN PILOTA",
+        "CÓDIGO {code}: ATIVO AO ABRIR UM PILOTO",
+        "CODE {code}: ACTIEF ZODRA EEN PILOOT WORDT GEOPEND",
+        "KOD {code}: AKTYWNY PO OTWARCIU PILOTA",
+        "KOD {code}: BİR PİLOT AÇILINCA ETKİN",
+        "KOD {code}: AKTIV NÄR EN PILOT ÖPPNAS",
+        "KODE {code}: AKTIV NÅR EN PILOT ÅPNES",
+        "KODE {code}: AKTIV, NÅR EN PILOT ÅBNES",
+        "КОД {code}: ВКЛЮЧИТСЯ ПРИ ОТКРЫТИИ ПИЛОТА",
+    ),
+}
+for _k, _texts in _MENU_LATE_TEXTS.items():
+    T[_k].update(zip(("de", "es", "it", "pt", "nl", "pl", "tr", "sv", "no", "da", "ru"), _texts))
 
 # The escort modules at the workshop (story_state.module_rows) and their pieces (French and English; the other languages show
 # the English text).
@@ -7259,7 +7378,7 @@ _LANDER_TEXTS = {
         "The Lunar Lander to the last drop: set the ship down on a flat zone of an asteroid, Titan, Europa, Deimos or "
         "Triton, then fly again with the fuel left (+50 for a perfect landing, +25 for a rough one), over a ground where the "
         "big zones get rarer and rarer. The run ends with a crash or an empty tank: its points pay in credits, without a "
-        "penalty. One record per setting. You choose the setting at the start. Open once the game is finished."),
+        "penalty. One record per setting. You choose the setting at the start. Opens once the game is finished."),
     "lander_crash": ("CRASH !", "CRASH!"),
     "lander_refuel": ("+{n} CARBURANT", "+{n} FUEL"),
     "lander_points": ("{p} points  +  carburant {b}   (zone \u00d7{z})", "{p} points  +  fuel {b}   (zone \u00d7{z})"),
@@ -7327,7 +7446,7 @@ _SCRAMBLE_TEXTS = {
         "Endless Scramble: fly through the rock to the enemy base and shoot down its red Avioid commander, then go again with "
         "more enemies (birds, missiles, comets), and so on until your last life. The points pay in credits, without a "
         "penalty. One record for all the settings. The missile launchers and the red Avioid commander go into the Bestiary. "
-        "You choose the setting at the start. Open once the game is finished."),
+        "You choose the setting at the start. Opens once the game is finished."),
     # Atterrissages (story_state.MISSIONS "lander_*"): the Lunar Lander on one setting, with its own tank
     "story_m_land1": ("Atterrissage sur Déimos", "Landing on Deimos"),
     "story_m_land1_b": (
