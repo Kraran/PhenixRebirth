@@ -6862,7 +6862,7 @@ _MODULE_SCENE_TEXTS = {
         " une caisse intacte : l’anneau gyroscopique du premier module. L’autre moitié, le cœur de tir, a disparu. Les "
         "Avioïdes l’ont emportée dans la base qu’ils ont creusée dans la roche.\n\n"
         "Déimos n’attire presque rien. Il faudra poser le vaisseau tout doucement, sans dériver, près de l’épave. Les "
-        "techniciens ont rempli le réservoir à ras bord. Je n’ai jamais posé un chasseur ailleurs que dans une baie… Il"
+        "techniciens ont chargé 90 unités de carburant. Je n’ai jamais posé un chasseur ailleurs que dans une baie… Il"
         " y a un début à tout.",
         "Grok has dug out of the EDF archives a project the war had buried: escort satellites, armed gyroscopes that "
         "fly beside a fighter and fire with it. A convoy was carrying the prototypes to Mars when the Avioids caught it"
@@ -6871,7 +6871,7 @@ _MODULE_SCENE_TEXTS = {
         "crate intact: the gyroscopic ring of the first module. The other half, the firing core, is gone. The Avioids "
         "took it into the base they have dug into the rock.\n\n"
         "Deimos pulls at almost nothing. I will have to set the ship down very gently, without drifting, near the "
-        "wreck. The technicians have filled the tank to the brim. I have never landed a fighter anywhere but in a bay… "
+        "wreck. The technicians have loaded 90 units of fuel. I have never landed a fighter anywhere but in a bay… "
         "There is a first time for everything."),
     "story_scene_raid1": (
         "Sous la croûte noire de Déimos, les Avioïdes ont creusé une base : une galerie de plusieurs kilomètres, "
@@ -6894,14 +6894,14 @@ _MODULE_SCENE_TEXTS = {
         "Avec ces plans, les techniciens de Phobos gagneraient des semaines de travail. Et moi, beaucoup de "
         "crédits.\n\n"
         "La zone d’atterrissage est étroite, coincée entre les rochers, et la faible gravité de l’astéroïde pardonne "
-        "mal les gestes trop brusques. Réservoir plein. Je descends.",
+        "mal les gestes trop brusques. 80 unités de carburant. Je descends.",
         "Before the war, the EDF kept a small maintenance post on an asteroid of the belt, a few hours from old "
         "Wallems’s workshop. The post has stood empty for two years. But according to Wallems, its engineers used to "
         "assemble the escort satellites there, and their assembly plans should still be sleeping in the post’s memory "
         "banks.\n\n"
         "With those plans, the technicians of Phobos would save weeks of work. And I would save a lot of credits.\n\n"
         "The landing zone is narrow, wedged between the rocks, and the feeble gravity of the asteroid is unforgiving of"
-        " sudden moves. Tank full. Going down."),
+        " sudden moves. 80 units of fuel. Going down."),
     "story_scene_raid2": (
         "Au cœur d’un astéroïde voisin, les Avioïdes ont installé une base. Ils y entassent les plaques de blindage "
         "arrachées aux épaves des Shields abattus, par dizaines, comme des trophées.\n\n"
@@ -6921,14 +6921,14 @@ _MODULE_SCENE_TEXTS = {
         "station a été rasée, mais son hangar de surface tient encore debout, et la caisse du second anneau "
         "gyroscopique est toujours dedans.\n\n"
         "Europe est lisse comme une patinoire, mais sa gravité est forte et ses crêtes de glace coupent la plaine.\n\n"
-        "120 unités de carburant, pas une de plus. Cette fois, il faudra les compter.",
+        "70 unités de carburant, pas une de plus. Cette fois, il faudra les compter.",
         "One module will not be enough. Grok has drawn a second one, and its parts are not on Mars: the EDF convoy was "
         "to deliver them to the research station Europa-3, on the ice of Europa, the moon of Jupiter. The station has "
         "been razed, but its surface hangar still stands, and the crate of the second gyroscopic ring is still "
         "inside.\n\n"
         "Europa is as smooth as a skating rink, but its gravity is strong and its ridges of ice cut across the "
         "plain.\n\n"
-        "120 units of fuel, not one more. This time, I will have to count them."),
+        "70 units of fuel, not one more. This time, I will have to count them."),
     "story_scene_raid3": (
         "Sous la glace d’Europe, à deux pas des ruines de la station, les Avioïdes ont creusé une base. Le cœur de tir "
         "du second module y est enfermé, avec tout ce qu’ils ont pillé dans les laboratoires.\n\n"
@@ -6944,13 +6944,13 @@ _MODULE_SCENE_TEXTS = {
         "Sur Titan, la grande lune de Saturne, la raffinerie de méthane de l’EDF est abandonnée depuis le début de la "
         "guerre. Ses cuves sont encore pleines. Le vieux Wallems paiera une fortune pour chaque cellule d’énergie que "
         "je lui ramènerai : dans la ceinture, plus rien ne se raffine.\n\n"
-        "Mais Titan est la plus lourde des cinq. Sa gravité est la plus forte, et 120 unités de carburant passent vite "
+        "Mais Titan est la plus lourde des cinq. Sa gravité est la plus forte, et 70 unités de carburant passent vite "
         "quand il faut freiner la chute.\n\n"
         "Il faudra se poser du premier coup.",
         "On Titan, the great moon of Saturn, the EDF methane refinery has been abandoned since the start of the war. "
         "Its tanks are still full. Old Wallems will pay a fortune for every energy cell I bring him back: nothing gets "
         "refined in the belt any more.\n\n"
-        "But Titan is the heaviest of the five. Its gravity is the strongest, and 120 units of fuel go fast when the "
+        "But Titan is the heaviest of the five. Its gravity is the strongest, and 70 units of fuel go fast when the "
         "fall has to be braked.\n\n"
         "I will have to land at the first attempt."),
     "story_scene_raid4": (
@@ -6971,12 +6971,12 @@ _MODULE_SCENE_TEXTS = {
         "toujours là, sur la glace d’azote. Sa boîte noire aussi, d’après Grok : les derniers enregistrements de la "
         "station, ce que les 91 ont vu avant la fin.\n\n"
         "Mars paiera cher pour ces données. Et moi, je veux savoir.\n\n"
-        "La glace de Triton est criblée de cuvettes. 120 unités de carburant. Je me pose près de Huygens.",
+        "La glace de Triton est criblée de cuvettes. 60 unités de carburant. Je me pose près de Huygens.",
         "Triton. This is where it all began, on 1 June 2169, when the Huygens station fell silent. Its ruins are still "
         "there, on the nitrogen ice. So is its black box, according to Grok: the last recordings of the station, what "
         "the 91 saw before the end.\n\n"
         "Mars will pay well for that data. And I want to know.\n\n"
-        "The ice of Triton is riddled with dimples. 120 units of fuel. I am landing near Huygens."),
+        "The ice of Triton is riddled with dimples. 60 units of fuel. I am landing near Huygens."),
     "story_scene_raid5": (
         "Sous la glace de Triton, tout près du nid, les Avioïdes ont creusé leur dernière base. La plus longue, la plus"
         " rapide, la mieux défendue : collines, caverne, comètes, pics et défilés, et au bout, un mur de quatre rangs "
@@ -7426,15 +7426,16 @@ _LANDER_TEXTS = {
     "lander_rough": ("Atterrissage réussi, mais rude", "Landed, but hard"),
     "story_m_lander_bonus": ("BONUS FINAL - Lunar Lander", "FINAL BONUS - Lunar Lander"),
     "story_m_lander_bonus_b": (
-        "Le Lunar Lander jusqu'à la dernière goutte : pose le vaisseau sur une zone plane d'un astéroïde, de Titan, "
-        "d'Europe, de Déimos ou de Triton, puis repars avec le carburant restant (+50 pour un atterrissage parfait, +25 "
-        "pour un rude), sur un sol où les grandes zones se font de plus en plus rares. La partie s'arrête sur un crash ou "
-        "une panne sèche : ses points rapportent des crédits, sans pénalité. Un record par décor. Tu choisis le décor au "
-        "départ. Ouverte une fois le jeu terminé.",
-        "The Lunar Lander to the last drop: set the ship down on a flat zone of an asteroid, Titan, Europa, Deimos or "
-        "Triton, then fly again with the fuel left (+50 for a perfect landing, +25 for a rough one), over a ground where the "
-        "big zones get rarer and rarer. The run ends with a crash or an empty tank: its points pay in credits, without a "
-        "penalty. One record per setting. You choose the setting at the start. Opens once the game is finished."),
+        "Le Lunar Lander jusqu'à la dernière goutte : 90 unités au départ. Pose le vaisseau sur une zone plane d'un "
+        "astéroïde, de Titan, d'Europe, de Déimos ou de Triton, puis repars avec le carburant restant (+50 pour un "
+        "atterrissage parfait, +25 pour un rude), sur un sol où les grandes zones se font de plus en plus rares. La "
+        "partie s'arrête sur un crash ou une panne sèche : ses points rapportent des crédits, sans pénalité. Un record "
+        "par décor. Tu choisis le décor au départ. Ouverte une fois le jeu terminé.",
+        "The Lunar Lander to the last drop: 90 units at the start. Set the ship down on a flat zone of an asteroid, "
+        "Titan, Europa, Deimos or Triton, then fly again with the fuel left (+50 for a perfect landing, +25 for a rough "
+        "one), over a ground where the big zones get rarer and rarer. The run ends with a crash or an empty tank: its "
+        "points pay in credits, without a penalty. One record per setting. You choose the setting at the start. Opens "
+        "once the game is finished."),
     "lander_crash": ("CRASH !", "CRASH!"),
     "lander_refuel": ("+{n} CARBURANT", "+{n} FUEL"),
     "lander_points": ("{p} points  +  carburant {b}   (zone \u00d7{z})", "{p} points  +  fuel {b}   (zone \u00d7{z})"),
@@ -7507,30 +7508,30 @@ _SCRAMBLE_TEXTS = {
     "story_m_land1": ("Atterrissage sur Déimos", "Landing on Deimos"),
     "story_m_land1_b": (
         "Facultative. Pose le vaisseau en douceur sur une zone plane de Déimos, la petite lune de Mars. Sa gravité est faible "
-        "et le réservoir est plein à ras bord : 150 unités de carburant. L'atterrissage rapporte ses points (plus le carburant restant) en crédits ; un crash coûte ce que coûte un échec.",
+        "et le réservoir contient 90 unités de carburant. L'atterrissage rapporte ses points (plus le carburant restant) en crédits ; un crash coûte ce que coûte un échec.",
         "Optional. Set the ship down gently on a flat zone of Deimos, the little moon of Mars. Its gravity is low and the tank "
-        "is full to the brim: 150 units of fuel. The landing pays its points (plus the fuel left) in credits; a crash costs what a failure costs."),
+        "holds 90 units of fuel. The landing pays its points (plus the fuel left) in credits; a crash costs what a failure costs."),
     "story_m_land2": ("Atterrissage sur un astéroïde", "Landing on an asteroid"),
     "story_m_land2_b": (
-        "Facultative. Pose le vaisseau sur un astéroïde de la ceinture, entre ses rochers. Réservoir plein à ras bord : 150 "
-        "unités de carburant. L'atterrissage rapporte ses points (plus le carburant restant) en crédits ; un crash coûte ce que coûte un échec.",
-        "Optional. Set the ship down on an asteroid of the belt, between its rocks. Tank full to the brim: 150 units of "
-        "fuel. The landing pays its points (plus the fuel left) in credits; a crash costs what a failure costs."),
+        "Facultative. Pose le vaisseau sur un astéroïde de la ceinture, entre ses rochers. 80 unités de carburant. "
+        "L'atterrissage rapporte ses points (plus le carburant restant) en crédits ; un crash coûte ce que coûte un échec.",
+        "Optional. Set the ship down on an asteroid of the belt, between its rocks. 80 units of fuel. The landing pays "
+        "its points (plus the fuel left) in credits; a crash costs what a failure costs."),
     "story_m_land3": ("Atterrissage sur Europe", "Landing on Europa"),
     "story_m_land3_b": (
-        "Facultative. Pose le vaisseau sur la glace d'Europe, la lune de Jupiter. 120 unités de carburant, pas une de plus. L'atterrissage rapporte ses points (plus le carburant restant) en crédits ; un crash coûte ce que coûte un échec.",
-        "Optional. Set the ship down on the ice of Europa, the moon of Jupiter. 120 units of fuel, not one more. The landing pays its points (plus the fuel left) in credits; a crash costs what a failure costs."),
+        "Facultative. Pose le vaisseau sur la glace d'Europe, la lune de Jupiter. 70 unités de carburant, pas une de plus. L'atterrissage rapporte ses points (plus le carburant restant) en crédits ; un crash coûte ce que coûte un échec.",
+        "Optional. Set the ship down on the ice of Europa, the moon of Jupiter. 70 units of fuel, not one more. The landing pays its points (plus the fuel left) in credits; a crash costs what a failure costs."),
     "story_m_land4": ("Atterrissage sur Titan", "Landing on Titan"),
     "story_m_land4_b": (
         "Facultative. Pose le vaisseau sur Titan, la grande lune de Saturne : la gravité la plus forte des cinq "
-        "décors, et 120 unités de carburant. L'atterrissage rapporte ses points (plus le carburant restant) en crédits ; un crash coûte ce que coûte un échec.",
-        "Optional. Set the ship down on Titan, the great moon of Saturn: the strongest gravity of the five settings, and 120 "
+        "décors, et 70 unités de carburant. L'atterrissage rapporte ses points (plus le carburant restant) en crédits ; un crash coûte ce que coûte un échec.",
+        "Optional. Set the ship down on Titan, the great moon of Saturn: the strongest gravity of the five settings, and 70 "
         "units of fuel. The landing pays its points (plus the fuel left) in credits; a crash costs what a failure costs."),
     "story_m_land5": ("Atterrissage sur Triton", "Landing on Triton"),
     "story_m_land5_b": (
-        "Facultative. Pose le vaisseau sur la glace de Triton, la lune de Neptune, au bout du système solaire. 120 unités "
+        "Facultative. Pose le vaisseau sur la glace de Triton, la lune de Neptune, au bout du système solaire. 60 unités "
         "de carburant. L'atterrissage rapporte ses points (plus le carburant restant) en crédits ; un crash coûte ce que coûte un échec.",
-        "Optional. Set the ship down on the ice of Triton, the moon of Neptune, at the edge of the solar system. 120 units "
+        "Optional. Set the ship down on the ice of Triton, the moon of Neptune, at the edge of the solar system. 60 units "
         "of fuel. The landing pays its points (plus the fuel left) in credits; a crash costs what a failure costs."),
     # Raid sur les bases avioïdes I-V (story_state.MISSIONS "raid_*"): the Scramble on one setting, at its level
     "story_m_raid_hud": ("Raid", "Raid"),

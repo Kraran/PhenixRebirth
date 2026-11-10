@@ -30,10 +30,10 @@ class _Ship:
 def test_a_flight_starts_high_with_a_full_tank_and_can_be_drawn(run):
     spec = _launch(run, "lander_deimos")
     g = run.game
-    assert spec.get("lander") and spec["fuel"] == 150
+    assert spec.get("lander") and spec["fuel"] == 90
     form = g.formation
     assert isinstance(form, ld.LanderFormation)
-    assert form.fuel == form.fuel_max == 150 and form.phase == "flying"
+    assert form.fuel == form.fuel_max == 90 and form.phase == "flying"
     assert form.altitude() > 1000 and form.zoom_i == 0 and abs(form.y - ld.START_Y) < 30   # (a few frames have passed)
     assert abs(form.x - ld.WORLD / 2) < 10 and abs(form.vx) <= 70
     run.frames(30)

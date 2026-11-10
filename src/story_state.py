@@ -628,14 +628,15 @@ MISSIONS = [
     },
     # Atterrissages (Déimos, astéroïde, Europe, Titan, Triton): the Lunar Lander (src/lander.py) for real, on one setting each,
     # no menu, before the raid of the same setting (same acts, same flags, same rules: optional, once until the ending, the
-    # points in credits). `fuel`: the tank (lander.FUEL_START when left out): fuller on the two settings of Act 1.
+    # points in credits). `fuel`: the tank (lander.FUEL_START when left out): 90 on Deimos, 80 on the asteroid,
+    # 70 on Europa and Titan, 60 on Triton.
     # Raid sur les bases avioïdes (I-V): the Scramble level (src/scramble.py) for real, on one setting each and at its own level
     # of difficulty (`raid`: scramble.LEVELS, 1 the easiest, 5 the full Scramble), no menu. Optional (on the map
     # with the BONUS missions), flown once until the ending has been told; the points pay in credits, a failure costs what a
     # failure always costs. Deimos and the asteroid in Act 1, Europa and Titan in Act 2, Triton in Act 3 (the earlier ones
     # stay on the map of the later acts).
     {
-        "id": "lander_deimos", "acts": (1, 2, 3), "extra": True, "once": True, "lander": True, "body": "deimos", "fuel": 150,
+        "id": "lander_deimos", "acts": (1, 2, 3), "extra": True, "once": True, "lander": True, "body": "deimos", "fuel": 90,
         "title": "story_m_land1", "hud_title": "story_m_lander_hud", "blurb": "story_m_land1_b",
         "need": "dome_s2", "content": 1, "speed": 1.0,
     },
@@ -645,7 +646,7 @@ MISSIONS = [
         "need": "dome_s2", "content": 1, "speed": 1.0,
     },
     {
-        "id": "lander_rock", "acts": (1, 2, 3), "extra": True, "once": True, "lander": True, "body": "rock", "fuel": 150,
+        "id": "lander_rock", "acts": (1, 2, 3), "extra": True, "once": True, "lander": True, "body": "rock", "fuel": 80,
         "title": "story_m_land2", "hud_title": "story_m_lander_hud", "blurb": "story_m_land2_b",
         "need": "dome_s4", "content": 1, "speed": 1.0,
     },
@@ -655,7 +656,7 @@ MISSIONS = [
         "need": "dome_s4", "content": 1, "speed": 1.0,
     },
     {
-        "id": "lander_europa", "acts": (2, 3), "extra": True, "once": True, "lander": True, "body": "europa", "fuel": 120,
+        "id": "lander_europa", "acts": (2, 3), "extra": True, "once": True, "lander": True, "body": "europa", "fuel": 70,
         "title": "story_m_land3", "hud_title": "story_m_lander_hud", "blurb": "story_m_land3_b",
         "need": "phenix_s1", "content": 1, "speed": 1.0,
     },
@@ -665,7 +666,7 @@ MISSIONS = [
         "need": "phenix_s1", "content": 1, "speed": 1.0,
     },
     {
-        "id": "lander_titan", "acts": (2, 3), "extra": True, "once": True, "lander": True, "body": "ice", "fuel": 120,
+        "id": "lander_titan", "acts": (2, 3), "extra": True, "once": True, "lander": True, "body": "ice", "fuel": 70,
         "title": "story_m_land4", "hud_title": "story_m_lander_hud", "blurb": "story_m_land4_b",
         "need": "phenix_s3", "content": 1, "speed": 1.0,
     },
@@ -675,7 +676,7 @@ MISSIONS = [
         "need": "phenix_s3", "content": 1, "speed": 1.0,
     },
     {
-        "id": "lander_triton", "acts": (3,), "extra": True, "once": True, "lander": True, "body": "triton", "fuel": 120,
+        "id": "lander_triton", "acts": (3,), "extra": True, "once": True, "lander": True, "body": "triton", "fuel": 60,
         "title": "story_m_land5", "hud_title": "story_m_lander_hud", "blurb": "story_m_land5_b",
         "need": "act3", "content": 1, "speed": 1.0,
     },
@@ -704,7 +705,7 @@ MISSIONS = [
     # game is finished (the open ending of Act IV has been told); then at the end of Act IV (END BONUS), replayable.
     {
         "id": "bonus_lander", "acts": (ENDING_ACT,), "secret": True, "extra": True, "final_bonus": True, "lander": True,
-        "endless": True,
+        "endless": True, "fuel": 90,
         "title": "story_m_lander_bonus", "hud_title": "story_m_lander_hud", "blurb": "story_m_lander_bonus_b",
         "need": ENDING_DONE, "content": 1, "speed": 1.0,
     },

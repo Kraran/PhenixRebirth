@@ -8,9 +8,9 @@ import lander_view as lv
 import story_state as ss
 from test_smoke import run  # noqa: F401,F811  (fixture)
 
-WANT = {"lander_deimos": ("deimos", 150, (1, 2, 3), "raid_deimos"), "lander_rock": ("rock", 150, (1, 2, 3), "raid_rock"),
-        "lander_europa": ("europa", 120, (2, 3), "raid_europa"), "lander_titan": ("ice", 120, (2, 3), "raid_titan"),
-        "lander_triton": ("triton", 120, (3,), "raid_triton")}
+WANT = {"lander_deimos": ("deimos", 90, (1, 2, 3), "raid_deimos"), "lander_rock": ("rock", 80, (1, 2, 3), "raid_rock"),
+        "lander_europa": ("europa", 70, (2, 3), "raid_europa"), "lander_titan": ("ice", 70, (2, 3), "raid_titan"),
+        "lander_triton": ("triton", 60, (3,), "raid_triton")}
 
 
 def test_the_five_landings_are_on_the_maps_of_their_acts_before_their_raids():
@@ -30,9 +30,9 @@ def test_the_five_landings_are_on_the_maps_of_their_acts_before_their_raids():
 
 
 def test_the_tank_holds_what_the_mission_gives():
-    assert lander.LanderFormation("deimos", 3).fuel == lander.FUEL_START == 120.0
-    f = lander.LanderFormation("deimos", 3, fuel=150)
-    assert f.fuel == f.fuel_max == 150.0
+    assert lander.LanderFormation("deimos", 3).fuel == lander.FUEL_START == 90.0
+    f = lander.LanderFormation("deimos", 3, fuel=80)
+    assert f.fuel == f.fuel_max == 80.0
 
 
 def _gauge_fill(surf):
@@ -47,7 +47,7 @@ def _gauge_fill(surf):
     return best
 
 
-def test_the_gauge_is_full_with_a_full_tank_of_150(run):
+def test_the_gauge_is_full_with_a_full_tank(run):
     g = run.game
     from test_spacewar import _state
     st = _state()
@@ -60,7 +60,7 @@ def test_the_gauge_is_full_with_a_full_tank_of_150(run):
     run.frames(2)
     form = g.formation
     seen = []
-    for fuel in (150.0, 75.0):
+    for fuel in (90.0, 45.0):
         form.fuel = fuel
         surf = pygame.Surface(g.game_surface.get_size())
         surf.fill((0, 0, 0))
@@ -96,7 +96,7 @@ def test_a_landing_launches_its_setting_and_its_tank_without_a_menu(run):
     g._begin_adventure(spec)
     run.frames(2)
     form = g.formation
-    assert isinstance(form, lander.LanderFormation) and form.style == "ice" and form.fuel_max == 120.0
+    assert isinstance(form, lander.LanderFormation) and form.style == "ice" and form.fuel_max == 70.0
 
 
 def test_the_bonus_keep_their_menu_and_their_tank(run):
@@ -109,7 +109,7 @@ def test_the_bonus_keep_their_menu_and_their_tank(run):
     g.story.screen = "lander_pick"
     g.story.pick_for = "lander"
     spec = g.story.confirm()
-    assert "fuel" not in spec and spec["body"] == lander.MENU_ORDER[2]
+    assert spec["fuel"] == 90 and spec["body"] == lander.MENU_ORDER[2]
     g._begin_adventure(spec)
     run.frames(2)
     assert g.formation.fuel_max == lander.FUEL_START

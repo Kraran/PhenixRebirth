@@ -67,7 +67,7 @@ MENU_ORDER = ("rock", "ice", "europa", "deimos", "triton")      # the choice of 
 
 THRUST = 190.0                    # px/s^2 along the axis of the ship
 TURN_SPEED = 2.0                  # rad/s
-FUEL_START = 120.0                # units
+FUEL_START = 90.0                 # units (the BONUS FINAL tank; a landing of the Adventure sets its own)
 FUEL_BURN = 6.0                   # units per second of thrust
 FUEL_LOW = 25.0                   # the beeps start below this
 START_Y = -1750.0                 # where the ship starts (the ground is round 0, its peaks at about -450)
@@ -261,7 +261,7 @@ class LanderFormation:
     def __init__(self, style=None, seed=None, speed_mult=1.0, rng=None, fuel=None, endless=False):
         self.rng = rng if rng is not None else random.Random()
         self.style = style if style in BODIES else self.rng.choice(BODY_KEYS)
-        self.fuel_max = float(fuel) if fuel else FUEL_START     # (a landing of the Adventure may fill the tank higher)
+        self.fuel_max = float(fuel) if fuel else FUEL_START     # (the starting tank; a landing of the Adventure may set a smaller one)
         self.gravity = BODIES[self.style]["gravity"]
         self.endless = bool(endless)        # BONUS FINAL - Lunar Lander: level after level until the fuel runs out
         self.level = 1
