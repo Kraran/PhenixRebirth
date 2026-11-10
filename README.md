@@ -143,7 +143,7 @@ a keyboard half or a pad.
 Five tabs: **Game**, **Gameplay**, **Audio**, **Display**, **Advanced** (Tab / Page Up / Page Down on the keyboard, LB / RB on the pad, or Left / Right on the row of tabs). Persisted in `settings.json` (created at runtime, **not** shipped in the repo):
 
 - Control (Auto / keyboard / pad), the control of each coop player, key and button bindings, display (window / fullscreen / borderless)
-- Gameplay: the play style of a solo arcade game, *Classic* or *Adventure* (escort modules, antimatter missiles, the 2D reactor; no high score; the game always starts in Classic)
+- Gameplay: the play style of a solo arcade game, *Classic* or *Adventure* (escort modules, antimatter missiles, the 2D reactor, and *Guardians*: as in FINAL BONUS - Guardians, Guardians come with the birds on every level, the boss levels too, 1 to 5 of them, one more each level, then from level 6 one more Alpha Guardian every five levels; off by default; no high score; the game always starts in Classic)
 - SFX & music volume, rumble, autofire
 - Language (13 locales)
 - FPS counter, scanlines OFF / 1 / 2 / 3

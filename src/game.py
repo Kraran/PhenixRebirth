@@ -2196,13 +2196,20 @@ class Game:
         Adventure: "guardians_at", {stage: how many}; src/guardian.py GuardianSquad)."""
         self.guardian_squad = None
         self._setup_formation(stage)
+        self._setup_guardian_squad()
+
+    def _setup_guardian_squad(self):
+        """The Guardians that come with the wave in play (self.stage), if any: those of the mission of the Adventure, or
+        those of a solo arcade game with Options > GAMEPLAY > Guardians (src/arcade_style.py: as in BONUS FINAL -
+        Gardiens, story_state.endless_guardians)."""
+        self.guardian_squad = None
         adv = getattr(self, "adventure", None) or {}
         plan = adv.get("guardians_at") or {}
         count = int(plan.get(int(self.stage), plan.get(str(int(self.stage)), 0)) or 0)
         count = count or int(adv.get("guardians_each") or 0)          # (Bestiaire VI: Guardians with every wave)
         alphas = 0
-        if adv.get("endless_guardians"):
-            count, alphas = story_state.endless_guardians(int(self.stage))   # (BONUS FINAL - Gardiens)
+        if adv.get("endless_guardians") or arcade_style.guardians(self):
+            count, alphas = story_state.endless_guardians(int(self.stage))   # (BONUS FINAL - Gardiens, or the option)
         if count > 0 or alphas > 0:
             from guardian import GuardianSquad
             from ship_burn import prepare as prepare_ship_burn
@@ -3293,6 +3300,7 @@ class Game:
             "gp_modules": bool(getattr(self, "gp_modules", True)),
             "gp_missiles": int(getattr(self, "gp_missiles", 5) or 0),
             "gp_reactor": bool(getattr(self, "gp_reactor", True)),
+            "gp_guardians": bool(getattr(self, "gp_guardians", False)),
             "language": self.language,
             "show_fps": self.show_fps,
             "scanlines": int(getattr(self, "scanlines", 0) or 0),
@@ -3558,6 +3566,7 @@ class Game:
             "control", "coop_p1", "coop_p2", "keybinds", "autofire", "sfx", "music", "audio_mix", "ingame_music", "rumble", "display",
             "bezel", "fps", "scanlines", "gpu", "vsync", "hz",
             "language", "reset_hs", "back", "gp_style", "gp_modules", "gp_missiles", "gp_reactor",
+            "gp_guardians",
         ):
             return
         x, y, w, h = box
@@ -3586,7 +3595,7 @@ class Game:
                 "gpu": "opt_gpu", "vsync": "opt_vsync", "hz": "opt_hz",
                 "language": "opt_language", "reset_hs": "opt_reset_hs", "back": "opt_back",
                 "gp_style": "opt_gp_style", "gp_modules": "opt_gp_modules", "gp_missiles": "opt_gp_missiles",
-                "gp_reactor": "opt_gp_reactor",
+                "gp_reactor": "opt_gp_reactor", "gp_guardians": "opt_gp_guardians",
             }.get(key, "options"))
             hdr = self._txt(self.font, title, (255, 210, 140))
             panel.blit(hdr, (18, 14))
@@ -3618,7 +3627,7 @@ class Game:
         "bezel": "opt_bezel", "fps": "opt_fps", "scanlines": "opt_scanlines", "gpu": "opt_gpu", "vsync": "opt_vsync",
         "hz": "opt_hz", "language": "opt_language", "reset_hs": "opt_reset_hs",
         "gp_style": "opt_gp_style", "gp_modules": "opt_gp_modules", "gp_missiles": "opt_gp_missiles",
-        "gp_reactor": "opt_gp_reactor",
+        "gp_reactor": "opt_gp_reactor", "gp_guardians": "opt_gp_guardians",
     }
 
     def _option_label(self, key):
@@ -3627,7 +3636,7 @@ class Game:
     def _option_greyed(self, key):
         """True for a row that does nothing now (the bezels outside fullscreen; the equipment of the Adventure style while
         the classic style is chosen)."""
-        if key in ("gp_modules", "gp_missiles", "gp_reactor"):
+        if key in ("gp_modules", "gp_missiles", "gp_reactor", "gp_guardians"):
             return getattr(self, "gameplay_style", "classic") != "adventure"
         return key == "bezel" and getattr(self, "display_mode", "fullscreen") != "fullscreen"
 
@@ -3651,6 +3660,8 @@ class Game:
             return str(n) if n else t("no")
         if key == "gp_reactor":
             return t("yes") if getattr(self, "gp_reactor", True) else t("no")
+        if key == "gp_guardians":
+            return t("yes") if getattr(self, "gp_guardians", False) else t("no")
         if key == "sfx":
             return f"{int(round(self.sfx_volume * 100))}%"
         if key == "music":
