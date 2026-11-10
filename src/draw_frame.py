@@ -228,8 +228,7 @@ def draw_hud(game):
         form = game.formation
         if adv.get("endless"):
             _draw_endless_record(game, adv)                 # BONUS FINAL - Space War: the record of this planet
-            label = t("story_spacewar_hud_endless").format(n=int(getattr(form, "level", 1)),
-                                                           t=int(getattr(form, "player_torpedoes", 0)))
+            label = t("story_spacewar_hud_endless").format(t=int(getattr(form, "player_torpedoes", 0)))
         else:
             label = t("story_spacewar_hud").format(n=int(getattr(form, "level", 1)),
                                                    m=len(getattr(form, "levels", spacewar.LEVELS)),

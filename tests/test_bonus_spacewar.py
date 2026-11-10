@@ -252,3 +252,70 @@ def test_it_waits_for_the_workshop_missile_in_the_air_before_the_game_over(run):
     run.frames(int(60 * (sw.EXHAUST_PAUSE + 0.5)))
     st = ss.load_state(ss.story_path(1))
     assert st["credits"] == 550 and ss.endless_best(st, MID + ":jupiter") == 150
+
+
+# ------------------------------------------------------------------ the card, the menu and the HUD
+def _note_width():
+    from settings import BASE_WIDTH
+    box_w = BASE_WIDTH - 140
+    return box_w - 32 - 72                   # the map row, minus the inset used in StoryHub._draw_map
+
+
+@pytest.mark.parametrize("lang", ("fr", "en"))
+def test_the_map_blurb_fits_on_the_card(run, lang):
+    from story import StoryHub, MAP_NOTE_MAX, _wrap
+    prev = i18n.get_lang()
+    i18n.set_lang(lang)
+    try:
+        text = i18n.t("story_m_sw_bonus_b")
+        font = StoryHub._note_font()
+        lines = _wrap(font, text, _note_width())
+        assert 0 < len(lines) <= MAP_NOTE_MAX
+        assert " ".join(lines) == " ".join(text.split())
+    finally:
+        i18n.set_lang(prev)
+
+
+PICK_ROW_W, PICK_TEXT_LEFT = 400, 32         # StoryHub._draw_gate_lander_pick: the row, and the subtitle's left edge
+
+
+@pytest.mark.parametrize("lang", ("fr", "en"))
+def test_the_planet_subtitles_fit_in_the_menu_row(run, lang):
+    prev = i18n.get_lang()
+    i18n.set_lang(lang)
+    try:
+        font = run.game.font                 # the pick menu draws the subtitle with this `small` font
+        limit = PICK_ROW_W - PICK_TEXT_LEFT
+        for key in sw.MENU_ORDER:
+            sub = i18n.t("spacewar_planet_sub_" + key)
+            assert font.size(sub)[0] <= limit, f"{lang} {key}: {sub!r} is {font.size(sub)[0]} px wide, limit {limit}"
+    finally:
+        i18n.set_lang(prev)
+
+
+def test_the_level_is_shown_once_and_the_hud_counts_the_torpedoes(run):
+    import text_cache as tc_mod
+    _launch(run)
+    g = run.game
+    run.frames(2)
+    seen = []
+    orig = tc_mod.TextCache.get
+
+    def spy(self, font, text, *a, **k):
+        seen.append(str(text))
+        return orig(self, font, text, *a, **k)
+
+    tc_mod.TextCache.get = spy
+    try:
+        run.frames(2)
+    finally:
+        tc_mod.TextCache.get = orig
+    level = i18n.t("story_level").format(n=int(g.adventure["level"]))
+    torpedoes = i18n.t("story_spacewar_hud_endless").format(t=int(g.formation.player_torpedoes))
+    title = i18n.t(g.adventure.get("hud_title") or g.adventure["title"])
+    assert any(title in x and level in x for x in seen)
+    assert torpedoes in seen
+    assert not any(level in x and torpedoes in x for x in seen)
+    assert "{n}" not in i18n.T["story_spacewar_hud_endless"]["fr"]
+    assert "NIVEAU" not in i18n.T["story_spacewar_hud_endless"]["fr"]
+    assert "LEVEL" not in i18n.T["story_spacewar_hud_endless"]["en"]

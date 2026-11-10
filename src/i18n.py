@@ -7713,17 +7713,14 @@ _SPACEWAR_BONUS_TEXTS = {
     "story_m_sw_bonus": ("BONUS FINAL - Space War", "FINAL BONUS - Space War"),
     "story_m_sw_bonus_hud": ("BONUS FINAL - SPACE WAR", "FINAL BONUS - SPACE WAR"),
     "story_m_sw_bonus_b": (
-        "Space War à l'infini, autour de la géante gazeuse que tu choisis (Jupiter, Saturne, Uranus ou Neptune) et de sa "
-        "gravité. Tu commences avec 20 torpilles, renouvelées à chaque niveau. Le niveau 1 oppose un oiseau bleu, le 2 "
-        "deux bleus, le 3 deux bleus et un vert, le 4 deux bleus et deux verts ; à partir du niveau 5, deux bleus et deux "
-        "verts, et une soucoupe tous les cinq niveaux. Une vie. La partie dure jusqu'à la perte du vaisseau, ou jusqu'à "
-        "ce que tes missiles soient tous tirés alors qu'il reste des ennemis : ses points rapportent des crédits, sans "
-        "pénalité. Un record par planète. Ouverte une fois le jeu terminé.",
-        "Endless Space War, around the gas giant you choose (Jupiter, Saturn, Uranus or Neptune) and its gravity. You "
-        "start with 20 torpedoes, renewed at each level. Level 1 is one blue bird, level 2 two blue, level 3 two blue "
-        "and one green, level 4 two blue and two green; from level 5 on, two blue and two green, and a saucer every five "
-        "levels. One life. The run lasts until the ship is lost, or until all your missiles have been fired while enemies "
-        "remain: its points pay in credits, without a penalty. One record per planet. Opens once the game is finished."),
+        "Space War à l'infini, autour de la géante gazeuse que tu choisis (Jupiter, Saturne, Uranus ou Neptune) "
+        "et de sa gravité. 20 torpilles, renouvelées à chaque niveau. Un bleu, puis deux, un vert, deux verts, "
+        "et une soucoupe tous les cinq niveaux. Une vie. Jusqu'à la perte du vaisseau ou de tes missiles : les "
+        "points rapportent des crédits, sans pénalité. Un record par planète. Ouverte une fois le jeu terminé.",
+        "Endless Space War, around the gas giant you choose (Jupiter, Saturn, Uranus or Neptune) and its gravity. "
+        "20 torpedoes, renewed at each level. One blue, then two, a green, two greens, and a saucer every five "
+        "levels. One life. Until the ship or your missiles are lost: its points pay in credits, without a penalty. "
+        "One record per planet. Opens once the game is finished."),
     "spacewar_pick_title_final": ("BONUS FINAL - Space War : choisis la planète",
                                   "FINAL BONUS - Space War: choose the planet"),
     "spacewar_planet_jupiter": ("Jupiter", "Jupiter"),
@@ -7731,9 +7728,9 @@ _SPACEWAR_BONUS_TEXTS = {
     "spacewar_planet_uranus": ("Uranus", "Uranus"),
     "spacewar_planet_neptune": ("Neptune", "Neptune"),
     "spacewar_planet_sub_jupiter": ("La plus forte gravité", "The strongest gravity"),
-    "spacewar_planet_sub_saturn": ("Ses anneaux sont inoffensifs", "Its rings are harmless"),
+    "spacewar_planet_sub_saturn": ("Anneaux inoffensifs", "Its rings are harmless"),
     "spacewar_planet_sub_uranus": ("Gravité plus faible", "Weaker gravity"),
-    "spacewar_planet_sub_neptune": ("Au bout du système", "At the edge of the system"),
+    "spacewar_planet_sub_neptune": ("Au bout du système", "At the system's edge"),
     "spacewar_info_jupiter": (
         "La plus massive des quatre. Sa gravité attire fortement les vaisseaux : une orbite serrée tombe vite vers le disque.",
         "The most massive of the four. Its gravity pulls the ships hard: a tight orbit falls quickly towards the disc."),
@@ -7746,7 +7743,7 @@ _SPACEWAR_BONUS_TEXTS = {
     "spacewar_info_neptune": (
         "La dernière géante, au bout du système. Sa gravité est proche de celle d'Uranus, un peu plus forte.",
         "The last giant, at the edge of the system. Its gravity is close to that of Uranus, a little stronger."),
-    "story_spacewar_hud_endless": ("NIVEAU {n}   TORPILLES {t}", "LEVEL {n}   TORPEDOES {t}"),
+    "story_spacewar_hud_endless": ("TORPILLES {t}", "TORPEDOES {t}"),
     "story_spacewar_level_endless": ("NIVEAU {n}", "LEVEL {n}"),
 }
 for _k, (_fr, _en) in _SPACEWAR_BONUS_TEXTS.items():
