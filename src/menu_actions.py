@@ -83,6 +83,10 @@ def menu_adjust(game, direction):
         if getattr(game, "gameplay_style", "classic") == "adventure":
             game.gp_reactor = not bool(getattr(game, "gp_reactor", True))
             game.save_settings()
+    elif key == "gp_guardians":
+        if getattr(game, "gameplay_style", "classic") == "adventure":
+            game.gp_guardians = not bool(getattr(game, "gp_guardians", False))
+            game.save_settings()
     elif key == "sfx":
         game.sfx_volume = max(0.0, min(1.0, game.sfx_volume + direction * 0.1))
         game.sounds.set_master_volume(game.sfx_volume)

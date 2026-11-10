@@ -120,6 +120,8 @@ def reset_run(game):
     game.player.sounds = getattr(game, "sounds", None)
     game.player2 = None
     game.arcade_style = False                                # (the modules and missiles of an Adventure-style game)
+    game.arcade_guardians = False                            # (and its Guardians, Options > GAMEPLAY)
+    game.guardian_squad = None
     game.gyro = None
     game.antimatter = None
     game.formation = EnemyFormation()
@@ -406,7 +408,9 @@ def init_settings(game, soft):
         game.gp_modules = bool(user.get("gp_modules", True))
         game.gp_missiles = int(user.get("gp_missiles", 5))
         game.gp_reactor = bool(user.get("gp_reactor", True))
+        game.gp_guardians = bool(user.get("gp_guardians", False))
     game.arcade_style = False                                # (set by arcade_style.start when a solo game begins)
+    game.arcade_guardians = False                            # (the Guardians of the option: arcade_style.start too)
     if not hasattr(game, "ship_id"):
         game.ship_id = "phoenix"
     if not hasattr(game, "ship_id_p2"):

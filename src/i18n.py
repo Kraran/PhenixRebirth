@@ -7005,6 +7005,7 @@ _GAMEPLAY_TEXTS = {
     "opt_gp_modules": ("Modules d'escorte", "Escort modules"),
     "opt_gp_missiles": ("Missiles antimatière", "Antimatter missiles"),
     "opt_gp_reactor": ("Réacteur 2D", "2D reactor"),
+    "opt_gp_guardians": ("Gardiens", "Guardians"),
     "opt_help_gp_style": (
         "Classique : le jeu d'arcade de toujours. Aventure : une partie solo commence avec une partie de l'équipement de "
         "l'Aventure (les réglages en dessous), mais sans meilleur score. Le jeu démarre toujours en Classique ; le choix "
@@ -7027,6 +7028,13 @@ _GAMEPLAY_TEXTS = {
         "dans le tiers inférieur de l'écran (haut / bas du clavier, de la croix ou du stick).",
         "Adventure style: the two-dimensional impulse reactor. The ship also flies up and down, in the lower third of the "
         "screen (up / down on the keyboard, the d-pad or the stick)."),
+    "opt_help_gp_guardians": (
+        "Style Aventure : comme dans BONUS FINAL - Gardiens, des Gardiens viennent avec les oiseaux à chaque niveau, ceux "
+        "du boss aussi : de 1 à 5, un de plus à chaque niveau, puis à partir du niveau 6 un Gardien Alpha de plus tous "
+        "les cinq niveaux. Leurs lasers brûlent aussi les oiseaux.",
+        "Adventure style: as in FINAL BONUS - Guardians, Guardians come with the birds on every level, the boss levels "
+        "too: 1 to 5 of them, one more each level, then from level 6 one more Alpha Guardian every five levels. Their "
+        "lasers burn the birds too."),
     "antimatter_hud_n": ("MISSILES ×{n}  {key}", "MISSILES ×{n}  {key}"),
 }
 for _k, (_fr, _en) in _GAMEPLAY_TEXTS.items():
@@ -7113,6 +7121,54 @@ _MENU_LATE_TEXTS = {
         "2D-reaktor",
         "2D-reaktor",
         "2D-реактор",
+    ),
+    "opt_gp_guardians": (
+        "Wächter",
+        "Guardianes",
+        "Guardiani",
+        "Guardiões",
+        "Wachters",
+        "Strażnicy",
+        "Muhafızlar",
+        "Väktare",
+        "Voktere",
+        "Vogtere",
+        "Стражи",
+    ),
+    "opt_help_gp_guardians": (
+        "Abenteuer-Stil: wie in FINAL BONUS - Guardians kommen in jedem Level Wächter mit den Vögeln, auch in den "
+        "Boss-Levels: 1 bis 5, einer mehr pro Level, dann ab Level 6 alle fünf Level ein Alpha-Wächter mehr. Ihre Laser "
+        "verbrennen auch die Vögel.",
+        "Estilo Aventura: como en FINAL BONUS - Guardians, llegan Guardianes con los pájaros en cada nivel, también en "
+        "los del jefe: de 1 a 5, uno más por nivel, y desde el nivel 6 un Guardián Alfa más cada cinco niveles. Sus "
+        "láseres también queman a los pájaros.",
+        "Stile Avventura: come in FINAL BONUS - Guardians, a ogni livello arrivano Guardiani con gli uccelli, anche nei "
+        "livelli del boss: da 1 a 5, uno in più a ogni livello, poi dal livello 6 un Guardiano Alfa in più ogni cinque "
+        "livelli. I loro laser bruciano anche gli uccelli.",
+        "Estilo Aventura: como em FINAL BONUS - Guardians, chegam Guardiões com os pássaros em cada nível, também nos "
+        "do chefe: de 1 a 5, mais um por nível, e a partir do nível 6 mais um Guardião Alfa a cada cinco níveis. Os "
+        "seus lasers também queimam os pássaros.",
+        "Avontuur-stijl: zoals in FINAL BONUS - Guardians komen er elk level Wachters mee met de vogels, ook in de "
+        "baaslevels: 1 tot 5, elk level één meer, en vanaf level 6 elke vijf levels één Alfa-Wachter meer. Hun lasers "
+        "verbranden ook de vogels.",
+        "Styl Przygody: jak w FINAL BONUS - Guardians, na każdym poziomie z ptakami przylatują Strażnicy, także na "
+        "poziomach bossa: od 1 do 5, o jednego więcej co poziom, a od poziomu 6 co pięć poziomów o jednego Strażnika "
+        "Alfa więcej. Ich lasery palą też ptaki.",
+        "Macera tarzı: FINAL BONUS - Guardians'taki gibi her seviyede kuşlarla birlikte Muhafızlar gelir, boss "
+        "seviyelerinde de: 1 ile 5 arası, her seviyede bir fazla, 6. seviyeden itibaren her beş seviyede bir Alfa "
+        "Muhafız fazla. Lazerleri kuşları da yakar.",
+        "Äventyrsstil: som i FINAL BONUS - Guardians kommer Väktare med fåglarna på varje nivå, även på bossnivåerna: 1 "
+        "till 5, en till för varje nivå, och från nivå 6 en Alfaväktare till var femte nivå. Deras lasrar bränner även "
+        "fåglarna.",
+        "Eventyr-stil: som i FINAL BONUS - Guardians kommer Voktere sammen med fuglene på hvert nivå, også på "
+        "bossnivåene: 1 til 5, én til for hvert nivå, og fra nivå 6 én Alfa-vokter til hvert femte nivå. Laserne "
+        "deres brenner også fuglene.",
+        "Eventyr-stil: som i FINAL BONUS - Guardians kommer der Vogtere med fuglene på hvert niveau, også på "
+        "bossniveauerne: 1 til 5, én mere for hvert niveau, og fra niveau 6 én Alfa-vogter mere hvert femte niveau. "
+        "Deres lasere brænder også fuglene.",
+        "Стиль Приключения: как в FINAL BONUS - Guardians, на каждом уровне вместе с птицами прилетают Стражи, и на "
+        "уровнях босса тоже: от 1 до 5, на одного больше с каждым уровнем, а с 6-го уровня каждые пять уровней на "
+        "одного Альфа-Стража больше. Их лазеры сжигают и птиц.",
     ),
     "opt_help_gp_style": (
         "Klassisch: das Arcade-Spiel wie immer. Abenteuer: Ein Solospiel beginnt mit einem Teil der Ausrüstung des "

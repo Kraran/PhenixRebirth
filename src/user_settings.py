@@ -40,6 +40,7 @@ def clean_user_settings(data):
         "gp_modules": True,  # Adventure style: the two escort modules
         "gp_missiles": 5,  # Adventure style: antimatter missiles for the game (0-20)
         "gp_reactor": True,  # Adventure style: the 2D reactor (the ship flies up and down in the lower third)
+        "gp_guardians": False,  # Adventure style: the Guardians of BONUS FINAL - Gardiens come with every level
     }
     if not isinstance(data, dict):
         return defaults
