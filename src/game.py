@@ -8,6 +8,8 @@ Play modes: solo, hot-seat (alternating), coop (simultaneous). Options cover
 controls, autofire, volumes, session audio mix, rumble, display, GPU present,
 VSync, refresh cap, bezels, FPS counter, CRT scanlines and language.
 Cheats on the high-score menu: LV02–LV99, LIVE, PHEN, VNOV.
+v1.7.0 — escort modules, landings and raids, the Guardians series, the END BONUS missions, the Adventure style of the
+arcade game, the loading bar.
 v1.6.2 — Scramble (TEST and BONUS), the concert of Lyra Voss after the visual novel, the jukebox with the lyrics.
 v1.6.1 — menus of the Adventure as the station of Phobos, the four endings, Lunar Lander settings. v1.6.0 — Adventure: visual novel, open ending (Act IV), SpaceWar / Lander / Guardians, missile launcher, AZERTY codes.
 v1.5.0 — Adventure (beta): Acts 1-3, rebindable controls, music, announcer to level 31.
