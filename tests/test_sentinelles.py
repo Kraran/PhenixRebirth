@@ -88,8 +88,10 @@ def test_the_two_clips_exist_and_loop_without_sound():
 # ------------------------------------------------------------------ the order
 def test_only_the_first_is_open_at_the_start_of_act_1():
     st = _state(act=1)
-    assert ss.mission_playable(st, ss.mission_by_id("sentinelle_1"))
     assert ss.mission_by_id("sentinelle_1") in ss.visible_missions(st)
+    assert not ss.mission_playable(st, ss.mission_by_id("sentinelle_1"))     # waits for the first Bestiary sortie
+    st["flags"][ss.CH1_SIDES] = True
+    assert ss.mission_playable(st, ss.mission_by_id("sentinelle_1"))
     for mid in IDS[1:]:
         assert ss.mission_by_id(mid) not in ss.visible_missions(st)
         assert not ss.mission_playable(st, ss.mission_by_id(mid))
@@ -120,7 +122,7 @@ def test_the_fourth_is_in_act_3_only_and_opens_when_the_third_is_won():
 
 
 def test_a_won_one_is_flown_once_until_the_fourth_is_won_then_all_come_back():
-    st = _state(act=3)
+    st = _state(act=3, **{ss.CH1_SIDES: True})
     _won(st, "sentinelle_1", "sentinelle_2", "sentinelle_3")
     for mid in IDS[:3]:
         assert not ss.mission_playable(st, ss.mission_by_id(mid))
@@ -133,7 +135,7 @@ def test_a_won_one_is_flown_once_until_the_fourth_is_won_then_all_come_back():
 
 
 def test_a_lost_one_can_be_tried_again_and_loses_the_normal_penalty():
-    st = _state(act=1, credits=2000)
+    st = _state(act=1, credits=2000, **{ss.CH1_SIDES: True})
     res = ss.record_result(st, "sentinelle_1", 300, False)
     assert res["lost"] == ss.failure_penalty(2000) == 100 and st["credits"] == 1900
     assert not ss.flag(st, "sentinelle_1")
@@ -172,7 +174,7 @@ def test_the_flags_follow_the_chain():
 @pytest.mark.parametrize("mid", IDS)
 def test_the_launch_spec_is_a_real_mission(mid):
     hub = StoryHub()
-    hub.state = _state(act=3, **{m: True for m in IDS[:3]})
+    hub.state = _state(act=3, **{ss.CH1_SIDES: True, **{m: True for m in IDS[:3]}})
     hub.state["items"]["got"]["genesis"] = "installed"
     hub.map_index = next(i for i, m in enumerate(hub.missions()) if m["id"] == mid)
     spec = hub._launch_selected()
@@ -230,6 +232,7 @@ def _mission(run, mid, credits=1000):
     st = ss.create_slot(1, "NOVA", "normal")
     ss.mark_intro_seen(st)
     st.update(act=3, credits=credits)
+    st["flags"][ss.CH1_SIDES] = True
     for before in IDS[:IDS.index(mid)] if mid in IDS else []:
         st["flags"][before] = True
     ss.save_state(ss.story_path(1), st)

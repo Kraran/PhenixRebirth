@@ -1074,6 +1074,7 @@ def test_the_ship_burn_without_an_angle_is_unchanged(run):
 def test_the_asteroids_missions_still_fly_with_friction(run):
     g = run.game
     st = _state()
+    st["flags"][ss.CH1_SIDES] = True
     ss.save_state(ss.story_path(1), st)
     g.story.open_slot(1)
     g.story.map_index = [m["id"] for m in g.story.missions()].index("ast_1")

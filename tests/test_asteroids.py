@@ -33,6 +33,7 @@ def _screen():
 def _state(mode="normal", act=1, credits=0, hull="shield", dome=False, lives=None):
     st = ss.create_slot(1, "NOVA", mode)
     ss.mark_intro_seen(st)
+    st["flags"][ss.CH1_SIDES] = True          # Ceinture I waits for the first Bestiary sortie
     st["act"] = act
     st["credits"] = credits
     if hull == "phoenix":

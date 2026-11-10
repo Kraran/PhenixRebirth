@@ -24,6 +24,13 @@ def _act1():
     return st
 
 
+def _open_belt(st=None):
+    """Act 1 after the first Bestiary sortie: Ceinture I can be flown."""
+    st = st or _act1()
+    st["flags"][ss.CH1_SIDES] = True
+    return st
+
+
 def _act2():
     st = _act1()
     ss.jump_to_act2(st)
@@ -58,7 +65,7 @@ def test_the_old_asteroids_test_mission_is_removed():
 
 
 def test_the_dome_waits_for_the_belt_in_act_1():
-    st = _act1()
+    st = _open_belt()
     ast, dome = ss.mission_by_id("ast_1"), ss.mission_by_id("dome_1")
     assert ss.mission_playable(st, ast) and not ss.mission_playable(st, dome)
     assert ss.unlock_hint(st, dome) is ast
@@ -96,7 +103,7 @@ def test_the_belt_of_act_3_is_for_both_hulls(hull):
 
 
 def test_the_belt_is_replayable_and_paid_every_time():
-    st = _act1()
+    st = _open_belt()
     for n in range(3):
         before = st["credits"]
         res = ss.record_result(st, "ast_1", 400 + n, True)
@@ -190,7 +197,7 @@ def test_a_save_in_act_2_with_the_phenix_series_started_only_skips_that_belt():
 # ---------------------------------------------------------------------- the launch
 @pytest.mark.parametrize("mid,first,flag,target,act", PRELUDES)
 def test_the_launch_carries_the_rocks_to_destroy(mid, first, flag, target, act):
-    st = {1: _act1, 2: _act2, 3: _act3}[act]()
+    st = {1: _open_belt, 2: _act2, 3: _act3}[act]()
     st["flags"]["ch3_ready"] = True
     ss.save_state(ss.story_path(1), st)
     hub = StoryHub()
@@ -230,7 +237,7 @@ def test_the_scenes_come_in_the_order_of_the_story():
 
 
 def test_the_scene_is_told_before_the_first_launch_and_not_again():
-    st = _act1()
+    st = _open_belt()
     ss.save_state(ss.story_path(1), st)
     hub = StoryHub()
     hub.open_slot(1)
@@ -282,7 +289,7 @@ def _fly(g, st, mid):
 
 @pytest.mark.parametrize("mid,first,flag,target,act", PRELUDES)
 def test_the_field_of_each_act_asks_for_its_number_of_rocks(run, mid, first, flag, target, act):
-    st = {1: _act1, 2: _act2, 3: _act3}[act]()
+    st = {1: _open_belt, 2: _act2, 3: _act3}[act]()
     st["flags"]["ch3_ready"] = True
     _fly(run.game, st, mid)
     assert run.game.formation.target == target

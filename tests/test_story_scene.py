@@ -120,8 +120,11 @@ def test_a_mission_that_cannot_be_flown_shows_no_scene():
     hub.map_index = [m["id"] for m in hub.missions()].index("dome_1")       # waits for the belt: no scene yet either
     assert ss.scene_of("dome_1") and not hub.mission_playable(hub._mission())
     assert hub.confirm() is None and hub.screen == "hub"
-    hub.map_index = [m["id"] for m in hub.missions()].index("ast_1")        # open from the start: its scene is shown
-    assert hub.mission_playable(hub._mission())
+    hub.map_index = [m["id"] for m in hub.missions()].index("ast_1")        # locked until the first sortie is won
+    assert not hub.mission_playable(hub._mission())
+    assert hub.confirm() is None and hub.screen == "hub"
+    hub.state["flags"][ss.CH1_SIDES] = True
+    assert hub.mission_playable(hub._mission())                              # then its scene can be shown
 
 
 def test_each_slot_has_its_own_scene_memory():
