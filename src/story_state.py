@@ -727,6 +727,17 @@ MISSIONS = [
         "title": "story_m_gd_bonus", "hud_title": "story_m_gd_bonus_hud", "blurb": "story_m_gd_bonus_b",
         "need": ENDING_DONE, "content": 1, "speed": 1.0,
     },
+    # BONUS FINAL - Space War: the SpaceWar level (src/spacewar.py) around the gas giant chosen in the menu (Jupiter,
+    # Saturn, Uranus, Neptune), level after level until the ship is lost or the player has no missile left. 20 torpedoes
+    # are refilled at each level; the workshop antimatter missile, if it is unlocked, is one per run. Like the other
+    # FINAL BONUS missions: its points pay without a penalty nor a fall, leaving it gains nothing, one record per planet
+    # (ENDLESS_BEST "bonus_spacewar:<planet>"). Secret until the game is finished; then at the end of Act IV (END BONUS).
+    {
+        "id": "bonus_spacewar", "acts": (ENDING_ACT,), "secret": True, "extra": True, "final_bonus": True,
+        "spacewar": True, "endless": True,
+        "title": "story_m_sw_bonus", "hud_title": "story_m_sw_bonus_hud", "blurb": "story_m_sw_bonus_b",
+        "need": ENDING_DONE, "content": 1, "speed": 1.0,
+    },
     # EDF - Opération Sentinelles silencieuses (I-IV): a stealth spy satellite to put in orbit round each gas giant, built on the
     # SpaceWar level (src/spacewar.py) but for real: the birds and the saucers pay their normal points and a failure costs what
     # it always costs. Flown in order (I from the start of Act 1, II and III in Act 2, IV in Act 3), once each, until the

@@ -25,6 +25,7 @@ import story_state as ss
 import lander
 import lander_view
 import scramble_view
+import spacewar
 import story_vn
 import loot
 from text_cache import TextCache
@@ -351,7 +352,7 @@ class StoryHub:
         self.first_help_spec = None
         self.first_help_t = 0.0
         self.lander_index = 0          # BONUS FINAL - Lunar Lander: the setting under the cursor (screen "lander_pick", lander.MENU_ORDER)
-        self.pick_for = "lander"       # ... the same menu chooses the setting of BONUS FINAL - Scramble ("scramble")
+        self.pick_for = "lander"       # ... the same menu chooses Scramble ("scramble") or Space War ("spacewar")
         self.vn_cheat_picks = {}       # VNOV: the answers given in this session (they decide the ending told, nothing is saved)
         self.vn_page = 0               # the page of the text on screen (an empty line of the text cuts a new page)
         self.vn_order = [0, 1, 2, 3]   # the indexes of the answers in the order they are shown (random in some scenes)
@@ -1591,6 +1592,12 @@ class StoryHub:
                 self.pick_for = "scramble"
                 self.pick_load = "scramble"           # (the same loading bar: Game._load_pick_menu)
                 return None
+            if mission and mission.get("spacewar") and not mission.get("planet") and self.mission_playable(mission):
+                self.lander_index = 0                 # BONUS FINAL - Space War: the gas giant is chosen first
+                self.screen = "lander_pick"
+                self.pick_for = "spacewar"
+                self.pick_load = "spacewar"
+                return None
             return self._launch_selected()
         if self.pane == "extras":
             doors = self.doors()
@@ -1654,18 +1661,33 @@ class StoryHub:
             self.sound_events.append("paint_fanfare")            # trumpets for the new colour
         self.paint_mode = False
 
-    # --- BONUS FINAL - Lunar Lander / Scramble: the choice of the setting (the asteroid, Titan, Europa, Deimos, Triton) ---
+    # --- BONUS FINAL - Lunar Lander / Scramble / Space War: the choice of the setting (or of the planet) ---
+    def _pick_kind(self):
+        return getattr(self, "pick_for", "lander")
+
+    def _pick_order(self):
+        """The rows of the pick menu: the five Lander/Scramble settings, or the four Space War planets."""
+        if self._pick_kind() == "spacewar":
+            return spacewar.MENU_ORDER
+        return lander.MENU_ORDER
+
     def _lander_move(self, direction):
-        n = len(lander.MENU_ORDER)
+        n = len(self._pick_order())
         self.lander_index = (self.lander_index + (1 if direction > 0 else -1)) % n
 
     def _lander_confirm(self):
-        """The setting is chosen: the launch spec of the mission, with it ("body")."""
+        """The setting or the planet is chosen: the launch spec of the mission, with it."""
         self.screen = "hub"
-        return self._launch_selected(body=lander.MENU_ORDER[self.lander_index % len(lander.MENU_ORDER)])
+        key = self._pick_order()[self.lander_index % len(self._pick_order())]
+        if self._pick_kind() == "spacewar":
+            return self._launch_selected(planet=key)
+        return self._launch_selected(body=key)
 
     def _pick_scramble(self):
-        return self.screen == "lander_pick" and getattr(self, "pick_for", "lander") == "scramble"
+        return self.screen == "lander_pick" and self._pick_kind() == "scramble"
+
+    def _pick_spacewar(self):
+        return self.screen == "lander_pick" and self._pick_kind() == "spacewar"
 
     def show_first_help(self, spec):
         """A quiet briefing before the first flight; no combat or timers run."""
@@ -1684,7 +1706,7 @@ class StoryHub:
                 y += small.get_linesize() + 14
             y += 20
 
-    def _launch_selected(self, body=None):
+    def _launch_selected(self, body=None, planet=None):
         mission = self._mission()
         if not self.mission_playable(mission):
             return None
@@ -1706,10 +1728,15 @@ class StoryHub:
             if mission.get(key):
                 spec[key] = mission[key]            # the Guardians fire together / fewer birds / the Alpha (src/guardian.py)
         if mission.get("spacewar"):
+            chosen = mission.get("planet") or planet
+            if chosen not in spacewar.PLANETS:
+                chosen = "jupiter"
             spec.update(spacewar=True, items=[],                    # (src/spacewar.py: the plasma is useless, only the torpedoes)
-                        planet=mission.get("planet") or "jupiter")  # (the planet in the middle: Jupiter, Saturn, Uranus, Neptune)
+                        planet=chosen)                             # (the planet in the middle: Jupiter, Saturn, Uranus, Neptune)
             if mission.get("sw_levels"):
                 spec["sw_levels"] = [list(lv) for lv in mission["sw_levels"]]   # the Sentinelle missions: their own levels
+            if mission.get("endless"):
+                spec.update(endless=True, level=1)    # BONUS FINAL - Space War: level after level until the ship is lost
         if mission.get("lander"):
             spec.update(lander=True, items=[])                       # (src/lander.py)
             if mission.get("fuel"):
@@ -2391,7 +2418,11 @@ class StoryHub:
         picture = phobos_ui.backdrop("gate")
         if picture is not None:
             surface.blit(picture, (0, 0))
-        title = "scramble_pick_title_final" if self._pick_scramble() else titles[self.screen]   # (BONUS FINAL - ...)
+        if self.screen == "lander_pick":
+            title = {"scramble": "scramble_pick_title_final",
+                     "spacewar": "spacewar_pick_title_final"}.get(self._pick_kind(), "lander_pick_title_final")
+        else:
+            title = titles[self.screen]
         phobos_ui.title(surface, medium, t(title), cx, 10)
         getattr(self, "_draw_gate_" + self.screen)(surface, font, medium, small)
 
@@ -2465,28 +2496,41 @@ class StoryHub:
         self._draw_yes_no(surface, small, cx, danger=False)
 
     def _draw_gate_lander_pick(self, surface, font, medium, small):
-        """BONUS FINAL - Lunar Lander / Scramble: the five settings in a list, and a picture of the one under the cursor (its sky, its ground, its
-        mother planet) with a few words on it."""
+        """BONUS FINAL - Lunar Lander / Scramble / Space War: the settings or the planets in a list, and a picture of
+        the one under the cursor with a few words on it."""
         body = getattr(self, "_body", None) or small
+        kind = self._pick_kind()
+        order = self._pick_order()
         x, y, w, h, gap = 60, 96, 400, 78, 12
-        for i, key in enumerate(lander.MENU_ORDER):
+        for i, key in enumerate(order):
             r = pygame.Rect(x, y + i * (h + gap), w, h)
             focus = i == self.lander_index
             if focus:
                 phobos_ui.lit(surface, r)
             else:
                 phobos_ui.plate(surface, r)
-            _text(surface, medium, t("lander_body_" + key), (255, 230, 140) if focus else (220, 220, 235), r.y + 27, left=r.x + 32)
-            _text(surface, small, t("lander_planet_" + key), (170, 175, 195), r.y + 55, left=r.x + 32)
-        key = lander.MENU_ORDER[self.lander_index % len(lander.MENU_ORDER)]
-        scr = self._pick_scramble()
-        pic = scramble_view.preview(key) if scr else lander_view.preview(key)
+            if kind == "spacewar":
+                name, sub = t("spacewar_planet_" + key), t("spacewar_planet_sub_" + key)
+            else:
+                name, sub = t("lander_body_" + key), t("lander_planet_" + key)
+            _text(surface, medium, name, (255, 230, 140) if focus else (220, 220, 235), r.y + 27, left=r.x + 32)
+            _text(surface, small, sub, (170, 175, 195), r.y + 55, left=r.x + 32)
+        key = order[self.lander_index % len(order)]
+        if kind == "scramble":
+            pic = scramble_view.preview(key)
+            info_key = "scramble_info_"
+        elif kind == "spacewar":
+            pic = spacewar.preview(key)
+            info_key = "spacewar_info_"
+        else:
+            pic = lander_view.preview(key)
+            info_key = "lander_info_"
         px = 500
         phobos_ui.holo(surface, pygame.Rect(px - 12, y - 12, pic.get_width() + 24, pic.get_height() + 24), True)
         surface.blit(pic, (px, y))
         ty = y + pic.get_height() + 34
         # the wrapping measures every word: done once per text, language and font, not at each frame
-        info = t(("scramble_info_" if scr else "lander_info_") + key)
+        info = t(info_key + key)
         cache = self.__dict__.setdefault("_lander_wrap", {})
         ck = (info, id(body), BASE_WIDTH - px - 80)
         lines = cache.get(ck)

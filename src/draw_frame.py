@@ -226,8 +226,14 @@ def draw_hud(game):
             _draw_endless_record(game, adv, y=72)           # BONUS FINAL - Scramble: the record, under the bar of the course
     elif adv and adv.get("spacewar"):
         form = game.formation
-        label = t("story_spacewar_hud").format(n=int(getattr(form, "level", 1)), m=len(getattr(form, "levels", spacewar.LEVELS)),
-                                               t=int(getattr(form, "player_torpedoes", 0)))
+        if adv.get("endless"):
+            _draw_endless_record(game, adv)                 # BONUS FINAL - Space War: the record of this planet
+            label = t("story_spacewar_hud_endless").format(n=int(getattr(form, "level", 1)),
+                                                           t=int(getattr(form, "player_torpedoes", 0)))
+        else:
+            label = t("story_spacewar_hud").format(n=int(getattr(form, "level", 1)),
+                                                   m=len(getattr(form, "levels", spacewar.LEVELS)),
+                                                   t=int(getattr(form, "player_torpedoes", 0)))
         text = tc.get(game.font, label, announce.INFO)
         game.game_surface.blit(text, (BASE_WIDTH - 16 - text.get_width(), 52))
     elif adv and adv.get("escort") and game.play_mode != "coop" and hasattr(game.formation, "cruise"):

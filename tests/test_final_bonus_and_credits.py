@@ -1,5 +1,5 @@
-"""The credits of the workshop stop at 99 999 (what is won beyond is lost); the three final BONUS missions (Scramble,
-Lunar Lander, Asteroids) close Act IV under their own heading, END BONUS; the menu of the setting of the Lunar Lander
+"""The credits of the workshop stop at 99 999 (what is won beyond is lost); the final BONUS missions (Scramble,
+Lunar Lander, Asteroids, Guardians, Space War) close Act IV under their own heading, END BONUS; the menu of the setting of the Lunar Lander
 and of Scramble is made behind a loading bar."""
 import pytest
 
@@ -8,7 +8,7 @@ import story_state as ss
 import story_vn
 from story import StoryHub
 
-FINALS = ("bonus_scramble", "bonus_lander", "bonus_ast_endless", "bonus_gd_endless")
+FINALS = ("bonus_scramble", "bonus_lander", "bonus_ast_endless", "bonus_gd_endless", "bonus_spacewar")
 
 
 def _state(credits=0, ending=True):
@@ -94,7 +94,8 @@ def test_the_map_draws_the_end_bonus_heading(tmp_path, monkeypatch):
 
 
 # ------------------------------------------------------------------ the loading bar of the menu of the setting
-@pytest.mark.parametrize("mid, kind", [("bonus_lander", "lander"), ("bonus_scramble", "scramble")])
+@pytest.mark.parametrize("mid, kind", [("bonus_lander", "lander"), ("bonus_scramble", "scramble"),
+                                       ("bonus_spacewar", "spacewar")])
 def test_the_menu_of_the_setting_is_made_behind_a_loading_bar(mid, kind, monkeypatch):
     from game import Game
     import lander
@@ -102,6 +103,7 @@ def test_the_menu_of_the_setting_is_made_behind_a_loading_bar(mid, kind, monkeyp
     import loading
     import menu_actions
     import scramble_view
+    import spacewar
     g = Game()
     try:
         g._intro_done, g.fade_phase = True, None
@@ -110,7 +112,12 @@ def test_the_menu_of_the_setting_is_made_behind_a_loading_bar(mid, kind, monkeyp
         g.story.screen, g.story.pane = "hub", "map"
         g.menu_screen = "story_hub"
         g.story.map_index = [m["id"] for m in g.story.missions()].index(mid)
-        view = scramble_view if kind == "scramble" else lander_view
+        if kind == "scramble":
+            view, order = scramble_view, lander.MENU_ORDER
+        elif kind == "spacewar":
+            view, order = spacewar, spacewar.MENU_ORDER
+        else:
+            view, order = lander_view, lander.MENU_ORDER
         made, bars, warmed = [], [], []
         monkeypatch.setattr(view, "preview", lambda key: made.append((key, loading.active() is not None)))
         monkeypatch.setattr(view, "warm", lambda order: warmed.append(list(order)))
@@ -123,14 +130,15 @@ def test_the_menu_of_the_setting_is_made_behind_a_loading_bar(mid, kind, monkeyp
         menu_actions.menu_confirm(g)
         assert g.story.screen == "lander_pick"
         assert bars == [("adventure", i18n.t(ss.mission_by_id(mid)["title"]))]
-        assert made == [(key, True) for key in lander.MENU_ORDER]         # (all the pictures, behind the bar)
-        assert warmed == [list(lander.MENU_ORDER)]                        # (anything left: in the background)
+        assert made == [(key, True) for key in order]                     # (all the pictures, behind the bar)
+        assert warmed == [list(order)]                                    # (anything left: in the background)
     finally:
         g.running = False
 
 
 @pytest.mark.parametrize("mid, key", [("bonus_lander", "lander_pick_title_final"),
-                                      ("bonus_scramble", "scramble_pick_title_final")])
+                                      ("bonus_scramble", "scramble_pick_title_final"),
+                                      ("bonus_spacewar", "spacewar_pick_title_final")])
 def test_the_menu_of_the_setting_of_a_final_bonus_says_so(mid, key, monkeypatch):
     import pygame
     pygame.init()
