@@ -1,11 +1,14 @@
 """The Asteroids level as the prelude of the main series of each act: Ceinture I (60 rocks) before the Dome, II (80)
 before the Phenix, III (100) before la Riposte. Replayable, paid each time, with a scene told before the first launch."""
+import os
+
 import pygame
 import pytest
 
 import story
 import story_state as ss
 from i18n import LANG_CODES, T, set_lang, t
+from settings import asset_path
 from story import StoryHub
 
 PRELUDES = (("ast_1", "dome_1", "ast_s1", 60, 1), ("ast_2", "guardians_1", "ast_s2", 80, 2),   # (after each belt: the
@@ -219,9 +222,12 @@ def test_each_belt_has_a_scene_with_its_text(mid):
     scene = ss.scene_of(mid)
     assert scene and len(scene["slides"]) == 1
     pic, key = scene["slides"][0]
-    assert pic == "ceinture_asteroides"                           # the picture will come later: a dark sky until then
     n = mid[-1]
+    assert pic == "ceinture_asteroides_" + n
     assert key == "story_scene_ast" + n and scene["title"] == "story_scene_ast%s_t" % n
+    assert os.path.isfile(asset_path("story", pic + ".jpg"))
+    assert ss.clip_path(pic) and os.path.isfile(ss.clip_path(pic))
+    assert pygame.image.load(asset_path("story", pic + ".jpg")).get_size() == (1280, 720)
     for code in ("fr", "en"):
         assert len(T[key][code]) > 400 and "..." not in T[key][code]
         assert T[scene["title"]][code]
