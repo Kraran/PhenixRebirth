@@ -1,0 +1,223 @@
+@pdf_title Phenix Rebirth — Manuel du joueur v1.7.1
+@cover_title MANUEL DU JOUEUR
+@cover_version Version 1.7.1 · Français
+@cover_tag Free to play · Open source · MIT
+@header PHENIX REBIRTH
+@footer Phenix Rebirth — Manuel du joueur v1.7.1
+@closing No quarter given. No continue forever.
+
+# 1. Présentation
+Phenix Rebirth est un remake moderne PC du shoot'em up d'arcade Phoenix (1978 / 1980). Le jeu reprend le cycle de stages, le boss en soucoupe et le rythme nerveux de l'original, avec des graphismes modernes, le mode PHENIX, un second vaisseau (le Shield), la manette et le clavier, et 13 langues.
+
+Deux façons de jouer : la **partie arcade** (solo, hot seat à tour de rôle ou coop simultané), et l'**Aventure**, un mode histoire en trois actes avec sa carte des missions, son hangar, son atelier, son Bestiaire et ses scènes illustrées.
+
+> Projet fan non officiel. Ce n'est pas un port officiel d'Amstar Electronics, Centuri ou Taito.
+
+# 2. Installation
+**Windows (simple) :** téléchargez la version Windows (zip) sur GitHub ou itch.io, décompressez-la et lancez le jeu. Depuis les sources, double-cliquez sur lancer.bat : installation de Pygame si besoin, puis lancement.
+
+**Prérequis (sources) :** Python 3.10+, Pygame 2.5+ et imageio-ffmpeg (pour les vidéos des scènes).
+
+**Ligne de commande :**
+
+```
+git clone https://github.com/Kraran/PhenixRebirth.git
+cd PhenixRebirth
+python -m pip install -r requirements.txt
+python main.py
+```
+
+Build Windows optionnel : build_exe.bat (PyInstaller).
+
+Téléchargements : github.com/Kraran/PhenixRebirth/releases/tag/v1.7.1 · kraran.itch.io/phenix-rebirth
+
+# 3. Menu principal
+**JOUER** ouvre l'écran PARTIE ARCADE : le mode (1 joueur, 2 joueurs Hot Seat, 2 joueurs Coop), la difficulté, puis le choix du vaisseau. **AVENTURE** ouvre le mode histoire. **EXTRAS** regroupe High scores, Hauts faits, Jukebox, Crédits, Aide et Add-On. **OPTIONS** et **QUITTER** complètent le menu.
+
+En partie, Échap / Start ouvre la pause : REPRENDRE, OPTIONS, AIDE / COMMANDES et QUITTER LA PARTIE (ABANDONNER LA MISSION dans l'Aventure, après confirmation).
+
+# 4. Modes de jeu et difficultés
+- **1 joueur :** un seul pilote.
+- **Hot seat :** deux joueurs à tour de rôle ; chacun joue sa partie, le meilleur score gagne.
+- **Coop :** deux vaisseaux à l'écran en même temps, 5 vies partagées, scores et jauges séparés. Le joueur 2 est teinté de bleu quand les deux pilotes ont choisi le même vaisseau.
+
+@cols 18,82
+| Difficulté | Règles |
+| Novice | 5 vies, ennemis plus lents, la jauge du Phenix ne descend jamais à zéro. Pas de high score. |
+| Normal | 3 vies, la vitesse de l'arcade. |
+| Vétéran | 3 vies, ennemis plus rapides, +10 points par ennemi et le Commandant à 1000. |
+
+# 5. Commandes
+Ce sont les touches par défaut. Dans *Options > Jeu > Touches et boutons*, chaque touche (deux par action, sur deux claviers) et chaque bouton de manette peut être changé. En solo, le dernier périphérique utilisé pilote le vaisseau ; en coop, chaque joueur reçoit une moitié de clavier ou une manette.
+
+@cols 25,26,26,23
+| Action | Clavier 2 (solo / P2 coop) | Clavier 1 (P1 coop) | Manette |
+| Déplacement | Flèches | Q ou A, D (Z ou W, S) | Stick / croix |
+| Tirer | Espace / Ctrl droit | Ctrl gauche | A (ou X, Y, RB) |
+| Mode PHENIX / bouclier Shield | Shift droit | Shift gauche | B |
+| Missile antimatière (une fois débloqué) | M | E | LB |
+| Pause | Échap | Échap | Start |
+| Menus | Flèches + Entrée | idem | Stick / croix + A · B = retour |
+
+Un seul tir du joueur à l'écran à la fois (règle de Phoenix) ; double tir de flammes en forme PHENIX. Haut et bas ne servent en partie qu'avec le réacteur à impulsion bidimensionnelle, et dans les missions à vol libre de l'Aventure (voir section 10).
+
+# 6. Stages et scores
+@cols 12,52,36
+| Stage | Ennemis | Points (Normal, niveaux 1 à 5) |
+| 1 | Avioïdes éclaireurs (oiseaux sombres) | 10 |
+| 2 | Avioïdes kaki | 20 |
+| 3 | Gargouilles | 30 (corps seul) |
+| 4 | Gargouilles sombres | 40 |
+| 5 | Soucoupe du Commandant avioïde + escortes | Cœur 500 · briques 1 · décors 50 |
+
+- Après le boss, le cycle recommence plus vite. À partir du niveau 6, chaque ennemi, le cœur du boss et les décors de la soucoupe valent **+10 points aux niveaux 6 à 10, +20 aux niveaux 11 à 15**, et ainsi de suite. Les briques restent à 1.
+- Vétéran : ennemis +10, Commandant avioïde 1000.
+- Vies bonus à **1337** et **8086** points.
+- Gargouilles : toucher les ailes est neutre ; seul le corps tue et marque des points.
+- Soucoupe du boss (niveaux 5, 10, 15...) : détruire ses deux paraboles divise par deux la vitesse de sa descente.
+
+# 7. Mode PHENIX et vaisseau Shield
+### Le Phenix
+Chaque touche au corps : +1 à la jauge. Chaque tir raté : -1 (ailes, briques et décors sont neutres). À partir de 3, Shift ou le bouton B active le mode : tu deviens un oiseau de feu, invulnérable, plus rapide, avec un double tir de flammes. La jauge descend comme un timer. Rappuie sur B / Shift pour couper et garder le reste de la jauge. Court délai avant de pouvoir réactiver. Toucher les murs électriques des bords met fin à la forme PHENIX ; hors de la forme, cela vide la jauge.
+
+### Le Shield
+Pas de mode Phenix : un bouclier à la place. Jauge pleine = prêt. B / Shift donne 2 s d'invulnérabilité sous un dôme ; le vaisseau est figé, les réacteurs s'éteignent. La jauge descend pendant le bouclier, puis remonte pendant 5 s de recharge.
+
+Le vaisseau se choisit au départ de chaque partie arcade (et pour le joueur 2 en hot seat et en coop).
+
+# 8. L'Aventure
+L'Aventure se lance depuis AVENTURE au menu principal. Elle commence par une introduction illustrée et lue à voix haute (en français), puis la carte des missions.
+
+- **4 sauvegardes**, chacune avec le nom du pilote, l'acte, la date et le mode.
+- **Trois modes :** *Novice* (3 vies au départ, une 4e à l'atelier ; un échec ne rapporte rien et coûte 2 % de tes points), *Normal* (un échec : retour à l'atelier, sans gain et 5 % de tes points perdus), *Vétéran* (ancrage quantique inachevé : si tu tombes, c'est définitif).
+- **Cinq onglets :** EXTRAS (Hauts faits, Jukebox, Crédits, Options), BESTIAIRE (les fiches des ennemis rencontrés), HISTORIQUE (le journal et les scènes à revoir), HANGAR (le vaisseau, l'atelier) et CARTE (les missions).
+- **Crédits :** les points d'une mission réussie deviennent des crédits, dépensés à l'atelier (vitesse, vies, dôme, résistance aux murs électriques, jauge du Phenix, peinture, modules d'escorte, missiles antimatière...). L'atelier en garde au plus 99 999.
+- **La carte** indique la prochaine mission et ce qui ouvre une mission verrouillée (« S'ouvre après : ... »). Une mission marquée « Une seule fois » ne se rejoue pas avant la fin de l'Aventure.
+- **Scènes :** images, petites vidéos en boucle, objets à récupérer, et un visual novel avec Lyra Voss entre certaines missions.
+
+### Acte 1 : le Shield
+@cols 44,56
+| Mission | S'ouvre... |
+| Bestiaire I : Première sortie | dès le départ |
+| Bestiaire II à IV | chacune après la précédente |
+| Ceinture d'astéroïdes I (60 astéroïdes) | après Bestiaire I |
+| EDF - Sentinelles silencieuses I : Jupiter | après Bestiaire I |
+| Dôme I à V | Dôme I après la Ceinture I, puis chacune après la précédente |
+| Atterrissage sur Déimos · Raid I : Déimos | après Dôme II |
+| Atterrissage sur un astéroïde · Raid II | après Dôme IV |
+| Passage à l'acte 2 | après Dôme V |
+
+### Acte 2 : le Phenix
+@cols 44,56
+| Mission | S'ouvre... |
+| Ceinture d'astéroïdes II (80 astéroïdes) | dès l'acte 2 |
+| Gardiens I : le premier feu | après la Ceinture II |
+| Phenix I à V | Phenix I après Gardiens I, puis chacune après la précédente |
+| Atterrissage sur Europe · Raid III | après Phenix I |
+| Atterrissage sur Titan · Raid IV | après Phenix III |
+| Bestiaire V : le commandant avioïde | dès l'acte 2 |
+| Bestiaire VI : les Gardiens | après Phenix III |
+| Peinture I à III (facultatives) | dès l'acte 2, dans l'ordre |
+| Sentinelles silencieuses II et III | chacune après la précédente |
+| Gardiens II : le mur de lasers | après Phenix V |
+| Passage à l'acte 3 : le grand raid | après Gardiens II |
+
+### Acte 3 : la Riposte
+@cols 44,56
+| Mission | S'ouvre... |
+| Remise en état (série) | dès l'acte 3, dans l'ordre |
+| Atterrissage sur Triton · Raid V | dès l'acte 3 |
+| Sentinelles silencieuses IV : Neptune | après la III |
+| Ceinture d'astéroïdes III (100 astéroïdes) | une fois la remise en état terminée |
+| Gardiens III : le Gardien Alpha | après la Ceinture III |
+| Riposte I à V (Jupiter, Saturne, Uranus, Neptune, Triton) | Riposte I après Gardiens III, puis chacune après la précédente |
+
+Des missions **BONUS** apparaissent en cours de route. Après Riposte V, une dernière mission conclut l'Aventure ; ensuite, toutes les missions peuvent être rejouées et les missions BONUS FINAL s'ouvrent (section 11).
+
+# 9. Les séries de l'Aventure
+- **Bestiaire :** chaque fiche s'ouvre quand l'ennemi est rencontré. Les chasses du Bestiaire sont rejouables, un niveau de plus à chaque victoire.
+- **Dôme, Phenix, Riposte :** les séries principales, des vagues de l'arcade de plus en plus rapides, chacune une seule fois.
+- **Gardiens :** leur laser traverse le dôme et brûle les oiseaux. Le plumage du Gardien Alpha donne le revêtement réfléchissant.
+- **Peinture I à III :** une grille d'ennemis descend vers toi, façon Space Invaders ; la soucoupe vaut 500 à 1000 PTS, vise bien au centre. Les trois missions ouvrent l'atelier de peinture. La série peut être refaite en entier, en plus dur.
+- **Modules d'escorte :** deux satellites gyroscopes qui volent à côté du vaisseau et tirent avec lui (tirs ×2, puis ×3). Leurs pièces se trouvent dans les atterrissages et les raids ; ils s'assemblent à l'atelier, prennent les coups destinés au vaisseau et, détruits, se rachètent à moitié prix.
+
+# 10. Missions à vol libre
+Dans ces missions, le vaisseau tourne et pousse : **gauche / droite pour tourner, haut pour pousser**, tir pour tirer.
+
+### Ceinture d'astéroïdes I à III
+Le prélude de la série principale de chaque acte, dans l'esprit d'Asteroids d'Atari. Ouvre la route : détruis 60, 80 puis 100 astéroïdes (chaque morceau compte), puis vide l'écran. Une soucoupe passe de temps en temps et tire sur toi. Rejouable.
+
+### Atterrissages (Lunar Lander)
+Facultatifs. Pose le vaisseau en douceur sur une zone plane : la gravité tire, l'élan reste, et chaque seconde de poussée brûle du carburant. Plus la zone est petite, plus le bonus est gros (×1, ×2, ×5). Un atterrissage parfait (droit et lent) rapporte 500 points + 50 par unité de carburant restant, un atterrissage rude 100 + 10 ; un crash coûte ce que coûte un échec.
+
+@cols 50,25,25
+| Atterrissage | Ouvert en | Carburant |
+| Déimos (gravité faible) | acte 1 | 90 |
+| Un astéroïde de la ceinture | acte 1 | 80 |
+| Europe | acte 2 | 70 |
+| Titan (la gravité la plus forte) | acte 2 | 70 |
+| Triton | acte 3 | 60 |
+
+### Raids sur les bases avioïdes I à V (Scramble)
+Facultatifs. Un shoot'em up à défilement horizontal, façon Scramble de Konami : vole entre le plafond et le sol (le vaisseau se déplace librement et tire vers la droite), évite ou détruis les stations de missiles, les oiseaux et les comètes, puis abats le commandant avioïde rouge de la base. Du premier raid, le plus doux, au cinquième, le Scramble complet. Toucher la roche coûte une vie. Le dôme et la forme PHENIX fonctionnent.
+
+### EDF - Opération Sentinelles silencieuses I à IV (Space War)
+Placer un satellite espion furtif en orbite autour de chaque géante gazeuse : Jupiter, Saturne, Uranus, Neptune. La planète au centre attire le vaisseau (pas les torpilles), l'élan est total et l'écran se referme sur ses quatre côtés. Plasma inutile : 20 torpilles à antimatière, 1 vie, 2 ou 3 niveaux. Les anneaux de Saturne sont inoffensifs. Chaque mission se joue une fois jusqu'à la victoire de la IV ; ensuite, les quatre sont rejouables.
+
+### Le missile antimatière
+Réussir Sentinelles silencieuses IV débloque le missile antimatière. L'atelier vend le lance-missiles (permanent) et les missiles (consommables : un missile non tiré reste pour la mission suivante). Un missile par mission, tiré droit devant (M / E / LB) : il détruit tous les ennemis à un quart d'écran de son impact (sur le blindage de la soucoupe : deux briques autour de l'impact) et se perd s'il ne touche rien.
+
+# 11. BONUS FINAL
+Une fois le jeu terminé, cinq missions sans fin s'ouvrent à la fin de l'acte IV, sous BONUS DE FIN. Chacune s'arrête sur le GAME OVER : ses points rapportent des crédits, sans pénalité, et le record est gardé en haut de l'écran. **Quitter en cours de partie (par la pause) ne rapporte rien.**
+
+- **BONUS FINAL - Scramble :** le Scramble sans fin. Traverse la roche jusqu'à la base et abats le commandant rouge, puis recommence avec plus d'ennemis, jusqu'à ta dernière vie. Tu choisis le décor au départ. Un seul record pour tous les décors.
+- **BONUS FINAL - Lunar Lander :** jusqu'à la dernière goutte, 90 unités au départ. Après chaque atterrissage, repars avec le carburant restant (+50 pour un atterrissage parfait, +25 pour un rude), sur un sol où les grandes zones se font de plus en plus rares. La partie s'arrête sur un crash ou une panne sèche. Tu choisis le décor au départ ; un record par décor.
+- **BONUS FINAL - Asteroids :** niveau après niveau (4, 6, 8, 10 puis 11 gros astéroïdes, tous là dès le départ) ; la soucoupe tire 10 % plus vite à chaque niveau et, tous les 5 niveaux, les soucoupes arrivent par deux. Jusqu'à la perte du vaisseau.
+- **BONUS FINAL - Gardiens :** le jeu classique à l'infini, avec un Gardien de plus à chaque niveau (cinq au plus) ; au niveau 6 on recommence avec un gros Gardien en plus, au niveau 11 avec deux, et ainsi de suite. Tout ce que tu as à l'atelier vole avec toi.
+- **BONUS FINAL - Space War :** voir ci-dessous.
+
+### BONUS FINAL - Space War
+Space War à l'infini autour de la géante gazeuse que tu choisis au départ, avec sa gravité : **Jupiter, Saturne, Uranus ou Neptune**.
+
+@cols 30,70
+| Niveau | Adversaires |
+| 1 | 1 oiseau bleu |
+| 2 | 2 bleus |
+| 3 | 2 bleus et 1 vert |
+| 4 et plus | 2 bleus et 2 verts |
+| 5, 10, 15... | + une soucoupe |
+
+- **20 torpilles**, renouvelées à chaque niveau. **Une seule vie.**
+- **GAME OVER** quand le vaisseau est détruit, ou quand tu n'as plus de torpilles alors qu'il reste des adversaires. Les points rapportent des crédits dans les deux cas.
+- Le missile antimatière de l'atelier, s'il est débloqué : **un par partie**.
+- **Un record par planète.**
+
+# 12. Options
+Cinq onglets : JEU, GAMEPLAY, AUDIO, AFFICHAGE, AVANCÉ (Tab / Page préc. / Page suiv. au clavier, LB / RB à la manette). Un panneau d'aide décrit l'option sous le curseur. Les réglages sont gardés dans settings.json.
+
+- **Jeu :** Contrôle (Auto, clavier ou manette), Coop 1 et Coop 2 (le contrôle de chaque joueur), Touches et boutons, Tir automatique (Oui : maintenir le tir suffit ; Non : un appui = un tir), Vibrations (0 à 5), Langue (13 langues).
+- **Gameplay :** le Style de jeu d'une partie arcade solo, *Classique* ou *Aventure*. Le style Aventure donne une partie de l'équipement de l'Aventure, sans meilleur score : Modules d'escorte (tirs ×3), Missiles antimatière (de 1 à 20, ou aucun), Réacteur 2D (le vaisseau vole aussi vers le haut et vers le bas, dans le tiers inférieur de l'écran) et **Gardiens** : comme dans BONUS FINAL - Gardiens, des Gardiens viennent avec les oiseaux à chaque niveau, ceux du boss aussi, de 1 à 5, un de plus à chaque niveau, puis à partir du niveau 6 un Gardien Alpha de plus tous les cinq niveaux (désactivé par défaut). Le jeu démarre toujours en Classique ; le choix ne compte ni en hot seat ni en coop.
+- **Audio :** Volume SFX, Volume Musique, Audio en jeu (bruitages seuls, bruitages + thème, musique seule ou silence ; non sauvegardé), Musique en jeu (aucune, une piste du jukebox dont les chansons de Lyra Voss, ou tes propres fichiers mp3, wav, ogg... posés dans le dossier musique_perso du jeu).
+- **Affichage :** fenêtre, plein écran ou fenêtre sans bord ; Bezel pour les écrans plus larges que 16:9 (Phenix, Tesla, Phenix bleu, Phenix flamme, désactivé ; en plein écran seulement) ; Scanlines CRT (0 à 3) ; Compteur FPS.
+- **Avancé :** Rendu GPU, VSync (Oui, Adaptatif, Non), Fréquence (60, 75, 120 ou 144 images/s ; le jeu reste à la même vitesse), Effacer les high scores.
+
+# 13. Extras
+- **High scores :** les 15 meilleurs scores, initiales en 3 lettres, avec le vaisseau et le mode de chaque partie (les scores coop portent un pictogramme deux joueurs). Codes à taper sur cet écran (ils bloquent l'entrée au tableau) : LV02 à LV99 (départ à ce stage), LIVE, PHEN.
+- **Hauts faits :** deux pages, ARCADE (32) et AVENTURE (32), en cartes illustrées ; le métal du cadre indique le palier (acier, bronze, argent, or). Certains restent secrets jusqu'à leur découverte.
+- **Jukebox :** toutes les musiques du jeu, la vidéo d'introduction, et les paroles des chansons de Lyra Voss synchronisées sur sa voix, traduites dans les 13 langues.
+- **Crédits**, **Aide** (le scénario, les commandes, les ennemis, le Phenix et le Shield) et **Add-On** (les jeux d'arcade d'origine, lancés avec MAME : placez mame.exe et les roms dans addon\mame).
+
+# 14. Crédits
+Développement : Franck Fornasari (Kraran)
+
+Bêta-testeurs : Cécile, Wallems, Luca et Sacha
+
+Assistance technique et design : Grok — xAI · Claude — Anthropic
+
+Inspiration : Phoenix (1980 - Taito) — Amstar Electronics / Centuri / Taito · Pleiades (1981 - Tehkan)
+
+Musique : les thèmes de Phenix (Eternal Dawn, Last Coin, Nostalgie...) et les chansons de Lyra Voss — créées avec Suno. Voix de l'introduction : ElevenLabs.
+
+Polices : Audiowide et Play (SIL Open Font License 1.1), DejaVu Sans.
+
+Licence MIT · github.com/Kraran/PhenixRebirth · kraran.itch.io/phenix-rebirth
