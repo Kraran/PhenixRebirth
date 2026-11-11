@@ -1,5 +1,30 @@
 # Roadmap — Phenix Rebirth
-Current release: **v1.7.0**
+Current release: **v1.7.1**
+
+## Done in 1.7.1
+
+**Adventure** — FINAL BONUS - Space War, a tighter gate after Bestiary I, tighter landing tanks, and the intros of the asteroid belt.
+
+- FINAL BONUS - Space War: an endless run around the gas giant chosen in the menu (Jupiter, Saturn, Uranus or Neptune)
+  and its gravity. 20 torpedoes, renewed at each level; one life; a saucer every five levels. The run ends when the ship
+  is lost, or when no missiles are left while enemies remain: its points pay in credits, without a penalty. Nothing is
+  won if it is left from the pause. One record per planet. The workshop antimatter missile, if it is unlocked, is one
+  per run
+- Bestiary I - First sortie, once won, unlocks Asteroid belt I and EDF - Silent Sentinels I: Jupiter, which are no
+  longer open from the start; a save that already had them keeps them
+- The intros of Asteroid belt I, II and III have their pictures and looping clips
+- Tighter starting fuel on the landings: Deimos 90, the asteroid 80, Europa and Titan 70, Triton 60, and 90 at the start
+  of FINAL BONUS - Lunar Lander; the descriptions follow
+
+**Game**
+
+- Options > GAMEPLAY, Adventure style: a Guardians option, as in FINAL BONUS - Guardians (off by default; the game
+  always starts in Classic)
+
+**Fixes**
+
+- The boss saucer: destroying both dishes halves the descent speed instead of stopping it
+- Details: [docs/DEV_LOG_1.7.1.md](docs/DEV_LOG_1.7.1.md)
 
 ## Done in 1.7.0
 
@@ -38,11 +63,6 @@ Current release: **v1.7.0**
 - Texts: the GAMEPLAY options, the key of the missile and the codes of the high scores are translated in the 13 languages; the help of
   the refresh cap lists 144 Hz
 - Details: [docs/DEV_LOG_1.7.0.md](docs/DEV_LOG_1.7.0.md)
-
-## After 1.7.0
-
-- END BONUS: FINAL BONUS - Space War, around the gas giant chosen in the menu (Jupiter, Saturn, Uranus or Neptune),
-  level after level, 20 torpedoes renewed each time, one record per planet
 
 ## Done in 1.6.2
 
