@@ -12,17 +12,23 @@ Free to play · Open source · MIT License
 
 ---
 
+![Phenix Rebirth](docs/media/PhenixRebirth-loop.gif)
+
 ## Screenshots
 
-| Menu | Help | In-game (demo) |
-|------|------|----------------|
-| ![Title screen](docs/screenshots/accueil.png) | ![Help](docs/screenshots/aide.png) | ![Gameplay](docs/screenshots/ingame.png) |
+| Boss Phenix | Lunar Lander (Titan) |
+|:-----------:|:--------------------:|
+| ![Boss Phenix](docs/screenshots/02_boss_phenix.png) | ![Lunar Lander on Titan](docs/screenshots/06_lander_titan.png) |
+| Raid (Deimos) | Gargoyles |
+| ![Raid in the Deimos cave](docs/screenshots/07_raid_caverne_deimos.png) | ![Gargoyles under the Shield dome](docs/screenshots/04_gargouilles_dome.png) |
+| Shield dome | Avioid base |
+| ![Shield under the dome](docs/screenshots/03_boss_shield_dome.png) | ![Raid on the Avioid base](docs/screenshots/08_raid_base_avioide.png) |
 
-## Gameplay
+## Trailer
 
-[![Phenix Rebirth gameplay](https://img.youtube.com/vi/NIiuKcSgEOk/maxresdefault.jpg)](https://youtu.be/NIiuKcSgEOk)
+[![Phenix Rebirth v1.7.1 trailer](docs/media/PhenixRebirth-v1.7.1-trailer-thumb.jpg)](https://youtu.be/VDkJAUCjeW8)
 
-[Watch on YouTube](https://youtu.be/NIiuKcSgEOk) · [Play on itch.io](https://kraran.itch.io/phenix-rebirth)
+[Watch on YouTube](https://youtu.be/VDkJAUCjeW8) · [Play on itch.io](https://kraran.itch.io/phenix-rebirth)
 
 ## Features
 

@@ -127,7 +127,7 @@ code {
 /* Screenshots */
 .shots {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
 }
 .shots figure {
@@ -161,4 +161,5 @@ code {
 @media (max-width: 560px) {
   .hero { padding: 2.5rem 0 2rem; }
   .tagline { font-size: 1rem; }
+  .shots { grid-template-columns: 1fr; }
 }
