@@ -1,0 +1,223 @@
+@pdf_title Phenix Rebirth — Player Manual v1.7.1
+@cover_title PLAYER MANUAL
+@cover_version Version 1.7.1 · English
+@cover_tag Free to play · Open source · MIT
+@header PHENIX REBIRTH
+@footer Phenix Rebirth — Player Manual v1.7.1
+@closing No quarter given. No continue forever.
+
+# 1. Overview
+Phenix Rebirth is a modern PC remake of the arcade shoot'em up Phoenix (1978 / 1980). It keeps the stage cycle, the boss saucer and the fast pace of the original, with modern graphics, the PHENIX mode, a second ship (the Shield), gamepad and keyboard, and 13 languages.
+
+Two ways to play: the **arcade game** (solo, hot seat taking turns, or simultaneous coop), and the **Adventure**, a story mode in three acts with its mission map, hangar, workshop, Bestiary and illustrated scenes.
+
+> Unofficial fan project. This is not an official port by Amstar Electronics, Centuri or Taito.
+
+# 2. Installation
+**Windows (simple):** download the Windows build (zip) from GitHub or itch.io, unzip it and start the game. From the sources, double-click lancer.bat: it installs Pygame if needed, then launches the game.
+
+**Requirements (sources):** Python 3.10+, Pygame 2.5+ and imageio-ffmpeg (for the videos of the scenes).
+
+**Command line:**
+
+```
+git clone https://github.com/Kraran/PhenixRebirth.git
+cd PhenixRebirth
+python -m pip install -r requirements.txt
+python main.py
+```
+
+Optional Windows build: build_exe.bat (PyInstaller).
+
+Downloads: github.com/Kraran/PhenixRebirth/releases/tag/v1.7.1 · kraran.itch.io/phenix-rebirth
+
+# 3. Main menu
+**PLAY** opens the ARCADE GAME screen: the mode (1 player, 2P Hot Seat, 2P Co-op), the difficulty, then the ship select. **ADVENTURE** opens the story mode. **EXTRAS** gathers High Scores, Achievements, Jukebox, Credits, Help and Add-On. **OPTIONS** and **QUIT** complete the menu.
+
+In a game, Esc / Start opens the pause: RESUME, OPTIONS, HELP / CONTROLS and QUIT RUN (ABANDON MISSION in the Adventure, after a confirmation).
+
+# 4. Game modes and difficulties
+- **1 player:** one pilot.
+- **Hot seat:** two players take turns; each one plays a game, the best score wins.
+- **Coop:** two ships on screen at the same time, 5 shared lives, separate scores and gauges. Player 2 is tinted blue when both pilots picked the same ship.
+
+@cols 18,82
+| Difficulty | Rules |
+| Novice | 5 lives, slower enemies, the Phenix gauge never drops to zero. No high score. |
+| Normal | 3 lives, the arcade speed. |
+| Veteran | 3 lives, faster enemies, +10 points per enemy and the Commander at 1000. |
+
+# 5. Controls
+These are the defaults. In *Options > Game > Keys and buttons* every key (two per action, on two keyboards) and every gamepad button can be changed. In solo the last device used flies the ship; in coop each player is given a keyboard half or a gamepad.
+
+@cols 25,26,26,23
+| Action | Keyboard 2 (solo / coop P2) | Keyboard 1 (coop P1) | Gamepad |
+| Move | Arrow keys | Q or A, D (Z or W, S) | Stick / D-pad |
+| Fire | Space / Right Ctrl | Left Ctrl | A (or X, Y, RB) |
+| PHENIX mode / Shield bubble | Right Shift | Left Shift | B |
+| Antimatter missile (once unlocked) | M | E | LB |
+| Pause | Esc | Esc | Start |
+| Menus | Arrows + Enter | same | Stick / D-pad + A · B = back |
+
+One player shot on screen at a time (the Phoenix rule); dual flame shots in PHENIX form. Up and down only matter in a game with the two-dimensional impulse reactor, and in the free-flight missions of the Adventure (see section 10).
+
+# 6. Stages and scores
+@cols 12,52,36
+| Stage | Enemies | Points (Normal, levels 1 to 5) |
+| 1 | Scout Avioids (dark birds) | 10 |
+| 2 | Khaki Avioids | 20 |
+| 3 | Gargoyles | 30 (body only) |
+| 4 | Dark Gargoyles | 40 |
+| 5 | The Avioid commander's saucer + escorts | Core 500 · bricks 1 · decorations 50 |
+
+- After the boss the cycle starts again, faster. From level 6 every enemy, the boss core and the saucer decorations are worth **+10 points in levels 6 to 10, +20 in levels 11 to 15**, and so on. Bricks stay at 1.
+- Veteran: enemies +10, Avioid commander 1000.
+- Bonus lives at **1337** and **8086** points.
+- Gargoyles: hitting the wings is neutral; only the body kills and scores.
+- Boss saucer (levels 5, 10, 15...): destroying both of its dishes halves the speed of its descent.
+
+# 7. PHENIX mode and the Shield ship
+### The Phenix
+Each body hit: +1 to the gauge. Each miss: -1 (wings, bricks and decorations are neutral). From 3, Shift or button B activates the form: you become a firebird, invulnerable, faster, with dual flame shots. The gauge drains as the timer. Press B / Shift again to cancel and keep the rest of the gauge. Short cooldown before you can activate again. Touching the electric walls of the edges ends the PHENIX form; outside the form, it empties the gauge.
+
+### The Shield
+No Phenix form: a shield bubble instead. Full gauge = ready. B / Shift gives 2 s of invulnerability under a dome; the ship is locked in place, engines off. The bar drains while the shield is up, then refills over a 5 s cooldown.
+
+The ship is chosen at the start of each arcade game (and for player 2 in hot seat and coop).
+
+# 8. The Adventure
+The Adventure starts from ADVENTURE in the main menu. It opens with an illustrated introduction read aloud (in French), then the mission map.
+
+- **4 save slots**, each with the pilot's name, the act, the date and the mode.
+- **Three modes:** *Novice* (3 lives to start, a 4th in the workshop; a failure gains nothing and costs 2% of your points), *Normal* (a failure: back to the workshop, no gain and 5% of your points lost), *Veteran* (quantum anchor unfinished: if you fall, it is for good).
+- **Five tabs:** EXTRAS (Achievements, Jukebox, Credits, Options), BESTIARY (the files of the enemies met), LOG (the journal and the scenes to watch again), HANGAR (the ship, the workshop) and MAP (the missions).
+- **Credits:** the points of a mission won become credits, spent in the workshop (speed, lives, dome, resistance to the electric walls, the Phenix gauge, paint, escort modules, antimatter missiles...). The workshop holds at most 99 999.
+- **The map** marks the next mission and what opens a locked one ("Opens after: ..."). A mission marked "Once only" cannot be flown again before the end of the Adventure.
+- **Scenes:** pictures, short looping videos, items to catch, and a visual novel with Lyra Voss between some missions.
+
+### Act 1: the Shield
+@cols 44,56
+| Mission | Opens... |
+| Bestiary I: First sortie | from the start |
+| Bestiary II to IV | each one after the one before |
+| Asteroid belt I (60 asteroids) | after Bestiary I |
+| EDF - Silent Sentinels I: Jupiter | after Bestiary I |
+| Dome I to V | Dome I after Asteroid belt I, then each one after the one before |
+| Landing on Deimos · Raid I: Deimos | after Dome II |
+| Landing on an asteroid · Raid II | after Dome IV |
+| Gateway to Act 2 | after Dome V |
+
+### Act 2: the Phenix
+@cols 44,56
+| Mission | Opens... |
+| Asteroid belt II (80 asteroids) | from the start of Act 2 |
+| Guardians I: the first fire | after Asteroid belt II |
+| Phenix I to V | Phenix I after Guardians I, then each one after the one before |
+| Landing on Europa · Raid III | after Phenix I |
+| Landing on Titan · Raid IV | after Phenix III |
+| Bestiary V: the Avioid commander | from the start of Act 2 |
+| Bestiary VI: the Guardians | after Phenix III |
+| Paint I to III (optional) | from the start of Act 2, in order |
+| Silent Sentinels II and III | each one after the one before |
+| Guardians II: the wall of lasers | after Phenix V |
+| Gateway to Act 3: the great raid | after Guardians II |
+
+### Act 3: the Counterstrike
+@cols 44,56
+| Mission | Opens... |
+| Repairs (series) | from the start of Act 3, in order |
+| Landing on Triton · Raid V | from the start of Act 3 |
+| Silent Sentinels IV: Neptune | after III |
+| Asteroid belt III (100 asteroids) | once the repairs are done |
+| Guardians III: the Alpha Guardian | after Asteroid belt III |
+| Counterstrike I to V (Jupiter, Saturn, Uranus, Neptune, Triton) | Counterstrike I after Guardians III, then each one after the one before |
+
+**BONUS** missions show up along the way. After Counterstrike V, one last mission closes the Adventure; then every mission can be flown again and the FINAL BONUS missions open (section 11).
+
+# 9. The series of the Adventure
+- **Bestiary:** each file opens when the enemy is met. The Bestiary hunts are replayable, one level harder after each win.
+- **Dome, Phenix, Counterstrike:** the main series, arcade waves faster and faster, each one once only.
+- **Guardians:** their laser goes through the dome and burns the birds. The plumage of the Alpha Guardian gives the reflective coating.
+- **Paint I to III:** a grid of enemies marches down on you, Space Invaders style; the saucer is worth 500 to 1000 PTS, aim for the middle. All three missions open the paint shop. The whole series can be flown again, harder.
+- **Escort modules:** two gyroscope satellites that fly beside the ship and fire with it (shots ×2, then ×3). Their pieces are found in the landings and the raids; they are assembled in the workshop, take the hits meant for the ship and, destroyed, are bought again at half price.
+
+# 10. Free-flight missions
+In these missions the ship turns and thrusts: **left / right to turn, up to thrust**, fire to shoot.
+
+### Asteroid belt I to III
+The prelude of the main series of each act, in the spirit of Atari's Asteroids. Open the road: destroy 60, 80 then 100 asteroids (every piece counts), then clear the screen. A saucer crosses now and then and fires at you. Replayable.
+
+### Landings (Lunar Lander)
+Optional. Set the ship down gently on a flat zone: gravity pulls, momentum stays, and every second of thrust burns fuel. The smaller the zone, the bigger the bonus (×1, ×2, ×5). A perfect landing (upright and slow) pays 500 points + 50 per unit of fuel left, a rough one 100 + 10; a crash costs what a failure costs.
+
+@cols 50,25,25
+| Landing | Opens in | Fuel |
+| Deimos (low gravity) | Act 1 | 90 |
+| An asteroid of the belt | Act 1 | 80 |
+| Europa | Act 2 | 70 |
+| Titan (the strongest gravity) | Act 2 | 70 |
+| Triton | Act 3 | 60 |
+
+### Raids on the Avioid bases I to V (Scramble)
+Optional. A side-scrolling shoot'em up in the way of Konami's Scramble: fly between the ceiling and the ground (the ship moves freely and fires to the right), dodge or destroy the missile stations, the birds and the comets, then shoot down the red Avioid commander of the base. From the first raid, the gentlest, to the fifth, the full Scramble. Touching the rock costs a life. The dome and the PHENIX form work there.
+
+### EDF - Operation Silent Sentinels I to IV (Space War)
+Place a stealth spy satellite in orbit around each gas giant: Jupiter, Saturn, Uranus, Neptune. The planet in the middle pulls the ship (not the torpedoes), momentum is total and the screen wraps on its four sides. Plasma is useless: 20 antimatter torpedoes, 1 life, 2 or 3 levels. The rings of Saturn are harmless. Each mission is flown once until IV is won; then all four can be played again.
+
+### The antimatter missile
+Winning Silent Sentinels IV unlocks the antimatter missile. The workshop sells the launcher (permanent) and the missiles (consumable: a missile that is not fired stays for the next mission). One missile per mission, fired straight ahead (M / E / LB): it destroys every enemy within a quarter of the screen of its impact (on the armour of the saucer: two bricks round the impact) and is lost if it touches nothing.
+
+# 11. FINAL BONUS
+Once the game is finished, five endless missions open at the end of Act IV, under END BONUS. Each one ends with the GAME OVER: its points pay in credits, without a penalty, and the record is kept at the top of the screen. **Leaving a run (from the pause) gains nothing.**
+
+- **FINAL BONUS - Scramble:** endless Scramble. Fly through the rock to the base and shoot down the red commander, then go again with more enemies, until your last life. You choose the setting at the start. One record for all the settings.
+- **FINAL BONUS - Lunar Lander:** to the last drop, 90 units at the start. After each landing, fly again with the fuel left (+50 for a perfect landing, +25 for a rough one), over a ground where the big zones get rarer and rarer. The run ends with a crash or an empty tank. You choose the setting at the start; one record per setting.
+- **FINAL BONUS - Asteroids:** level after level (4, 6, 8, 10 then 11 big asteroids, all there from the start); the saucer fires 10 % faster each level and, every 5 levels, the saucers come by two. Until the ship is lost.
+- **FINAL BONUS - Guardians:** the classic game, endless, with one more Guardian each level (five at most); at level 6 it starts again with one big Guardian more, at level 11 with two, and so on. Everything you have in the workshop flies with you.
+- **FINAL BONUS - Space War:** see below.
+
+### FINAL BONUS - Space War
+Endless Space War around the gas giant you choose at the start, with its gravity: **Jupiter, Saturn, Uranus or Neptune**.
+
+@cols 30,70
+| Level | Opponents |
+| 1 | 1 blue bird |
+| 2 | 2 blue |
+| 3 | 2 blue and 1 green |
+| 4 and up | 2 blue and 2 green |
+| 5, 10, 15... | + a saucer |
+
+- **20 torpedoes**, renewed at each level. **One life.**
+- **GAME OVER** when the ship is destroyed, or when you have no torpedo left while opponents remain. The points pay in credits either way.
+- The workshop antimatter missile, if it is unlocked: **one per run**.
+- **One record per planet.**
+
+# 12. Options
+Five tabs: GAME, GAMEPLAY, AUDIO, DISPLAY, ADVANCED (Tab / Page Up / Page Down on the keyboard, LB / RB on the gamepad). A help panel describes the option under the cursor. The settings are kept in settings.json.
+
+- **Game:** Controls (Auto, keyboard or gamepad), Co-op 1 and Co-op 2 (the control of each player), Keys and buttons, Auto fire (On: hold fire to shoot again; Off: one press per shot), Rumble (0 to 5), Language (13 languages).
+- **Gameplay:** the Play style of a solo arcade game, *Classic* or *Adventure*. The Adventure style gives some of the equipment of the Adventure, with no high score: Escort modules (shots ×3), Antimatter missiles (1 to 20, or none), 2D reactor (the ship also flies up and down, in the lower third of the screen) and **Guardians**: as in FINAL BONUS - Guardians, Guardians come with the birds on every level, the boss levels too, 1 to 5 of them, one more each level, then from level 6 one more Alpha Guardian every five levels (off by default). The game always starts in Classic; the choice does not count in hot seat or coop.
+- **Audio:** SFX Volume, Music Volume, In-game audio (SFX only, SFX + theme, music only or mute; not saved), In-game music (none, a jukebox track, Lyra Voss's songs included, or your own mp3, wav, ogg... files put in the game's musique_perso folder).
+- **Display:** window, fullscreen or borderless; Bezel for screens wider than 16:9 (Phoenix, Tesla, Blue Phenix, Flame Phenix, off; fullscreen only); CRT Scanlines (0 to 3); FPS Counter.
+- **Advanced:** GPU render, VSync (On, Adaptive, Off), Refresh (60, 75, 120 or 144 frames per second; the game speed stays the same), Reset High Scores.
+
+# 13. Extras
+- **High Scores:** the 15 best scores, 3-letter initials, with the ship and the mode of each game (coop scores carry a two-player icon). Codes to type on this screen (they block the entry to the table): LV02 to LV99 (start at that stage), LIVE, PHEN.
+- **Achievements:** two pages, ARCADE (32) and ADVENTURE (32), as illustrated cards; the metal of the frame is the tier (steel, bronze, silver, gold). Some stay secret until found.
+- **Jukebox:** all the music of the game, the intro video, and the lyrics of the songs of Lyra Voss synced on her voice, translated in the 13 languages.
+- **Credits**, **Help** (the story, the controls, the enemies, the Phenix and the Shield) and **Add-On** (the original arcade games, run with MAME: put mame.exe and the roms in addon\mame).
+
+# 14. Credits
+Development: Franck Fornasari (Kraran)
+
+Beta testers: Cécile, Wallems, Luca and Sacha
+
+Technical assistance and design: Grok — xAI · Claude — Anthropic
+
+Inspiration: Phoenix (1980 - Taito) — Amstar Electronics / Centuri / Taito · Pleiades (1981 - Tehkan)
+
+Music: the Phenix themes (Eternal Dawn, Last Coin, Nostalgie...) and the songs of Lyra Voss — created with Suno. Voice of the introduction: ElevenLabs.
+
+Fonts: Audiowide and Play (SIL Open Font License 1.1), DejaVu Sans.
+
+MIT License · github.com/Kraran/PhenixRebirth · kraran.itch.io/phenix-rebirth

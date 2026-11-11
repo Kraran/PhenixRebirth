@@ -1,315 +1,96 @@
-# Phenix Rebirth — Cahier missions (prototype 2.0)
+# Phenix Rebirth - Missions de l'Aventure (v1.7.1)
 
-Source de vérité pour le mode Histoire.  
-Arcade 1.4.3 ne lit pas ce fichier.
+Liste des 66 missions de `src/story_state.py` (`MISSIONS`), écrite par `python docs/manual/make_story_missions.py` : ne pas la modifier à la main.
 
-Convention :
-- `id` stable (jamais renommer sans migration `story.json`)
-- `prereq` = ids de missions **réussies**
-- `flags` = booléens persistants
-- `unlock_shop` = le joueur **peut acheter** cet palier (il paie encore avec les points)
-- `grant` = one-shot immédiat (pas d’achat)
-- `stages` / `roster` = ce que la run a le droit de faire spawn
-- `brief` / `win` = texte illustré (i18n plus tard, FR ici)
+- `id` : identifiant stable (une sauvegarde le garde ; une mission retirée va dans `REMOVED_MISSIONS`)
+- `need` : le drapeau qui ouvre la mission ; il est posé par la victoire d'une mission (`unlock`)
+- *une seule fois* : jouée une fois jusqu'à la fin ouverte de l'acte IV (`ending_done`), puis toutes les missions sont rejouables
+- Titres français et anglais : `src/i18n.py`. Le manuel du joueur (docs/manual) en reprend l'ordre.
 
-Points de la run → `story.credits` (argent hangar).
+## Acte 1 - le Shield
 
----
+| id | Mission (FR) | Mission (EN) | Type | S'ouvre après | Notes |
+|---|---|---|---|---|---|
+| `ch1_sortie` | Bestiaire I : Première sortie | Bestiary I: First sortie | vagues | dès le départ | rejouable |
+| `best_s2` | Bestiaire II : oiseaux kaki | Bestiary II: khaki birds | vagues | Bestiaire I : Première sortie (`ch1_sortie`) | rejouable |
+| `best_s3` | Bestiaire III : gargouilles | Bestiary III: gargoyles | vagues | Bestiaire II : oiseaux kaki (`bestiary_s2`) | rejouable |
+| `best_s4` | Bestiaire IV : gargouilles sombres | Bestiary IV: dark gargoyles | vagues | Bestiaire III : gargouilles (`bestiary_s3`) | rejouable |
+| `bonus_2d` | BONUS : le réacteur à impulsion bidimensionnelle (Shield) | BONUS: the two-dimensional impulse reactor (Shield) | Galaga | Bestiaire IV : gargouilles sombres (`bestiary_s4`) | secrète jusqu'à son ouverture, reste sur la carte des actes suivants tant qu'elle n'est pas gagnée |
+| `ast_1` | Ceinture d'astéroïdes I | Asteroid belt I | Asteroids | Bestiaire I : Première sortie (`ch1_sides`) | rejouable, 60 astéroïdes |
+| `dome_1` | Dôme I : l'épave du Shield | Dome I: the Shield wreck | vagues | Ceinture d'astéroïdes I (`ast_s1`) | une seule fois |
+| `dome_2` | Dôme II : les Kakis | Dome II: the Khakis | vagues | Dôme I : l'épave du Shield (`dome_s1`) | une seule fois |
+| `dome_3` | Dôme III : les Gargouilles | Dome III: the Gargoyles | vagues | Dôme II : les Kakis (`dome_s2`) | une seule fois |
+| `dome_4` | Dôme IV : les Gargouilles sombres | Dome IV: the Dark Gargoyles | vagues | Dôme III : les Gargouilles (`dome_s3`) | une seule fois |
+| `dome_5` | Dôme V : la nuée | Dome V: the swarm | nuée | Dôme IV : les Gargouilles sombres (`dome_s4`) | une seule fois |
+| `act2_gate` | Passage à l'acte 2 | Gateway to Act 2 | vagues | Dôme V : la nuée (`dome_s5`) | une seule fois |
+| `ch2_tease` | Acte 2 | Act 2 | vagues | Passage à l'acte 2 (`act2`) | non jouable (annonce) |
+| `lander_deimos` | Atterrissage sur Déimos | Landing on Deimos | Lunar Lander | Dôme II : les Kakis (`dome_s2`) | facultative, une seule fois, carburant 90 |
+| `raid_deimos` | Raid sur les bases avioïdes I : Déimos | Raid on the Avioid bases I: Deimos | Scramble | Dôme II : les Kakis (`dome_s2`) | facultative, une seule fois, raid niveau 1 |
+| `lander_rock` | Atterrissage sur un astéroïde | Landing on an asteroid | Lunar Lander | Dôme IV : les Gargouilles sombres (`dome_s4`) | facultative, une seule fois, carburant 80 |
+| `raid_rock` | Raid sur les bases avioïdes II : astéroïde | Raid on the Avioid bases II: asteroid | Scramble | Dôme IV : les Gargouilles sombres (`dome_s4`) | facultative, une seule fois, raid niveau 2 |
+| `sentinelle_1` | EDF - Sentinelles silencieuses I : Jupiter | EDF - Silent Sentinels I: Jupiter | Space War | Bestiaire I : Première sortie (`ch1_sides`) | une seule fois (rejouable après `sentinelles_done`), jupiter |
 
-## Flags globaux
+## Acte 2 - le Phenix
 
-| flag | défaut | devient true |
-|---|---|---|
-| `dome_online` | false | `ch1_finale` |
-| `phenix_owned` | false | `ch2_finale` |
-| `paint_shield_green` | false | `ch1_bonus_1` |
-| `paint_shield_violet` | false | `ch1_bonus_2` |
-| `paint_phenix_blue` | false | `ch2_bonus_1` |
-| `paint_phenix_gold` | false | `ch2_bonus_2` |
-| `bestiary_s1` … `bestiary_s5` | s1 true | missions bestiaire |
-| `wall_tier` | `instant` | `slow` après Élec 1 · `immune` après Élec 2 |
-| `chapter` | 1 | montée après finale de chapitre |
+| id | Mission (FR) | Mission (EN) | Type | S'ouvre après | Notes |
+|---|---|---|---|---|---|
+| `bonus_2d_phenix` | BONUS : le réacteur à impulsion bidimensionnelle (Phenix) | BONUS: the two-dimensional impulse reactor (Phenix) | Galaga | Phenix V : le réveil (`phenix_owned`) | secrète jusqu'à son ouverture, reste sur la carte des actes suivants tant qu'elle n'est pas gagnée |
+| `bonus_vip` | BONUS : sauvetage VIP | BONUS: VIP rescue | escorte | un réacteur 2D installé sur un vaisseau | secrète jusqu'à son ouverture, une seule fois, reste sur la carte des actes suivants tant qu'elle n'est pas gagnée |
+| `best_boss` | Bestiaire V : le commandant avioïde | Bestiary V: the Avioid commander | vagues | Passage à l'acte 2 (`act2`) | rejouable |
+| `best_guardians` | Bestiaire VI : les Gardiens | Bestiary VI: the Guardians | vagues | Phenix III : le relais (`phenix_s3`) | rejouable |
+| `ast_2` | Ceinture d'astéroïdes II | Asteroid belt II | Asteroids | Passage à l'acte 2 (`act2`) | rejouable, 80 astéroïdes |
+| `guardians_1` | Gardiens I : le premier feu | Guardians I: the first fire | vagues | Ceinture d'astéroïdes II (`ast_s2`) | une seule fois |
+| `phenix_1` | Phenix I : le signal | Phenix I: the signal | vagues | Gardiens I : le premier feu (`guardians_s1`) | une seule fois |
+| `phenix_2` | Phenix II : le brouillage | Phenix II: the jamming | nuée | Phenix I : le signal (`phenix_s1`) | une seule fois |
+| `phenix_3` | Phenix III : le relais | Phenix III: the relay | vagues | Phenix II : le brouillage (`phenix_s2`) | une seule fois |
+| `phenix_4` | Phenix IV : l'approche | Phenix IV: the approach | vagues | Phenix III : le relais (`phenix_s3`) | une seule fois |
+| `phenix_5` | Phenix V : le réveil | Phenix V: the awakening | vagues | Phenix IV : l'approche (`phenix_s4`) | une seule fois |
+| `paint_1` | Peinture I : l'échantillon | Paint I: the sample | Space Invaders | Passage à l'acte 2 (`act2`) | rejouable |
+| `paint_2` | Peinture II : le mélange | Paint II: the mix | Space Invaders | Passage à l'acte 2 (`act2`) | rejouable |
+| `paint_3` | Peinture III : la cuve | Paint III: the vat | Space Invaders | Passage à l'acte 2 (`act2`) | rejouable |
+| `guardians_2` | Gardiens II : le mur de lasers | Guardians II: the wall of lasers | vagues | Phenix V : le réveil (`phenix_owned`) | une seule fois |
+| `act3_gate` | Passage à l'acte 3 : le grand raid | Gateway to Act 3: the great raid | vagues | Gardiens II : le mur de lasers (`guardians_s2`) | une seule fois |
+| `lander_europa` | Atterrissage sur Europe | Landing on Europa | Lunar Lander | Phenix I : le signal (`phenix_s1`) | facultative, une seule fois, carburant 70 |
+| `raid_europa` | Raid sur les bases avioïdes III : Europe | Raid on the Avioid bases III: Europa | Scramble | Phenix I : le signal (`phenix_s1`) | facultative, une seule fois, raid niveau 3 |
+| `lander_titan` | Atterrissage sur Titan | Landing on Titan | Lunar Lander | Phenix III : le relais (`phenix_s3`) | facultative, une seule fois, carburant 70 |
+| `raid_titan` | Raid sur les bases avioïdes IV : Titan | Raid on the Avioid bases IV: Titan | Scramble | Phenix III : le relais (`phenix_s3`) | facultative, une seule fois, raid niveau 4 |
+| `sentinelle_2` | EDF - Sentinelles silencieuses II : Saturne | EDF - Silent Sentinels II: Saturn | Space War | EDF - Sentinelles silencieuses I : Jupiter (`sentinelle_1`) | une seule fois (rejouable après `sentinelles_done`), saturn |
+| `sentinelle_3` | EDF - Sentinelles silencieuses III : Uranus | EDF - Silent Sentinels III: Uranus | Space War | EDF - Sentinelles silencieuses II : Saturne (`sentinelle_2`) | une seule fois (rejouable après `sentinelles_done`), uranus |
 
-`wall_tier` ne s’applique qu’au **Shield dont le dôme est en ligne** ?  
-Décision prototype : la résistance électrique est une propriété **du pad Shield**. Le Phenix a sa propre ligne au ch.3.
+## Acte 3 - la Riposte
 
----
+| id | Mission (FR) | Mission (EN) | Type | S'ouvre après | Notes |
+|---|---|---|---|---|---|
+| `up_shield_1` | Remise en état I : les propulseurs | Repairs I: the thrusters | vagues | Passage à l'acte 3 : le grand raid (`act3`) | vaisseau gardé : shield, une seule fois |
+| `up_shield_2` | Remise en état II : la coque | Repairs II: the hull | vagues | Remise en état I : les propulseurs (`ch3_speed`) | vaisseau gardé : shield, une seule fois |
+| `up_shield_3` | Remise en état III : le blindage Tesla | Repairs III: the Tesla shielding | nuée | Remise en état II : la coque (`ch3_lives`) | vaisseau gardé : shield, une seule fois |
+| `up_shield_4` | Remise en état IV : le dôme | Repairs IV: the dome | vagues | Remise en état III : le blindage Tesla (`ch3_wall`) | vaisseau gardé : shield, une seule fois |
+| `up_phenix_1` | Remise en état I : les propulseurs | Repairs I: the thrusters | vagues | Passage à l'acte 3 : le grand raid (`act3`) | vaisseau gardé : phoenix, une seule fois |
+| `up_phenix_2` | Remise en état II : la coque | Repairs II: the hull | vagues | Remise en état I : les propulseurs (`ch3_speed`) | vaisseau gardé : phoenix, une seule fois |
+| `up_phenix_3` | Remise en état III : la jauge | Repairs III: the gauge | vagues | Remise en état II : la coque (`ch3_lives`) | vaisseau gardé : phoenix, une seule fois |
+| `bonus_wreck_phenix` | BONUS : l'épave du Phenix | BONUS: the wreck of the Phenix | nuée | Passage à l'acte 3 : le grand raid (`act3`) | vaisseau gardé : shield, une seule fois |
+| `bonus_wreck_shield` | BONUS : l'épave du NX01 | BONUS: the wreck of the NX01 | nuée | Passage à l'acte 3 : le grand raid (`act3`) | vaisseau gardé : phoenix, une seule fois |
+| `bonus_singularity` | BONUS : le convoi de la Singularité | BONUS: the Singularity convoy | Galaga | Remise en état I : les propulseurs (`ch3_speed`) |  |
+| `ast_3` | Ceinture d'astéroïdes III | Asteroid belt III | Asteroids | Remise en état III : la jauge ou Remise en état IV : le dôme (`ch3_ready`) | rejouable, 100 astéroïdes |
+| `guardians_3` | Gardiens III : le Gardien Alpha | Guardians III: the Alpha Guardian | vagues | Ceinture d'astéroïdes III (`ast_s3`) | une seule fois |
+| `final_1` | Riposte I : Jupiter | Counterstrike I: Jupiter | vagues | Gardiens III : le Gardien Alpha (`guardians_s3`) | une seule fois |
+| `final_2` | Riposte II : Saturne | Counterstrike II: Saturn | nuée | Riposte I : Jupiter (`final_s1`) | une seule fois |
+| `final_3` | Riposte III : Uranus | Counterstrike III: Uranus | Galaga | Riposte II : Saturne (`final_s2`) | une seule fois |
+| `final_4` | Riposte IV : Neptune | Counterstrike IV: Neptune | vagues | Riposte III : Uranus (`final_s3`) | une seule fois |
+| `final_5` | Riposte V : Triton | Counterstrike V: Triton | vagues | Riposte IV : Neptune (`final_s4`) | une seule fois |
+| `lander_triton` | Atterrissage sur Triton | Landing on Triton | Lunar Lander | Passage à l'acte 3 : le grand raid (`act3`) | facultative, une seule fois, carburant 60 |
+| `raid_triton` | Raid sur les bases avioïdes V : Triton | Raid on the Avioid bases V: Triton | Scramble | Passage à l'acte 3 : le grand raid (`act3`) | facultative, une seule fois, raid niveau 5 |
+| `sentinelle_4` | EDF - Sentinelles silencieuses IV : Neptune | EDF - Silent Sentinels IV: Neptune | Space War | EDF - Sentinelles silencieuses III : Uranus (`sentinelle_3`) | une seule fois (rejouable après `sentinelles_done`), neptune |
 
-## Hangar (rappel)
+## Acte IV - No Mercy Left (fin ouverte et BONUS DE FIN)
 
-| slot | coque | dispo |
-|---|---|---|
-| 0 | Shield | dès le tuto |
-| 1 | Phenix | après `phenix_owned` |
+| id | Mission (FR) | Mission (EN) | Type | S'ouvre après | Notes |
+|---|---|---|---|---|---|
+| `act4_alcyone` | Alcyone - Le Grand Saut | Alcyone - The Great Leap | fin | Riposte V : Triton (`game_won`) | une seule fois |
+| `bonus_scramble` | BONUS FINAL - Scramble | FINAL BONUS - Scramble | Scramble | Alcyone - Le Grand Saut (`ending_done`) | secrète jusqu'à son ouverture, facultative, BONUS FINAL, sans fin |
+| `bonus_lander` | BONUS FINAL - Lunar Lander | FINAL BONUS - Lunar Lander | Lunar Lander | Alcyone - Le Grand Saut (`ending_done`) | secrète jusqu'à son ouverture, facultative, BONUS FINAL, sans fin, carburant 90 |
+| `bonus_ast_endless` | BONUS FINAL - Asteroids | FINAL BONUS - Asteroids | Asteroids | Alcyone - Le Grand Saut (`ending_done`) | secrète jusqu'à son ouverture, facultative, BONUS FINAL, sans fin |
+| `bonus_gd_endless` | BONUS FINAL - Gardiens | FINAL BONUS - Guardians | vagues | Alcyone - Le Grand Saut (`ending_done`) | secrète jusqu'à son ouverture, facultative, BONUS FINAL, sans fin |
+| `bonus_spacewar` | BONUS FINAL - Space War | FINAL BONUS - Space War | Space War | Alcyone - Le Grand Saut (`ending_done`) | secrète jusqu'à son ouverture, facultative, BONUS FINAL, sans fin |
 
-Inventaire **par slot** : vies achetées, palier vitesse, (Shield) durée / latence dôme, teinte.
-
-Départ slot 0 :
-- vies 1 (palier acheté = 1)
-- vitesse 60 %
-- dôme offline
-- `wall_tier = instant`
-- teinte rouge (défaut Shield)
-
----
-
-## Carte — forme
-
-Arbre gauche → droite, 3 rails au ch.1 :
-
-```
-[ch1_sortie]──[best_s2]──[best_s3]──[best_s4]──[best_boss]
-      │                                                      \
-      ├──[speed_80]──[speed_100]                               [ch1_finale]
-      ├──[life_2]──[life_3]                                   /
-      └──[elec_1]──(dôme requis)──[elec_2]──[ch1_bonus_1]──[ch1_bonus_2]
-```
-
-Nœud : `locked` / `open` / `cleared`.  
-Clic `open` → brief → run.  
-`cleared` relançable (farm points) sauf mention `once`.
-
----
-
-## Chapitre 1 — Le Shield
-
-### ch1_sortie
-- titre : Première sortie
-- kind : story
-- prereq : —
-- stages : `[1]`
-- roster : `[bird_s1]`
-- modifiers : `dome=off`, `lives=save`, `speed=save`
-- grant : `bestiary_s1`
-- unlock_shop : `speed_60` (déjà actif), `lives_1` (déjà actif)
-- unlock_nodes : `ch1_best_s2`, `ch1_speed_80`, `ch1_life_2`, `ch1_elec_1`
-- brief : Dernier Shield EDF. Dôme grillé. Un tir. Une vie. Les Avioïdes sont déjà dans le puits.
-- win : Tu ramènes le Shield. Le hangar enregistre la signature des éclaireurs.
-
-### ch1_best_s2
-- titre : Bestiaire — Éclaireurs sombres
-- kind : bestiary
-- prereq : `ch1_sortie`
-- stages : `[1, 2]`
-- roster : `[bird_s1, bird_s2]`
-- grant : `bestiary_s2`
-- unlock_nodes : `ch1_best_s3`
-- brief : Nouvelle signature. Plus denses, double tir. Identifie, compte, rentre.
-- win : Fiche « oiseau lvl 2 » ouverte.
-
-### ch1_best_s3
-- titre : Bestiaire — Gargouilles
-- kind : bestiary
-- prereq : `ch1_best_s2`
-- stages : `[1, 2, 3]`
-- roster : `[bird_s1, bird_s2, garg_s3]`
-- grant : `bestiary_s3`
-- unlock_nodes : `ch1_best_s4`
-- brief : Plus des oiseaux. Viser le corps. Les ailes reviennent.
-- win : Fiche gargouille lvl 3 ouverte.
-
-### ch1_best_s4
-- titre : Bestiaire — Harpies violettes
-- kind : bestiary
-- prereq : `ch1_best_s3`
-- stages : `[1, 2, 3, 4]`
-- roster : `[bird_s1, bird_s2, garg_s3, garg_s4]`
-- grant : `bestiary_s4`
-- unlock_nodes : `ch1_best_boss`
-- brief : Même bête, autre couleur, plus vite. Complète la fiche.
-- win : Fiche gargouille lvl 4 ouverte.
-
-### ch1_best_boss
-- titre : Bestiaire — Porte-essaim
-- kind : bestiary
-- prereq : `ch1_best_s4`
-- stages : `[1, 2, 3, 4, 5]`
-- roster : `all_known` (les 5 types)
-- grant : `bestiary_s5`
-- unlock_nodes : `ch1_finale` (si dôme encore off)
-- brief : La soucoupe n’est pas un roi. C’est un dock. Perce-la. Reviens avec un schéma de générateur.
-- win : Fiche boss ouverte. Le hangar peut parler réparation.
-
-### ch1_speed_80
-- titre : Banc d’essai — 80 %
-- kind : trial
-- prereq : `ch1_sortie`
-- stages : `[1]`
-- roster : `[bird_s1]`
-- unlock_shop : `speed_80`
-- brief : Le réacteur accepte une seconde pompe. Prouve que tu tiens la ligne.
-- win : Atelier : vitesse 80 % achetable.
-
-### ch1_speed_100
-- titre : Banc d’essai — 100 %
-- kind : trial
-- prereq : `ch1_speed_80`
-- stages : `[1, 2]`
-- roster : `[bird_s1, bird_s2]` si `bestiary_s2` sinon `[bird_s1]`
-- unlock_shop : `speed_100`
-- brief : Régime de conception. Ne grille pas la pompe.
-- win : Atelier : vitesse 100 % achetable.
-
-### ch1_life_2
-- titre : Second harnais
-- kind : trial
-- prereq : `ch1_sortie`
-- stages : `[1]`
-- roster : `[bird_s1]`
-- unlock_shop : `lives_2`
-- brief : Un siège de rechange. L’EDF n’en fabrique plus. Récupère-le.
-- win : Atelier : 2 vies achetable.
-
-### ch1_life_3
-- titre : Trois souffles
-- kind : trial
-- prereq : `ch1_life_2`
-- stages : `[1, 2]`
-- roster : known birds only
-- unlock_shop : `lives_3`
-- brief : Plus que trois harnais dans tout le hangar. Gagne-les.
-- win : Atelier : 3 vies achetable.
-
-### ch1_elec_1
-- titre : Électrique 1
-- kind : hazard
-- prereq : `ch1_sortie`
-- stages : `[1]`
-- roster : `[bird_s1]`
-- modifiers : `walls=instant` pendant la mission (on subit encore le défaut) + orages visuels
-- grant : `wall_tier = slow` **après victoire** (ralentissement + mort si contact long — règle Shield 1.4.3)
-- unlock_nodes : `ch1_elec_2` si `dome_online`
-- brief : Les bords du puits sont sous tension. Tiens la ligne sans les lécher.
-- win : Le Shield apprend à encaisser une fraction de seconde. Toujours mortel si tu insistes.
-
-### ch1_elec_2
-- titre : Électrique 2
-- kind : hazard
-- prereq : `ch1_elec_1`, `ch1_finale`
-- stages : `[1, 2]`
-- roster : known
-- modifiers : `walls=slow` pendant la mission
-- grant : `wall_tier = immune`
-- brief : Recalibre l’isolant. Les murs ne doivent plus être une sentence.
-- win : Immunité murs sur ce pad Shield.
-
-### ch1_finale
-- titre : Générateur
-- kind : finale
-- prereq : `ch1_best_boss`
-- stages : `[1, 2, 3, 4, 5]`
-- roster : `all_known`
-- modifiers : `dome=off` jusqu’à la victoire
-- grant : `dome_online`, `chapter = 2` (hub ch.2 se révèle, carte ch.1 reste farmable)
-- unlock_shop : `dome_duration_60`, `dome_latency_100` (paliers 80/100 et latency 50/0 = missions courtes ch.1b ou achat après essais — **TBD**, voir annexes)
-- unlock_nodes : `ch1_elec_2`, `ch1_bonus_1` si bestiaire 5/5
-- brief : Deux générateurs de soucoupe. Branche-les sur le dôme ou rentre à pied.
-- win : Le dôme s’allume. B n’est plus mort. Chapitre 1 clos.
-- once : false (farm ok) mais `grant` déjà true ne se rejoue pas
-
-### ch1_bonus_1
-- titre : Peinture verte
-- kind : bonus
-- prereq : `bestiary_s5`, `ch1_finale`
-- stages : `[1, 2, 3, 4, 5]`
-- roster : all
-- grant : `paint_shield_green`
-- unlock_nodes : `ch1_bonus_2`
-- brief : Le hangar relâche une teinte de série. Mérite-la.
-- win : Teinte verte débloquée sur le pad Shield.
-
-### ch1_bonus_2
-- titre : Peinture violette
-- kind : bonus
-- prereq : `ch1_bonus_1`
-- stages : `[1, 2, 3, 4, 5]`
-- roster : all
-- grant : `paint_shield_violet`
-- brief : Dernière bombe du stock EDF. Pas un cadeau.
-- win : Teinte violette débloquée.
-
-### Annexes ch.1 — paliers dôme (à préciser)
-
-Pas encore de missions dédiées. Prototype atelier :
-
-Après `dome_online`, achetable tout de suite :
-- durée 60 % (1.2 s si base arcade 2.0 s)
-- latence +100 % (CD 10 s si base 5 s)
-
-Pour ouvrir 80/100 % et +50/0 % : soit 2 mini-trials `ch1_dome_dur`, `ch1_dome_cd` (copies de speed_80), soit achat libre. **À trancher.**
-
----
-
-## Chapitre 2 — Le Phenix légendaire (squelette)
-
-Carte nouvelle colonne, slot 1 verrouillé jusqu’à `ch2_finale`.
-
-| id | prereq | grant / unlock |
-|---|---|---|
-| `ch2_signal` | `ch1_finale` | ouvre la piste proto |
-| `ch2_best_*` | reprise bestiaire si besoin farm | — |
-| `ch2_speed_80/100` | `ch2_signal` | shop vitesse **pad Phenix** |
-| `ch2_life_2/3` | `ch2_signal` | shop vies **pad Phenix** |
-| `ch2_finale` | `ch2_signal` + condition TBD (boss ?) | `phenix_owned`, mode Phenix **on** |
-| `ch2_bonus_1` | bestiaire 5/5 + finale | `paint_phenix_blue` |
-| `ch2_bonus_2` | bonus 1 | `paint_phenix_gold` |
-
-Start pad Phenix après grant : vies 1, vitesse 60 %, jauge Phenix **on** (durée/cap à 60 % jusqu’au ch.3).
-
----
-
-## Chapitre 3 — Final (squelette)
-
-| id | prereq | grant / unlock |
-|---|---|---|
-| `ch3_cap_80` / `ch3_cap_100` | `ch2_finale` | shop `phenix_cap_80/100` |
-| `ch3_elec_1` | `ch2_finale` | `phenix_wall_tier = slow` |
-| `ch3_ending` | caps + TBD | crédits Histoire |
-
-Reine vs relais : **non tranché**.
-
----
-
-## Schéma `story.json` (cible code)
-
-```json
-{
-  "version": 1,
-  "chapter": 1,
-  "credits": 0,
-  "flags": {},
-  "cleared": [],
-  "bestiary": { "bird_s1": { "kills": 0, "known": true } },
-  "slots": [
-    { "id": "shield", "owned": true, "tint": "red",
-      "lives": 1, "speed": 60, "dome": false,
-      "dome_dur": 60, "dome_cd": 200, "wall": "instant" },
-    { "id": "phoenix", "owned": false, "tint": "argent",
-      "lives": 1, "speed": 60, "phenix": false, "phenix_cap": 60, "wall": "instant" }
-  ],
-  "selected_slot": 0
-}
-```
-
----
-
-## Écran Bestiaire (données)
-
-Chaque fiche :
-- `id` roster
-- `known` (silhouette si false)
-- `kills`
-- `pts` Normal (10 / 20 / 30 / 40 / 500)
-- sprite déjà en aide arcade
-
-Tués seulement si l’espèce est dans le `roster` de la mission (un oiseau lvl 2 tué avant unlock ne compte pas — il ne spawn pas).
-
----
-
-## À trancher avant le code combat
-
-1. Paliers dôme 80/100 % : missions ou shop libre après finale ?
-2. `ch2_finale` : quelle mission concrète (raid proto + boss) ?
-3. Ending ch.3 : Reine-essaim ou relais ?
-4. Farm : missions cleared rapportent-elles encore 100 % des points ?
-5. Élec 1 avant le dôme : le `wall_tier=slow` s’applique-t-il **sans** dôme ? (prototype : oui, sur la coque)
+Une mission listée dans plusieurs actes (atterrissages, raids, Sentinelles, BONUS) n'apparaît ici que dans le premier.
