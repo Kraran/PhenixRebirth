@@ -123,6 +123,7 @@ def reset_run(game):
     game.arcade_guardians = False                            # (and its Guardians, Options > GAMEPLAY)
     game.guardian_squad = None
     game.gyro = None
+    game.wingman = None                                      # (Sacha, TEST - Sacha: src/wingman.py)
     game.antimatter = None
     game.formation = EnemyFormation()
     game.formation.sounds = getattr(game, "sounds", None)

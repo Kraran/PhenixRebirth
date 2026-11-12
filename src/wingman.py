@@ -1,0 +1,589 @@
+"""Sacha, the wingman (TEST - Sacha, story_state.py; the final version will take place in Act 2).
+
+A young pilot of Phobos station joins the ship for the fight, at the controls of the other hull (the Phenix when the pilot
+flies the Shield, the Shield when he flies the Phenix). The computer flies him, and flies him well, as a defender first:
+
+  the pilot   every 1/DECIDE_HZ s he weighs the places of the line he could reach (CANDIDATE_STEP px apart): what would hit
+              him on the way there and once there (the shots of the birds and their time to come down, the lasers of the
+              Guardians and those still charging, the birds diving at their speed), then, far behind, the edges of the
+              screen, the pilot's own place (he never flies under him) and a bird above to shoot at. He goes to the
+              best one. When nothing can be dodged any more he calls on his dome (Shield) or his Phenix form (Phenix,
+              once its gauge is high enough), which stop the shots and the divers (not the lasers).
+  his shots   one at a time like the ship, when a bird is in his column; they hit like the pilot's (the Phenix gauge of his
+              ship fills by them), the points are his (not in the pilot's score)
+  the harm    his ship never blows up: a shot, a laser, a diver (destroyed with no points) or the hull of a boss DAMAGE it.
+              It takes HITS of them; it blinks HIT_GRACE s after each, and smokes more and more. LEAVE_DELAY s after the
+              last one Sacha turns back to Phobos: he flies off the top of the screen (no more shots, nothing touches him)
+              and the pilot goes on alone.
+  the radio   a line at the top of the screen when he arrives, at each wave and at each hit (RADIO_TIME s)
+
+Between the waves he flies up and comes back with the ship. The state of a mission is `game.wingman` (a Wingman, or None).
+"""
+import math
+import random
+
+import numpy as np
+import pygame
+
+import fonts
+import guardian
+from enemy import EnemyBullet
+from errlog import log_exc
+from i18n import t
+from player import Player
+from settings import BASE_HEIGHT, BASE_WIDTH, ENEMY_BULLET_SPEED, PLAYER_SPEED
+
+HITS = 3                         # shots his ship takes; after the last one he goes home
+HIT_GRACE = 1.6                  # s of blinking after a hit (nothing harms him then)
+LEAVE_DELAY = 1.2                # s between the last hit and his turn back to Phobos
+LEAVE_ACCEL = 520.0              # px / s / s: he flies off the top, faster and faster...
+LEAVE_TOP_SPEED = 640.0          # ... up to this
+START_GAP = 170                  # px: his place at the start, to the right of the pilot (to his left near the right edge)
+LINE_Y = BASE_HEIGHT - 95        # the line of the ships
+FLY_UP = 420.0                   # px / s: the flight up between two waves (update_play.tick_fly_up)
+ARRIVE = 380.0                   # ... and the arrival from below (update_play.tick_arrive)
+RADIO_TIME = 3.2                 # s a line of the radio stays on screen
+TINTS = {"shield": "red", "phoenix": "argent"}
+
+# the pilot (the computer)
+DECIDE_HZ = 30.0                 # decisions a second
+HORIZON = 1.5                    # s: what comes later than that is not weighed yet
+CANDIDATE_STEP = 14              # px between two places weighed on the line
+EDGE = 60                        # px: the places weighed stay this far from the sides
+SAFE = 7.0                       # px of margin around his hitbox
+NEAR = 26.0                      # px: a near miss still costs a little (he likes room)
+HIT_COST = 10.0
+PILOT_ROOM = 120.0               # px: he does not fly under (or over) the pilot
+SHOOT_COLUMN = 24                # px: a bird this close to his column is shot at
+SPECIAL_SOON = 0.45              # s: a hit he cannot dodge this soon calls the dome / the Phenix form
+
+
+def other_hull(ship_id):
+    return "shield" if ship_id == "phoenix" else "phoenix"
+
+
+class Wingman:
+    def __init__(self, game, name="sacha"):
+        self.name = name
+        pilot = game.player
+        hull = other_hull(getattr(pilot, "ship_id", "shield"))
+        x = pilot.x + START_GAP
+        if x > BASE_WIDTH - EDGE - 40:
+            x = pilot.x - START_GAP
+        self.ship = Player(x, BASE_HEIGHT + 60, ship_id=hull, tint=TINTS[hull])
+        s = self.ship
+        s.sounds = getattr(game, "sounds", None)
+        s.pid = 2
+        s.wingman = True                 # (game._add_score: his points are his)
+        s.score = 0
+        s.speed = PLAYER_SPEED           # the arcade ship: Sacha's ship is in perfect order
+        s.lives = 99                     # (never used: his ship is only damaged, see damage)
+        s.infinite_lives = False
+        s.electric_immune = True         # (he never flies into the walls; if he did, they would not stop him)
+        s.autofire = True
+        s.rumble_level = 0               # (the pad is the pilot's)
+        s.adventure_dome = True
+        s.engine_intensity = 1.0
+        self.hits = 0
+        self.state = "fight"             # "fight", "hurt" (the last hit taken), "leave" (going home), "gone"
+        self.leave_in = 0.0
+        self.leave_speed = 0.0
+        self.last_transition = None
+        self.greeted = False
+        self.target_x = s.x
+        self.decide_in = 0.0
+        self.special = False
+        self.seen = {}                   # id(enemy) -> (x, y) a frame ago: the speed of the divers
+        self.smoke = []                  # [x, y, vx, vy, age, life, size, grey]
+        self.sparks = []                 # [x, y, vx, vy, age]
+        self.smoke_t = 0.0
+        self.radio = None                # (text key, time left)
+
+    # --- what he is ----------------------------------------------------------------------------------------------
+    def flying(self):
+        return self.state in ("fight", "hurt")
+
+    def targetable(self, game):
+        s = self.ship
+        return (self.flying() and s.alive and not s.dying and game.stage_transition is None
+                and s.y <= LINE_Y + 40)
+
+    def say(self, key):
+        self.radio = (key, RADIO_TIME)
+
+    # --- every frame ---------------------------------------------------------------------------------------------
+    def update(self, game, dt):
+        self._puffs(dt)
+        if self.radio is not None:
+            key, left = self.radio
+            self.radio = (key, left - dt) if left - dt > 0 else None
+        s = self.ship
+        if self.state == "gone":
+            return
+        self._smoke_more(dt)
+        if self.state == "leave":
+            self._fly_home(dt)
+            return
+        if self.state == "hurt":
+            self.leave_in -= dt
+            if self.leave_in <= 0:
+                self.state = "leave"
+                self.leave_speed = 60.0
+                s.shots.clear()
+                s.invulnerable = 0.0
+                if s.is_phenix:
+                    s.end_phenix()
+                return
+        tr = game.stage_transition
+        if tr == "fly_up":
+            s.shots.clear()
+            s.y -= FLY_UP * dt
+            s.engine_intensity = 1.0
+            s.boost_engines(dt, True)
+            self.last_transition = tr
+            return
+        if tr == "arrive":
+            if self.last_transition != "arrive":
+                s.y = BASE_HEIGHT + 60              # (the ships have just left the top: they come back from below)
+                s.shots.clear()
+                if s.is_phenix:
+                    s.end_phenix()
+            s.y = max(LINE_Y, s.y - ARRIVE * dt)
+            s.engine_intensity = 1.0
+            s.boost_engines(dt, False)
+            s.rect.center = (int(s.x), int(s.y))
+            self.last_transition = tr
+            return
+        if self.last_transition == "arrive":
+            wave = int((getattr(game, "adventure", None) or {}).get("wave_i", 0) or 0)
+            if not self.greeted:
+                self.greeted = True
+                self.say("wingman_hello")
+            elif wave > 0 and self.state == "fight" and (self.radio is None or self.radio[0] == "wingman_wave"):
+                self.say("wingman_wave")
+        self.last_transition = tr
+        if tr is not None:
+            return                                   # (the outro of a boss...: he waits)
+        if s.y > LINE_Y:
+            s.y = max(LINE_Y, s.y - ARRIVE * dt)
+        move, shoot = self._pilot(game, dt)
+        if self.special and s.can_activate_phenix():
+            s.try_activate_phenix()
+        self.special = False
+        try:
+            keys = pygame.key.get_pressed()
+        except Exception:
+            keys = None
+        s.update(dt, keys, "keyboard", None, allow_shoot=True, ai_move=move, ai_shoot=shoot)
+
+    def _fly_home(self, dt):
+        s = self.ship
+        self.leave_speed = min(LEAVE_TOP_SPEED, self.leave_speed + LEAVE_ACCEL * dt)
+        s.y -= self.leave_speed * dt
+        s.engine_intensity = 1.0
+        s.boost_engines(dt, True)
+        s.engine_time += dt
+        s.invulnerable = 0.0
+        s.rect.center = (int(s.x), int(s.y))
+        if s.y < -140 and not self.smoke:
+            self.state = "gone"
+
+    # --- the harm ------------------------------------------------------------------------------------------------
+    def damage(self, game, why="shot"):
+        """A hit on his ship (`why`: "shot", "laser", "crash", "hull"). True when it counted."""
+        s = self.ship
+        if not self.flying() or self.hits >= HITS or s.invulnerable > 0:
+            return False
+        self.hits += 1
+        s.invulnerable = HIT_GRACE
+        s.shield_flash = 1
+        for _ in range(16):
+            self._spark(s.x + random.uniform(-14, 14), s.y + random.uniform(-10, 10))
+        try:
+            game.explosions.append(game._boom(s.x + random.uniform(-10, 10), s.y - 4, kind="enemy"))
+            game.sounds.play("explosion", volume=0.55, x=s.x)
+            game.shake_amount = max(float(getattr(game, "shake_amount", 0.0) or 0.0), 6.0)
+        except Exception:
+            log_exc("wingman.damage")
+        self.say("wingman_hit_%d" % min(self.hits, HITS))
+        if self.hits >= HITS:
+            self.state = "hurt"
+            self.leave_in = LEAVE_DELAY
+        return True
+
+    # --- the computer at the controls ----------------------------------------------------------------------------
+    def _speed(self):
+        s = self.ship
+        if s.uses_shield and s.is_phenix:
+            return 0.0                                # (the dome holds the Shield in place)
+        mult = s.PHENIX_SPEED_MULT if (s.is_phenix and not s.uses_shield) else 1.0
+        if s.slowdown_timer > 0:
+            mult *= s.SLOWDOWN_FACTOR
+        return float(s.speed) * mult
+
+    def _threats(self, game, dt):
+        """What may hit him in the next HORIZON s: [(x, vx, t0, t1, half width, kind)], kind "shot", "laser", "body"."""
+        s = self.ship
+        box = s.get_hitbox()
+        top, bottom = box.top, box.bottom
+        out = []
+
+        def falling(rect, vy, vx, kind, extra=0.0):
+            if vy <= 1:
+                return
+            t0 = (top - rect.bottom) / vy
+            t1 = (bottom - rect.top) / vy + extra
+            if t1 < 0 or t0 > HORIZON:
+                return
+            out.append((float(rect.centerx), float(vx), max(0.0, t0), t1, rect.width / 2.0, kind))
+
+        shots = list(getattr(game.formation, "bullets", None) or [])
+        boss = getattr(game, "boss_saucer", None)
+        if boss is not None and getattr(boss, "alive", False):
+            shots += list(getattr(boss, "bullets", None) or [])
+        for b in shots:
+            if not getattr(b, "alive", False):
+                continue
+            try:
+                r = b.get_hitbox()
+            except Exception:
+                continue
+            if isinstance(b, guardian.FireLaser):
+                falling(r, guardian.LASER_SPEED, 0.0, "laser", guardian.LASER_LENGTH / guardian.LASER_SPEED)
+            else:
+                vy = float(getattr(b, "vy", ENEMY_BULLET_SPEED if isinstance(b, EnemyBullet) else ENEMY_BULLET_SPEED))
+                falling(r, vy, float(getattr(b, "vx", 0.0) or 0.0), "shot")
+        sq = guardian.squad(game)
+        if sq is not None:                                  # a Guardian charging: its laser is coming down there
+            for g in sq.guardians:
+                if not g.alive or getattr(g, "dying", False) or not getattr(g, "charge", 0):
+                    continue
+                wait = max(0.0, guardian.CHARGE_SECONDS - float(g.charge))
+                t0 = wait + max(0.0, top - g.y) / guardian.LASER_SPEED
+                if t0 > HORIZON:
+                    continue
+                t1 = t0 + (guardian.LASER_LENGTH + box.height) / guardian.LASER_SPEED + 0.15
+                scale = float(getattr(g, "scale", 1.0) or 1.0)
+                for p in g.charge_points():
+                    out.append((float(g.x) + (p - 80) * scale, 0.0, t0, t1, guardian.LASER_WIDTH / 2.0 + 4.0, "laser"))
+        seen = {}
+        for e in guardian.targets(game):
+            try:
+                r = e.get_hitbox()
+            except Exception:
+                continue
+            key = id(e)
+            seen[key] = (float(e.x), float(e.y))
+            last = self.seen.get(key)
+            if last is not None and dt > 0:
+                vx, vy = (e.x - last[0]) / dt, (e.y - last[1]) / dt
+            else:
+                vx, vy = 0.0, 0.0
+            if getattr(e, "diving", False) and vy > 40:
+                falling(r, vy, vx, "body")
+                if out and out[-1][5] == "body":
+                    x, vx_, t0, t1, hw, kind = out[-1]
+                    out[-1] = (x, vx_, t0, t1, hw + 10.0, kind)     # (a diver may turn: more room)
+            elif r.bottom > top - 70:
+                out.append((float(r.centerx), 0.0, 0.0, 0.6, r.width / 2.0 + 6.0, "body"))   # low, slow: keep away
+        self.seen = seen
+        return out
+
+    def _decide(self, game, dt):
+        s = self.ship
+        px = float(s.x)
+        half = s.get_hitbox().width / 2.0
+        xs = np.arange(EDGE, BASE_WIDTH - EDGE + 1, CANDIDATE_STEP, dtype=np.float64)
+        xs = np.append(xs, px)
+        v = self._speed()
+        d = xs - px
+        ad = np.abs(d)
+        sgn = np.sign(d)
+
+        def pos(tt):
+            return px + sgn * np.minimum(ad, v * tt)
+
+        hit = np.zeros_like(xs)
+        dodge = np.zeros_like(xs, dtype=bool)          # a hit the dome / the Phenix form would stop, soon
+        laser = np.zeros_like(xs, dtype=bool)
+        for x, vx, t0, t1, hw, kind in self._threats(game, dt):
+            a, b = pos(t0), pos(t1)
+            lo, hi = np.minimum(a, b), np.maximum(a, b)
+            tx0, tx1 = x + vx * t0, x + vx * t1
+            tlo, thi = min(tx0, tx1), max(tx0, tx1)
+            gap = np.maximum(0.0, np.maximum(lo - thi, tlo - hi))
+            reach = hw + half + SAFE
+            weight = 1.0 / (0.25 + t0)
+            hits = gap < reach
+            near = (~hits) & (gap < reach + NEAR)
+            hit += np.where(hits, HIT_COST * weight, 0.0)
+            hit += np.where(near, 0.6 * (1.0 - (gap - reach) / NEAR) * weight, 0.0)
+            if t0 < SPECIAL_SOON:
+                if kind == "laser":
+                    laser |= hits
+                else:
+                    dodge |= hits
+        cost = hit + 0.0012 * ad
+        room = np.minimum(xs - EDGE, BASE_WIDTH - EDGE - xs)
+        cost += np.where(room < 50, (50 - room) / 50.0, 0.0)          # the walls are not for him
+        pilot = getattr(game, "player", None)
+        if pilot is not None and pilot.alive and not pilot.dying:
+            gap = np.abs(xs - float(pilot.x))
+            cost += np.where(gap < PILOT_ROOM, 0.9 * (1.0 - gap / PILOT_ROOM), 0.0)
+        cols = [float(e.x) for e in guardian.targets(game) if float(e.y) < LINE_Y - 90]
+        if cols:
+            aim = np.min(np.abs(xs[:, None] - np.array(cols)[None, :]), axis=1)
+            cost += 0.45 * np.minimum(aim, 260.0) / 260.0                # a bird above, to shoot at
+        cost -= np.where(np.abs(xs - self.target_x) < CANDIDATE_STEP, 0.08, 0.0)   # (he keeps to his plan)
+        best = int(np.argmin(cost))
+        self.target_x = float(xs[best])
+        if dodge[best] and not laser[best] and hit[best] >= HIT_COST:
+            self.special = True                                         # nowhere to go: the dome / the Phenix form
+
+    def _pilot(self, game, dt):
+        """(move, shoot) for this frame."""
+        s = self.ship
+        self.decide_in -= dt
+        if self.decide_in <= 0:
+            self.decide_in = 1.0 / DECIDE_HZ
+            try:
+                self._decide(game, dt)
+            except Exception:
+                log_exc("wingman._pilot")
+                self.target_x = float(s.x)
+        v = self._speed()
+        err = self.target_x - float(s.x)
+        move = 0.0
+        if abs(err) > 1.5 and v > 0:
+            move = max(-1.0, min(1.0, err / max(1.0, v * max(dt, 1e-3))))
+        shoot = False
+        if self.state == "fight" and not s.own_shots():
+            for e in guardian.targets(game):
+                if abs(float(e.x) - float(s.x)) < SHOOT_COLUMN and float(e.y) < s.y - 60:
+                    shoot = True
+                    break
+        return move, shoot
+
+    # --- smoke and sparks ----------------------------------------------------------------------------------------
+    def _spark(self, x, y):
+        a = random.uniform(0, 2 * math.pi)
+        sp = random.uniform(80, 240)
+        self.sparks.append([x, y, math.cos(a) * sp, math.sin(a) * sp, 0.0])
+
+    def _smoke_more(self, dt):
+        """The damaged ship smokes, more and more: light grey after one hit, thicker after two, black after three."""
+        if self.hits <= 0:
+            return
+        s = self.ship
+        if s.y > BASE_HEIGHT + 40 or s.y < -60:
+            return
+        every = {1: 0.11, 2: 0.055}.get(self.hits, 0.028)
+        self.smoke_t -= dt
+        while self.smoke_t <= 0:
+            self.smoke_t += every
+            grey = {1: 175, 2: 120}.get(self.hits, 70)
+            size = {1: 5.0, 2: 7.0}.get(self.hits, 9.5)
+            fall = 25.0 if self.state != "leave" else -self.leave_speed * 0.15
+            self.smoke.append([s.x + random.uniform(-10, 10), s.y + random.uniform(4, 16), random.uniform(-14, 14),
+                               random.uniform(40, 75) + fall, 0.0, random.uniform(0.55, 0.95) + 0.15 * self.hits,
+                               size * random.uniform(0.8, 1.2), grey + random.randint(-12, 12)])
+            if self.hits >= 2 and random.random() < 0.10 * self.hits:
+                self._spark(s.x + random.uniform(-12, 12), s.y + random.uniform(-6, 10))
+
+    def _puffs(self, dt):
+        for p in self.smoke:
+            p[0] += p[2] * dt
+            p[1] += p[3] * dt
+            p[4] += dt
+        self.smoke = [p for p in self.smoke if p[4] < p[5]]
+        for sp in self.sparks:
+            sp[0] += sp[2] * dt
+            sp[1] += sp[3] * dt
+            sp[4] += dt
+        self.sparks = [sp for sp in self.sparks if sp[4] < 0.28]
+
+    # --- drawing -------------------------------------------------------------------------------------------------
+    def draw(self, surface, game):
+        for p in self.smoke:
+            k = p[4] / p[5]
+            r = max(2, int(p[6] * (1 + 1.6 * k)))
+            surface.blit(_puff(r, int(p[7]), int(170 * (1 - k)) // 17 * 17), (int(p[0] - r - 1), int(p[1] - r - 1)))
+        for sp in self.sparks:
+            k = sp[4] / 0.28
+            colour = (255, 240, 170) if k < 0.5 else (255, 160, 60)
+            pygame.draw.line(surface, colour, (int(sp[0]), int(sp[1])),
+                             (int(sp[0] - sp[2] * 0.02), int(sp[1] - sp[3] * 0.02)), 1)
+        if self.state == "gone":
+            return
+        s = self.ship
+        if s.y < -120 or s.y > BASE_HEIGHT + 120:
+            return
+        s.draw(surface)
+        if self.flying() and game.stage_transition is None:
+            tag = _tag(game)
+            if tag is not None and not (s.invulnerable > 0 and int(s.invulnerable * 12) % 2 == 0):
+                surface.blit(tag, (int(s.x - tag.get_width() / 2), int(s.y + s.height / 2 + 2)))
+
+    def banner(self, surface, game):
+        if self.radio is None:
+            return
+        key, left = self.radio
+        try:
+            img = _radio_plate(game.text_cache.get(game.font, t(key), (150, 235, 170)))
+        except Exception:
+            log_exc("wingman.banner")
+            return
+        alpha = max(0, min(255, int(255 * min(1.0, left / 0.5))))
+        if alpha < 255:
+            img = img.copy()
+            img.set_alpha(alpha)
+        surface.blit(img, (BASE_WIDTH // 2 - img.get_width() // 2, 136))
+
+
+_PUFFS = {}
+_TAG = {}
+_PLATES = {}
+
+
+def _puff(r, grey, alpha):
+    key = (r, grey, alpha)
+    img = _PUFFS.get(key)
+    if img is None:
+        if len(_PUFFS) > 600:
+            _PUFFS.clear()
+        img = pygame.Surface((r * 2 + 2, r * 2 + 2), pygame.SRCALPHA)
+        pygame.draw.circle(img, (grey, grey, min(255, grey + 8), alpha), (r + 1, r + 1), r)
+        _PUFFS[key] = img
+    return img
+
+
+def _radio_plate(text):
+    """The line of the radio on a dark translucent band (it stays readable over the birds), made once per line."""
+    img = _PLATES.get(text)
+    if img is None:
+        if len(_PLATES) > 32:
+            _PLATES.clear()
+        w, h = text.get_width() + 32, text.get_height() + 10
+        img = pygame.Surface((w, h), pygame.SRCALPHA)
+        img.fill((6, 12, 18, 170))
+        pygame.draw.rect(img, (90, 170, 110, 200), img.get_rect(), 1)
+        img.blit(text, (16, 5))
+        _PLATES[text] = img
+    return img
+
+
+def _tag(game):
+    """His name under his ship (small)."""
+    try:
+        from i18n import get_lang
+        key = get_lang()
+        img = _TAG.get(key)
+        if img is None:
+            font = fonts.text(16)
+            img = _TAG[key] = font.render(t("wingman_name"), True, (150, 235, 170))
+            img.set_alpha(190)
+        return img
+    except Exception:
+        log_exc("wingman._tag")
+        return None
+
+
+# --- the mission ----------------------------------------------------------------------------------------------------
+def start(game, spec):
+    """At the start of a mission: Sacha when the mission has him (spec "wingman")."""
+    game.wingman = None
+    if not (spec or {}).get("wingman") or getattr(game, "play_mode", "solo") == "coop":
+        return
+    try:
+        game.wingman = Wingman(game, spec.get("wingman"))
+    except Exception:
+        log_exc("wingman.start")
+        game.wingman = None
+
+
+def active(game):
+    w = getattr(game, "wingman", None)
+    return w if w is not None and getattr(game, "adventure", None) and getattr(game, "started", False) else None
+
+
+def tick(game):
+    w = active(game)
+    if w is not None:
+        try:
+            w.update(game, float(game.dt or 0.0))
+        except Exception:
+            log_exc("wingman.tick")
+
+
+def shooters(game):
+    """His ship, for the shots against the enemies (update_play.player_bullets_vs_enemies), while he fights."""
+    w = active(game)
+    if w is None or not w.flying() or not w.ship.shots:
+        return []
+    return [w.ship]
+
+
+def attacks(game):
+    """The enemies against Sacha: the shots, the lasers, the divers and the hull of a boss damage his ship (see
+    Wingman.damage); his dome takes the shots and the divers, his Phenix form too (not the lasers)."""
+    w = active(game)
+    if w is None or not w.targetable(game):
+        return
+    try:
+        _attacks(game, w)
+    except Exception:
+        log_exc("wingman.attacks")
+
+
+def _attacks(game, w):
+    s = w.ship
+    box = s.get_hitbox()
+    dome = s.uses_shield and s.is_phenix
+    boss = getattr(game, "boss_saucer", None)
+    if boss is not None and getattr(boss, "alive", False):
+        hull = boss.get_hull_hitbox()
+        if hull.width > 0 and box.colliderect(hull):
+            w.damage(game, "hull")
+        for b in boss.bullets:
+            if b.alive and b.get_hitbox().colliderect(box):
+                b.alive = False
+                if dome:
+                    game._shield_absorb(s, *b.get_hitbox().center)
+                elif not s.is_phenix:
+                    w.damage(game, "shot")
+    for b in game.formation.bullets:
+        if not b.alive or not b.get_hitbox().colliderect(box):
+            continue
+        if isinstance(b, guardian.FireLaser):
+            w.damage(game, "laser")                     # (it goes through, as it goes through the birds)
+            continue
+        b.alive = False
+        if dome:
+            game._shield_absorb(s, *b.get_hitbox().center)
+        elif not s.is_phenix:
+            w.damage(game, "shot")
+    for e in guardian.targets(game):
+        if getattr(e, "diving", False) and e.get_hitbox().colliderect(box):
+            try:
+                e.kill(flash=False)                     # the bird goes down, worth nothing
+            except TypeError:
+                e.kill()
+                e.alive = False
+                e.dying = False
+            game.explosions.append(game._boom(e.x, e.y, kind="collision"))
+            game.sounds.play("enemy_explosion", x=e.x)
+            if not s.is_phenix:
+                w.damage(game, "crash")
+            break
+
+
+def draw(game, surface):
+    w = active(game)
+    if w is not None:
+        w.draw(surface, game)
+
+
+def banner(game, surface):
+    w = active(game)
+    if w is not None:
+        w.banner(surface, game)
