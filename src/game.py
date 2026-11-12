@@ -2275,7 +2275,7 @@ class Game:
         self.stage_touched_edge = False
         adv = getattr(self, "adventure", None)
         waves = (adv or {}).get("waves")
-        kinds = None
+        kinds = boost = None
         if adv and waves and adv.get("swarm"):
             # a swarm in several waves (TEST - Sacha): each one a swarm of the kinds of enemies of that wave
             i = max(0, min(len(waves) - 1, int(adv.get("wave_i", 0) or 0)))
@@ -2285,6 +2285,7 @@ class Game:
             mult = float(adv.get("speed") or 1.0) * stage_speed_mult(number) * self.difficulty_speed_mult()
             plan = adv.get("swarm_kinds") or []
             kinds = tuple(plan[min(i, len(plan) - 1)]) if plan else None
+            boost = (adv.get("swarm_boost") or {}).get(i + 1)          # (more of one kind in that wave: Défense de Phobos I)
         elif adv and waves:
             # a mission of several waves: each one plays like that stage of the arcade game
             number = int(waves[max(0, min(len(waves) - 1, int(adv.get("wave_i", 0) or 0)))])
@@ -2386,7 +2387,8 @@ class Game:
         self.formation.swarm = None
         self.boss_saucer = None
         if content == 0:
-            self.formation.spawn_swarm(speed_mult=mult, screens=(adv or {}).get("swarm_screens"), kinds=kinds)
+            self.formation.spawn_swarm(speed_mult=mult, screens=(adv or {}).get("swarm_screens"), kinds=kinds,
+                                       crowd=(adv or {}).get("swarm_crowd"), boost=boost)
             self.formation.sounds = self.sounds
         elif content == 5:
             self.boss_saucer = BossSaucer()

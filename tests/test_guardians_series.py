@@ -77,7 +77,8 @@ def test_the_three_missions_of_the_series():
     # each one is waited for by the next mission of the story
     assert ss.mission_by_id("phenix_1")["need"] == "guardians_s1"
     assert ss.mission_by_id("act3_gate")["need"] == "guardians_s2"
-    assert ss.mission_by_id("final_1")["need"] == "guardians_s3"
+    assert ss.mission_by_id("phobos_3")["need"] == "guardians_s3"     # (then Défense de Phobos III, then la Riposte)
+    assert ss.mission_by_id("final_1")["need"] == "phobos_s3"
 
 
 def test_gardiens_i_comes_between_the_belt_and_phenix_i():
@@ -119,7 +120,10 @@ def test_gardiens_iii_comes_between_the_belt_and_riposte_i_and_gives_the_coating
     assert ss.mission_playable(st, g3) and not ss.mission_playable(st, f1)
     assert not ss.flag(st, ss.REFLECT_FLAG)
     _win(st, "guardians_3")
-    assert ss.mission_playable(st, f1) and ss.flag(st, ss.REFLECT_FLAG)
+    assert ss.flag(st, ss.REFLECT_FLAG) and not ss.mission_playable(st, f1)
+    assert ss.mission_playable(st, ss.mission_by_id("phobos_3"))      # Défense de Phobos III first
+    _win(st, "phobos_3")
+    assert ss.mission_playable(st, f1)
 
 
 def test_the_act_3_cheat_counts_the_act_2_missions_as_won():

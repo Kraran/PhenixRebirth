@@ -11,8 +11,9 @@ BOSS = ["best_boss", "best_guardians"]     # Bestiary V and VI (the Guardians: o
 BONUS = ["bonus_2d"]                      # the secret BONUS mission (Shield): on the map of Act 2 only while its reactor is not caught
 BELT1 = ["ast_1"]                 # the road through the belt: the prelude of the Dome series (Act 1)
 BELT2 = ["ast_2"]                 # the prelude of the Phenix series (Act 2)
-DOME = ["dome_1", "dome_2", "dome_3", "dome_4", "dome_5", "act2_gate"]
+DOME = ["dome_1", "dome_2", "dome_3", "dome_4", "dome_5", "phobos_1", "act2_gate"]
 PHENIX = ["phenix_1", "phenix_2", "phenix_3", "phenix_4", "phenix_5"]
+PHENIX_ROW = ["phenix_1", "phenix_2", "phobos_2", "phenix_3", "phenix_4", "phenix_5"]   # on the map: Défense de Phobos II in between
 PAINT = ["paint_1", "paint_2", "paint_3"]
 SENT1 = ["sentinelle_1"]                # the Silent Sentinels on the map of Act 1
 SENT2 = ["sentinelle_1", "sentinelle_2", "sentinelle_3"]      # ... of Act 2
@@ -70,11 +71,11 @@ def test_the_map_of_act_1_has_no_phenix_mission():
 
 def test_the_map_of_act_2_keeps_the_hunts_and_drops_the_dome_missions():
     st = _act2()
-    assert _ids(ss.visible_missions(st)) == BELT2 + GD1 + PHENIX + GD2 + GATE3 + SENT2 + HUNTS + BOSS + BONUS + PAINT + RAID2 + TRAINING      # BONUS: open and not flown yet
+    assert _ids(ss.visible_missions(st)) == BELT2 + GD1 + PHENIX_ROW + GD2 + GATE3 + SENT2 + HUNTS + BOSS + BONUS + PAINT + RAID2 + TRAINING      # BONUS: open and not flown yet
     st["cleared"].append("bonus_2d")                                            # the waves won, the reactor missed: still to do
-    assert _ids(ss.visible_missions(st)) == BELT2 + GD1 + PHENIX + GD2 + GATE3 + SENT2 + HUNTS + BOSS + BONUS + PAINT + RAID2 + TRAINING
+    assert _ids(ss.visible_missions(st)) == BELT2 + GD1 + PHENIX_ROW + GD2 + GATE3 + SENT2 + HUNTS + BOSS + BONUS + PAINT + RAID2 + TRAINING
     st["items"]["got"]["reactor_shield"] = "found"                              # caught: it leaves the map of Act 2
-    assert _ids(ss.visible_missions(st)) == BELT2 + GD1 + PHENIX + GD2 + GATE3 + SENT2 + HUNTS + BOSS + PAINT + RAID2 + TRAINING
+    assert _ids(ss.visible_missions(st)) == BELT2 + GD1 + PHENIX_ROW + GD2 + GATE3 + SENT2 + HUNTS + BOSS + PAINT + RAID2 + TRAINING
 
 
 def test_the_cheat_lists_every_mission():
@@ -85,10 +86,10 @@ def test_the_cheat_lists_every_mission():
 
 def test_the_gate_starts_act_2():
     st = ss.create_slot(1, "NOVA", "normal")
-    st["flags"]["dome_s5"] = True
+    st["flags"]["phobos_s1"] = True
     res = _win(st, "act2_gate")
     assert res["act"] == 2 and st["act"] == 2 and ss.flag(st, "act2")
-    assert _ids(ss.visible_missions(st)) == BELT2 + GD1 + PHENIX + GD2 + GATE3 + SENT2 + HUNTS + BOSS + PAINT + RAID2 + TRAINING
+    assert _ids(ss.visible_missions(st)) == BELT2 + GD1 + PHENIX_ROW + GD2 + GATE3 + SENT2 + HUNTS + BOSS + PAINT + RAID2 + TRAINING
 
 
 def test_the_hunts_stay_replayable_in_act_2_with_their_level():
@@ -103,11 +104,11 @@ def test_the_hunts_stay_replayable_in_act_2_with_their_level():
 # ------------------------------------------------------------------ the five Phenix missions
 def test_the_series_is_chained_and_flown_once():
     st = _act2()
-    for i, mid in enumerate(PHENIX):
+    for i, mid in enumerate(PHENIX_ROW):
         mission = ss.mission_by_id(mid)
         assert mission["once"] and mission["acts"] == (2,)
         assert ss.mission_playable(st, mission), mid
-        for later in PHENIX[i + 1:]:
+        for later in PHENIX_ROW[i + 1:]:
             assert not ss.mission_playable(st, ss.mission_by_id(later)), (mid, later)
         _win(st, mid)
         assert not ss.mission_playable(st, mission), mid          # not renewable
@@ -138,6 +139,7 @@ def test_a_lost_run_does_not_advance_the_series():
 def test_each_mission_writes_its_line_in_the_journal():
     from i18n import t
     st = _act2()
+    st["flags"]["phobos_s2"] = True                                  # (Défense de Phobos II, between Phenix II and III)
     for mid in PHENIX:
         _win(st, mid)
     keys = [e["key"] for e in st["log"] if isinstance(e, dict)]
@@ -299,19 +301,19 @@ def test_the_map_cursor_walks_the_act_2_list_only():
     hub.pane = "map"
     for _ in range(40):
         hub.nav_v(1)
-    assert hub._mission()["id"] == "raid_titan" and hub.map_index == len(BELT2 + GD1 + PHENIX + GD2 + GATE3 + SENT2 + HUNTS + BOSS + BONUS + PAINT + RAID2 + TRAINING) - 1
+    assert hub._mission()["id"] == "raid_titan" and hub.map_index == len(BELT2 + GD1 + PHENIX_ROW + GD2 + GATE3 + SENT2 + HUNTS + BOSS + BONUS + PAINT + RAID2 + TRAINING) - 1
 
 
 def test_winning_the_gate_puts_the_cursor_on_the_new_map():
     st = ss.create_slot(1, "NOVA", "normal")
     ss.mark_intro_seen(st)
-    st["flags"]["dome_s5"] = True
+    st["flags"]["phobos_s1"] = True
     hub = _hub(st)
     hub.map_index = [m["id"] for m in hub.missions()].index("act2_gate")
     hub.apply_result("act2_gate", 100, True)
     from i18n import t
     assert hub.state["act"] == 2 and hub.map_index == 0 and hub.toast == t("story_act_start").format(n=2)
-    assert _ids(hub.missions()) == BELT2 + GD1 + PHENIX + GD2 + GATE3 + SENT2 + HUNTS + BOSS + PAINT + RAID2 + TRAINING
+    assert _ids(hub.missions()) == BELT2 + GD1 + PHENIX_ROW + GD2 + GATE3 + SENT2 + HUNTS + BOSS + PAINT + RAID2 + TRAINING
 
 
 def test_the_gift_toast_after_the_fifth_mission():

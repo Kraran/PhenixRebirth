@@ -439,10 +439,11 @@ class EnemyFormation:
         n = SWARM_SCREENS if screens is None else max(0.0, float(screens))
         return max(EnemyFormation.swarm_on_screen(kind), int(round(SWARM_NORMAL_COUNT[kind] * n)))
 
-    def _swarm_bird_slots(self, kinds=(1, 2, 3, 4)):
+    def _swarm_bird_slots(self, kinds=(1, 2, 3, 4), screen=None):
         """Formation seats of both bird kinds (those of `kinds`), in reading order, kinds spread evenly among them."""
-        n1 = self.swarm_on_screen(1) if 1 in kinds else 0
-        n2 = self.swarm_on_screen(2) if 2 in kinds else 0
+        screen = screen or {}
+        n1 = screen.get(1, self.swarm_on_screen(1)) if 1 in kinds else 0
+        n2 = screen.get(2, self.swarm_on_screen(2)) if 2 in kinds else 0
         total = n1 + n2
         if total <= 0:
             return []
@@ -465,10 +466,33 @@ class EnemyFormation:
                 kinds.append(2)
         return [(x, y, k) for (x, y), k in zip(slots, kinds)]
 
-    def spawn_swarm(self, speed_mult=1.0, screens=None, kinds=None):
+    @classmethod
+    def swarm_counts(cls, kinds, screens=None, crowd=None, boost=None):
+        """({kind: on screen at once}, {kind: in all}) of a swarm of `kinds`. `crowd`: that many times more enemies on screen
+        at once (Défense de Phobos II: 1.3), shared out among the kinds so that the whole is right; `boost`: {kind: factor}
+        for one kind, on screen and in all (more dark gargoyles in the last wave of Défense de Phobos I)."""
+        boost = boost or {}
+        crowd = 1.0 if crowd is None else max(0.0, float(crowd))
+        raw = {k: cls.swarm_on_screen(k) * float(boost.get(k, 1.0)) * crowd for k in kinds}
+        screen = {k: int(math.floor(v)) for k, v in raw.items()}
+        missing = int(round(sum(raw.values()))) - sum(screen.values())
+        for k in sorted(raw, key=lambda k: (screen[k] - raw[k], k))[:max(0, missing)]:
+            screen[k] += 1                                       # (the largest remainders first)
+        n = SWARM_SCREENS if screens is None else max(0.0, float(screens))
+        total = {k: max(screen[k], int(round(SWARM_NORMAL_COUNT[k] * n * float(boost.get(k, 1.0))))) for k in kinds}
+        return screen, total
+
+    def _on_screen(self, kind):
+        """How many enemies of a kind the swarm shows at once."""
+        sw = self.swarm or {}
+        return (sw.get("screen") or {}).get(kind, self.swarm_on_screen(kind))
+
+    def spawn_swarm(self, speed_mult=1.0, screens=None, kinds=None, crowd=None, boost=None):
         """Start the swarm: a full screen of every kind, the rest waits to come in. `kinds`: the kinds of enemies in it
-        (1 blue, 2 khaki, 3 grey gargoyles, 4 dark ones; default all four), the others never come."""
+        (1 blue, 2 khaki, 3 grey gargoyles, 4 dark ones; default all four), the others never come. `crowd` and `boost`:
+        see swarm_counts."""
         kinds = tuple(k for k in (1, 2, 3, 4) if kinds is None or k in kinds)
+        screen, total = self.swarm_counts(kinds, screens, crowd, boost)
         self.stage = 2                           # the drift of the khaki formation
         self.speed_mult = speed_mult
         self.enemies = []
@@ -479,16 +503,16 @@ class EnemyFormation:
         self.speed = ENEMY_SPEED * 1.15 * speed_mult
         self.swarm = {
             "mult": speed_mult,
-            "reserve": {k: (self.swarm_total(k, screens) - self.swarm_on_screen(k) if k in kinds else 0)
-                        for k in (1, 2, 3, 4)},
+            "screen": screen,
+            "reserve": {k: (total[k] - screen[k] if k in kinds else 0) for k in (1, 2, 3, 4)},
             "wait": {k: 0.0 for k in (1, 2, 3, 4)},
-            "slots": self._swarm_bird_slots(kinds),
+            "slots": self._swarm_bird_slots(kinds, screen),
             "next_index": 0,
         }
         for slot_i, (x, y, kind) in enumerate(self.swarm["slots"]):
             self._swarm_add_bird(slot_i, kind, arriving=False)
         for kind in (k for k in (3, 4) if k in kinds):
-            for _ in range(self.swarm_on_screen(kind)):
+            for _ in range(screen[kind]):
                 self._swarm_add_gargoyle(kind, arriving=False)
 
     def _swarm_index(self):
@@ -532,7 +556,7 @@ class EnemyFormation:
             if sw["reserve"][kind] <= 0 or sw["wait"][kind] > 0:
                 continue
             alive = [e for e in self.enemies if e.alive and not e.dying and e.stage == kind]
-            if len(alive) >= self.swarm_on_screen(kind):
+            if len(alive) >= self._on_screen(kind):
                 continue
             if kind <= 2:
                 taken = {getattr(e, "swarm_slot", -1) for e in self.enemies if e.alive and e.stage == kind}

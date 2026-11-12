@@ -1811,6 +1811,11 @@ class StoryHub:
                 spec["swarm_screens"] = float(mission["swarm_screens"])    # a smaller swarm
             if mission.get("swarm_kinds"):
                 spec["swarm_kinds"] = [list(k) for k in mission["swarm_kinds"]]   # the kinds of each wave
+            if mission.get("swarm_crowd") is not None:
+                spec["swarm_crowd"] = float(mission["swarm_crowd"])      # more enemies on screen at once
+            if mission.get("swarm_boost"):
+                spec["swarm_boost"] = {int(w): {int(k): float(f) for k, f in kf.items()}     # more of one kind in a wave
+                                       for w, kf in mission["swarm_boost"].items()}
         if mission.get("guardians_wave"):
             spec["guardians_wave"] = {int(k): int(v) for k, v in mission["guardians_wave"].items()}   # by wave
         return spec

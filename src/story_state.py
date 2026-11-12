@@ -66,6 +66,7 @@ SENTINELLE_DONE = "sentinelles_done"   # the last Sentinelle mission is won: all
 CH1_SIDES = "ch1_sides"
 REFLECT_FLAG = "reflective_coating"    # Gardiens III is won: the reflective coating (the dome and the Phenix stop the lasers)
 COAT_SCENE = "guardians_coat"          # ... told after that first victory (STORY_SCENES)
+SACHA_SCENE = "sacha_reveal"           # Défense de Phobos I is won: who was the pilot who came to help (STORY_SCENES)
 GAME_WON = "game_won"                  # the last mission of Act 3 is won: the Adventure is over (it can still be played)
 ENDING_DONE = "ending_done"            # the open ending (Act IV) has been told: every mission can be flown again, all acts are listed
 ENDING_MISSION = "act4_alcyone"        # the only mission of the pseudo Act IV: no sortie, just the ending
@@ -279,12 +280,21 @@ MISSIONS = [
         "log": "story_log_dome5",
     },
     {
+        # Défense de Phobos I: the swarm of TEST - Sacha in 4 waves (level 11), Sacha comes as a surprise (src/wingman.py);
+        # no Guardians in Act 1 (they come in Gardiens I): more dark gargoyles in the last wave instead. His story is told
+        # after the first victory (SACHA_SCENE).
+        "id": "phobos_1", "acts": (1,), "wingman": "sacha", "title": "story_m_phobos1", "blurb": "story_m_phobos1_b",
+        "need": "dome_s5", "content": 1, "swarm": True, "swarm_screens": 1.0, "stage": 11, "speed": 1.0,
+        "waves": [11, 11, 11, 11], "swarm_kinds": [[1], [1, 2], [1, 2, 3], [1, 2, 3, 4]], "swarm_boost": {4: {4: 1.5}},
+        "once": True, "unlock": ["phobos_s1"], "log": "story_log_phobos1", "win_scene": SACHA_SCENE,
+    },
+    {
         # a full run of the arcade levels 11 to 15; the death of the boss starts Act 2
         "id": "act2_gate",
         "acts": (1,),
         "title": "story_m_gate2",
         "blurb": "story_m_gate2_b",
-        "need": "dome_s5",
+        "need": "phobos_s1",
         "content": 1,
         "waves": [11, 12, 13, 14, 15],
         "speed": 1.0,
@@ -398,11 +408,19 @@ MISSIONS = [
         "log": "story_log_ph2",
     },
     {
+        # Défense de Phobos II: the same at level 16, 30 % more enemies on screen at once, 50 % more in all, 3 Guardians in
+        # the last wave
+        "id": "phobos_2", "acts": (2,), "wingman": "sacha", "title": "story_m_phobos2", "blurb": "story_m_phobos2_b",
+        "need": "phenix_s2", "content": 1, "swarm": True, "swarm_screens": 1.5, "swarm_crowd": 1.3, "stage": 16,
+        "speed": 1.0, "waves": [16, 16, 16, 16], "swarm_kinds": [[1], [1, 2], [1, 2, 3], [1, 2, 3, 4]], "guardians_wave": {4: 3},
+        "once": True, "unlock": ["phobos_s2"], "log": "story_log_phobos2",
+    },
+    {
         "id": "phenix_3",
         "acts": (2,),
         "title": "story_m_ph3",
         "blurb": "story_m_ph3_b",
-        "need": "phenix_s2",
+        "need": "phobos_s2",
         "content": 3,
         "waves": [18, 19],
         "guardians_at": {19: 2}, "speed": 1.0,
@@ -593,7 +611,15 @@ MISSIONS = [
         "unlock": ["guardians_s3", REFLECT_FLAG], "log": "story_log_gd3", "win_scene": COAT_SCENE,
     },
     {
-        "id": "final_1", "acts": (3,), "title": "story_m_fin1", "blurb": "story_m_fin1_b", "need": "guardians_s3",
+        # Défense de Phobos III: level 21, 50 % more enemies on screen at once, twice as many in all, 3 Guardians in the
+        # last wave
+        "id": "phobos_3", "acts": (3,), "wingman": "sacha", "title": "story_m_phobos3", "blurb": "story_m_phobos3_b",
+        "need": "guardians_s3", "content": 1, "swarm": True, "swarm_screens": 2.0, "swarm_crowd": 1.5, "stage": 21,
+        "speed": 1.0, "waves": [21, 21, 21, 21], "swarm_kinds": [[1], [1, 2], [1, 2, 3], [1, 2, 3, 4]], "guardians_wave": {4: 3},
+        "once": True, "unlock": ["phobos_s3"], "log": "story_log_phobos3",
+    },
+    {
+        "id": "final_1", "acts": (3,), "title": "story_m_fin1", "blurb": "story_m_fin1_b", "need": "phobos_s3",
         "content": 1, "waves": [21, 22], "guardians_at": {22: 1}, "speed": 1.0, "once": True, "unlock": ["final_s1"],
         "log": "story_log_fin1",
     },
@@ -1158,6 +1184,8 @@ BELT_PRELUDES = (("ast_1", ("dome_1",)), ("ast_2", ("guardians_1", "phenix_1")),
 # stay open); the mission itself is not counted as won (it can still be flown, and Gardiens III still gives the
 # reflective coating). A save that stands before that mission has to fly it.
 GUARDIAN_SKIPS = (("guardians_1", "phenix_1"), ("guardians_2", "act3_gate"), ("guardians_3", "final_1"))
+# The Défense de Phobos series came later too: a save that already won the mission after one of them gets its flag.
+PHOBOS_SKIPS = (("phobos_1", "act2_gate"), ("phobos_2", "phenix_3"), ("phobos_3", "final_1"))
 
 
 def _open_started_series(state):
@@ -1175,6 +1203,9 @@ def _open_started_series(state):
     for mission_id, after in GUARDIAN_SKIPS:
         if after in cleared:
             flags[mission_id.replace("guardians_", "guardians_s")] = True
+    for mission_id, after in PHOBOS_SKIPS:
+        if after in cleared:
+            flags[mission_id.replace("phobos_", "phobos_s")] = True
 
 
 # Ceinture I and Sentinelle I now wait for the first Bestiary sortie. A save that already won that sortie (before
@@ -1719,6 +1750,10 @@ SCENES = {
     "best_guardians": {"title": "story_m_bestgd", "slides": [("gardiens_bestiaire", "story_scene_bestgd")]},
     "guardians_2": {"title": "story_m_gd2", "slides": [("gardiens_hybrides", "story_scene_gd2")]},
     "guardians_3": {"title": "story_m_gd3", "slides": [("gardien_alpha", "story_scene_gd3")]},
+    # Défense de Phobos (the pictures will come later: until then the slide is a dark sky behind the text)
+    "phobos_1": {"title": "story_m_phobos1", "slides": [("defense_phobos_1", "story_scene_phobos1")]},
+    "phobos_2": {"title": "story_m_phobos2", "slides": [("defense_phobos_2", "story_scene_phobos2")]},
+    "phobos_3": {"title": "story_m_phobos3", "slides": [("defense_phobos_3", "story_scene_phobos3")]},
     # EDF - Opération Sentinelles silencieuses (the SpaceWar missions of the Adventure): the briefing, over the planet
     "sentinelle_1": {"title": "story_scene_sent1_t", "slides": [("sentinelle1_jupiter", "story_scene_sent1")]},
     "sentinelle_2": {"title": "story_scene_sent2_t", "slides": [("sentinelle2_saturne", "story_scene_sent2")]},
@@ -1756,6 +1791,7 @@ STORY_SCENES = {
     "act3_kept_shield": {"title": "story_scene_lostp_t", "slides": [("perte_phenix", "story_scene_lostp")]},
     "act3_kept_phoenix": {"title": "story_scene_losts_t", "slides": [("perte_shield", "story_scene_losts")]},
     COAT_SCENE: {"title": "story_scene_coat_t", "slides": [("revetement_reflechissant", "story_scene_coat")]},
+    SACHA_SCENE: {"title": "story_scene_sacha_t", "slides": [("sacha_hangar", "story_scene_sacha")]},
     EPILOGUE: {"title": "story_scene_epilogue_t",
                "slides": [("epilogue_1", "story_scene_epilogue_1"), ("epilogue_2", "story_scene_epilogue_2")],
                "veteran": [("epilogue_1", "story_scene_epilogue_1"), ("epilogue_2", "story_scene_epilogue_2v")]},
@@ -1763,11 +1799,11 @@ STORY_SCENES = {
 # The order of the journal (the order of the story): the mission scenes of Acts 1 and 2, the attack, the loss, the
 # Act 3 scenes, the end; the Phobos bar (Add-On) last.
 SCENE_ORDER = (["ch1_sortie", "best_s2", "best_s3", "best_s4", "ast_1", "dome_1", "lander_deimos", "raid_deimos", "sentinelle_1",
-                "lander_rock", "raid_rock", "best_boss", "ast_2", "guardians_1", "paint_1", VIP_SCENE, "lander_europa",
+                "lander_rock", "raid_rock", "phobos_1", SACHA_SCENE, "best_boss", "ast_2", "guardians_1", "phobos_2", "paint_1", VIP_SCENE, "lander_europa",
                 "raid_europa", "lander_titan", "raid_titan", "best_guardians", "guardians_2", ACT3_ATTACK,
                 "act3_kept_shield", "act3_kept_phoenix", "up_shield_1", "up_phenix_1", "bonus_wreck_phenix",
                 "bonus_wreck_shield", "sentinelle_2", "sentinelle_3", "lander_triton", "raid_triton", "ast_3", "guardians_3",
-                COAT_SCENE, "sentinelle_4", "final_1", EPILOGUE, ENDING_MISSION])
+                COAT_SCENE, "phobos_3", "sentinelle_4", "final_1", EPILOGUE, ENDING_MISSION])
 
 
 # The films: videos watched full screen with their sound (assets/video/<video>.mp4, silent, and <video>.ogg, its
@@ -2019,13 +2055,14 @@ def jump_to_act2(state):
 
 
 def grant_phenix(state):
-    """The NIX2 cheat: Act 2 is on, the belt and the five Phenix missions count as won and the Phenix is in the hangar."""
+    """The NIX2 cheat: Act 2 is on, the belt, the five Phenix missions and Défense de Phobos II (between Phenix II and III)
+    count as won and the Phenix is in the hangar."""
     if int(_num(state.get("act"), 1)) < 2:
         jump_to_act2(state)
     flags = state.setdefault("flags", {})
     cleared = state.setdefault("cleared", [])
     for mission in MISSIONS:
-        if not (str(mission.get("id", "")).startswith("phenix_") or mission.get("id") == "ast_2"):
+        if not (str(mission.get("id", "")).startswith("phenix_") or mission.get("id") in ("ast_2", "phobos_2")):
             continue
         for name in mission.get("unlock") or []:
             flags[name] = True

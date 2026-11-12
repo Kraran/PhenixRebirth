@@ -17,7 +17,7 @@ PHENIX = ["phenix_1", "phenix_2", "phenix_3", "phenix_4", "phenix_5"]
 PAINT = ["paint_1", "paint_2", "paint_3"]
 GATE3 = ["act3_gate"]           # the last mission of Act 2 (it opens Act 3)
 # the map of Act 2 is grouped: the story first, then the hunts, then the bonus and the paint series
-ACT2_MAP = ["ast_2", "guardians_1"] + PHENIX + ["guardians_2"] + GATE3 + ["sentinelle_1", "sentinelle_2", "sentinelle_3"] + HUNTS + ["best_boss", "best_guardians", "bonus_2d"] + PAINT + ["lander_deimos", "raid_deimos", "lander_rock", "raid_rock", "lander_europa", "raid_europa", "lander_titan", "raid_titan"]
+ACT2_MAP = ["ast_2", "guardians_1"] + PHENIX[:2] + ["phobos_2"] + PHENIX[2:] + ["guardians_2"] + GATE3 + ["sentinelle_1", "sentinelle_2", "sentinelle_3"] + HUNTS + ["best_boss", "best_guardians", "bonus_2d"] + PAINT + ["lander_deimos", "raid_deimos", "lander_rock", "raid_rock", "lander_europa", "raid_europa", "lander_titan", "raid_titan"]
 
 
 def _state(phenix=True, selected=0):
