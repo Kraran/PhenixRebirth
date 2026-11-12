@@ -74,6 +74,13 @@ HIT_COST = 10.0
 BODY_ROOM = 26.0                 # px more room he keeps from an enemy's body (a collision ends his fight at once)...
 BODY_COST = 4.0                  # ... and how much more he fears it than a shot
 AIM = 1.4                        # how much he wants a bird above him (to shoot it)
+# (smooth, like a person at the stick: he keeps to his plan unless the new one is clearly better or he is in danger,
+# does not bother with a hop of less than MIN_HOP px, and his ship speeds up and slows down instead of jerking)
+SWITCH_GAIN = 0.35               # how much better a new place must be to change his mind (when nothing threatens him)
+MIN_HOP = 30.0                   # px: a move this short is not worth it (when nothing threatens him)
+HOLD = 0.45                      # s he keeps to a new plan before he thinks of another (when nothing threatens him)
+ACCEL = 2600.0                   # px / s / s: how fast his ship speeds up and slows down
+EASE = 7.0                       # 1 / s: he eases in as he nears his place (speed = distance x EASE, at most his speed)
 PILOT_ROOM = 170.0               # px: he does not fly under (or over) the pilot
 SHOOT_COLUMN = 24                # px: a bird this close to his column is shot at
 
@@ -138,6 +145,9 @@ class Wingman:
         self.greeted = False
         self.target_x = s.x
         self.decide_in = 0.0
+        self.vel = 0.0                   # px / s: his speed along the line (eased, see ACCEL / EASE)
+        self.hold = 0.0                  # s left before a new plan is allowed (HOLD)
+        self.danger = False              # something would hit him where he goes
         self.cough = 0.0                 # s left of a cough of a damaged engine (the jets die down)
         self.cough_in = 1.0
         self.seen = {}                   # id(enemy) -> (x, y, time) when he last looked: the speed of the divers
@@ -202,7 +212,12 @@ class Wingman:
                 s.shots.clear()
                 if s.is_phenix:
                     s.end_phenix()
+            was = s.y
             s.y = max(LINE_Y, s.y - ARRIVE * dt)
+            if was > LINE_Y >= s.y:
+                self._dust(game)                     # (he has arrived with the ships: the dust, like theirs)
+                self.vel = 0.0
+                self.target_x = float(s.x)
             s.engine_intensity = 1.0
             s.boost_engines(dt, False)
             s.rect.center = (int(s.x), int(s.y))
@@ -260,11 +275,23 @@ class Wingman:
         if s.y <= LINE_Y:
             self.state = "fight"
             self.target_x = float(s.x)
+            self.vel = 0.0
+            self._dust(game)
             if not self.greeted:
                 self.greeted = True
                 self.say("wingman_hello")
             return False
         return True
+
+    def _dust(self, game):
+        """The landing puff of the ships at the end of their arrival (update_play.tick_arrive), under his ship."""
+        s = self.ship
+        try:
+            feet = s.y + float(getattr(s, "height", 90) or 90) * 0.48
+            game.explosions.append(game._boom(s.x - 18, feet, kind="dust"))
+            game.explosions.append(game._boom(s.x + 18, feet, kind="dust"))
+        except Exception:
+            log_exc("wingman._dust")
 
     def _fly_home(self, dt):
         """The retreat to Phobos: he takes off (climbs, engines full), turns about in a half circle, dives off the bottom."""
@@ -459,13 +486,21 @@ class Wingman:
         if cols:
             aim = np.min(np.abs(xs[:, None] - np.array(cols)[None, :]), axis=1)
             cost += AIM * np.minimum(aim, 260.0) / 260.0                 # a bird above, to shoot at
-        cost -= np.where(np.abs(xs - self.target_x) < CANDIDATE_STEP, 0.08, 0.0)   # (he keeps to his plan)
         best = int(np.argmin(cost))
+        here = int(np.argmin(np.abs(xs - self.target_x)))             # (his plan as it stands)
+        self.danger = bool(hit[here] >= HIT_COST * 0.5)
+        if not everything and not self.danger:
+            if (self.hold > 0 or cost[here] - cost[best] < SWITCH_GAIN
+                    or abs(float(xs[best]) - self.target_x) < MIN_HOP):
+                return                                                  # he keeps to his plan
+        if abs(float(xs[best]) - self.target_x) >= 1.0:
+            self.hold = HOLD
         self.target_x = float(xs[best])
 
     def _pilot(self, game, dt):
         """(move, shoot) for this frame."""
         s = self.ship
+        self.hold = max(0.0, self.hold - dt)
         self.decide_in -= dt
         if self.decide_in <= 0:
             self.decide_in = 1.0 / DECIDE_HZ
@@ -477,8 +512,17 @@ class Wingman:
         v = self._speed()
         err = self.target_x - float(s.x)
         move = 0.0
-        if abs(err) > 1.5 and v > 0:
-            move = max(-1.0, min(1.0, err / max(1.0, v * max(dt, 1e-3))))
+        if v > 0:
+            want = max(-v, min(v, err * EASE))                      # eases in as he nears his place
+            if abs(err) < 1.0:
+                want = 0.0
+            step = ACCEL * max(dt, 1e-3) * (1.6 if self.danger else 1.0)   # (a bit sharper when he must dodge)
+            self.vel += max(-step, min(step, want - self.vel))
+            if abs(err) < 1.0 and abs(self.vel) < 25.0:
+                self.vel = 0.0
+            move = max(-1.0, min(1.0, self.vel / v))
+        else:
+            self.vel = 0.0
         shoot = False
         if self.state == "fight" and not s.own_shots():
             for e in guardian.targets(game):

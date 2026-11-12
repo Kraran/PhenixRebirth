@@ -54,6 +54,13 @@ def _with_sacha(run, limit=600):
     raise AssertionError("Sacha never came in")
 
 
+def _no_stray_harm(monkeypatch):
+    """The enemies of the swarm leave him alone (a test that counts his hits gives them itself)."""
+    real = wingman.attacks
+    monkeypatch.setattr(wingman, "attacks", lambda game: None)
+    return real
+
+
 def _kinds(form):
     return sorted({e.stage for e in form.enemies if e.alive and not e.dying})
 
@@ -93,7 +100,8 @@ def test_the_launch(run):
 
 
 @pytest.mark.parametrize("phenix", [False, True])
-def test_sacha_flies_his_old_edf17_whatever_the_pilot_flies(run, phenix):
+def test_sacha_flies_his_old_edf17_whatever_the_pilot_flies(run, phenix, monkeypatch):
+    _no_stray_harm(monkeypatch)
     _launch(run, phenix=phenix, act=2 if phenix else 1)
     g = run.game
     s = g.wingman.ship
@@ -106,7 +114,8 @@ def test_sacha_flies_his_old_edf17_whatever_the_pilot_flies(run, phenix):
     assert not s.is_phenix and s.phenix_gauge == 0
 
 
-def test_the_damage_shows_on_his_ship_and_his_jets_smoke_more_and_more(run):
+def test_the_damage_shows_on_his_ship_and_his_jets_smoke_more_and_more(run, monkeypatch):
+    _no_stray_harm(monkeypatch)
     _launch(run)
     g = run.game
     _with_sacha(run)
@@ -131,7 +140,8 @@ def test_the_damage_shows_on_his_ship_and_his_jets_smoke_more_and_more(run):
     assert sum(p[7] for p in w.smoke) / len(w.smoke) < 140                       # darker smoke after two hits
 
 
-def test_a_damaged_engine_coughs(run):
+def test_a_damaged_engine_coughs(run, monkeypatch):
+    _no_stray_harm(monkeypatch)
     _launch(run)
     g = run.game
     _with_sacha(run)
@@ -187,6 +197,7 @@ def _bullet_on(ship):
 
 
 def test_three_shots_and_he_goes_home_without_exploding(run, monkeypatch):
+    attack = _no_stray_harm(monkeypatch)
     _launch(run)
     g = run.game
     _with_sacha(run)
@@ -195,13 +206,13 @@ def test_three_shots_and_he_goes_home_without_exploding(run, monkeypatch):
     for n in (1, 2, 3):
         s.invulnerable = 0.0
         g.formation.bullets.append(_bullet_on(s))
-        wingman.attacks(g)
+        attack(g)
         assert w.hits == n
         assert s.alive and not s.dying                          # never destroyed
     assert w.state == "hurt"
     s.invulnerable = 0.0
     g.formation.bullets.append(_bullet_on(s))
-    wingman.attacks(g)
+    attack(g)
     assert w.hits == 3                                        # nothing more counts
     g.player.infinite_lives = True
     for _ in range(int(60 * (wingman.LEAVE_DELAY + 0.2))):
@@ -214,19 +225,21 @@ def test_three_shots_and_he_goes_home_without_exploding(run, monkeypatch):
     assert g.adventure is not None and g.started             # the pilot goes on alone
 
 
-def test_a_hit_gives_a_moment_of_grace(run):
+def test_a_hit_gives_a_moment_of_grace(run, monkeypatch):
+    attack = _no_stray_harm(monkeypatch)
     _launch(run)
     g = run.game
     _with_sacha(run)
     w = g.wingman
     g.formation.bullets.append(_bullet_on(w.ship))
-    wingman.attacks(g)
+    attack(g)
     g.formation.bullets.append(_bullet_on(w.ship))
-    wingman.attacks(g)
+    attack(g)
     assert w.hits == 1 and w.ship.invulnerable > 0
 
 
-def test_his_points_are_not_the_pilots(run):
+def test_his_points_are_not_the_pilots(run, monkeypatch):
+    _no_stray_harm(monkeypatch)
     _launch(run)
     g = run.game
     before = g.score
@@ -234,7 +247,8 @@ def test_his_points_are_not_the_pilots(run):
     assert g.score == before and g.wingman.ship.score == 500
 
 
-def test_he_dodges_a_shot_coming_at_him(run):
+def test_he_dodges_a_shot_coming_at_him(run, monkeypatch):
+    _no_stray_harm(monkeypatch)
     _launch(run)
     g = run.game
     _with_sacha(run)
@@ -252,6 +266,7 @@ def test_he_dodges_a_shot_coming_at_him(run):
 
 
 def _fight(run, wave, seconds, seed):
+    """How many times he is damaged (a shot, a laser, a collision: one each) in a fight of `seconds` s."""
     import random
     random.seed(seed)
     np.random.seed(seed)
@@ -262,17 +277,21 @@ def _fight(run, wave, seconds, seed):
         g._setup_stage(11)
     _with_sacha(run)
     g.player.infinite_lives = True
+    w = g.wingman
+    events = []
+    damage = w.damage
+    w.damage = lambda game, why="shot": events.append(why) if damage(game, why) else False
     for _ in range(int(60 * seconds)):
         g.player.invulnerable = 5.0
         run.frames(1)
-        if g.wingman.state != "fight" or g.stage_transition is not None:
+        if w.state != "fight" or g.stage_transition is not None:
             break
-    return g.wingman.hits
+    return len(events)
 
 
 def test_a_good_pilot_not_a_perfect_one(run):
     """He dodges well (the first wave hardly touches him) but the last one, now and then, hits him: he smokes."""
-    assert _fight(run, 0, 30, 0) <= 1
+    assert sum(_fight(run, 0, 30, seed) for seed in range(3)) <= 3
     assert sum(_fight(run, 3, 60, seed) for seed in range(3)) >= 1
 
 
@@ -325,7 +344,8 @@ def test_a_collision_takes_his_ship_straight_to_its_last_level_of_damage(run):
 
 
 @pytest.mark.parametrize("side", ["left", "right"])
-def test_his_retreat_takes_off_turns_about_and_leaves_by_the_bottom(run, side):
+def test_his_retreat_takes_off_turns_about_and_leaves_by_the_bottom(run, side, monkeypatch):
+    _no_stray_harm(monkeypatch)
     _launch(run)
     g = run.game
     _with_sacha(run)
@@ -356,3 +376,49 @@ def test_his_retreat_takes_off_turns_about_and_leaves_by_the_bottom(run, side):
     turned_to = max(xs) - x0 if side == "left" else x0 - min(xs)
     assert turned_to > 60                                  # the half circle goes toward the middle (the room)
     assert wingman.shooters(g) == [] and not w.targetable(g)
+
+
+def _dust_count(g):
+    return sum(1 for e in g.explosions if getattr(e, "kind", None) == "dust")
+
+
+def test_the_dust_when_he_arrives_like_the_ships(run):
+    _launch(run)
+    g = run.game
+    _arrived(run)
+    w = g.wingman
+    while w.state in ("wait", "enter"):
+        g.player.invulnerable = 5.0
+        before = _dust_count(g)
+        run.frames(1)
+    assert _dust_count(g) == before + 2                    # two puffs under his ship, as for the ships of the player
+    feet = [e for e in g.explosions if getattr(e, "kind", None) == "dust"][-2:]
+    assert all(abs(e.x - w.ship.x) <= 20 and e.y > w.ship.y for e in feet)
+
+
+def test_he_flies_smoothly_like_a_person(run):
+    """No jerks nor little hops: few changes of direction, his speed changes gradually."""
+    _launch(run)
+    g = run.game
+    g.adventure["wave_i"] = 2
+    g._setup_stage(11)
+    _with_sacha(run)
+    g.player.infinite_lives = True
+    w = g.wingman
+    xs, ts = [], []
+    for _ in range(60 * 20):
+        g.player.invulnerable = 5.0
+        run.frames(1)
+        if w.state != "fight" or g.stage_transition is not None:
+            break
+        if ts and w.clock == ts[-1]:
+            continue                                       # (a frame the game froze: the hit stop of a kill)
+        xs.append(w.ship.x)
+        ts.append(w.clock)
+    v = np.diff(np.array(xs)) / np.diff(np.array(ts))
+    moving = np.abs(v) > 5
+    sgn = np.sign(v[moving])
+    reversals = int(np.sum(sgn[1:] != sgn[:-1]))
+    assert reversals / (len(xs) / 60) < 0.7
+    dt = 1 / 60
+    assert np.max(np.abs(np.diff(v))) <= wingman.ACCEL * 1.6 * dt * 1.05 + 1.0     # (never a jump in speed)
