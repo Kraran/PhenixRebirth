@@ -37,6 +37,11 @@ LYRA_MUSIC = {
 
 _PROBED = {}                 # (path, mtime, size) -> the length of a music file in seconds (or None)
 
+# Sacha's lines on the radio (TEST - Sacha): assets/sounds/sacha/<key>.ogg, the voice of ElevenLabs (Augustin) through a
+# small radio (narrow band, a little drive, hiss, the click of the mike and the squelch); one per text key of i18n.py
+RADIO_LINES = ("wingman_hello", "wingman_wave", "wingman_hit_1", "wingman_hit_2", "wingman_hit_3")
+RADIO_VOLUME = 0.90
+
 class SoundManager:
     FADE_MS = 350          # crossfade when switching themes
     MENU_RETURN_MS = 900   # quit run → title
@@ -44,6 +49,7 @@ class SoundManager:
     # Sounds that play over the music and are worth hearing alone: while they sound the music fades down (to `level`
     # of what it was, in `down` seconds), stays low, and comes back in `up` seconds just before the sound ends.
     MUSIC_FADE = {"paint_fanfare": {"level": 0.12, "down": 0.5, "up": 2.0}}      # the trumpets of the paint shop
+    RADIO_CHANNEL = 1            # reserved: the radio of a wingman, never stolen by the effects
 
     def __init__(self):
         self.enabled = False
@@ -86,7 +92,7 @@ class SoundManager:
                 pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=2048)
             try:
                 pygame.mixer.set_num_channels(24)
-                pygame.mixer.set_reserved(1)
+                pygame.mixer.set_reserved(2)          # 0: the announcer (play_vo), 1: the radio of a wingman (play_radio)
             except Exception:
                 log_exc("sounds.__init__")
             for name, vol in [
@@ -157,6 +163,8 @@ class SoundManager:
             ]:
                 self._load(name, f"{name}.wav", vol)
                 loading.report()
+            for name in RADIO_LINES:                  # Sacha on the radio (TEST - Sacha, src/wingman.py)
+                self._load(name, os.path.join("sacha", f"{name}.ogg"), RADIO_VOLUME)
             self.enabled = len(self.sounds) > 0
             self._apply_master()
             self._music_paths = {
@@ -520,6 +528,46 @@ class SoundManager:
         except Exception:
             log_exc("sounds.follow_voice")
         return True
+
+    def play_radio(self, name, volume=None):
+        """A line on the radio (Sacha, src/wingman.py): its own reserved channel, never stolen by the effects; a new line
+        cuts the one before (as its words on the screen replace the others). At the volume of the effects."""
+        if not self.enabled or getattr(self, "sfx_muted", False):
+            return None
+        snd = self.sounds.get(name)
+        if not snd:
+            return None
+        gain = float(volume) if volume is not None else self._base_volumes.get(name, RADIO_VOLUME)
+        gain = max(0.0, min(1.0, gain)) * self.master_volume
+        try:
+            ch = pygame.mixer.Channel(self.RADIO_CHANNEL)
+            ch.play(snd)
+            ch.set_volume(gain, gain)
+            return ch
+        except Exception:
+            log_exc("sounds.play_radio")
+            return self._play_on_channel(snd, gain)
+
+    def hold_radio(self, paused):
+        """The radio holds its line while the game is paused."""
+        if not self.enabled:
+            return
+        try:
+            ch = pygame.mixer.Channel(self.RADIO_CHANNEL)
+            if paused:
+                ch.pause()
+            else:
+                ch.unpause()
+        except Exception:
+            log_exc("sounds.hold_radio")
+
+    def stop_radio(self, fade_ms=120):
+        if not self.enabled:
+            return
+        try:
+            pygame.mixer.Channel(self.RADIO_CHANNEL).fadeout(int(fade_ms))
+        except Exception:
+            log_exc("sounds.stop_radio")
 
     def play_vo(self, name, volume=None):
         """Announcer: reserved channel, never stolen by SFX."""
