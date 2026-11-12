@@ -1,4 +1,5 @@
 """TEST - Sacha: the swarm in four waves and Sacha, the wingman flown by the computer (src/wingman.py)."""
+import numpy as np
 import pygame
 import pytest
 
@@ -39,6 +40,18 @@ def _arrived(run, limit=600):
             return
         run.frames(1)
     raise AssertionError("the ships never arrived")
+
+
+def _with_sacha(run, limit=600):
+    """The ships have arrived and Sacha has come in (ENTER_DELAY s into the first wave)."""
+    _arrived(run)
+    g = run.game
+    for _ in range(limit):
+        if g.wingman.state == "fight":
+            return
+        g.player.invulnerable = max(g.player.invulnerable, 1.0)
+        run.frames(1)
+    raise AssertionError("Sacha never came in")
 
 
 def _kinds(form):
@@ -86,7 +99,7 @@ def test_sacha_flies_his_old_edf17_whatever_the_pilot_flies(run, phenix):
     s = g.wingman.ship
     assert s.image is wingman.pictures()[0] and s.image.get_size() == (60, 90)
     assert s._engine_plan()[0] == "edf17" and len(s._engine_plan()[1]) == 2
-    _arrived(run)
+    _with_sacha(run)
     for _ in range(120):
         s.phenix_gauge = 99                    # (even a full gauge: no Phenix form, no dome)
         run.frames(1)
@@ -96,7 +109,7 @@ def test_sacha_flies_his_old_edf17_whatever_the_pilot_flies(run, phenix):
 def test_the_damage_shows_on_his_ship_and_his_jets_smoke_more_and_more(run):
     _launch(run)
     g = run.game
-    _arrived(run)
+    _with_sacha(run)
     w = g.wingman
     s = w.ship
     pics = wingman.pictures()
@@ -121,7 +134,7 @@ def test_the_damage_shows_on_his_ship_and_his_jets_smoke_more_and_more(run):
 def test_a_damaged_engine_coughs(run):
     _launch(run)
     g = run.game
-    _arrived(run)
+    _with_sacha(run)
     w = g.wingman
     for _ in range(2):
         w.ship.invulnerable = 0.0
@@ -176,7 +189,7 @@ def _bullet_on(ship):
 def test_three_shots_and_he_goes_home_without_exploding(run, monkeypatch):
     _launch(run)
     g = run.game
-    _arrived(run)
+    _with_sacha(run)
     w = g.wingman
     s = w.ship
     for n in (1, 2, 3):
@@ -197,14 +210,14 @@ def test_three_shots_and_he_goes_home_without_exploding(run, monkeypatch):
     assert wingman.shooters(g) == []
     for _ in range(240):
         run.frames(1)
-    assert w.state == "gone" and s.y < 0
+    assert w.state == "gone" and s.y > BASE_HEIGHT        # out by the bottom of the screen
     assert g.adventure is not None and g.started             # the pilot goes on alone
 
 
 def test_a_hit_gives_a_moment_of_grace(run):
     _launch(run)
     g = run.game
-    _arrived(run)
+    _with_sacha(run)
     w = g.wingman
     g.formation.bullets.append(_bullet_on(w.ship))
     wingman.attacks(g)
@@ -224,38 +237,43 @@ def test_his_points_are_not_the_pilots(run):
 def test_he_dodges_a_shot_coming_at_him(run):
     _launch(run)
     g = run.game
-    _arrived(run)
+    _with_sacha(run)
     w = g.wingman
     g.formation.enemies = []
     g.formation.swarm["reserve"] = {k: 10 for k in (1, 2, 3, 4)}       # (the wave does not end)
     g.formation.swarm["wait"] = {k: 1e9 for k in (1, 2, 3, 4)}
     x0 = w.ship.x
-    b = EnemyBullet(x0, w.ship.y - 300)
+    b = EnemyBullet(x0, 40)                                    # (high enough for him to notice it in time)
     g.formation.bullets = [b]
-    for _ in range(90):
+    for _ in range(150):
         run.frames(1)
     assert w.hits == 0
     assert abs(w.ship.x - x0) > 15
 
 
-def test_he_survives_a_long_fight_much_better_than_three_hits(run):
-    """The defender: a full minute of the third wave (the gargoyles) with an untouchable pilot."""
+def _fight(run, wave, seconds, seed):
+    import random
+    random.seed(seed)
+    np.random.seed(seed)
     _launch(run)
     g = run.game
-    g.adventure["wave_i"] = 2
-    g._setup_stage(11)
-    _arrived(run)
+    if wave:
+        g.adventure["wave_i"] = wave
+        g._setup_stage(11)
+    _with_sacha(run)
     g.player.infinite_lives = True
-    hits_at = []
-    for i in range(60 * 60):
+    for _ in range(int(60 * seconds)):
         g.player.invulnerable = 5.0
-        before = g.wingman.hits
         run.frames(1)
-        if g.wingman.hits != before:
-            hits_at.append(i / 60.0)
-        if g.stage_transition is not None:
+        if g.wingman.state != "fight" or g.stage_transition is not None:
             break
-    assert len(hits_at) <= 2, hits_at
+    return g.wingman.hits
+
+
+def test_a_good_pilot_not_a_perfect_one(run):
+    """He dodges well (the first wave hardly touches him) but the last one, now and then, hits him: he smokes."""
+    assert _fight(run, 0, 30, 0) <= 1
+    assert sum(_fight(run, 3, 60, seed) for seed in range(3)) >= 1
 
 
 def test_the_whole_mission_draws(run):
@@ -264,3 +282,77 @@ def test_the_whole_mission_draws(run):
     g.player.infinite_lives = True
     run.frames(600)
     assert g.started
+
+
+# ------------------------------------------------------------------ his entry, a collision, his retreat
+def test_he_comes_in_from_below_three_seconds_into_the_first_wave(run):
+    _launch(run)
+    g = run.game
+    w = g.wingman
+    assert w.state == "wait" and not w.targetable(g) and wingman.shooters(g) == []
+    _arrived(run)                                          # the ship arrives alone
+    assert w.state == "wait" and w.ship.y > BASE_HEIGHT
+    waited = 0
+    while w.state == "wait":
+        g.player.invulnerable = 5.0
+        run.frames(1)
+        waited += 1
+        assert waited < 60 * 5
+    assert abs(waited / 60.0 - wingman.ENTER_DELAY) < 0.1
+    assert w.state == "enter" and w.ship.y > wingman.LINE_Y and w.ship.engine_burst > 0     # from below, engines boosted
+    ys = []
+    while w.state == "enter":
+        g.player.invulnerable = 5.0
+        run.frames(1)
+        ys.append(w.ship.y)
+    assert ys == sorted(ys, reverse=True) and w.ship.y == wingman.LINE_Y
+    assert w.state == "fight" and w.radio[0] == "wingman_hello"
+
+
+def test_a_collision_takes_his_ship_straight_to_its_last_level_of_damage(run):
+    _launch(run)
+    g = run.game
+    _with_sacha(run)
+    w = g.wingman
+    s = w.ship
+    s.invulnerable = 1.0                                   # (even while it blinks)
+    e = next(e for e in g.formation.enemies if e.alive and not e.dying)
+    e.x, e.y = s.x, s.y
+    wingman.attacks(g)
+    assert w.hits == wingman.HITS and w.state == "hurt"
+    assert s.image is wingman.pictures()[-1]
+    assert s.alive and not s.dying                         # he cannot die
+
+
+@pytest.mark.parametrize("side", ["left", "right"])
+def test_his_retreat_takes_off_turns_about_and_leaves_by_the_bottom(run, side):
+    _launch(run)
+    g = run.game
+    _with_sacha(run)
+    w = g.wingman
+    s = w.ship
+    s.x = 300 if side == "left" else BASE_WIDTH - 300
+    w.target_x = s.x
+    s.invulnerable = 0.0
+    g.formation.bullets.append(EnemyBullet(s.x, s.y - 4))
+    for _ in range(3):
+        s.invulnerable = 0.0
+        w.damage(g)
+    y0, x0 = s.y, s.x
+    angles, ys, xs = [], [], []
+    for _ in range(60 * 6):
+        g.player.invulnerable = 5.0
+        run.frames(1)
+        angles.append(w.angle)
+        ys.append(s.y)
+        xs.append(s.x)
+        if w.state == "gone":
+            break
+    assert w.state == "gone" and s.y > BASE_HEIGHT and s.alive
+    assert min(ys) < y0 - 60                               # it took off first
+    assert abs(angles[-1]) == 180.0                        # turned about: nose down
+    k = next(i for i, a in enumerate(angles) if a != 0)
+    assert ys[k] < y0                                       # (the turn starts up there)
+    turned_to = max(xs) - x0 if side == "left" else x0 - min(xs)
+    assert turned_to > 60                                  # the half circle goes toward the middle (the room)
+    assert wingman.shooters(g) == [] and not w.targetable(g)

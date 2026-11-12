@@ -9,14 +9,20 @@ him well, as a defender first:
               him on the way there and once there (the shots of the birds and their time to come down, the lasers of the
               Guardians and those still charging, the birds diving at their speed), then, far behind, the edges of the
               screen, the pilot's own place (he never flies under him) and a bird above to shoot at. He goes to the
-              best one. His old ship has no dome and no Phenix form: he can only dodge.
+              best one. A good pilot, not a perfect one: he notices a threat REACTION s late, thinks DECIDE_HZ times a
+              second and likes to be under a bird, so now and then he is hit. His old ship has no dome and no Phenix
+              form: he can only dodge.
   his shots   one at a time like the ship, when a bird is in his column; they hit like the pilot's, the points are his
               (not in the pilot's score)
-  the harm    his ship never blows up: a shot, a laser, a diver (destroyed with no points) or the hull of a boss DAMAGE it.
-              It takes HITS of them; it blinks HIT_GRACE s after each, its picture shows the damage, and its two jets
-              (engine_flame "edf17") smoke more and more: a grey trail after one hit, a thick one and a coughing engine
-              after two, black smoke after three. LEAVE_DELAY s after the last one Sacha turns back to Phobos: he flies
-              off the top of the screen (no more shots, nothing touches him) and the pilot goes on alone.
+  his entry  he is not there at the start: ENTER_DELAY s into the first wave he comes in from below, engines boosted
+              like the ships between two waves (he arrives where it is safest), and says hello on the radio
+  the harm    he cannot die, his ship never blows up: a shot or a laser DAMAGES it, it takes HITS of them; a collision with
+              an enemy (a diver, a bird, the hull of a boss) takes it straight to its last level of damage. It blinks
+              HIT_GRACE s after a hit, its picture shows the damage, and its two jets (engine_flame "edf17") smoke more
+              and more: a grey trail after one hit, a thick one and a coughing engine after two, black smoke after three.
+  his retreat LEAVE_DELAY s after the last level of damage he goes back to Phobos: his ship takes off (it climbs, engines
+              full), turns about in a half circle toward the side with room, and dives off the bottom of the screen
+              (no more shots, nothing touches him). The pilot goes on alone.
   the radio   a line at the top of the screen when he arrives, at each wave and at each hit (RADIO_TIME s)
 
 Between the waves he flies up and comes back with the ship. The state of a mission is `game.wingman` (a Wingman, or None).
@@ -36,11 +42,15 @@ from i18n import t
 from player import Player
 from settings import BASE_HEIGHT, BASE_WIDTH, ENEMY_BULLET_SPEED, PLAYER_SPEED, asset_path
 
-HITS = 3                         # shots his ship takes; after the last one he goes home
-HIT_GRACE = 1.6                  # s of blinking after a hit (nothing harms him then)
-LEAVE_DELAY = 1.2                # s between the last hit and his turn back to Phobos
-LEAVE_ACCEL = 520.0              # px / s / s: he flies off the top, faster and faster...
-LEAVE_TOP_SPEED = 640.0          # ... up to this
+HITS = 3                         # shots his ship takes; after the last one he goes home (a collision: at once)
+HIT_GRACE = 1.6                  # s of blinking after a hit (no shot harms him then; a collision still does)
+ENTER_DELAY = 3.0                # s after the start of the first wave, he comes in from below
+LEAVE_DELAY = 0.8                # s between the last hit and his retreat to Phobos
+TAKEOFF = 0.55                   # the retreat: he climbs, engines full (s)...
+TAKEOFF_SPEED = (80.0, 280.0)    # ... from this speed to this one (px / s)
+TURN = 0.95                      # ... turns about in a half circle (s) toward the side with room...
+DIVE_ACCEL = 700.0               # ... and dives off the bottom of the screen, faster and faster (px / s / s)...
+DIVE_TOP_SPEED = 620.0           # ... up to this
 START_GAP = 170                  # px: his place at the start, to the right of the pilot (to his left near the right edge)
 LINE_Y = BASE_HEIGHT - 95        # the line of the ships
 FLY_UP = 420.0                   # px / s: the flight up between two waves (update_play.tick_fly_up)
@@ -48,16 +58,23 @@ ARRIVE = 380.0                   # ... and the arrival from below (update_play.t
 RADIO_TIME = 3.2                 # s a line of the radio stays on screen
 SPRITES = ("edf17c.png", "edf17c_degats1.png", "edf17c_degats2.png")     # assets/sprites/sacha/: intact, 1 hit, 2 hits
 JETS = "edf17"                   # his jets (engine_flame.NOZZLES), orange
+TURN_SHEET = (120, 280)          # px: the sheet his ship is drawn on to be turned (its middle is the middle of the ship)
 
 # the pilot (the computer)
-DECIDE_HZ = 30.0                 # decisions a second
-HORIZON = 1.5                    # s: what comes later than that is not weighed yet
+# (a good pilot, not a perfect one: he sees a shot REACTION s after it is fired, he thinks DECIDE_HZ times a second,
+# looks HORIZON s ahead, keeps little margin and likes to be under a bird to shoot it: now and then he is hit)
+DECIDE_HZ = 20.0                 # decisions a second
+REACTION = 0.85                  # s before he notices a new shot or a Guardian charging (a diver: at once)
+HORIZON = 0.7                    # s: what comes later than that is not weighed yet
 CANDIDATE_STEP = 14              # px between two places weighed on the line
 EDGE = 60                        # px: the places weighed stay this far from the sides
-SAFE = 7.0                       # px of margin around his hitbox
-NEAR = 26.0                      # px: a near miss still costs a little (he likes room)
+SAFE = 0.0                       # px of margin around his hitbox
+NEAR = 12.0                      # px: a near miss still costs a little (he likes room)
 HIT_COST = 10.0
-PILOT_ROOM = 120.0               # px: he does not fly under (or over) the pilot
+BODY_ROOM = 26.0                 # px more room he keeps from an enemy's body (a collision ends his fight at once)...
+BODY_COST = 4.0                  # ... and how much more he fears it than a shot
+AIM = 1.4                        # how much he wants a bird above him (to shoot it)
+PILOT_ROOM = 170.0               # px: he does not fly under (or over) the pilot
 SHOOT_COLUMN = 24                # px: a bird this close to his column is shot at
 
 
@@ -85,7 +102,7 @@ class Wingman:
         if x > BASE_WIDTH - EDGE - 40:
             x = pilot.x - START_GAP
         # (a Player for the flight, the hitbox and the shots; the look is his own: the picture and the jets of the EDF-17)
-        self.ship = Player(x, BASE_HEIGHT + 60, ship_id="phoenix", tint="gold")
+        self.ship = Player(x, BASE_HEIGHT + 140, ship_id="phoenix", tint="gold")
         s = self.ship
         self.pictures = pictures()
         s.image = self.pictures[0]
@@ -106,16 +123,24 @@ class Wingman:
         s.adventure_dome = False         # (no dome, no Phenix form)
         s.engine_intensity = 1.0
         self.hits = 0
-        self.state = "fight"             # "fight", "hurt" (the last hit taken), "leave" (going home), "gone"
+        # "wait" (not there yet), "enter" (coming in from below), "fight", "hurt" (at the last level of damage),
+        # "leave" (the retreat to Phobos), "gone"
+        self.state = "wait"
+        self.enter_in = ENTER_DELAY
         self.leave_in = 0.0
+        self.leave_t = 0.0
         self.leave_speed = 0.0
+        self.turn_dir = 1.0              # +1: the half turn to the left (counterclockwise), -1: to the right
+        self.angle = 0.0                 # degrees, counterclockwise: 0 the nose up, 180 the nose down (the retreat)
+        self.noticed = {}                # id(threat) -> the time he first saw it (REACTION)
+        self.clock = 0.0
         self.last_transition = None
         self.greeted = False
         self.target_x = s.x
         self.decide_in = 0.0
         self.cough = 0.0                 # s left of a cough of a damaged engine (the jets die down)
         self.cough_in = 1.0
-        self.seen = {}                   # id(enemy) -> (x, y) a frame ago: the speed of the divers
+        self.seen = {}                   # id(enemy) -> (x, y, time) when he last looked: the speed of the divers
         self.smoke = []                  # [x, y, vx, vy, age, life, size, grey]
         self.sparks = []                 # [x, y, vx, vy, age]
         self.smoke_t = 0.0
@@ -140,8 +165,16 @@ class Wingman:
             key, left = self.radio
             self.radio = (key, left - dt) if left - dt > 0 else None
         s = self.ship
+        self.clock += dt
         if self.state == "gone":
             return
+        tr = game.stage_transition
+        if self.state == "wait":
+            self._wait(game, dt, tr)
+            return
+        if self.state == "enter":
+            if self._enter(game, dt, tr):
+                return
         self._smoke_more(dt)
         if self.state == "leave":
             self._fly_home(dt)
@@ -150,13 +183,12 @@ class Wingman:
             self.leave_in -= dt
             if self.leave_in <= 0:
                 self.state = "leave"
-                self.leave_speed = 60.0
+                self.leave_t = 0.0
+                self.leave_speed = TAKEOFF_SPEED[0]
+                self.turn_dir = -1.0 if s.x < BASE_WIDTH / 2 else 1.0     # (the half turn goes where there is room)
                 s.shots.clear()
                 s.invulnerable = 0.0
-                if s.is_phenix:
-                    s.end_phenix()
                 return
-        tr = game.stage_transition
         if tr == "fly_up":
             s.shots.clear()
             s.y -= FLY_UP * dt
@@ -178,10 +210,7 @@ class Wingman:
             return
         if self.last_transition == "arrive":
             wave = int((getattr(game, "adventure", None) or {}).get("wave_i", 0) or 0)
-            if not self.greeted:
-                self.greeted = True
-                self.say("wingman_hello")
-            elif wave > 0 and self.state == "fight" and (self.radio is None or self.radio[0] == "wingman_wave"):
+            if wave > 0 and self.state == "fight" and (self.radio is None or self.radio[0] == "wingman_wave"):
                 self.say("wingman_wave")
         self.last_transition = tr
         if tr is not None:
@@ -197,26 +226,94 @@ class Wingman:
         s.phenix_gauge = 0                           # (his old ship has no Phenix form)
         self._engines(dt)
 
-    def _fly_home(self, dt):
+    def _wait(self, game, dt, tr):
+        """Not there yet: ENTER_DELAY s into the first wave he comes in (or with the ships, if the wave was over first)."""
         s = self.ship
-        self.leave_speed = min(LEAVE_TOP_SPEED, self.leave_speed + LEAVE_ACCEL * dt)
-        s.y -= self.leave_speed * dt
+        s.y = BASE_HEIGHT + 140
+        if tr is None:
+            self.enter_in -= dt
+        wave = int((getattr(game, "adventure", None) or {}).get("wave_i", 0) or 0)
+        if (tr == "arrive" and wave > 0) or (tr is None and self.enter_in <= 0):
+            try:
+                s.y = LINE_Y
+                self._decide(game, dt, everything=True)          # he comes in where it is safest
+                s.x = max(EDGE, min(BASE_WIDTH - EDGE, self.target_x))
+            except Exception:
+                log_exc("wingman._wait")
+            s.y = BASE_HEIGHT + 60
+            s.engine_burst = 1.0
+            self.state = "enter"
+        self.last_transition = tr
+
+    def _enter(self, game, dt, tr):
+        """Coming in from below, engines boosted (like the ships between two waves). True while he is on his way."""
+        s = self.ship
+        if tr == "fly_up":
+            self.state = "fight"                                 # (the wave is over already: he flies up with the ships)
+            return False
+        s.y = max(LINE_Y, s.y - ARRIVE * dt)
         s.engine_intensity = 1.0
-        s.boost_engines(dt, True)
+        s.boost_engines(dt, s.y > LINE_Y + 40)
+        s.engine_time += dt
+        s.rect.center = (int(s.x), int(s.y))
+        self.last_transition = tr
+        if s.y <= LINE_Y:
+            self.state = "fight"
+            self.target_x = float(s.x)
+            if not self.greeted:
+                self.greeted = True
+                self.say("wingman_hello")
+            return False
+        return True
+
+    def _fly_home(self, dt):
+        """The retreat to Phobos: he takes off (climbs, engines full), turns about in a half circle, dives off the bottom."""
+        s = self.ship
+        self.leave_t += dt
+        t = self.leave_t
+        if t < TAKEOFF:
+            k = t / TAKEOFF
+            self.leave_speed = TAKEOFF_SPEED[0] + (TAKEOFF_SPEED[1] - TAKEOFF_SPEED[0]) * k
+            self.angle = 0.0
+            s.boost_engines(dt, True)
+        elif t < TAKEOFF + TURN:
+            self.leave_speed = TAKEOFF_SPEED[1]
+            self.angle = self.turn_dir * 180.0 * (t - TAKEOFF) / TURN
+            s.boost_engines(dt, False)
+        else:
+            self.angle = self.turn_dir * 180.0
+            self.leave_speed = min(DIVE_TOP_SPEED, self.leave_speed + DIVE_ACCEL * dt)
+            s.boost_engines(dt, True)
+        hx, hy = self._heading()
+        s.x += hx * self.leave_speed * dt
+        s.y += hy * self.leave_speed * dt
+        s.engine_intensity = 1.0
         s.engine_time += dt
         self._engines(dt)
         s.invulnerable = 0.0
         s.rect.center = (int(s.x), int(s.y))
-        if s.y < -140 and not self.smoke:
+        if t > TAKEOFF + TURN and s.y > BASE_HEIGHT + 140:
             self.state = "gone"
+
+    def _heading(self):
+        """Where his nose points (a unit vector on the screen)."""
+        a = math.radians(self.angle)
+        return -math.sin(a), -math.cos(a)
+
+    def _turned(self, x, y):
+        """A point of the ship (from its middle, nose up) on the screen, the ship turned by self.angle."""
+        a = math.radians(self.angle)
+        return x * math.cos(a) + y * math.sin(a), -x * math.sin(a) + y * math.cos(a)
 
     # --- the harm ------------------------------------------------------------------------------------------------
     def damage(self, game, why="shot"):
-        """A hit on his ship (`why`: "shot", "laser", "crash", "hull"). True when it counted."""
+        """A hit on his ship (`why`: "shot", "laser", "crash", "hull"). True when it counted. A collision ("crash", "hull")
+        takes his ship straight to its last level of damage, even while it blinks."""
         s = self.ship
-        if not self.flying() or self.hits >= HITS or s.invulnerable > 0:
+        crash = why in ("crash", "hull")
+        if not self.flying() or self.hits >= HITS or (s.invulnerable > 0 and not crash):
             return False
-        self.hits += 1
+        self.hits = HITS if crash else self.hits + 1
         s.invulnerable = HIT_GRACE
         s.shield_flash = 1
         for _ in range(16):
@@ -243,12 +340,21 @@ class Wingman:
             mult *= s.SLOWDOWN_FACTOR
         return float(s.speed) * mult
 
-    def _threats(self, game, dt):
+    def _threats(self, game, dt, react=True):
         """What may hit him in the next HORIZON s: [(x, vx, t0, t1, half width, kind)], kind "shot", "laser", "body"."""
         s = self.ship
         box = s.get_hitbox()
         top, bottom = box.top, box.bottom
         out = []
+
+        now = self.clock
+        noticed = {}
+
+        def seen_long_enough(key):
+            """He notices a threat REACTION s after it shows up."""
+            first = self.noticed.get(key, now)
+            noticed[key] = first
+            return not react or now - first >= REACTION
 
         def falling(rect, vy, vx, kind, extra=0.0):
             if vy <= 1:
@@ -264,7 +370,7 @@ class Wingman:
         if boss is not None and getattr(boss, "alive", False):
             shots += list(getattr(boss, "bullets", None) or [])
         for b in shots:
-            if not getattr(b, "alive", False):
+            if not getattr(b, "alive", False) or not seen_long_enough(id(b)):
                 continue
             try:
                 r = b.get_hitbox()
@@ -279,6 +385,8 @@ class Wingman:
         if sq is not None:                                  # a Guardian charging: its laser is coming down there
             for g in sq.guardians:
                 if not g.alive or getattr(g, "dying", False) or not getattr(g, "charge", 0):
+                    continue
+                if not seen_long_enough(("charge", id(g))):
                     continue
                 wait = max(0.0, guardian.CHARGE_SECONDS - float(g.charge))
                 t0 = wait + max(0.0, top - g.y) / guardian.LASER_SPEED
@@ -295,23 +403,25 @@ class Wingman:
             except Exception:
                 continue
             key = id(e)
-            seen[key] = (float(e.x), float(e.y))
+            seen[key] = (float(e.x), float(e.y), now)
             last = self.seen.get(key)
-            if last is not None and dt > 0:
-                vx, vy = (e.x - last[0]) / dt, (e.y - last[1]) / dt
+            if last is not None and now - last[2] > 1e-4:          # (its speed since he last looked at it)
+                vx, vy = (e.x - last[0]) / (now - last[2]), (e.y - last[1]) / (now - last[2])
             else:
                 vx, vy = 0.0, 0.0
             if getattr(e, "diving", False) and vy > 40:
-                falling(r, vy, vx, "body")
+                falling(r, vy, vx, "body")                   # (a diver he sees at once: it is big, and it hurts)
                 if out and out[-1][5] == "body":
                     x, vx_, t0, t1, hw, kind = out[-1]
-                    out[-1] = (x, vx_, t0, t1, hw + 10.0, kind)     # (a diver may turn: more room)
-            elif r.bottom > top - 70:
-                out.append((float(r.centerx), 0.0, 0.0, 0.6, r.width / 2.0 + 6.0, "body"))   # low, slow: keep away
+                    out[-1] = (x, vx_, t0, t1, hw + BODY_ROOM, kind)     # (a diver may turn: more room)
+            elif r.bottom > top - 90:
+                out.append((float(r.centerx), float(vx), 0.0, 0.8, r.width / 2.0 + BODY_ROOM, "body"))   # low: keep away
         self.seen = seen
+        self.noticed = noticed
         return out
 
-    def _decide(self, game, dt):
+    def _decide(self, game, dt, everything=False):
+        """Pick the place to go (self.target_x). `everything`: every threat at once, no reaction time (his entry)."""
         s = self.ship
         px = float(s.x)
         half = s.get_hitbox().width / 2.0
@@ -326,7 +436,7 @@ class Wingman:
             return px + sgn * np.minimum(ad, v * tt)
 
         hit = np.zeros_like(xs)
-        for x, vx, t0, t1, hw, kind in self._threats(game, dt):
+        for x, vx, t0, t1, hw, kind in self._threats(game, dt, react=not everything):
             a, b = pos(t0), pos(t1)
             lo, hi = np.minimum(a, b), np.maximum(a, b)
             tx0, tx1 = x + vx * t0, x + vx * t1
@@ -336,7 +446,7 @@ class Wingman:
             weight = 1.0 / (0.25 + t0)
             hits = gap < reach
             near = (~hits) & (gap < reach + NEAR)
-            hit += np.where(hits, HIT_COST * weight, 0.0)
+            hit += np.where(hits, HIT_COST * weight * (BODY_COST if kind == "body" else 1.0), 0.0)
             hit += np.where(near, 0.6 * (1.0 - (gap - reach) / NEAR) * weight, 0.0)
         cost = hit + 0.0012 * ad
         room = np.minimum(xs - EDGE, BASE_WIDTH - EDGE - xs)
@@ -348,7 +458,7 @@ class Wingman:
         cols = [float(e.x) for e in guardian.targets(game) if float(e.y) < LINE_Y - 90]
         if cols:
             aim = np.min(np.abs(xs[:, None] - np.array(cols)[None, :]), axis=1)
-            cost += 0.45 * np.minimum(aim, 260.0) / 260.0                # a bird above, to shoot at
+            cost += AIM * np.minimum(aim, 260.0) / 260.0                 # a bird above, to shoot at
         cost -= np.where(np.abs(xs - self.target_x) < CANDIDATE_STEP, 0.08, 0.0)   # (he keeps to his plan)
         best = int(np.argmin(cost))
         self.target_x = float(xs[best])
@@ -409,7 +519,11 @@ class Wingman:
         """Where his two jets come out, on the screen."""
         s = self.ship
         spec = engine_flame.NOZZLES[JETS]
-        return [(s.x + nx, s.y + ny) for nx, ny in zip(spec["xs"], spec["ys"])]
+        out = []
+        for nx, ny in zip(spec["xs"], spec["ys"]):
+            tx, ty = self._turned(nx, ny)
+            out.append((s.x + tx, s.y + ty))
+        return out
 
     def _puff_at(self, x, y, dark=False):
         hits = max(1, min(3, self.hits))
@@ -419,8 +533,11 @@ class Wingman:
         back = 70.0 + 90.0 * thrust                                # blown back by the jet
         if self.state == "leave":
             back = 40.0
-        self.smoke.append([x + random.uniform(-1.5, 1.5), y + 6 + 10 * thrust + random.uniform(0, 4),
-                           random.uniform(-9, 9), back + random.uniform(-15, 15), 0.0,
+        ex, ey = self._turned(0.0, 1.0)                            # the way the jets blow
+        off = 6 + 10 * thrust + random.uniform(0, 4)
+        side = random.uniform(-9, 9)
+        self.smoke.append([x + random.uniform(-1.5, 1.5) + ex * off, y + ey * off,
+                           ex * back - ey * side, ey * back + ex * side + random.uniform(-15, 15) * ey, 0.0,
                            random.uniform(0.5, 0.8) + 0.18 * hits, size * random.uniform(0.8, 1.2), grey + random.randint(-12, 12)])
 
     def _smoke_more(self, dt):
@@ -429,7 +546,7 @@ class Wingman:
         if self.hits <= 0:
             return
         s = self.ship
-        if s.y > BASE_HEIGHT + 40 or s.y < -60:
+        if s.y > BASE_HEIGHT + 60 or s.y < -60:
             return
         every = {1: 0.09, 2: 0.045}.get(self.hits, 0.022)
         self.smoke_t -= dt
@@ -468,13 +585,31 @@ class Wingman:
         if self.state == "gone":
             return
         s = self.ship
-        if s.y < -120 or s.y > BASE_HEIGHT + 120:
+        if s.y < -120 or s.y > BASE_HEIGHT + 120 or self.state == "wait":
+            return
+        if self.state == "leave":
+            self._draw_turned(surface)
             return
         s.draw(surface)
         if self.flying() and game.stage_transition is None:
             tag = _tag(game)
             if tag is not None and not (s.invulnerable > 0 and int(s.invulnerable * 12) % 2 == 0):
                 surface.blit(tag, (int(s.x - tag.get_width() / 2), int(s.y + s.height / 2 + 2)))
+
+    def _draw_turned(self, surface):
+        """The retreat: his ship and its jets, turned by self.angle (drawn upright on a sheet, then turned)."""
+        s = self.ship
+        sheet = pygame.Surface((TURN_SHEET[0], TURN_SHEET[1]), pygame.SRCALPHA)
+        cx, cy = TURN_SHEET[0] // 2, TURN_SHEET[1] // 2
+        spec = engine_flame.NOZZLES[JETS]
+        thrust = max(engine_flame.SHOW_FROM, float(s.engine_intensity or 0.0))
+        for i, (nx, ny) in enumerate(zip(spec["xs"], spec["ys"])):
+            engine_flame.draw(sheet, JETS, "gold", cx + nx, cy + ny, thrust, s.engine_time, engine=i,
+                              burst=s.engine_burst)
+        sheet.blit(s.image, (cx - s.image.get_width() // 2, cy - s.image.get_height() // 2))
+        if abs(self.angle) > 0.5:
+            sheet = pygame.transform.rotozoom(sheet, self.angle, 1.0)
+        surface.blit(sheet, (int(s.x - sheet.get_width() / 2), int(s.y - sheet.get_height() / 2)))
 
     def banner(self, surface, game):
         if self.radio is None:
@@ -615,7 +750,7 @@ def _attacks(game, w):
         elif not s.is_phenix:
             w.damage(game, "shot")
     for e in guardian.targets(game):
-        if getattr(e, "diving", False) and e.get_hitbox().colliderect(box):
+        if e.get_hitbox().colliderect(box):                # any enemy flying into him (a diver, most of the time)
             try:
                 e.kill(flash=False)                     # the bird goes down, worth nothing
             except TypeError:
@@ -624,8 +759,7 @@ def _attacks(game, w):
                 e.dying = False
             game.explosions.append(game._boom(e.x, e.y, kind="collision"))
             game.sounds.play("enemy_explosion", x=e.x)
-            if not s.is_phenix:
-                w.damage(game, "crash")
+            w.damage(game, "crash")                     # straight to the last level of damage
             break
 
 
