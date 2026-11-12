@@ -14,7 +14,7 @@ from test_smoke import run  # noqa: F401  (fixture)
 
 ALL = [("phoenix", "argent"), ("phoenix", "blue"), ("phoenix", "gold"),
        ("shield", "red"), ("shield", "green"), ("shield", "violet"),
-       ("phenix", "phenix_red"), ("phenix", "phenix_blue")]
+       ("phenix", "phenix_red"), ("phenix", "phenix_blue"), ("edf17", "gold")]
 
 
 def _alpha_rows(arr):

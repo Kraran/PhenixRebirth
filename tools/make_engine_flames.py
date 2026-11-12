@@ -21,6 +21,7 @@ SETS = {
     "phoenix": ("argent", "blue", "gold"),
     "shield": ("red", "green", "violet"),
     "phenix": ("phenix_red", "phenix_blue"),
+    "edf17": ("gold",),
 }
 
 
