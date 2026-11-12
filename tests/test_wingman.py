@@ -475,3 +475,19 @@ def test_the_radio_plays_on_its_own_channel():
     assert sounds.SoundManager.RADIO_CHANNEL == 1                           # (0 is the announcer's)
     if pygame.mixer.get_init():
         assert pygame.mixer.get_num_channels() >= 2
+
+
+def test_the_ash_of_the_mission_is_made_behind_the_loading_bar(run):
+    """The Guardians of the last wave burn gargoyles: their ash (both wings, or one) and the ash of the small birds are made
+    before the mission, so that a burning bird never holds the game."""
+    from game import Game
+    spec = _launch(run)
+    assert Game.guardians_meet_gargoyles(spec)
+    assert not Game.guardians_meet_gargoyles({"swarm": True, "waves": [11, 11], "swarm_kinds": [[1], [1, 2]],
+                                              "guardians_wave": {2: 3}})
+    guardian._BURN_ART.clear()
+    guardian.warm_gargoyle_ash()
+    for stage in (3, 4):
+        for wings in ((True, True), (True, False), (False, True)):
+            assert ("garg", stage) + wings in guardian._BURN_ART
+    assert 1 in guardian._BURN_ART and 2 in guardian._BURN_ART

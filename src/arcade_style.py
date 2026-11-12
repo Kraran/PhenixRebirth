@@ -62,7 +62,7 @@ def _prepare_guardians(game):
         with loading.Loading(game, "arcade", delay=getattr(game, "LOADING_DELAY", 0.25)) as ld:
             if hasattr(game, "_setup_guardian_squad"):
                 ld.step(0.6, game._setup_guardian_squad, 0.9)
-            ld.step(0.4, guardian.warm_gargoyle_ash, 0.5)
+            ld.step(0.4, guardian.warm_gargoyle_ash, 0.6)
     except Exception:
         log_exc("arcade_style.start")
 

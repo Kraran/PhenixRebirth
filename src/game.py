@@ -1927,14 +1927,27 @@ class Game:
             ld.step(second, self._prewarm_mission, 1.0 if heavy_view else 0.2)
             if ash:
                 import guardian
-                ld.step(0.4, guardian.warm_gargoyle_ash, 0.7)     # (the ash of the gargoyles their lasers burn)
+                ld.step(0.4, guardian.warm_gargoyle_ash, 0.9)     # (the ash of the gargoyles their lasers burn)
 
     @staticmethod
     def guardians_meet_gargoyles(spec):
-        """Can the Guardians of this mission burn gargoyles (Guardians in a wave of gargoyles, levels 3 and 4 of a cycle)?"""
+        """Can the Guardians of this mission burn gargoyles (Guardians in a wave of gargoyles, levels 3 and 4 of a cycle,
+        or Guardians in a wave of a swarm with gargoyles in it: TEST - Sacha)?"""
         if spec.get("endless_guardians") or spec.get("guardians_each"):
             return True
-        return any(stage_content(int(k)) in (3, 4) for k in (spec.get("guardians_at") or {}))
+        if any(stage_content(int(k)) in (3, 4) for k in (spec.get("guardians_at") or {})):
+            return True
+        kinds = spec.get("swarm_kinds") or []
+        waves = spec.get("waves") or []
+        for n, count in (spec.get("guardians_wave") or {}).items():
+            i = int(n) - 1
+            if not count or i < 0:
+                continue
+            if kinds and set(kinds[min(i, len(kinds) - 1)]) & {3, 4}:
+                return True
+            if waves and not spec.get("swarm") and stage_content(int(waves[min(i, len(waves) - 1)])) in (3, 4):
+                return True
+        return False
 
     def _prewarm_mission(self):
         """Draw the first picture of the mission off screen, so what it needs is made now, behind the bar. The warm-ups of the
