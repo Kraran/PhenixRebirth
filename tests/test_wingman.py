@@ -101,6 +101,9 @@ def test_the_damage_shows_on_his_ship_and_his_jets_smoke_more_and_more(run):
     s = w.ship
     pics = wingman.pictures()
     smoke = []
+    born = []                                                   # (where a puff was born, the jets at that moment)
+    puff = w._puff_at
+    w._puff_at = lambda x, y, dark=False: (born.append((x, y, w._nozzles())), puff(x, y, dark))
     run.frames(60)
     smoke.append(len(w.smoke))
     for n in (1, 2):
@@ -111,8 +114,7 @@ def test_the_damage_shows_on_his_ship_and_his_jets_smoke_more_and_more(run):
         run.frames(60)
         smoke.append(len(w.smoke))
     assert smoke[0] == 0 < smoke[1] < smoke[2]
-    noz = w._nozzles()
-    assert all(any(abs(p[0] - x) < 12 for x, _ in noz) for p in w.smoke)       # from the jets
+    assert born and all((x, y) in noz for x, y, noz in born)                   # out of the jets
     assert sum(p[7] for p in w.smoke) / len(w.smoke) < 140                       # darker smoke after two hits
 
 
