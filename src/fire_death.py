@@ -118,25 +118,78 @@ def _glow_to_rgba(glow):
 
 
 def _pixels(source, P):
-    """What never changes between two pictures: for every solid pixel, its colour, its noise and when it ignites / turns to ash."""
+    """What never changes between two pictures: for every solid pixel (in reading order), where it is, its colour, its
+    noise and when it ignites / turns to ash. Arrays (numpy), one value per pixel."""
     w, h = source.get_size()
-    result = []
-    for y in range(h):
-        for x in range(w):
-            c = source.get_at((x, y))
-            if c.a < 32:
-                continue
-            n1 = ((x * 73 + y * 151) % 127) / 126.0
-            n2 = ((x * 31 + y * 17 + 5) % 89) / 88.0
-            ti = P["ignite"] * P["front"](x, y, w, h, n1)
-            ta = ti + P["burn"] * (0.7 + 0.6 * n2)
-            result.append((x, y, tuple(c), n1, n2, ti, ta))
-    return result
+    rgb = pygame.surfarray.array3d(source)                 # [x, y, channel]
+    alpha = pygame.surfarray.array_alpha(source)
+    ys, xs = np.nonzero(alpha.T >= 32)                     # (y major: the order of the old loops)
+    n1 = ((xs * 73 + ys * 151) % 127) / 126.0
+    n2 = ((xs * 31 + ys * 17 + 5) % 89) / 88.0
+    front = P["front"]
+    if front is from_the_nose:
+        ti = P["ignite"] * (0.15 + 0.6 * (ys / h) + 0.25 * n1)
+    else:
+        ti = np.array([P["ignite"] * front(int(x), int(y), w, h, float(n)) for x, y, n in zip(xs, ys, n1)], dtype=float)
+    ta = ti + P["burn"] * (0.7 + 0.6 * n2)
+    return {"x": xs, "y": ys, "rgb": rgb[xs, ys].astype(np.int64), "a": alpha[xs, ys].astype(np.int64),
+            "n1": n1, "n2": n2, "ti": ti, "ta": ta}
+
+
+def _mix_arr(c1, c2, k):
+    """_mix on arrays: c1, c2 (n, 3) or (3,), k (n,) -> ints (n, 3), the same truncation as _mix."""
+    k = np.clip(k, 0.0, 1.0)[:, None]
+    c1 = np.asarray(c1, dtype=np.int64)
+    c2 = np.asarray(c2, dtype=np.int64)
+    return (c1 + (c2 - c1) * k).astype(np.int64)
+
+
+def _sin_each(values):
+    """math.sin of every value (exactly the old numbers, numpy's sin may differ in the last bit)."""
+    return np.fromiter((math.sin(v) for v in values.tolist()), dtype=float, count=len(values))
+
+
+def _flame_colours(k):
+    """flame_colour on an array: the same colours (tuples), one per value."""
+    k = np.maximum(0.0, np.minimum(0.999, k)) * (len(FLAME) - 1)
+    i = k.astype(np.int64)
+    f = np.array(FLAME, dtype=np.int64)
+    c = _mix_arr(f[i], f[i + 1], k - i)
+    c = np.minimum(255, (c // 12) * 12)
+    return [tuple(v) for v in c.tolist()]
+
+
+def _tongues(glow, flames, t, P):
+    """The tongues of flame of every burning pixel (`flames`: arrays x, y, n1, n2), worked out together, then added to
+    the glow in one go: the same blobs, the same places as one by one."""
+    fx, fy, fn1, fn2 = flames
+    per_tongue = []
+    for j in range(P["tongues"]):
+        rate = P["flame_rate"] * (0.8 + 0.4 * fn2)
+        phase = (fn1 * 3.7 + j * 0.37) % 1.0
+        life = P["flame_life"] * (0.7 + 0.6 * ((fn1 * 5 + j) % 1.0))
+        age = ((t * rate + phase) % 1.0) * life
+        k = age / life
+        rise = P["rise"] * (age / P["flame_life"])
+        sway = _sin_each(age * 22 + fn1 * 40 + j) * P["sway"] * k + P["lean"] * k * k
+        size = P["flame_size"] * (1.0 - 0.55 * k) * (0.7 + 0.6 * fn2)
+        per_tongue.append(list(zip((fx + sway).tolist(), (fy - rise).tolist(), (size * 0.72).tolist(),
+                                   (size * P["flame_tall"]).tolist(), _flame_colours(k * 0.9),
+                                   (1.0 - k ** 1.6).tolist())))
+    blits = []
+    # (pixel after pixel, its tongues one after the other: the order of the old loop, which matters, as the first blob
+    # made for a size is the one kept in _BLOBS)
+    for tongues in zip(*per_tongue):
+        for x, y, rx, ry, colour, st in tongues:
+            pic = _blob(rx, ry, colour, st)
+            blits.append((pic, (round(x - pic.get_width() / 2), round(y - pic.get_height() / 2)), None,
+                          pygame.BLEND_RGB_ADD))
+    glow.blits(blits, doreturn=False)
 
 
 def render(source, t, style, canvas, origin, pixels=None):
     """The picture of the death at t (0..1), on a transparent surface of the size `canvas`; `origin` = where the top left
-    corner of `source` is."""
+    corner of `source` is. (Worked on whole arrays of pixels: the same picture as pixel by pixel, a few times faster.)"""
     P = style
     if pixels is None:
         pixels = _pixels(source, P)
@@ -146,55 +199,87 @@ def render(source, t, style, canvas, origin, pixels=None):
     ox, oy = origin
     w, h = source.get_size()
     cx, cy = ox + w / 2, oy + h / 2
+    X, Y, C, A = pixels["x"], pixels["y"], pixels["rgb"], pixels["a"]
+    N1, N2, TI, TA = pixels["n1"], pixels["n2"], pixels["ti"], pixels["ta"]
+    cw, ch = canvas
+    rgb_out = pygame.surfarray.pixels3d(out)
+    a_out = pygame.surfarray.pixels_alpha(out)
+    # not burning yet: the hull heats up
+    cold = t < TI
+    if cold.any():
+        heat = np.maximum(0.0, 1 - (TI[cold] - t) / 0.08) * 0.25
+        col = _mix_arr(C[cold], (255, 130, 30), heat)
+        px, py = ox + X[cold], oy + Y[cold]
+        keep = (px >= 0) & (px < cw) & (py >= 0) & (py < ch)
+        rgb_out[px[keep], py[keep]] = col[keep]
+        a_out[px[keep], py[keep]] = A[cold][keep]
+    # burning: hot, then charred, flickering
+    burning = (~cold) & (t < TA)
     flames = []
-    ash = []
-    for x, y, c, n1, n2, ti, ta in pixels:
-        if t < ti:
-            heat = max(0.0, 1 - (ti - t) / 0.08) * 0.25
-            out.set_at((ox + x, oy + y), (*_mix(c[:3], (255, 130, 30), heat), c[3]))
-        elif t < ta:
-            k = (t - ti) / (ta - ti)
-            hot = _mix((255, 190, 80), (255, 100, 18), min(1.0, k * 2.2))
-            charred = _mix(hot, (28, 20, 18), max(0.0, (k - 0.35) / 0.65))
-            flick = 0.8 + 0.2 * math.sin(t * 60 + n1 * 30)
-            out.set_at((ox + x, oy + y), (*(int(v * flick) for v in charred), c[3]))
-            if (x * 7 + y * 13) % P["flame_every"] == 0:
-                flames.append((ox + x, oy + y, n1, n2))
-        else:
-            ash.append((ox + x, oy + y, ta, n1, n2))
+    if burning.any():
+        ti, ta, n1 = TI[burning], TA[burning], N1[burning]
+        k = (t - ti) / (ta - ti)
+        hot = _mix_arr(np.array((255, 190, 80)), (255, 100, 18), np.minimum(1.0, k * 2.2))
+        charred = _mix_arr(hot, (28, 20, 18), np.maximum(0.0, (k - 0.35) / 0.65))
+        flick = 0.8 + 0.2 * _sin_each(t * 60 + n1 * 30)
+        col = (charred * flick[:, None]).astype(np.int64)
+        xb, yb = X[burning], Y[burning]
+        px, py = ox + xb, oy + yb
+        keep = (px >= 0) & (px < cw) & (py >= 0) & (py < ch)
+        rgb_out[px[keep], py[keep]] = col[keep]
+        a_out[px[keep], py[keep]] = A[burning][keep]
+        lit = (xb * 7 + yb * 13) % P["flame_every"] == 0
+        if lit.any():
+            flames = (px[lit], py[lit], n1[lit], N2[burning][lit])
+    del rgb_out, a_out
     # tongues of flame rise from the burning pixels
-    for fx, fy, n1, n2 in flames:
-        for j in range(P["tongues"]):
-            rate = P["flame_rate"] * (0.8 + 0.4 * n2)
-            phase = (n1 * 3.7 + j * 0.37) % 1.0
-            life = P["flame_life"] * (0.7 + 0.6 * ((n1 * 5 + j) % 1.0))
-            age = ((t * rate + phase) % 1.0) * life
-            k = age / life
-            rise = P["rise"] * (age / P["flame_life"])
-            sway = math.sin(age * 22 + n1 * 40 + j) * P["sway"] * k + P["lean"] * k * k
-            size = P["flame_size"] * (1.0 - 0.55 * k) * (0.7 + 0.6 * n2)
-            add_blob(glow, fx + sway, fy - rise, size * 0.72, size * P["flame_tall"],
-                     flame_colour(k * 0.9), 1.0 - k ** 1.6)
+    if flames:
+        _tongues(glow, flames, t, P)
     # each burnt pixel is an ember, then a grey ash flake that the wind carries away
-    for ax, ay, ta, n1, n2 in ash:
+    gone = ~(cold | burning)
+    if gone.any():
+        ta, n1, n2 = TA[gone], N1[gone], N2[gone]
+        ax, ay = (ox + X[gone]).astype(float), (oy + Y[gone]).astype(float)
         a = t - ta
-        life = min(P["ash_life"] * (0.6 + 0.8 * n2), END - ta)
-        if a > life or life <= 0:
-            continue
+        life = np.minimum(P["ash_life"] * (0.6 + 0.8 * n2), END - ta)
+        live = ~((a > life) | (life <= 0))
+        ta, n1, n2, ax, ay, a, life = ta[live], n1[live], n2[live], ax[live], ay[live], a[live], life[live]
         k = a / life
-        if k < P["ember_k"]:
-            e = 1 - k / P["ember_k"]
-            colour, alpha = _mix((170, 160, 150), (255, 150, 40), e), 1.0
-        else:
-            colour = _mix((205, 198, 190), (120, 116, 112), n1)
-            alpha = max(0.0, 1.0 - (k - P["ember_k"]) / (1 - P["ember_k"])) ** 0.8
-        px = ax + (P["wind"] * (0.5 + n1) + (n2 - 0.5) * P["spread"]) * a + math.sin(a * 9 + n1 * 20) * 3 * k
+        ember = k < P["ember_k"]
+        e = 1 - k / P["ember_k"]
+        col_e = _mix_arr(np.array((170, 160, 150)), (255, 150, 40), e)
+        col_a = _mix_arr(np.array((205, 198, 190)), (120, 116, 112), n1)
+        colour = np.where(ember[:, None], col_e, col_a)
+        alpha = np.where(ember, 1.0, np.maximum(0.0, 1.0 - (k - P["ember_k"]) / (1 - P["ember_k"])) ** 0.8)
+        px = ax + (P["wind"] * (0.5 + n1) + (n2 - 0.5) * P["spread"]) * a + _sin_each(a * 9 + n1 * 20) * 3 * k
         py = ay + (-P["ash_rise"] * (0.3 + n2) + P["gravity"] * k) * a
-        size = 1 + (n2 > 0.55) + (1 if (P["big_ash"] and n1 > 0.9) else 0)
-        if alpha > 0.02:
-            out.fill((*colour, int(255 * alpha)), (round(px), round(py), size, size))
-        if k < P["ember_k"] * 0.8 and n1 > 0.5:
-            add_blob(glow, px, py, 3, 3, (255, 110, 20), 1.2 * (1 - k / P["ember_k"]))
+        size = 1 + (n2 > 0.55).astype(int) + ((n1 > 0.9).astype(int) if P["big_ash"] else 0)
+        shown = alpha > 0.02
+        rx = np.array([round(v) for v in px.tolist()], dtype=np.int64)
+        ry = np.array([round(v) for v in py.tolist()], dtype=np.int64)
+        a255 = (255 * alpha).astype(np.int64)
+        # the flakes, in order (a later one covers an earlier one), each a square of `size` pixels, cut at the edges
+        if shown.any():
+            idx = np.nonzero(shown)[0]
+            big = int(size[idx].max())
+            parts = [idx[(size[idx] > d) & (size[idx] > d2)] for d in range(big) for d2 in range(big)]
+            offs = [(d, d2) for d in range(big) for d2 in range(big)]
+            fx = np.concatenate([rx[sel] + d for sel, (d, d2) in zip(parts, offs)])
+            fy = np.concatenate([ry[sel] + d2 for sel, (d, d2) in zip(parts, offs)])
+            fc = np.concatenate([colour[sel] for sel in parts])
+            fa = np.concatenate([a255[sel] for sel in parts])
+            rank = np.concatenate(parts)                    # (the old loop drew flake after flake: a later one on top)
+            o = np.argsort(rank, kind="stable")
+            fx, fy, fc, fa = fx[o], fy[o], fc[o], fa[o]
+            keep = (fx >= 0) & (fx < cw) & (fy >= 0) & (fy < ch)
+            rgb_out = pygame.surfarray.pixels3d(out)
+            a_out = pygame.surfarray.pixels_alpha(out)
+            rgb_out[fx[keep], fy[keep]] = fc[keep]
+            a_out[fx[keep], fy[keep]] = fa[keep]
+            del rgb_out, a_out
+        glowing = np.nonzero(ember & (k < P["ember_k"] * 0.8) & (n1 > 0.5))[0]
+        for i in glowing.tolist():
+            add_blob(glow, float(px[i]), float(py[i]), 3, 3, (255, 110, 20), 1.2 * (1 - float(k[i]) / P["ember_k"]))
     if P["extra"]:
         P["extra"](glow, out, t, cx, cy, w, h)
     out.blit(_glow_to_rgba(glow), (0, 0))

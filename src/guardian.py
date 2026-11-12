@@ -678,13 +678,23 @@ def gargoyle_burning_frames(bird):
 
 
 def warm_gargoyle_ash(stages=(3, 4)):
-    """Make the ash of the gargoyles with both wings beforehand (behind the loading bar of a mission whose Guardians can
-    burn gargoyles), so the first one does not hold the game."""
-    from enemy import BigBird
+    """Make the ash of the gargoyles beforehand (behind the loading bar of a mission whose Guardians can burn gargoyles),
+    so that a burning gargoyle never holds the game: with both wings, and with only one (a gargoyle often loses a wing to
+    the shots of the ship before a laser burns it). The two kinds of small birds a laser can burn are made too."""
+    from enemy import BigBird, Enemy
     state = random.getstate()
     try:
+        for stage in (1, 2):
+            burning_frames(stage, Enemy(0, 0, 0, stage).frames[0])
         for stage in stages:
-            gargoyle_burning_frames(BigBird(0, 0, 0, stage))
+            bird = BigBird(0, 0, 0, stage)
+            for left, right in ((True, True), (True, False), (False, True)):
+                saved = (bird.wing_left, bird.wing_right)
+                bird.wing_left, bird.wing_right = left, right
+                try:
+                    gargoyle_burning_frames(bird)
+                finally:
+                    bird.wing_left, bird.wing_right = saved
     finally:
         random.setstate(state)                      # (a gargoyle made here must not change the game's draws)
 
