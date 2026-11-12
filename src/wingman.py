@@ -23,7 +23,8 @@ him well, as a defender first:
   his retreat LEAVE_DELAY s after the last level of damage he goes back to Phobos: his ship takes off (it climbs, engines
               full), turns about in a half circle toward the side with room, and dives off the bottom of the screen
               (no more shots, nothing touches him). The pilot goes on alone.
-  the radio   a line at the top of the screen when he arrives, at each wave and at each hit (RADIO_TIME s)
+  the radio   a line at the top of the screen when he arrives, at each wave and at each hit (RADIO_TIME s), and his
+              voice with it through a small radio (assets/sounds/sacha/, sounds.play_radio: a channel of its own)
 
 Between the waves he flies up and comes back with the ship. The state of a mission is `game.wingman` (a Wingman, or None).
 """
@@ -155,6 +156,7 @@ class Wingman:
         self.sparks = []                 # [x, y, vx, vy, age]
         self.smoke_t = 0.0
         self.radio = None                # (text key, time left)
+        self.radio_held = False          # his voice is held (the game is paused)
 
     # --- what he is ----------------------------------------------------------------------------------------------
     def flying(self):
@@ -166,7 +168,14 @@ class Wingman:
                 and s.y <= LINE_Y + 40)
 
     def say(self, key):
+        """A line on the radio: its words at the top of the screen, his voice through the radio (sounds.play_radio)."""
         self.radio = (key, RADIO_TIME)
+        snd = getattr(self.ship, "sounds", None)
+        if snd is not None:
+            try:
+                snd.play_radio(key)
+            except Exception:
+                log_exc("wingman.say")
 
     # --- every frame ---------------------------------------------------------------------------------------------
     def update(self, game, dt):
@@ -656,6 +665,15 @@ class Wingman:
         surface.blit(sheet, (int(s.x - sheet.get_width() / 2), int(s.y - sheet.get_height() / 2)))
 
     def banner(self, surface, game):
+        paused = bool(getattr(game, "paused", False))
+        if paused != self.radio_held:                    # (his voice holds while the game is paused)
+            self.radio_held = paused
+            snd = getattr(self.ship, "sounds", None)
+            if snd is not None:
+                try:
+                    snd.hold_radio(paused)
+                except Exception:
+                    log_exc("wingman.banner")
         if self.radio is None:
             return
         key, left = self.radio
@@ -723,6 +741,11 @@ def _tag(game):
 def start(game, spec):
     """At the start of a mission: Sacha when the mission has him (spec "wingman")."""
     game.wingman = None
+    try:
+        if getattr(game, "sounds", None) is not None:
+            game.sounds.stop_radio(0)            # (a line of a mission before must not go on in this one)
+    except Exception:
+        log_exc("wingman.start")
     if not (spec or {}).get("wingman") or getattr(game, "play_mode", "solo") == "coop":
         return
     try:

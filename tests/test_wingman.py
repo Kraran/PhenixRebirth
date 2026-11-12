@@ -422,3 +422,56 @@ def test_he_flies_smoothly_like_a_person(run):
     assert reversals / (len(xs) / 60) < 0.7
     dt = 1 / 60
     assert np.max(np.abs(np.diff(v))) <= wingman.ACCEL * 1.6 * dt * 1.05 + 1.0     # (never a jump in speed)
+
+
+# ------------------------------------------------------------------ his voice on the radio
+def test_each_line_has_its_voice_on_the_radio():
+    import os
+    import i18n
+    import sounds
+    from settings import asset_path
+    for key in sounds.RADIO_LINES:
+        assert i18n.t(key) != key                                           # (the words of the same line)
+        path = asset_path("sounds", "sacha", f"{key}.ogg")
+        assert os.path.getsize(path) > 5000
+        snd = pygame.mixer.Sound(path) if pygame.mixer.get_init() else None
+        if snd is not None:
+            assert 1.0 < snd.get_length() < wingman.RADIO_TIME + 0.5        # (heard while its words are on screen)
+
+
+def test_he_speaks_when_his_words_show(run, monkeypatch):
+    _no_stray_harm(monkeypatch)
+    g = run.game
+    heard = []
+    monkeypatch.setattr(g.sounds, "play_radio", lambda key, volume=None: heard.append(key))
+    _launch(run)
+    _with_sacha(run)
+    w = g.wingman
+    assert heard == ["wingman_hello"]
+    for n in (1, 2, 3):
+        w.ship.invulnerable = 0.0
+        w.damage(g)
+    assert heard == ["wingman_hello", "wingman_hit_1", "wingman_hit_2", "wingman_hit_3"]
+
+
+def test_his_voice_holds_while_the_game_is_paused(run, monkeypatch):
+    g = run.game
+    held = []
+    monkeypatch.setattr(g.sounds, "hold_radio", lambda paused: held.append(paused))
+    _launch(run)
+    _with_sacha(run)
+    w = g.wingman
+    surf = pygame.Surface((BASE_WIDTH, BASE_HEIGHT))
+    g.paused = True
+    w.banner(surf, g)
+    w.banner(surf, g)
+    g.paused = False
+    w.banner(surf, g)
+    assert held == [True, False]
+
+
+def test_the_radio_plays_on_its_own_channel():
+    import sounds
+    assert sounds.SoundManager.RADIO_CHANNEL == 1                           # (0 is the announcer's)
+    if pygame.mixer.get_init():
+        assert pygame.mixer.get_num_channels() >= 2
