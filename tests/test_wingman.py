@@ -76,13 +76,59 @@ def test_the_launch(run):
     g = run.game
     assert g.player.lives >= 3
     assert isinstance(g.wingman, wingman.Wingman)
-    assert g.wingman.ship.ship_id == "phoenix"                 # the pilot flies the Shield: Sacha the Phenix
+    assert g.wingman.ship.image is wingman.pictures()[0]       # his own ship: the EDF-17 C
 
 
-def test_sacha_flies_the_other_hull(run):
-    _launch(run, phenix=True, act=2)
+@pytest.mark.parametrize("phenix", [False, True])
+def test_sacha_flies_his_old_edf17_whatever_the_pilot_flies(run, phenix):
+    _launch(run, phenix=phenix, act=2 if phenix else 1)
     g = run.game
-    assert g.player.ship_id == "phoenix" and g.wingman.ship.ship_id == "shield"
+    s = g.wingman.ship
+    assert s.image is wingman.pictures()[0] and s.image.get_size() == (60, 90)
+    assert s._engine_plan()[0] == "edf17" and len(s._engine_plan()[1]) == 2
+    _arrived(run)
+    for _ in range(120):
+        s.phenix_gauge = 99                    # (even a full gauge: no Phenix form, no dome)
+        run.frames(1)
+    assert not s.is_phenix and s.phenix_gauge == 0
+
+
+def test_the_damage_shows_on_his_ship_and_his_jets_smoke_more_and_more(run):
+    _launch(run)
+    g = run.game
+    _arrived(run)
+    w = g.wingman
+    s = w.ship
+    pics = wingman.pictures()
+    smoke = []
+    run.frames(60)
+    smoke.append(len(w.smoke))
+    for n in (1, 2):
+        s.invulnerable = 0.0
+        w.damage(g)
+        assert s.image is pics[n]
+        w.smoke.clear()
+        run.frames(60)
+        smoke.append(len(w.smoke))
+    assert smoke[0] == 0 < smoke[1] < smoke[2]
+    noz = w._nozzles()
+    assert all(any(abs(p[0] - x) < 12 for x, _ in noz) for p in w.smoke)       # from the jets
+    assert sum(p[7] for p in w.smoke) / len(w.smoke) < 140                       # darker smoke after two hits
+
+
+def test_a_damaged_engine_coughs(run):
+    _launch(run)
+    g = run.game
+    _arrived(run)
+    w = g.wingman
+    for _ in range(2):
+        w.ship.invulnerable = 0.0
+        w.damage(g)
+    low = 0
+    for _ in range(60 * 6):
+        run.frames(1)
+        low += w.ship.engine_intensity <= 0.25
+    assert low > 0
 
 
 # ------------------------------------------------------------------ the four waves

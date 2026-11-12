@@ -43,6 +43,7 @@ NOZZLES = {
     "phoenix": {"xs": (-9.0, 7.5), "ys": (41.5, 41.5), "half": 5.4, "length": 42.0},
     "shield": {"xs": (-13.0, -0.5, 12.0), "ys": (32.5, 37.5, 32.5), "half": 4.6, "length": 38.0},
     "phenix": {"xs": (-12.0, 11.0), "ys": (46.0, 46.0), "half": 9.0, "length": 66.0},
+    "edf17": {"xs": (-5.0, 5.0), "ys": (33.0, 33.0), "half": 3.4, "length": 32.0},     # Sacha's old interceptor (src/wingman.py)
 }
 
 MIN_LENGTH = 0.30            # the length of the jet at idle (thrust 0), as a part of the full jet; thrust 1 gives the whole of it
