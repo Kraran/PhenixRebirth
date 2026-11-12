@@ -7752,16 +7752,16 @@ _SCRAMBLE_TEXTS = {
     "story_scene_sacha_t": ("Sacha", "Sacha"),
     "story_scene_sacha": (
         "Il s’appelle Sacha. Il a débarqué de 434-Hungaria la veille, sans prévenir personne, aux commandes d’un "
-        "intercepteur EDF-17 que personne n’avait vu voler depuis vingt ans. Le vieux Wallems l’a remonté avec ce qu’il "
+        "intercepteur EDF-17 C que personne n’avait vu voler depuis vingt ans. Le vieux Wallems l’a remonté avec ce qu’il "
         "a trouvé dans ses bacs à ferraille.\n\n"
         "Quand il a retiré son casque dans le hangar, les techniciens ont cru à une erreur. Un gamin. À peine l’âge de "
-        "passer son brevet. Il m’a serré la main en souriant, la combinaison encore noire de fumée : « Wallems m’a dit "
+        "passer son brevet de pilote. Il m’a serré la main en souriant, la combinaison encore noire de fumée : « Wallems m’a dit "
         "que tu étais seul. Ce n’est plus vrai. »",
         "His name is Sacha. He landed from 434-Hungaria the day before, without warning anyone, at the controls of an "
-        "EDF-17 interceptor nobody had seen fly in twenty years. Old Wallems put it back together with whatever he found "
+        "EDF-17 C interceptor nobody had seen fly in twenty years. Old Wallems put it back together with whatever he found "
         "in his scrap bins.\n\n"
         "When he took his helmet off in the hangar, the technicians thought there had been a mistake. A kid. Barely old "
-        "enough to get his wings. He shook my hand with a smile, his flight suit still black with smoke: “Wallems told "
+        "enough to get his pilot’s licence. He shook my hand with a smile, his flight suit still black with smoke: “Wallems told "
         "me you were alone. Not any more.”"),
     "story_scene_phobos2": (
         "Pendant que je suis la trace du Phenix au-delà de la ceinture, la horde est revenue frapper Phobos. Plus "
