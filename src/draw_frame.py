@@ -12,6 +12,7 @@ import announce
 import credits_screen
 import crt
 import escort
+import wingman
 import gyro
 import laser_split
 import fonts
@@ -128,8 +129,10 @@ def draw_play(game):
         game.tesla_fx.draw(game.game_surface)
 
     gyro.draw(game, game.game_surface)              # the escort modules, beside the ship (under it, out of its animation)
+    wingman.draw(game, game.game_surface)           # Sacha and his smoke (TEST - Sacha)
     for ship in game._ships():
         ship.draw(game.game_surface)
+    wingman.banner(game, game.game_surface)         # what Sacha says on the radio, over the birds
 
 
 def endless_record(game, adv):
@@ -214,7 +217,10 @@ def draw_hud(game):
     game.game_surface.blit(stage_surf, (stage_x, 16))
     adv = getattr(game, "adventure", None)
     if adv and adv.get("swarm") and game.play_mode != "coop":
-        left = tc.get(game.font, t("story_swarm_left").format(n=game.formation.swarm_remaining()), announce.INFO)
+        text = t("story_swarm_left").format(n=game.formation.swarm_remaining())
+        if adv.get("swarm_kinds") and len(adv.get("waves") or []) > 1:     # a swarm in several waves (TEST - Sacha)
+            text = t("story_wave_n").format(n=int(adv.get("wave_i", 0)) + 1, m=len(adv["waves"])) + "   " + text
+        left = tc.get(game.font, text, announce.INFO)
         game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))
     elif adv and adv.get("lander"):
         lander_view.draw_hud(game, game.formation)

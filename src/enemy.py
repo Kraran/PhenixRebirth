@@ -439,10 +439,13 @@ class EnemyFormation:
         n = SWARM_SCREENS if screens is None else max(0.0, float(screens))
         return max(EnemyFormation.swarm_on_screen(kind), int(round(SWARM_NORMAL_COUNT[kind] * n)))
 
-    def _swarm_bird_slots(self):
-        """Formation seats of both bird kinds, in reading order, kinds spread evenly among them."""
-        n1, n2 = self.swarm_on_screen(1), self.swarm_on_screen(2)
+    def _swarm_bird_slots(self, kinds=(1, 2, 3, 4)):
+        """Formation seats of both bird kinds (those of `kinds`), in reading order, kinds spread evenly among them."""
+        n1 = self.swarm_on_screen(1) if 1 in kinds else 0
+        n2 = self.swarm_on_screen(2) if 2 in kinds else 0
         total = n1 + n2
+        if total <= 0:
+            return []
         rows_y, spacing = (110, 165, 220, 275), 95
         n_rows = max(1, min(len(rows_y), -(-total // 9)))      # at most 9 birds a row
         per_row = -(-total // n_rows)
@@ -462,8 +465,10 @@ class EnemyFormation:
                 kinds.append(2)
         return [(x, y, k) for (x, y), k in zip(slots, kinds)]
 
-    def spawn_swarm(self, speed_mult=1.0, screens=None):
-        """Start the swarm: a full screen of every kind, the rest waits to come in."""
+    def spawn_swarm(self, speed_mult=1.0, screens=None, kinds=None):
+        """Start the swarm: a full screen of every kind, the rest waits to come in. `kinds`: the kinds of enemies in it
+        (1 blue, 2 khaki, 3 grey gargoyles, 4 dark ones; default all four), the others never come."""
+        kinds = tuple(k for k in (1, 2, 3, 4) if kinds is None or k in kinds)
         self.stage = 2                           # the drift of the khaki formation
         self.speed_mult = speed_mult
         self.enemies = []
@@ -474,14 +479,15 @@ class EnemyFormation:
         self.speed = ENEMY_SPEED * 1.15 * speed_mult
         self.swarm = {
             "mult": speed_mult,
-            "reserve": {k: self.swarm_total(k, screens) - self.swarm_on_screen(k) for k in (1, 2, 3, 4)},
+            "reserve": {k: (self.swarm_total(k, screens) - self.swarm_on_screen(k) if k in kinds else 0)
+                        for k in (1, 2, 3, 4)},
             "wait": {k: 0.0 for k in (1, 2, 3, 4)},
-            "slots": self._swarm_bird_slots(),
+            "slots": self._swarm_bird_slots(kinds),
             "next_index": 0,
         }
         for slot_i, (x, y, kind) in enumerate(self.swarm["slots"]):
             self._swarm_add_bird(slot_i, kind, arriving=False)
-        for kind in (3, 4):
+        for kind in (k for k in (3, 4) if k in kinds):
             for _ in range(self.swarm_on_screen(kind)):
                 self._swarm_add_gargoyle(kind, arriving=False)
 

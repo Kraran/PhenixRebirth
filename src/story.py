@@ -1755,12 +1755,16 @@ class StoryHub:
                 spec["body"] = body                   # the setting chosen in the menu (else drawn at random)
             if mission.get("endless"):
                 spec.update(endless=True, level=1)    # BONUS FINAL - Scramble: course after course until the last life
+        if mission.get("training"):
+            spec.update(training=True, items=[])            # a TEST mission: nothing won, nothing lost, no item used
+        if mission.get("wingman"):
+            spec["wingman"] = mission["wingman"]             # Sacha flies with the ship (src/wingman.py)
         owned = ss.module_spec(self.state, mission)
         if owned:
             spec["modules"] = owned                  # the escort modules in working order fly with the ship (src/gyro.py)
         if ss.flag(self.state, ss.REFLECT_FLAG):
             spec["reflect"] = True                    # Gardiens III is won: the dome and the Phenix form stop the lasers
-        if (ss.missile_ready(self.state) and not mission.get("scramble")
+        if (ss.missile_ready(self.state) and not mission.get("scramble") and not mission.get("training")
                 and not mission.get("lander")):            # (nothing to shoot in a landing: no missile, no reminder)
             spec["antimatter"] = True                 # the launcher is bought and a missile is held: one in this mission
         if ship:
@@ -1805,6 +1809,10 @@ class StoryHub:
             spec["stage"] = int(mission.get("stage") or 11)
             if mission.get("swarm_screens") is not None:
                 spec["swarm_screens"] = float(mission["swarm_screens"])    # a smaller swarm
+            if mission.get("swarm_kinds"):
+                spec["swarm_kinds"] = [list(k) for k in mission["swarm_kinds"]]   # the kinds of each wave
+        if mission.get("guardians_wave"):
+            spec["guardians_wave"] = {int(k): int(v) for k, v in mission["guardians_wave"].items()}   # by wave
         return spec
 
     def apply_result(self, mission_id, score, cleared, kills=None, loot=None, used=None, flawless=False, best_key=None):
@@ -1812,6 +1820,11 @@ class StoryHub:
         during the mission, `used` the items that were installed for it; `flawless`: no life was lost."""
         had_missile = ss.has_antimatter(self.state)
         res = ss.record_result(self.state, mission_id, score, cleared, kills, loot=loot, used=used, best_key=best_key)
+        if res.get("training"):
+            self.toast = t("story_test_clear" if cleared else "story_test_retry").format(pts=int(score or 0))
+            self.toast_kind = "success" if cleared else "info"
+            self.pane = "map"
+            return
         if res["cleared"] and flawless and not self.cheating:
             story_feats.note_flawless()
             if mission_id == "final_5":

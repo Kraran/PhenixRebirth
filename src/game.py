@@ -59,6 +59,7 @@ import antimatter
 import arcade_style
 import escort
 import gyro
+import wingman
 import laser_split
 from galaga import GalagaFormation
 from boss import BossSaucer
@@ -743,6 +744,9 @@ class Game:
 
     def _add_score(self, ship, pts):
         pts = int(pts)
+        if getattr(ship, "wingman", False):
+            ship.score = getattr(ship, "score", 0) + pts         # Sacha's kills are his: not in the pilot's score
+            return
         if ship is not None:
             ship.score = getattr(ship, "score", 0) + pts
         if getattr(self, "play_mode", "solo") == "coop":
@@ -1984,6 +1988,8 @@ class Game:
         self.player.sounds = self.sounds
         self.player.pid = 1
         self.player.lives = int(loadout.get("lives") or 1)
+        if spec.get("training"):
+            self.player.lives = max(3, self.player.lives)        # a TEST mission: three lives at least, nothing at stake
         self.player.infinite_lives = False
         pct = int(loadout.get("speed_pct") or 40)
         self.player.speed = PLAYER_SPEED * (pct / 100.0)
@@ -2033,7 +2039,7 @@ class Game:
         # and the one that may fall during it (rare, see story_items.plan_drop). The paint missions (Space Invaders)
         # never carry one, and do not count in the gap between two drops; the items bought still work in them.
         story = getattr(self, "story", None)
-        can_loot = (story is not None and not spec.get("invaders") and not spec.get("asteroids")
+        can_loot = (story is not None and not spec.get("invaders") and not spec.get("asteroids") and not spec.get("training")
                     and not spec.get("spacewar") and not spec.get("lander")
                     and not spec.get("scramble"))
         if can_loot and spec.get("reactor"):
@@ -2055,6 +2061,7 @@ class Game:
                 self.player.phenix_gauge = 0.0
                 self.player.phenix_cooldown = 9999.0
         gyro.start(self, spec)                    # the escort modules of the ship (src/gyro.py), when the mission has them
+        wingman.start(self, spec)                 # Sacha flies with the ship (TEST - Sacha, src/wingman.py)
         self._apply_adventure_cheats()
         self.input_grace = 0.35
         self.shake_amount = 0.0
@@ -2143,7 +2150,8 @@ class Game:
         story = getattr(self, "story", None)
         state = getattr(story, "state", None) or {}
         adv = getattr(self, "adventure", None) or {}
-        return bool(adv) and not adv.get("endless") and state.get("mode") == "veteran"
+        return (bool(adv) and not adv.get("endless") and not adv.get("training")
+                and state.get("mode") == "veteran")
 
     def _endless_over(self, cleared=True):
         """The end of an endless mission (the ship lost, the Lander out of fuel) or of a fallen Veteran: the result written
@@ -2217,6 +2225,10 @@ class Game:
         plan = adv.get("guardians_at") or {}
         count = int(plan.get(int(self.stage), plan.get(str(int(self.stage)), 0)) or 0)
         count = count or int(adv.get("guardians_each") or 0)          # (Bestiaire VI: Guardians with every wave)
+        by_wave = adv.get("guardians_wave") or {}                      # (TEST - Sacha: {wave 1, 2...: how many})
+        if by_wave:
+            n = int(adv.get("wave_i", 0) or 0) + 1
+            count = count or int(by_wave.get(n, by_wave.get(str(n), 0)) or 0)
         alphas = 0
         if adv.get("endless_guardians") or arcade_style.guardians(self):
             count, alphas = story_state.endless_guardians(int(self.stage))   # (BONUS FINAL - Gardiens, or the option)
@@ -2250,7 +2262,17 @@ class Game:
         self.stage_touched_edge = False
         adv = getattr(self, "adventure", None)
         waves = (adv or {}).get("waves")
-        if adv and waves:
+        kinds = None
+        if adv and waves and adv.get("swarm"):
+            # a swarm in several waves (TEST - Sacha): each one a swarm of the kinds of enemies of that wave
+            i = max(0, min(len(waves) - 1, int(adv.get("wave_i", 0) or 0)))
+            number = int(waves[i])
+            self.stage = number
+            content = 0
+            mult = float(adv.get("speed") or 1.0) * stage_speed_mult(number) * self.difficulty_speed_mult()
+            plan = adv.get("swarm_kinds") or []
+            kinds = tuple(plan[min(i, len(plan) - 1)]) if plan else None
+        elif adv and waves:
             # a mission of several waves: each one plays like that stage of the arcade game
             number = int(waves[max(0, min(len(waves) - 1, int(adv.get("wave_i", 0) or 0)))])
             self.stage = number
@@ -2351,7 +2373,7 @@ class Game:
         self.formation.swarm = None
         self.boss_saucer = None
         if content == 0:
-            self.formation.spawn_swarm(speed_mult=mult, screens=(adv or {}).get("swarm_screens"))
+            self.formation.spawn_swarm(speed_mult=mult, screens=(adv or {}).get("swarm_screens"), kinds=kinds)
             self.formation.sounds = self.sounds
         elif content == 5:
             self.boss_saucer = BossSaucer()
@@ -4636,6 +4658,7 @@ class Game:
         
         antimatter.tick(self)                     # the antimatter missile in flight (nothing in a mission without one)
         gyro.tick(self)                           # the escort modules follow the ship (also while it flies up a stage)
+        wingman.tick(self)                        # Sacha, the wingman of TEST - Sacha (also while the ships fly up a stage)
 
         # Stage transition: ship flies off top
         if self.stage_transition == "fly_up":

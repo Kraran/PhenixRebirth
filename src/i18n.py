@@ -5826,6 +5826,24 @@ _VIP_TEXTS = {
     "story_vip_hud": ("VIP : {p} %", "VIP: {p} %"),
     "story_vip_lost": ("LE VAISSEAU VIP EST DÉTRUIT", "THE VIP SHIP IS DESTROYED"),
     "story_vip_safe": ("LE VAISSEAU VIP EST PASSÉ !", "THE VIP SHIP GOT THROUGH!"),
+    # TEST - Sacha (src/wingman.py): the swarm in four waves with Sacha, a young pilot of Phobos, at the controls of the
+    # other hull. A training mission: nothing won, nothing lost.
+    "story_m_sacha_test": ("TEST - Sacha", "TEST - Sacha"),
+    "story_m_sacha_hud": ("TEST - Sacha", "TEST - Sacha"),
+    "story_m_sacha_test_b": ("La nuée en 4 vagues au niveau 11, avec Sacha, jeune pilote de Phobos, aux commandes de "
+                             "l'autre vaisseau. Test : rien à gagner, rien à perdre.",
+                             "The swarm in 4 waves at level 11, with Sacha, a young pilot from Phobos, flying the other "
+                             "ship. Test: nothing to win, nothing to lose."),
+    "story_test_clear": ("Test réussi  {pts} PTS (rien n'est gagné)", "Test clear  {pts} PTS (nothing won)"),
+    "story_test_retry": ("Test échoué  rien n'est perdu", "Test failed  nothing lost"),
+    "wingman_name": ("SACHA", "SACHA"),
+    "wingman_hello": ("Sacha : « Je suis sur ton aile. On y va ! »", "Sacha: \"I'm on your wing. Let's go!\""),
+    "wingman_hit_1": ("Sacha : « Touché, mais ça tient ! »", "Sacha: \"I'm hit, but she holds!\""),
+    "wingman_hit_2": ("Sacha : « Ça fume de partout... je reste avec toi ! »",
+                      "Sacha: \"Smoke everywhere... I'm staying with you!\""),
+    "wingman_hit_3": ("Sacha : « Trop de dégâts ! Je rentre à Phobos. Bonne chance ! »",
+                      "Sacha: \"Too much damage! Heading back to Phobos. Good luck!\""),
+    "wingman_wave": ("Sacha : « Encore une vague, je te couvre ! »", "Sacha: \"One more wave, I've got you covered!\""),
     "story_m_ast1": ("Ceinture d'astéroïdes I", "Asteroid belt I"),
     "story_m_ast2": ("Ceinture d'astéroïdes II", "Asteroid belt II"),
     "story_m_ast3": ("Ceinture d'astéroïdes III", "Asteroid belt III"),

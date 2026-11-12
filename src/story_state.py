@@ -685,6 +685,18 @@ MISSIONS = [
         "title": "story_m_raid5", "hud_title": "story_m_raid_hud", "blurb": "story_m_raid5_b",
         "need": "act3", "content": 1, "speed": 1.0,
     },
+    # TEST - Sacha (the final version will take place in Act 2): a swarm in four waves at level 11 (the start of the third
+    # cycle). Each wave adds a kind and keeps the others: the blue birds; + the khaki ones; + the grey gargoyles; + the
+    # dark gargoyles and three Guardians (`swarm_kinds`, `guardians_wave`: {wave: how many}). Sacha, a young pilot of
+    # Phobos, flies the other hull beside the ship, played by the computer (src/wingman.py): a fine defender, his ship
+    # takes three shots and never blows up, it smokes more and more and he goes back to Phobos after the third.
+    # A training mission: the score is shown, nothing won, nothing lost (nor any item used, nor the modules).
+    {
+        "id": "test_sacha", "acts": (1, 2, 3), "training": True, "test": True, "wingman": "sacha",
+        "title": "story_m_sacha_test", "hud_title": "story_m_sacha_hud", "blurb": "story_m_sacha_test_b",
+        "need": None, "content": 1, "swarm": True, "swarm_screens": 1.0, "stage": 11, "speed": 1.0,
+        "waves": [11, 11, 11, 11], "swarm_kinds": [[1], [1, 2], [1, 2, 3], [1, 2, 3, 4]], "guardians_wave": {4: 3},
+    },
     # BONUS: Scramble (the menu of the five settings included), endless
     # (scramble.py `endless`): the base blown up, the course starts again with more enemies (20 % fewer than a raid at the
     # first course, then 10 % more each time), until the last life (the
@@ -1590,8 +1602,8 @@ def module_spec(state, mission):
     """The modules a mission launches with ({"count", "armour", "owned"}), or None: those in working order, in every
     mission that counts (src/gyro.py leaves them out of the Lander, Scramble, SpaceWar, the asteroids and the coop)."""
     n = modules_alive(state)
-    if n <= 0 or not mission:
-        return None
+    if n <= 0 or not mission or mission.get("training"):
+        return None                  # (a TEST mission never puts the pilot's modules at risk)
     return {"count": n, "armour": module_armour(state), "owned": True}
 
 
@@ -2096,7 +2108,7 @@ def mission_group(mission):
         return GROUP_FINAL
     if m.get("hunt"):
         return GROUP_HUNT
-    if (m.get("extra") or m.get("reactor") or m.get("drop") or m.get("needs_reactor") or m.get("reward")
+    if (m.get("training") or m.get("extra") or m.get("reactor") or m.get("drop") or m.get("needs_reactor") or m.get("reward")
             or m.get("paint") or m.get("carry")):
         return GROUP_EXTRA
     return GROUP_STORY
@@ -2183,8 +2195,8 @@ def next_mission(state, missions):
     """The mission the map suggests: the first one of the list that can be flown and is not won yet. None when there is
     none."""
     for m in missions:
-        if m.get("extra"):
-            continue                       # (a BONUS is never what the map suggests)
+        if m.get("extra") or m.get("training"):
+            continue                       # (a BONUS or a TEST is never what the map suggests)
         if not mission_playable(state, m):
             continue
         if not mission_done(state, m):
@@ -2723,6 +2735,9 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
     score = max(0, int(score or 0))
     res = {"score": score, "cleared": bool(cleared), "first": False, "lost": 0, "fallen": False, "act": 0,
            "loot": None, "used": [], "opened": [], "reactor_lost": None, "no_item": None}
+    if (mission_by_id(mission_id) or {}).get("training"):
+        res.update(score=0, training=True)
+        return res                        # a TEST mission never changes the progression, the credits nor a Veteran save
     record_kills(state, kills)            # the enemies met count whatever the outcome
     record_mission_kills(state, mission_id, kills)
     if is_endless(mission_by_id(mission_id)):
