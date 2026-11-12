@@ -7710,6 +7710,94 @@ _SCRAMBLE_TEXTS = {
         "through.\n\n"
         "It is not armour. It is one more second, at the right moment. But against the Guardians, one second is all "
         "that was missing."),
+    # Défense de Phobos (three missions, one per act, with Sacha)
+    "story_m_phobos1": ("Défense de Phobos I : la horde", "Defence of Phobos I: the horde"),
+    "story_m_phobos1_b": ("La horde fonce sur Phobos : la nuée en 4 vagues au niveau 11, des oiseaux bleus aux gargouilles "
+                          "sombres. Une seule fois.",
+                          "The horde is heading for Phobos: the swarm in 4 waves at level 11, from the blue birds to the "
+                          "dark gargoyles. Once only."),
+    "story_log_phobos1": ("Défense de Phobos I — la horde est repoussée. Je n’étais pas seul.",
+                          "Defence of Phobos I — the horde is pushed back. I was not alone."),
+    "story_m_phobos2": ("Défense de Phobos II : le siège", "Defence of Phobos II: the siege"),
+    "story_m_phobos2_b": ("Le siège : 4 vagues au niveau 16, plus d’ennemis à la fois et en tout, 3 Gardiens dans la "
+                          "dernière vague. Sacha vole avec toi. Une seule fois.",
+                          "The siege: 4 waves at level 16, more enemies at once and in all, 3 Guardians in the last wave. "
+                          "Sacha flies with you. Once only."),
+    "story_log_phobos2": ("Défense de Phobos II — le siège est levé, avec Sacha.",
+                          "Defence of Phobos II — the siege is lifted, with Sacha."),
+    "story_m_phobos3": ("Défense de Phobos III : la marée", "Defence of Phobos III: the tide"),
+    "story_m_phobos3_b": ("La marée : 4 vagues au niveau 21, deux fois plus d’ennemis, 3 Gardiens dans la dernière vague. "
+                          "Sacha vole avec toi. Une seule fois.",
+                          "The tide: 4 waves at level 21, twice as many enemies, 3 Guardians in the last wave. Sacha "
+                          "flies with you. Once only."),
+    "story_log_phobos3": ("Défense de Phobos III — Phobos tient. La Riposte peut partir.",
+                          "Defence of Phobos III — Phobos holds. The Riposte can leave."),
+    "story_scene_phobos1": (
+        "Les capteurs de Phobos ne se sont jamais affolés à ce point. Au-delà de l’orbite de Déimos, les signatures se "
+        "comptent par centaines : des bleus, des kakis, et derrière eux les silhouettes lourdes des gargouilles. Ils ne "
+        "patrouillent plus. Ils avancent, en rangs serrés, droit sur la station.\n\n"
+        "Grok a fait le calcul. Si personne ne les arrête avant, la station tiendra trois vagues, peut-être quatre. Les "
+        "techniciens bouclent le hangar, les canons de la baie tirent leurs dernières réserves. Et il n’y a qu’un seul "
+        "vaisseau en état de sortir. Le mien.\n\n"
+        "Je décolle seul. Derrière moi, il y a tout ce qui reste de l’humanité libre. Devant moi, une marée d’ailes. Je "
+        "ne pourrai pas tout abattre. Il faut seulement tenir.",
+        "The sensors of Phobos have never gone this wild. Beyond the orbit of Deimos, the signatures number in the "
+        "hundreds: blues, khakis, and behind them the heavy shapes of the gargoyles. They are not patrolling any more. "
+        "They are coming, in close ranks, straight at the station.\n\n"
+        "Grok has done the sums. If nobody stops them first, the station will hold three waves, maybe four. The "
+        "technicians are sealing the hangar, the guns of the bay are firing their last reserves. And there is only one "
+        "ship fit to go out. Mine.\n\n"
+        "I take off alone. Behind me is all that is left of free humanity. Ahead of me, a tide of wings. I will not shoot "
+        "them all down. I only have to hold."),
+    "story_scene_sacha_t": ("Sacha", "Sacha"),
+    "story_scene_sacha": (
+        "Il s’appelle Sacha. Il a débarqué de 434-Hungaria la veille, sans prévenir personne, aux commandes d’un "
+        "intercepteur EDF-17 que personne n’avait vu voler depuis vingt ans. Le vieux Wallems l’a remonté avec ce qu’il "
+        "a trouvé dans ses bacs à ferraille.\n\n"
+        "Quand il a retiré son casque dans le hangar, les techniciens ont cru à une erreur. Un gamin. À peine l’âge de "
+        "passer son brevet. Il m’a serré la main en souriant, la combinaison encore noire de fumée : « Wallems m’a dit "
+        "que tu étais seul. Ce n’est plus vrai. »",
+        "His name is Sacha. He landed from 434-Hungaria the day before, without warning anyone, at the controls of an "
+        "EDF-17 interceptor nobody had seen fly in twenty years. Old Wallems put it back together with whatever he found "
+        "in his scrap bins.\n\n"
+        "When he took his helmet off in the hangar, the technicians thought there had been a mistake. A kid. Barely old "
+        "enough to get his wings. He shook my hand with a smile, his flight suit still black with smoke: “Wallems told "
+        "me you were alone. Not any more.”"),
+    "story_scene_phobos2": (
+        "Pendant que je suis la trace du Phenix au-delà de la ceinture, la horde est revenue frapper Phobos. Plus "
+        "nombreuse que la première fois, et avec elle, les Gardiens. Leurs rayons labourent déjà les champs de débris qui "
+        "protègent la station.\n\n"
+        "Sacha m’attend dans le hangar, assis sur l’aile de son EDF-17 C. Il vient de l’équipe de Wallems, ces quelques "
+        "pilotes qui forcent les lignes avioïdes entre Hungaria et Phobos pour livrer les pièces. Il est le meilleur "
+        "d’entre eux. Wallems a bâti son vaisseau avec des pièces de récupération : il est lent, son armement date d’une "
+        "autre guerre, mais sa coque encaisse ce qui aurait coupé un Shield en deux.\n\n"
+        "Il est jeune, trop jeune pour cette guerre. Mais il a vu tomber Hungaria une fois déjà, et il ne veut plus "
+        "jamais regarder de loin.",
+        "While I follow the trail of the Phenix beyond the belt, the horde has come back to strike Phobos. Larger than "
+        "the first time, and the Guardians with it. Their beams are already ploughing through the debris fields that "
+        "shield the station.\n\n"
+        "Sacha is waiting for me in the hangar, sitting on the wing of his EDF-17 C. He comes from Wallems’s crew, the "
+        "handful of pilots who force the Avioid lines between Hungaria and Phobos to deliver the parts. He is the best of "
+        "them. Wallems built his ship out of salvaged parts: it is slow, its guns belong to another war, but its hull "
+        "takes what would have cut a Shield in two.\n\n"
+        "He is young, too young for this war. But he has seen Hungaria fall once already, and he never wants to watch "
+        "from afar again."),
+    "story_scene_phobos3": (
+        "La Riposte doit partir dans quelques jours, et la horde le sait. Elle jette tout ce qu’elle a sur Phobos : deux "
+        "fois plus d’oiseaux que lors du siège, des vagues qui ne laissent plus le temps de recharger. Si Phobos tombe "
+        "maintenant, la route de Triton se refermera pour toujours.\n\n"
+        "Wallems a encore rafistolé l’EDF-17 C : une plaque de blindage de plus, des réacteurs qui toussent un peu moins. "
+        "Sacha a fait repeindre son numéro, le 17, en blanc éclatant. « Pour qu’ils sachent à qui ils ont affaire », "
+        "dit-il.\n\n"
+        "Quand je partirai pour Triton, c’est lui qui gardera Phobos. Mais d’abord, il faut qu’il reste quelque chose à "
+        "garder.",
+        "The Riposte is to leave in a few days, and the horde knows it. It throws everything it has at Phobos: twice as "
+        "many birds as during the siege, waves that leave no time to reload. If Phobos falls now, the road to Triton "
+        "will close for good.\n\n"
+        "Wallems has patched up the EDF-17 C once more: one more armour plate, engines that cough a little less. Sacha "
+        "has had his number, the 17, repainted in brilliant white. “So they know who they are dealing with,” he says.\n\n"
+        "When I leave for Triton, he will be the one guarding Phobos. But first, there has to be something left to "
+        "guard."),
     "story_b_guardian": ("GARDIEN", "GUARDIAN"),
     "story_b_guardian_t": (
         "Un oiseau de feu cuirassé. Trois tirs au corps l'abattent, et ses ailes repoussent. Son laser, annoncé par une "

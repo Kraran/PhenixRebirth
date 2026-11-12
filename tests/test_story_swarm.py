@@ -180,11 +180,12 @@ def test_dome_five_and_the_gateway_follow_the_series():
     m5, gate = ss.mission_by_id("dome_5"), ss.mission_by_id("act2_gate")
     assert m5["need"] == "dome_s4" and m5["swarm"] and m5["stage"] == 11 and m5["once"]
     assert set(m5["unlock"]) == {"dome_s5", "dome_online"}
-    assert gate["need"] == "dome_s5" and ss.mission_waves(gate) == [11, 12, 13, 14, 15] and gate["once"]
+    assert gate["need"] == "phobos_s1" and ss.mission_waves(gate) == [11, 12, 13, 14, 15] and gate["once"]
+    assert ss.mission_by_id("phobos_1")["need"] == "dome_s5"            # Défense de Phobos I comes between them
     assert gate["act"] == 2 and gate["unlock"] == ["act2"]
     assert ss.mission_by_id("ch2_tease")["need"] == "act2"
     ids = [m["id"] for m in ss.MISSIONS]
-    assert ids.index("dome_4") + 1 == ids.index("dome_5") and ids.index("dome_5") + 1 == ids.index("act2_gate")
+    assert ids.index("dome_4") + 1 == ids.index("dome_5") and ids.index("dome_5") + 2 == ids.index("act2_gate")
 
 
 def _open(**flags):
@@ -198,7 +199,7 @@ def _open(**flags):
 
 
 def test_the_launch_specs_of_the_new_missions():
-    hub = _open(dome_s4=True, dome_s5=True)
+    hub = _open(dome_s4=True, dome_s5=True, phobos_s1=True)
     ids = [m["id"] for m in hub.missions()]                        # the map's own list (the secret BONUS one is hidden)
     hub.map_index = ids.index("dome_5")
     spec = hub._launch_selected()
@@ -215,13 +216,14 @@ def test_clearing_the_swarm_brings_the_dome_online_and_the_gateway_opens():
     res = ss.record_result(st, "dome_5", 800, True)
     assert ss.flag(st, "dome_online") and ss.flag(st, "dome_s5") and res["act"] == 0
     assert st["act"] == 1
-    assert ss.mission_playable(st, ss.mission_by_id("act2_gate"))
+    assert ss.mission_playable(st, ss.mission_by_id("phobos_1"))
+    assert not ss.mission_playable(st, ss.mission_by_id("act2_gate"))       # (Défense de Phobos I first)
     assert not ss.mission_playable(st, ss.mission_by_id("dome_5"))
 
 
 def test_the_gateway_starts_act_two_once():
     st = ss.default_state()
-    st["flags"]["dome_s5"] = True
+    st["flags"]["phobos_s1"] = True
     res = ss.record_result(st, "act2_gate", 500, True)
     assert st["act"] == 2 and res["act"] == 2 and ss.flag(st, "act2")
     assert ss.mission_open(st, ss.mission_by_id("ch2_tease"))
@@ -234,14 +236,14 @@ def test_the_gateway_starts_act_two_once():
 
 def test_a_failed_gateway_does_not_start_act_two():
     st = ss.default_state()
-    st["flags"]["dome_s5"] = True
+    st["flags"]["phobos_s1"] = True
     ss.record_result(st, "act2_gate", 500, False)
     assert st["act"] == 1 and not ss.flag(st, "act2")
 
 
 def test_the_act_survives_a_save_and_the_slot_list_shows_it(tmp_path):
     st = ss.create_slot(1, "NOVA", "normal")
-    st["flags"]["dome_s5"] = True
+    st["flags"]["phobos_s1"] = True
     ss.record_result(st, "act2_gate", 500, True)
     ss.save_state(ss.story_path(1), st)
     assert ss.load_state(ss.story_path(1))["act"] == 2
@@ -276,7 +278,8 @@ def test_the_dome_upgrade_comes_before_the_longer_dome_of_act_two():
 
 # ------------------------------------------------------------------ in the game
 def _launch(g, mission_id, **flags):
-    base = dict(bestiary_s4=True, ast_s1=True, dome_s1=True, dome_s2=True, dome_s3=True, dome_s4=True, dome_s5=True)
+    base = dict(bestiary_s4=True, ast_s1=True, dome_s1=True, dome_s2=True, dome_s3=True, dome_s4=True, dome_s5=True,
+                phobos_s1=True)
     base.update(flags)
     _open(**base)
     g.story.open_slot(1)
