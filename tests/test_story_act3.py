@@ -212,6 +212,8 @@ def test_the_shield_reaches_the_arcade_ship():
     _win(st, "ast_3")
     assert not ss.mission_playable(st, ss.mission_by_id("final_1"))      # Gardiens III first
     _win(st, "guardians_3")
+    assert not ss.mission_playable(st, ss.mission_by_id("final_1"))      # Défense de Phobos III first
+    _win(st, "phobos_3")
     assert ss.mission_playable(st, ss.mission_by_id("final_1"))
 
 
@@ -231,6 +233,8 @@ def test_the_phenix_reaches_the_arcade_ship():
     _win(st, "ast_3")
     assert not ss.mission_playable(st, ss.mission_by_id("final_1"))      # Gardiens III first
     _win(st, "guardians_3")
+    assert not ss.mission_playable(st, ss.mission_by_id("final_1"))      # Défense de Phobos III first
+    _win(st, "phobos_3")
     assert ss.mission_playable(st, ss.mission_by_id("final_1"))
 
 
@@ -293,6 +297,7 @@ def test_the_final_series_goes_to_triton_and_ends_the_adventure():
     st["flags"]["ch3_ready"] = True
     _win(st, "ast_3")                                                # the belt first
     _win(st, "guardians_3")                                          # ... then the Alpha
+    _win(st, "phobos_3")                                             # ... then Défense de Phobos III
     for i, mid in enumerate(FINAL):
         m = ss.mission_by_id(mid)
         assert ss.mission_playable(st, m), mid

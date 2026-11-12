@@ -46,7 +46,7 @@ def test_the_series_is_optional_and_on_the_maps_of_acts_2_and_3():
     st = _act2()
     ids = [m["id"] for m in ss.visible_missions(st)]
     assert ids[-(len(PAINT) + 8):] == PAINT + ["lander_deimos", "raid_deimos", "lander_rock", "raid_rock", "lander_europa", "raid_europa", "lander_titan", "raid_titan"] and "act3_gate" in ids                                            # in the BONUS group of the map
-    assert ids.index("phenix_5") == ids.index("phenix_1") + 4                                  # beside the Phenix series, not inside it
+    assert ids.index("phenix_5") == ids.index("phenix_1") + 5          # beside the Phenix series (with Défense de Phobos II), not inside it
     assert not ss.mission_open(ss.create_slot(1, "A", "normal"), _mission("paint_1"))
 
 

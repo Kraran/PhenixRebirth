@@ -466,21 +466,20 @@ class EnemyFormation:
                 kinds.append(2)
         return [(x, y, k) for (x, y), k in zip(slots, kinds)]
 
-    @staticmethod
-    def swarm_counts(kinds, screens=None, crowd=None, boost=None):
+    @classmethod
+    def swarm_counts(cls, kinds, screens=None, crowd=None, boost=None):
         """({kind: on screen at once}, {kind: in all}) of a swarm of `kinds`. `crowd`: that many times more enemies on screen
         at once (Défense de Phobos II: 1.3), shared out among the kinds so that the whole is right; `boost`: {kind: factor}
         for one kind, on screen and in all (more dark gargoyles in the last wave of Défense de Phobos I)."""
         boost = boost or {}
         crowd = 1.0 if crowd is None else max(0.0, float(crowd))
-        raw = {k: EnemyFormation.swarm_on_screen(k) * float(boost.get(k, 1.0)) * crowd for k in kinds}
+        raw = {k: cls.swarm_on_screen(k) * float(boost.get(k, 1.0)) * crowd for k in kinds}
         screen = {k: int(math.floor(v)) for k, v in raw.items()}
         missing = int(round(sum(raw.values()))) - sum(screen.values())
         for k in sorted(raw, key=lambda k: (screen[k] - raw[k], k))[:max(0, missing)]:
             screen[k] += 1                                       # (the largest remainders first)
         n = SWARM_SCREENS if screens is None else max(0.0, float(screens))
-        total = {k: max(screen[k], 1, int(round(SWARM_NORMAL_COUNT[k] * n * float(boost.get(k, 1.0))))) for k in kinds}
-        screen = {k: max(1, v) for k, v in screen.items()}
+        total = {k: max(screen[k], int(round(SWARM_NORMAL_COUNT[k] * n * float(boost.get(k, 1.0))))) for k in kinds}
         return screen, total
 
     def _on_screen(self, kind):
