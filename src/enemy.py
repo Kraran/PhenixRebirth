@@ -75,6 +75,7 @@ SWARM_NORMAL_COUNT = {1: 13, 2: 22, 3: 7, 4: 10}
 SWARM_SCREENS = 1.6               # each kind comes SWARM_SCREENS times its normal count in all (Dôme V: 21 / 35 / 11 / 16 = 83)
 SWARM_ON_SCREEN_SHARE = 1.0 / 3   # share of a normal screen shown at once (1.0 = a full screen)
 SWARM_REFILL_DELAY = 0.35         # seconds between two arrivals of the same kind
+SWARM_ENDLESS = 10 ** 6           # the reserve of an endless swarm (BONUS FINAL - Nuée): it never runs out
 
 
 class Enemy:
@@ -483,14 +484,33 @@ class EnemyFormation:
         return screen, total
 
     def _on_screen(self, kind):
-        """How many enemies of a kind the swarm shows at once."""
+        """How many enemies of a kind the swarm shows at once (an endless swarm that ramps up: fewer at first, see
+        ramp_share)."""
         sw = self.swarm or {}
-        return (sw.get("screen") or {}).get(kind, self.swarm_on_screen(kind))
+        full = (sw.get("screen") or {}).get(kind, self.swarm_on_screen(kind))
+        ramp = sw.get("ramp")
+        if not ramp:
+            return full
+        share = self.ramp_share(kind, sw.get("clock", 0.0), ramp)
+        return 0 if share <= 0 else max(1, int(round(full * share)))
 
-    def spawn_swarm(self, speed_mult=1.0, screens=None, kinds=None, crowd=None, boost=None):
+    @staticmethod
+    def ramp_share(kind, clock, ramp):
+        """The share of its full number a kind shows `clock` s into an endless swarm that ramps up. `ramp`: {kind: (the
+        time it starts coming, the time it is all there)} (BONUS FINAL - Nuée: the blue birds first, the dark gargoyles
+        last)."""
+        start, full = ramp.get(kind, (0.0, 0.0))
+        if clock < start:
+            return 0.0
+        if full <= start:
+            return 1.0
+        return max(1e-6, min(1.0, (clock - start) / (full - start)))      # (one of them at once when its time comes)
+
+    def spawn_swarm(self, speed_mult=1.0, screens=None, kinds=None, crowd=None, boost=None, ramp=None):
         """Start the swarm: a full screen of every kind, the rest waits to come in. `kinds`: the kinds of enemies in it
         (1 blue, 2 khaki, 3 grey gargoyles, 4 dark ones; default all four), the others never come. `crowd` and `boost`:
-        see swarm_counts."""
+        see swarm_counts. `ramp` ({kind: (start, full)}, see ramp_share): an ENDLESS swarm (the fallen always come back)
+        that starts with a few of the first kind and grows to its full screen (BONUS FINAL - Nuée)."""
         kinds = tuple(k for k in (1, 2, 3, 4) if kinds is None or k in kinds)
         screen, total = self.swarm_counts(kinds, screens, crowd, boost)
         self.stage = 2                           # the drift of the khaki formation
@@ -509,10 +529,17 @@ class EnemyFormation:
             "slots": self._swarm_bird_slots(kinds, screen),
             "next_index": 0,
         }
+        if ramp:
+            self.swarm.update(ramp={int(k): (float(a), float(b)) for k, (a, b) in dict(ramp).items()}, clock=0.0,
+                              reserve={k: (SWARM_ENDLESS if k in kinds else 0) for k in (1, 2, 3, 4)})
+        placed = {1: 0, 2: 0}
         for slot_i, (x, y, kind) in enumerate(self.swarm["slots"]):
+            if placed[kind] >= self._on_screen(kind):
+                continue                                         # (a swarm that ramps up: they come in later)
+            placed[kind] += 1
             self._swarm_add_bird(slot_i, kind, arriving=False)
         for kind in (k for k in (3, 4) if k in kinds):
-            for _ in range(screen[kind]):
+            for _ in range(self._on_screen(kind)):
                 self._swarm_add_gargoyle(kind, arriving=False)
 
     def _swarm_index(self):
@@ -551,6 +578,11 @@ class EnemyFormation:
     def _refill_swarm(self, dt):
         """Replace the fallen, kind by kind, until the reserve of that kind is empty."""
         sw = self.swarm
+        if sw.get("ramp"):
+            sw["clock"] = float(sw.get("clock", 0.0)) + dt           # (an endless swarm that ramps up)
+            for kind in (1, 2, 3, 4):
+                if sw["reserve"][kind] > 0:
+                    sw["reserve"][kind] = SWARM_ENDLESS               # (it never runs out)
         for kind in (1, 2, 3, 4):
             sw["wait"][kind] = max(0.0, sw["wait"][kind] - dt)
             if sw["reserve"][kind] <= 0 or sw["wait"][kind] > 0:

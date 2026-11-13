@@ -60,6 +60,7 @@ import arcade_style
 import escort
 import gyro
 import wingman
+import swarm_bonus
 import laser_split
 from galaga import GalagaFormation
 from boss import BossSaucer
@@ -1891,6 +1892,8 @@ class Game:
             view, order = scramble_view, lander.MENU_ORDER
         elif kind == "spacewar":
             view, order = spacewar, spacewar.MENU_ORDER
+        elif kind == "swarm":
+            view, order = swarm_bonus, swarm_bonus.VARIANTS
         else:
             view, order = lander_view, lander.MENU_ORDER
         mission = self.story._mission() if getattr(self, "story", None) else None
@@ -1933,7 +1936,7 @@ class Game:
     def guardians_meet_gargoyles(spec):
         """Can the Guardians of this mission burn gargoyles (Guardians in a wave of gargoyles, levels 3 and 4 of a cycle,
         or Guardians in a wave of a swarm with gargoyles in it: TEST - Sacha)?"""
-        if spec.get("endless_guardians") or spec.get("guardians_each"):
+        if spec.get("endless_guardians") or spec.get("guardians_each") or spec.get("swarm_bonus"):
             return True
         if any(stage_content(int(k)) in (3, 4) for k in (spec.get("guardians_at") or {})):
             return True
@@ -2075,11 +2078,13 @@ class Game:
                 self.player.phenix_cooldown = 9999.0
         gyro.start(self, spec)                    # the escort modules of the ship (src/gyro.py), when the mission has them
         wingman.start(self, spec)                 # Sacha flies with the ship (TEST - Sacha, src/wingman.py)
+        swarm_bonus.start(self, spec)             # BONUS FINAL - Nuée: who flies (src/swarm_bonus.py)
         self._apply_adventure_cheats()
         self.input_grace = 0.35
         self.shake_amount = 0.0
         self._setup_stage(1)
         self._rebuild_life_icon()
+        swarm_bonus.after_begin(self)             # (the lives of the EDF-17 C, when the player flies it)
         self._start_arrive_intro()
 
     def _apply_adventure_cheats(self):
@@ -2191,9 +2196,12 @@ class Game:
             return
         spec["banked"] = True
         try:
+            records = pay = None
+            if spec.get("swarm_bonus"):
+                pay, records = swarm_bonus.result(self)      # BONUS FINAL - Nuée: a share paid, a record per version
             story.apply_result(spec.get("id"), int(getattr(self, "score", 0) or 0), bool(cleared), spec.get("kills"),
                                loot=spec.get("loot"), used=spec.get("items"), flawless=not spec.get("life_lost"),
-                               best_key=self.endless_key() if spec.get("endless") else None)
+                               best_key=self.endless_key() if spec.get("endless") else None, records=records, pay=pay)
         except Exception:
             log_exc("game._end_adventure")
 
@@ -2388,7 +2396,8 @@ class Game:
         self.boss_saucer = None
         if content == 0:
             self.formation.spawn_swarm(speed_mult=mult, screens=(adv or {}).get("swarm_screens"), kinds=kinds,
-                                       crowd=(adv or {}).get("swarm_crowd"), boost=boost)
+                                       crowd=(adv or {}).get("swarm_crowd"), boost=boost,
+                                       ramp=swarm_bonus.RAMP if (adv or {}).get("swarm_bonus") else None)
             self.formation.sounds = self.sounds
         elif content == 5:
             self.boss_saucer = BossSaucer()
@@ -4636,7 +4645,7 @@ class Game:
                 self._hotseat_arm_hold("switch", self.HOTSEAT_HOLD_LIFE)
                 if self.hotseat_hold > 0:
                     return
-            elif not any(p.alive for p in self._ships()) or escort.failed(self):
+            elif (not any(p.alive for p in self._ships()) and not swarm_bonus.holds(self)) or escort.failed(self):
                 if getattr(self, "adventure", None):
                     endless = bool(self.adventure.get("endless"))
                     if self._veteran_adventure() or endless:
@@ -4674,6 +4683,7 @@ class Game:
         antimatter.tick(self)                     # the antimatter missile in flight (nothing in a mission without one)
         gyro.tick(self)                           # the escort modules follow the ship (also while it flies up a stage)
         wingman.tick(self)                        # Sacha, the wingman of TEST - Sacha (also while the ships fly up a stage)
+        swarm_bonus.tick(self)                    # BONUS FINAL - Nuée: the Guardians again and again, the EDF-17 C's smoke
 
         # Stage transition: ship flies off top
         if self.stage_transition == "fly_up":

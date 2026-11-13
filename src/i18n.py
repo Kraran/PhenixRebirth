@@ -7817,6 +7817,57 @@ for _k, (_fr, _en) in _SCRAMBLE_TEXTS.items():
 
 # BONUS FINAL - Space War: French and English; the other languages show the English text.
 _SPACEWAR_BONUS_TEXTS = {
+    # BONUS FINAL - Nuée (src/swarm_bonus.py)
+    "story_m_swarm_bonus": ("BONUS FINAL - Nuée", "FINAL BONUS - Swarm"),
+    "story_m_swarm_bonus_hud": ("BONUS FINAL - NUÉE", "FINAL BONUS - SWARM"),
+    "story_m_swarm_bonus_b": (
+        "La dernière vague de Défense de Phobos II, sans fin : les quatre espèces au niveau 16, et des Gardiens encore et "
+        "encore. Seul, avec Sacha (l’ordinateur ou un deuxième joueur), ou aux commandes de son EDF-17 C. Jusqu’au GAME "
+        "OVER : 10 % du score en crédits (5 % des deux scores à deux), un record par version ; quitter ne rapporte rien.",
+        "The last wave of Defence of Phobos II, without an end: the four kinds at level 16, and Guardians again and again. "
+        "Alone, with Sacha (the computer or a second player), or at the controls of his EDF-17 C. Until the GAME OVER: "
+        "10 % of the score in credits (5 % of the two scores at two), one record per version; leaving gains nothing."),
+    "swarm_pick_title_final": ("BONUS FINAL - Nuée : qui vole ?", "FINAL BONUS - Swarm: who flies?"),
+    "swarm_variant_solo": ("Seul", "Alone"),
+    "swarm_variant_sub_solo": ("Ton vaisseau", "Your ship"),
+    "swarm_variant_sacha_ai": ("Avec Sacha", "With Sacha"),
+    "swarm_variant_sub_sacha_ai": ("Piloté par l’ordinateur", "Flown by the computer"),
+    "swarm_variant_duo": ("À deux", "Two players"),
+    "swarm_variant_sub_duo": ("Sacha piloté par le joueur 2", "Sacha flown by player 2"),
+    "swarm_menu_record": ("Record : {pts}.", "Best: {pts}."),
+    "swarm_menu_records_duo": ("Records : {p1} (joueur 1) et {p2} (Sacha).", "Best: {p1} (player 1) and {p2} (Sacha)."),
+    "swarm_variant_sacha": ("Sacha seul", "Sacha alone"),
+    "swarm_variant_sub_sacha": ("Tu pilotes l’EDF-17 C", "You fly the EDF-17 C"),
+    "swarm_variant_sacha_lead": ("Sacha en tête", "Sacha leads"),
+    "swarm_variant_sub_sacha_lead": ("Ton vaisseau en ailier", "Your ship as wingman"),
+    "swarm_info_solo": (
+        "Ton vaisseau, avec tout ce que tu as installé à l’atelier, contre la horde sans fin.",
+        "Your ship, with all you have fitted at the workshop, against the endless horde."),
+    "swarm_info_sacha_ai": (
+        "Sacha vole à tes côtés, plus aguerri que jamais. Au troisième impact, il rentre à Phobos, puis revient réparé "
+        "vingt secondes plus tard.",
+        "Sacha flies beside you, sharper than ever. After the third hit he goes back to Phobos, then comes back repaired "
+        "twenty seconds later."),
+    "swarm_info_duo": (
+        "Le joueur 2 pilote l’EDF-17 C de Sacha, avec les commandes du mode coop. Trois impacts et il est détruit ; la "
+        "partie continue tant que l’un de vous vole. Chacun a son record.",
+        "Player 2 flies Sacha's EDF-17 C, with the controls of the coop game. Three hits and it is destroyed; the run goes "
+        "on while one of you flies. Each has a record."),
+    "swarm_info_sacha": (
+        "Tu pilotes l’EDF-17 C de Sacha : pas de dôme, pas de forme Phenix, mais une coque solide. Trois impacts et la "
+        "partie est finie.",
+        "You fly Sacha's EDF-17 C: no dome, no Phenix form, but a sturdy hull. Three hits and the run is over."),
+    "swarm_info_sacha_lead": (
+        "Tu pilotes l’EDF-17 C, l’ordinateur pilote ton vaisseau (sa coque, sa vitesse et ses vies de l’atelier). La "
+        "partie s’arrête quand l’EDF-17 C est détruit.",
+        "You fly the EDF-17 C, the computer flies your ship (its hull, its speed and its lives from the workshop). The run "
+        "is over when the EDF-17 C is destroyed."),
+    "swarm_records_duo": ("RECORDS {p1} / SACHA {p2}", "BEST {p1} / SACHA {p2}"),
+    "swarm_sacha_score": ("SACHA {pts}", "SACHA {pts}"),
+    "swarm_tag_you": ("TOI", "YOU"),
+    "swarm_tag_ai": ("ORDINATEUR", "COMPUTER"),
+    "swarm_tag_p1": ("JOUEUR 1", "PLAYER 1"),
+    "swarm_tag_p2": ("JOUEUR 2", "PLAYER 2"),
     "story_m_sw_bonus": ("BONUS FINAL - Space War", "FINAL BONUS - Space War"),
     "story_m_sw_bonus_hud": ("BONUS FINAL - SPACE WAR", "FINAL BONUS - SPACE WAR"),
     "story_m_sw_bonus_b": (

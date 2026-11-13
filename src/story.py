@@ -27,6 +27,7 @@ import lander_view
 import scramble_view
 import spacewar
 import story_vn
+import swarm_bonus
 import loot
 from text_cache import TextCache
 import bestiary_art
@@ -1592,6 +1593,12 @@ class StoryHub:
                 self.pick_for = "scramble"
                 self.pick_load = "scramble"           # (the same loading bar: Game._load_pick_menu)
                 return None
+            if mission and mission.get("swarm_bonus") and self.mission_playable(mission):
+                self.lander_index = 0                 # BONUS FINAL - Nuée: who flies is chosen first (swarm_bonus.VARIANTS)
+                self.screen = "lander_pick"
+                self.pick_for = "swarm"
+                self.pick_load = "swarm"
+                return None
             if mission and mission.get("spacewar") and not mission.get("planet") and self.mission_playable(mission):
                 self.lander_index = 0                 # BONUS FINAL - Space War: the gas giant is chosen first
                 self.screen = "lander_pick"
@@ -1666,9 +1673,12 @@ class StoryHub:
         return getattr(self, "pick_for", "lander")
 
     def _pick_order(self):
-        """The rows of the pick menu: the five Lander/Scramble settings, or the four Space War planets."""
+        """The rows of the pick menu: the five Lander/Scramble settings, the four Space War planets, or the five versions
+        of BONUS FINAL - Nuée."""
         if self._pick_kind() == "spacewar":
             return spacewar.MENU_ORDER
+        if self._pick_kind() == "swarm":
+            return swarm_bonus.VARIANTS
         return lander.MENU_ORDER
 
     def _lander_move(self, direction):
@@ -1681,6 +1691,8 @@ class StoryHub:
         key = self._pick_order()[self.lander_index % len(self._pick_order())]
         if self._pick_kind() == "spacewar":
             return self._launch_selected(planet=key)
+        if self._pick_kind() == "swarm":
+            return self._launch_selected(variant=key)
         return self._launch_selected(body=key)
 
     def _pick_scramble(self):
@@ -1706,7 +1718,7 @@ class StoryHub:
                 y += small.get_linesize() + 14
             y += 20
 
-    def _launch_selected(self, body=None, planet=None):
+    def _launch_selected(self, body=None, planet=None, variant=None):
         mission = self._mission()
         if not self.mission_playable(mission):
             return None
@@ -1818,13 +1830,17 @@ class StoryHub:
                                        for w, kf in mission["swarm_boost"].items()}
         if mission.get("guardians_wave"):
             spec["guardians_wave"] = {int(k): int(v) for k, v in mission["guardians_wave"].items()}   # by wave
+        if mission.get("swarm_bonus"):
+            swarm_bonus.launch_spec(spec, variant)   # BONUS FINAL - Nuée: endless, and who flies (src/swarm_bonus.py)
         return spec
 
-    def apply_result(self, mission_id, score, cleared, kills=None, loot=None, used=None, flawless=False, best_key=None):
+    def apply_result(self, mission_id, score, cleared, kills=None, loot=None, used=None, flawless=False, best_key=None,
+                     records=None, pay=None):
         """End of a mission: credits, penalty or fall (see story_state.record_result). `loot` is the item caught
         during the mission, `used` the items that were installed for it; `flawless`: no life was lost."""
         had_missile = ss.has_antimatter(self.state)
-        res = ss.record_result(self.state, mission_id, score, cleared, kills, loot=loot, used=used, best_key=best_key)
+        res = ss.record_result(self.state, mission_id, score, cleared, kills, loot=loot, used=used, best_key=best_key,
+                               records=records, pay=pay)
         if res.get("training"):
             self.toast = t("story_test_clear" if cleared else "story_test_retry").format(pts=int(score or 0))
             self.toast_kind = "success" if cleared else "info"
@@ -2437,8 +2453,8 @@ class StoryHub:
         if picture is not None:
             surface.blit(picture, (0, 0))
         if self.screen == "lander_pick":
-            title = {"scramble": "scramble_pick_title_final",
-                     "spacewar": "spacewar_pick_title_final"}.get(self._pick_kind(), "lander_pick_title_final")
+            title = {"scramble": "scramble_pick_title_final", "spacewar": "spacewar_pick_title_final",
+                     "swarm": "swarm_pick_title_final"}.get(self._pick_kind(), "lander_pick_title_final")
         else:
             title = titles[self.screen]
         phobos_ui.title(surface, medium, t(title), cx, 10)
@@ -2529,6 +2545,8 @@ class StoryHub:
                 phobos_ui.plate(surface, r)
             if kind == "spacewar":
                 name, sub = t("spacewar_planet_" + key), t("spacewar_planet_sub_" + key)
+            elif kind == "swarm":
+                name, sub = t("swarm_variant_" + key), t("swarm_variant_sub_" + key)
             else:
                 name, sub = t("lander_body_" + key), t("lander_planet_" + key)
             _text(surface, medium, name, (255, 230, 140) if focus else (220, 220, 235), r.y + 27, left=r.x + 32)
@@ -2540,6 +2558,9 @@ class StoryHub:
         elif kind == "spacewar":
             pic = spacewar.preview(key)
             info_key = "spacewar_info_"
+        elif kind == "swarm":
+            pic = swarm_bonus.preview(key, self.loadout())
+            info_key = "swarm_info_"
         else:
             pic = lander_view.preview(key)
             info_key = "lander_info_"
@@ -2549,6 +2570,8 @@ class StoryHub:
         ty = y + pic.get_height() + 34
         # the wrapping measures every word: done once per text, language and font, not at each frame
         info = t(info_key + key)
+        if kind == "swarm":
+            info += "  " + swarm_bonus.records_text(self.state, key)      # (the record of this version: two at two)
         cache = self.__dict__.setdefault("_lander_wrap", {})
         ck = (info, id(body), BASE_WIDTH - px - 80)
         lines = cache.get(ck)

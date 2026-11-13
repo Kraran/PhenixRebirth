@@ -8,7 +8,7 @@ import story_state as ss
 import story_vn
 from story import StoryHub
 
-FINALS = ("bonus_scramble", "bonus_lander", "bonus_ast_endless", "bonus_gd_endless", "bonus_spacewar")
+FINALS = ("bonus_scramble", "bonus_lander", "bonus_ast_endless", "bonus_gd_endless", "bonus_spacewar", "bonus_swarm")
 
 
 def _state(credits=0, ending=True):
