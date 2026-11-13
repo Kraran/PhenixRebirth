@@ -135,7 +135,18 @@ def _fly_edf17(game):
 
 
 def after_begin(game):
-    """After the start of the mission: the little ships of the lives are EDF-17 C when the player flies it."""
+    """After the start of the mission (behind the loading bar): what the Guardians need is made now, not when they first
+    come (the burning ship of a laser: more than a second; their pictures); the little ships of the lives are EDF-17 C
+    when the player flies it."""
+    if state(game) is None:
+        return
+    try:
+        from guardian import SQUAD_Y, GuardianSquad
+        from ship_burn import prepare as prepare_ship_burn
+        prepare_ship_burn(game.player)              # (the ship the player flies: its own picture, the EDF-17 C's too)
+        GuardianSquad(GUARDIANS, None, SQUAD_Y)     # (their pictures, kept by guardian.py)
+    except Exception:
+        log_exc("swarm_bonus.after_begin")
     if variant(game) not in EDF_VARIANTS:
         return
     try:

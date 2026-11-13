@@ -205,3 +205,22 @@ def test_the_menu_shows_the_records(run):
     assert "10" in duo and "20" in duo
     pic = sb.preview("duo", {"ship_id": "shield", "tint": "red"})
     assert pic.get_size() == sb.PREVIEW_SIZE
+
+
+@pytest.mark.parametrize("variant", ["solo", "sacha"])
+def test_what_the_guardians_need_is_made_at_the_start(run, variant, monkeypatch):
+    """The burning ship of a laser takes more than a second to make: it is made with the mission, behind the loading
+    bar, not when the Guardians first come (a freeze in the middle of the fight)."""
+    import ship_burn
+    made = []
+    real = ship_burn.prepare
+    monkeypatch.setattr(ship_burn, "prepare", lambda ship: (made.append(ship), real(ship)))
+    g, _ = _launch(run, variant)
+    assert made and made[-1] is g.player
+    made.clear()
+    g.stage_transition = None
+    g.dt = 1.0
+    for _ in range(int(sb.GUARDIANS_FROM) + 2):
+        sb.tick(g)
+    assert g.guardian_squad is not None
+    assert all(ship_burn.frames(g.player, False) is ship_burn.frames(g.player, False) for _ in range(2))
