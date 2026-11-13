@@ -779,6 +779,20 @@ MISSIONS = [
         "title": "story_m_sw_bonus", "hud_title": "story_m_sw_bonus_hud", "blurb": "story_m_sw_bonus_b",
         "need": ENDING_DONE, "content": 1, "speed": 1.0,
     },
+    # BONUS FINAL - Nuée: the last wave of Défense de Phobos II without an end (src/swarm_bonus.py): the four kinds at
+    # level 16, 30 % more on screen at once, the fallen always come back, three Guardians again and again. It starts with
+    # a few blue birds and grows to its full screen in a minute (enemy.EnemyFormation ramp). A menu chooses who flies
+    # (swarm_bonus.VARIANTS): the ship alone; the ship and Sacha flown by the computer; the ship and Sacha flown by a
+    # second player; Sacha's EDF-17 C alone; Sacha's EDF-17 C with the ship flown by the computer. Until the run is over
+    # (the GAME OVER); leaving it gains nothing, else 10 % of the score is paid (5 % of the two scores at two), and each
+    # version keeps its own record (two at two: ENDLESS_BEST "bonus_swarm:<version>"). Secret until the game is finished.
+    {
+        "id": "bonus_swarm", "acts": (ENDING_ACT,), "secret": True, "extra": True, "final_bonus": True, "endless": True,
+        "swarm_bonus": True, "swarm": True, "stage": 16, "speed": 1.0, "waves": [16], "swarm_kinds": [[1, 2, 3, 4]],
+        "swarm_crowd": 1.3,
+        "title": "story_m_swarm_bonus", "hud_title": "story_m_swarm_bonus_hud", "blurb": "story_m_swarm_bonus_b",
+        "need": ENDING_DONE, "content": 1,
+    },
     # EDF - Opération Sentinelles silencieuses (I-IV): a stealth spy satellite to put in orbit round each gas giant, built on the
     # SpaceWar level (src/spacewar.py) but for real: the birds and the saucers pay their normal points and a failure costs what
     # it always costs. Flown in order (I once the first Bestiary sortie is won, II and III in Act 2, IV in Act 3), once
@@ -2753,7 +2767,8 @@ def is_endless(mission):
     return bool((mission or {}).get("endless"))
 
 
-def record_result(state, mission_id, score, cleared, kills=None, loot=None, used=None, best_key=None):
+def record_result(state, mission_id, score, cleared, kills=None, loot=None, used=None, best_key=None, records=None,
+                  pay=None):
     """Apply the end of a mission.
 
     Cleared: the score is banked as hangar credits, unlock flags and journal line.
@@ -2765,6 +2780,9 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
     mission: it must be caught AND the mission finished, a ship lost with it in the hold brings nothing back
     (`res["reactor_lost"]`) and the mission is offered again. A BONUS mission finished WITHOUT its item and without a
     death is neither won nor lost: no score paid, no penalty (`res["no_item"]` = the item missed), offered again.
+
+    An endless mission may name its records ({key: score}, BONUS FINAL - Nuée: one per version, two at two) and what
+    it pays (`pay`, in place of the score: a share of it).
 
     Returns {"score", "cleared", "first", "lost", "fallen"}. The journal stores a
     text KEY, not the translated text, so it follows the player's language.
@@ -2782,9 +2800,15 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
         cleared = True
         res["cleared"] = True
         key = best_key or mission_id                          # (the Lunar Lander: one record for each setting)
-        res["best"] = score > endless_best(state, key)
-        if res["best"]:
-            state[ENDLESS_BEST] = dict(state.get(ENDLESS_BEST) or {}, **{key: score})
+        res["best"] = False
+        for key, value in (records or {key: score}).items():
+            value = max(0, int(_num(value, 0)))
+            if value > endless_best(state, key):
+                res["best"] = True
+                state[ENDLESS_BEST] = dict(state.get(ENDLESS_BEST) or {}, **{key: value})
+        if pay is not None:
+            score = max(0, int(_num(pay, 0)))                 # (BONUS FINAL - Nuée: a share of the score is paid)
+            res["score"] = score
     res["used"] = story_items.consume(state, used)           # before the Act can change: they belong to this one
     if loot in story_items.REACTOR_IDS and not cleared:
         res["reactor_lost"] = loot if story_items.status(state, loot) is None else None

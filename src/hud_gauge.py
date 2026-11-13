@@ -15,8 +15,8 @@ def draw_phenix_gauge(game, ship=None, gx=18, gy=100, align="left"):
     """HUD: 10-segment Phenix gauge + fire around label from level 3."""
     if ship is None:
         ship = getattr(game, "player", None)
-    if ship is None:
-        return
+    if ship is None or getattr(ship, "no_gauge", False):
+        return                                    # (Sacha's EDF-17 C: no dome, no Phenix form, no gauge)
     gauge = float(getattr(ship, "phenix_gauge", 0))
     level = int(gauge)  # for label threshold
     pal = getattr(ship, "palette", "argent")

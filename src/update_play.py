@@ -10,6 +10,7 @@ keeps every early `return` of the original.
 import gyro
 import random
 import wingman
+import swarm_bonus
 
 import pygame
 
@@ -36,7 +37,11 @@ def tick_ships(game):
             ship.rumble_level = int(getattr(game, "rumble_level", 3))
             ship.autofire = True if game.attract_mode else bool(getattr(game, "autofire", True))
             ship.pad_slot = 0
-            if getattr(game, "play_mode", "solo") != "coop":
+            duo = swarm_bonus.binding_of(game, ship)    # (BONUS FINAL - Nuée at two: player 1's own device)
+            if duo is not None:
+                ship.input_scheme, joy = duo
+                mode = "gamepad" if duo[0] == "pad" else "keyboard"
+            elif getattr(game, "play_mode", "solo") != "coop":
                 mode = game.input_mode
                 joy = game.joystick
                 if mode == "gamepad" and joy is None:

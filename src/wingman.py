@@ -84,6 +84,9 @@ ACCEL = 2600.0                   # px / s / s: how fast his ship speeds up and s
 EASE = 7.0                       # 1 / s: he eases in as he nears his place (speed = distance x EASE, at most his speed)
 PILOT_ROOM = 170.0               # px: he does not fly under (or over) the pilot
 SHOOT_COLUMN = 24                # px: a bird this close to his column is shot at
+# BONUS FINAL - Nuée (src/swarm_bonus.py): the ace (a sharper eye than in the story missions) and the way back
+ACE = {"reaction": 0.55, "horizon": 0.9, "safe": 3.0, "aim": 1.15}
+COMEBACK = 20.0                  # s after his retreat to Phobos, he comes back repaired (BONUS FINAL - Nuée, the computer)
 
 
 _PICTURES = []
@@ -102,34 +105,76 @@ def pictures():
     return _PICTURES
 
 
+def dress_edf17(s, game=None):
+    """Give a ship (a Player) the look and the build of the EDF-17 C: its picture, its orange jets, no dome, no Phenix
+    form, the speed of the arcade ship, immune to the walls."""
+    s.image = pictures()[0]
+    s._white_image = None
+    s.palette = "gold"               # (the orange of his jets, the tip of his shots)
+    s._engine_plan = lambda: (JETS, list(zip(engine_flame.NOZZLES[JETS]["xs"], engine_flame.NOZZLES[JETS]["ys"])), 1.0)
+    engine_flame.prepare(JETS, "gold")
+    s.sounds = getattr(game, "sounds", None)
+    s.speed = PLAYER_SPEED           # Wallems has his old ship in fine order: the speed of the arcade ship
+    s.infinite_lives = False
+    s.electric_immune = True         # (he never flies into the walls; if he did, they would not stop him)
+    s.adventure_dome = False         # (no dome, no Phenix form)
+    s.phenix_gauge = 0
+    s.phenix_cooldown = 9999.0
+    s.no_gauge = True                # (the HUD shows no gauge for it)
+    s.vertical_range = None
+    s.engine_intensity = 1.0
+    return s
+
+
 class Wingman:
-    def __init__(self, game, name="sacha"):
+    def __init__(self, game, name="sacha", control="ai", look="edf17", ace=False, comeback=False, ship=None,
+                 loadout=None, binding=None, tag=None):
+        """`control`: "ai" (the computer), "human" (a second player, `binding` = (scheme, pad)) or "skin" (`ship` is the
+        pilot's own ship, flown by the player: only its damage, its pictures and its smoke are handled here). `look`:
+        "edf17" (Sacha's EDF-17 C, three hits) or "hull" (the pilot's own hull from the workshop, `loadout`, flown by the
+        computer: its lives are its hits). `ace`: the sharper computer of BONUS FINAL - Nuée; `comeback`: after his retreat
+        he comes back repaired (COMEBACK s). `tag`: the name under the ship (default his)."""
         self.name = name
+        self.control = control
+        self.look = look
+        self.comeback = bool(comeback)
+        self.back_in = COMEBACK
+        self.binding = binding or ("kb2", None)
+        self.tag_text = tag
+        params = ACE if ace else {"reaction": REACTION, "horizon": HORIZON, "safe": SAFE, "aim": AIM}
+        self.reaction, self.horizon, self.safe, self.aim = (params["reaction"], params["horizon"], params["safe"],
+                                                             params["aim"])
+        self.max_hits = HITS
+        self.pictures = pictures()
         pilot = game.player
         x = pilot.x + START_GAP
         if x > BASE_WIDTH - EDGE - 40:
             x = pilot.x - START_GAP
-        # (a Player for the flight, the hitbox and the shots; the look is his own: the picture and the jets of the EDF-17)
-        self.ship = Player(x, BASE_HEIGHT + 140, ship_id="phoenix", tint="gold")
+        if ship is not None:
+            self.ship = ship                 # (the pilot's own ship: "skin")
+        elif look == "hull":
+            lo = loadout or {}
+            self.ship = Player(x, BASE_HEIGHT + 140, ship_id=lo.get("ship_id") or "shield", tint=lo.get("tint") or "red")
+            self.ship.speed = PLAYER_SPEED * (int(lo.get("speed_pct") or 40) / 100.0)
+            self.ship.sounds = getattr(game, "sounds", None)
+            self.ship.infinite_lives = False
+            self.ship.electric_immune = True
+            self.ship.adventure_dome = False
+            self.ship.phenix_gauge = 0
+            self.ship.phenix_cooldown = 9999.0
+            self.max_hits = max(1, int(lo.get("lives") or 1))
+        else:
+            # (a Player for the flight, the hitbox and the shots; the look is his own: the picture and the jets of the
+            # EDF-17)
+            self.ship = dress_edf17(Player(x, BASE_HEIGHT + 140, ship_id="phoenix", tint="gold"), game)
         s = self.ship
-        self.pictures = pictures()
-        s.image = self.pictures[0]
-        s._white_image = None
-        s.palette = "gold"               # (the orange of his jets, the tip of his shots)
-        s._engine_plan = lambda: (JETS, list(zip(engine_flame.NOZZLES[JETS]["xs"], engine_flame.NOZZLES[JETS]["ys"])), 1.0)
-        engine_flame.prepare(JETS, "gold")
-        s.sounds = getattr(game, "sounds", None)
-        s.pid = 2
-        s.wingman = True                 # (game._add_score: his points are his)
-        s.score = 0
-        s.speed = PLAYER_SPEED           # Wallems has his old ship in fine order: the speed of the arcade ship
-        s.lives = 99                     # (never used: his ship is only damaged, see damage)
-        s.infinite_lives = False
-        s.electric_immune = True         # (he never flies into the walls; if he did, they would not stop him)
-        s.autofire = True
-        s.rumble_level = 0               # (the pad is the pilot's)
-        s.adventure_dome = False         # (no dome, no Phenix form)
-        s.engine_intensity = 1.0
+        if control != "skin":
+            s.pid = 2
+            s.wingman = True                 # (game._add_score: his points are his)
+            s.score = 0
+            s.lives = 99                     # (never used: his ship is only damaged, see damage)
+            s.autofire = True
+            s.rumble_level = 0               # (the pad is the pilot's)
         self.hits = 0
         # "wait" (not there yet), "enter" (coming in from below), "fight", "hurt" (at the last level of damage),
         # "leave" (the retreat to Phobos), "gone"
@@ -157,10 +202,22 @@ class Wingman:
         self.smoke_t = 0.0
         self.radio = None                # (text key, time left)
         self.radio_held = False          # his voice is held (the game is paused)
+        if control in ("human", "skin") or look == "hull":
+            self.enter_in = 0.0              # (a player's ship, or the pilot's: there from the start)
+        if control == "skin":
+            self.state = "fight"
 
     # --- what he is ----------------------------------------------------------------------------------------------
     def flying(self):
         return self.state in ("fight", "hurt")
+
+    def in_play(self):
+        """Still in the fight, or still to come (not destroyed, not gone for good)."""
+        return self.state not in ("gone", "dead")
+
+    def talks(self):
+        """Sacha flown by the computer speaks on the radio (a player, or the pilot's ship, does not)."""
+        return self.control == "ai" and self.look == "edf17"
 
     def targetable(self, game):
         s = self.ship
@@ -169,6 +226,8 @@ class Wingman:
 
     def say(self, key):
         """A line on the radio: its words at the top of the screen, his voice through the radio (sounds.play_radio)."""
+        if not self.talks():
+            return
         self.radio = (key, RADIO_TIME)
         snd = getattr(self.ship, "sounds", None)
         if snd is not None:
@@ -185,16 +244,26 @@ class Wingman:
             self.radio = (key, left - dt) if left - dt > 0 else None
         s = self.ship
         self.clock += dt
-        if self.state == "gone":
+        if self.control == "skin":
+            self._skin(dt)
             return
         tr = game.stage_transition
+        if self.state == "gone" and self.comeback:
+            if tr is None:
+                self.back_in -= dt
+            if self.back_in <= 0:
+                self._repair()                                    # he comes back, his ship repaired
+            return
+        if self.state in ("gone", "dead"):
+            return
         if self.state == "wait":
             self._wait(game, dt, tr)
             return
         if self.state == "enter":
             if self._enter(game, dt, tr):
                 return
-        self._smoke_more(dt)
+        if self.look == "edf17":
+            self._smoke_more(dt)
         if self.state == "leave":
             self._fly_home(dt)
             return
@@ -241,14 +310,33 @@ class Wingman:
             return                                   # (the outro of a boss...: he waits)
         if s.y > LINE_Y:
             s.y = max(LINE_Y, s.y - ARRIVE * dt)
-        move, shoot = self._pilot(game, dt)
         try:
             keys = pygame.key.get_pressed()
         except Exception:
             keys = None
-        s.update(dt, keys, "keyboard", None, allow_shoot=True, ai_move=move, ai_shoot=shoot)
+        if self.control == "human":
+            scheme, joy = self.binding
+            s.input_scheme = scheme
+            s.pad_slot = 0
+            pads = getattr(game, "pads", None)
+            if joy is not None and pads is not None:
+                try:
+                    s.pad_slot = max(0, pads.index_of(joy))
+                except Exception:
+                    s.pad_slot = 0
+            s.rumble_level = int(getattr(game, "rumble_level", 3))
+            s.autofire = bool(getattr(game, "autofire", True))
+            s.update(dt, keys, "gamepad" if scheme == "pad" else "keyboard", joy,
+                     allow_shoot=float(getattr(game, "input_grace", 0.0) or 0.0) <= 0)
+            if s.y > LINE_Y and s.vertical_range is None:
+                s.y = LINE_Y
+        else:
+            move, shoot = self._pilot(game, dt)
+            s.update(dt, keys, "keyboard", None, allow_shoot=True, ai_move=move, ai_shoot=shoot)
         s.phenix_gauge = 0                           # (his old ship has no Phenix form)
-        self._engines(dt)
+        s.phenix_cooldown = 9999.0
+        if self.look == "edf17":
+            self._engines(dt)
 
     def _wait(self, game, dt, tr):
         """Not there yet: ENTER_DELAY s into the first wave he comes in (or with the ships, if the wave was over first)."""
@@ -260,8 +348,9 @@ class Wingman:
         if (tr == "arrive" and wave > 0) or (tr is None and self.enter_in <= 0):
             try:
                 s.y = LINE_Y
-                self._decide(game, dt, everything=True)          # he comes in where it is safest
-                s.x = max(EDGE, min(BASE_WIDTH - EDGE, self.target_x))
+                if self.control == "ai":
+                    self._decide(game, dt, everything=True)          # he comes in where it is safest
+                    s.x = max(EDGE, min(BASE_WIDTH - EDGE, self.target_x))
             except Exception:
                 log_exc("wingman._wait")
             s.y = BASE_HEIGHT + 60
@@ -346,6 +435,8 @@ class Wingman:
         """A hit on his ship (`why`: "shot", "laser", "crash", "hull"). True when it counted. A collision ("crash", "hull")
         takes his ship straight to its last level of damage, even while it blinks."""
         s = self.ship
+        if self.control != "ai" or self.look == "hull":
+            return self._hit(game, why)              # (a player's EDF-17 C, or the pilot's ship flown by the computer)
         crash = why in ("crash", "hull")
         if not self.flying() or self.hits >= HITS or (s.invulnerable > 0 and not crash):
             return False
@@ -367,6 +458,75 @@ class Wingman:
             self.state = "hurt"
             self.leave_in = LEAVE_DELAY
         return True
+
+    def _hit(self, game, why):
+        """A hit on a ship that can be destroyed (BONUS FINAL - Nuée): a player's EDF-17 C takes three, the pilot's ship
+        flown by the computer as many as its lives; a collision is one hit like a shot; the last one destroys it."""
+        s = self.ship
+        if not self.flying() or self.hits >= self.max_hits or s.invulnerable > 0:
+            return False
+        self.hits += 1
+        s.invulnerable = HIT_GRACE
+        s.shield_flash = 1
+        last = self.hits >= self.max_hits
+        try:
+            if last:
+                game._ship_boom(s, "gameover")
+                game.sounds.play("explosion_big", x=s.x)
+                game.shake_amount = max(float(getattr(game, "shake_amount", 0.0) or 0.0), 18.0)
+            else:
+                game.explosions.append(game._boom(s.x + random.uniform(-10, 10), s.y - 4, kind="enemy"))
+                game.sounds.play("explosion", volume=0.55, x=s.x)
+                game.shake_amount = max(float(getattr(game, "shake_amount", 0.0) or 0.0), 6.0)
+        except Exception:
+            log_exc("wingman._hit")
+        if self.look == "edf17":
+            for _ in range(16):
+                self._spark(s.x + random.uniform(-14, 14), s.y + random.uniform(-10, 10))
+            s.image = self.pictures[min(self.hits, len(self.pictures) - 1)]
+            s._white_image = None
+        if last:
+            self.state = "dead"
+            s.alive = False
+            s.shots.clear()
+        return True
+
+    def _repair(self):
+        """BONUS FINAL - Nuée: back from Phobos, his ship repaired; he comes in from below again."""
+        s = self.ship
+        self.hits = 0
+        s.image = self.pictures[0]
+        s._white_image = None
+        s.alive = True
+        s.dying = False
+        s.invulnerable = 0.0
+        s.shots.clear()
+        self.angle = 0.0
+        self.state = "wait"
+        self.enter_in = 0.0
+        self.back_in = COMEBACK
+        self.greeted = False
+        self.cough = 0.0
+        self.target_x = float(s.x)
+        self.vel = 0.0
+
+    def _skin(self, dt):
+        """The pilot's ship is the EDF-17 C (BONUS FINAL - Nuée, Sacha's ship flown by the player): its picture follows its
+        damage (its lives: three), its jets smoke more and more, its engines cough."""
+        s = self.ship
+        if s.alive and not s.dying:
+            hits = max(0, min(HITS - 1, HITS - int(s.lives)))
+        else:
+            hits = HITS
+        if hits != self.hits:
+            self.hits = hits
+            s.image = self.pictures[min(hits, len(self.pictures) - 1)]
+            s._white_image = None
+        s.phenix_gauge = 0
+        s.phenix_cooldown = 9999.0
+        if s.alive and not s.dying:
+            self._smoke_more(dt)
+            self._engines(dt)
 
     # --- the computer at the controls ----------------------------------------------------------------------------
     def _speed(self):
@@ -390,14 +550,14 @@ class Wingman:
             """He notices a threat REACTION s after it shows up."""
             first = self.noticed.get(key, now)
             noticed[key] = first
-            return not react or now - first >= REACTION
+            return not react or now - first >= self.reaction
 
         def falling(rect, vy, vx, kind, extra=0.0):
             if vy <= 1:
                 return
             t0 = (top - rect.bottom) / vy
             t1 = (bottom - rect.top) / vy + extra
-            if t1 < 0 or t0 > HORIZON:
+            if t1 < 0 or t0 > self.horizon:
                 return
             out.append((float(rect.centerx), float(vx), max(0.0, t0), t1, rect.width / 2.0, kind))
 
@@ -426,7 +586,7 @@ class Wingman:
                     continue
                 wait = max(0.0, guardian.CHARGE_SECONDS - float(g.charge))
                 t0 = wait + max(0.0, top - g.y) / guardian.LASER_SPEED
-                if t0 > HORIZON:
+                if t0 > self.horizon:
                     continue
                 t1 = t0 + (guardian.LASER_LENGTH + box.height) / guardian.LASER_SPEED + 0.15
                 scale = float(getattr(g, "scale", 1.0) or 1.0)
@@ -478,7 +638,7 @@ class Wingman:
             tx0, tx1 = x + vx * t0, x + vx * t1
             tlo, thi = min(tx0, tx1), max(tx0, tx1)
             gap = np.maximum(0.0, np.maximum(lo - thi, tlo - hi))
-            reach = hw + half + SAFE
+            reach = hw + half + self.safe
             weight = 1.0 / (0.25 + t0)
             hits = gap < reach
             near = (~hits) & (gap < reach + NEAR)
@@ -494,7 +654,7 @@ class Wingman:
         cols = [float(e.x) for e in guardian.targets(game) if float(e.y) < LINE_Y - 90]
         if cols:
             aim = np.min(np.abs(xs[:, None] - np.array(cols)[None, :]), axis=1)
-            cost += AIM * np.minimum(aim, 260.0) / 260.0                 # a bird above, to shoot at
+            cost += self.aim * np.minimum(aim, 260.0) / 260.0            # a bird above, to shoot at
         best = int(np.argmin(cost))
         here = int(np.argmin(np.abs(xs - self.target_x)))             # (his plan as it stands)
         self.danger = bool(hit[here] >= HIT_COST * 0.5)
@@ -635,8 +795,8 @@ class Wingman:
             colour = (255, 240, 170) if k < 0.5 else (255, 160, 60)
             pygame.draw.line(surface, colour, (int(sp[0]), int(sp[1])),
                              (int(sp[0] - sp[2] * 0.02), int(sp[1] - sp[3] * 0.02)), 1)
-        if self.state == "gone":
-            return
+        if self.state in ("gone", "dead") or self.control == "skin":
+            return                                       # (the pilot's own ship is drawn by the game)
         s = self.ship
         if s.y < -120 or s.y > BASE_HEIGHT + 120 or self.state == "wait":
             return
@@ -645,7 +805,7 @@ class Wingman:
             return
         s.draw(surface)
         if self.flying() and game.stage_transition is None:
-            tag = _tag(game)
+            tag = _tag(game, self.tag_text)
             if tag is not None and not (s.invulnerable > 0 and int(s.invulnerable * 12) % 2 == 0):
                 surface.blit(tag, (int(s.x - tag.get_width() / 2), int(s.y + s.height / 2 + 2)))
 
@@ -721,15 +881,15 @@ def _radio_plate(text):
     return img
 
 
-def _tag(game):
-    """His name under his ship (small)."""
+def _tag(game, text=None):
+    """His name under his ship (small); `text`: another name (the pilot's, on the ship the computer flies)."""
     try:
         from i18n import get_lang
-        key = get_lang()
+        key = (get_lang(), text)
         img = _TAG.get(key)
         if img is None:
             font = fonts.text(16)
-            img = _TAG[key] = font.render(t("wingman_name"), True, (150, 235, 170))
+            img = _TAG[key] = font.render(text or t("wingman_name"), True, (150, 235, 170))
             img.set_alpha(190)
         return img
     except Exception:
@@ -781,7 +941,7 @@ def attacks(game):
     """The enemies against Sacha: the shots, the lasers, the divers and the hull of a boss damage his ship (see
     Wingman.damage); his dome takes the shots and the divers, his Phenix form too (not the lasers)."""
     w = active(game)
-    if w is None or not w.targetable(game):
+    if w is None or w.control == "skin" or not w.targetable(game):
         return
     try:
         _attacks(game, w)

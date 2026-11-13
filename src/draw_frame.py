@@ -13,6 +13,7 @@ import credits_screen
 import crt
 import escort
 import wingman
+import swarm_bonus
 import gyro
 import laser_split
 import fonts
@@ -90,8 +91,8 @@ DOME_HUD_Y = 52                                     # under the mission title (y
 def dome_offline(game):
     """True when the HUD must say "dome offline": an Adventure mission flown with a Shield that has no dome yet."""
     adv = getattr(game, "adventure", None)
-    if not adv or adv.get("dome"):
-        return False
+    if not adv or adv.get("dome") or getattr(getattr(game, "player", None), "no_gauge", False):
+        return False                              # (Sacha's EDF-17 C never had a dome)
     return getattr(game, "ship_id", None) != "phoenix"
 
 
@@ -130,6 +131,7 @@ def draw_play(game):
 
     gyro.draw(game, game.game_surface)              # the escort modules, beside the ship (under it, out of its animation)
     wingman.draw(game, game.game_surface)           # Sacha and his smoke (TEST - Sacha)
+    swarm_bonus.draw(game, game.game_surface)       # the smoke of the EDF-17 C flown by the player (BONUS FINAL - Nuée)
     for ship in game._ships():
         ship.draw(game.game_surface)
     wingman.banner(game, game.game_surface)         # what Sacha says on the radio, over the birds
@@ -216,7 +218,9 @@ def draw_hud(game):
     stage_x = BASE_WIDTH // 2 - stage_surf.get_width() // 2 if game.play_mode == "coop" else 16
     game.game_surface.blit(stage_surf, (stage_x, 16))
     adv = getattr(game, "adventure", None)
-    if adv and adv.get("swarm") and game.play_mode != "coop":
+    if adv and adv.get("swarm_bonus"):
+        swarm_bonus.draw_hud(game)                      # BONUS FINAL - Nuée: the record(s) of the version
+    elif adv and adv.get("swarm") and game.play_mode != "coop":
         text = t("story_swarm_left").format(n=game.formation.swarm_remaining())
         if adv.get("swarm_kinds") and len(adv.get("waves") or []) > 1:     # a swarm in several waves (TEST - Sacha)
             text = t("story_wave_n").format(n=int(adv.get("wave_i", 0)) + 1, m=len(adv["waves"])) + "   " + text
