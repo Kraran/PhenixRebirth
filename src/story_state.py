@@ -409,10 +409,10 @@ MISSIONS = [
         "log": "story_log_ph2",
     },
     {
-        # Défense de Phobos II: the same at level 16, 30 % more enemies on screen at once, 50 % more in all, 3 Guardians in
+        # Défense de Phobos II: the same at level 16, 30 % more enemies on screen at once and in all, 3 Guardians in
         # the last wave
         "id": "phobos_2", "acts": (2,), "wingman": "sacha", "wingman_skill": 2, "title": "story_m_phobos2", "blurb": "story_m_phobos2_b",
-        "need": "phenix_s2", "content": 1, "swarm": True, "swarm_screens": 1.5, "swarm_crowd": 1.3, "stage": 16,
+        "need": "phenix_s2", "content": 1, "swarm": True, "swarm_screens": 1.3, "swarm_crowd": 1.3, "stage": 16,
         "speed": 1.0, "waves": [16, 16, 16, 16], "swarm_kinds": [[1], [1, 2], [1, 2, 3], [1, 2, 3, 4]], "guardians_wave": {4: 3},
         "once": True, "unlock": ["phobos_s2"], "log": "story_log_phobos2",
     },
@@ -612,10 +612,10 @@ MISSIONS = [
         "unlock": ["guardians_s3", REFLECT_FLAG], "log": "story_log_gd3", "win_scene": COAT_SCENE,
     },
     {
-        # Défense de Phobos III: level 21, 50 % more enemies on screen at once, twice as many in all, 3 Guardians in the
+        # Défense de Phobos III: level 21, 50 % more enemies on screen at once and in all, 3 Guardians in the
         # last wave
         "id": "phobos_3", "acts": (3,), "wingman": "sacha", "wingman_skill": 3, "title": "story_m_phobos3", "blurb": "story_m_phobos3_b",
-        "need": "guardians_s3", "content": 1, "swarm": True, "swarm_screens": 2.0, "swarm_crowd": 1.5, "stage": 21,
+        "need": "guardians_s3", "content": 1, "swarm": True, "swarm_screens": 1.5, "swarm_crowd": 1.5, "stage": 21,
         "speed": 1.0, "waves": [21, 21, 21, 21], "swarm_kinds": [[1], [1, 2], [1, 2, 3], [1, 2, 3, 4]], "guardians_wave": {4: 3},
         "once": True, "unlock": ["phobos_s3"], "log": "story_log_phobos3",
     },
