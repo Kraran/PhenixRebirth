@@ -377,7 +377,7 @@ def _shot_at_guardian(game, ship, shot_i, bullet_rect, bird):
 
 
 def player_bullets_vs_enemies(game):
-    """Player bullets against the boss, big birds and regular birds (and those of Sacha, the wingman of TEST - Sacha)."""
+    """Player bullets against the boss, big birds and regular birds (and those of Sacha, the wingman)."""
     for ship in game._ships() + wingman.shooters(game):
       for shot_i, bullet_rect in ship.get_bullet_rects():
         hit_something = False
@@ -546,7 +546,7 @@ def boss_floor_check(game):
 def enemy_attacks_vs_players(game):
     """Boss hull / bullets, enemy bullets and divers against the ship(s)."""
     gyro.attacks(game)          # the escort modules first: a module in the way stops the shot or the bird (src/gyro.py)
-    wingman.attacks(game)       # then Sacha (TEST - Sacha): what hits his ship damages it, it never blows up (src/wingman.py)
+    wingman.attacks(game)       # then Sacha (src/wingman.py): what hits his ship damages it, it never blows up (src/wingman.py)
     for ship in game._ships():
         if not ship.alive or ship.dying:
             continue

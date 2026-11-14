@@ -130,7 +130,7 @@ def draw_play(game):
         game.tesla_fx.draw(game.game_surface)
 
     gyro.draw(game, game.game_surface)              # the escort modules, beside the ship (under it, out of its animation)
-    wingman.draw(game, game.game_surface)           # Sacha and his smoke (TEST - Sacha)
+    wingman.draw(game, game.game_surface)           # Sacha and his smoke (Défense de Phobos)
     swarm_bonus.draw(game, game.game_surface)       # the smoke of the EDF-17 C flown by the player (BONUS FINAL - Nuée)
     for ship in game._ships():
         ship.draw(game.game_surface)
@@ -222,7 +222,7 @@ def draw_hud(game):
         swarm_bonus.draw_hud(game)                      # BONUS FINAL - Nuée: the record(s) of the version
     elif adv and adv.get("swarm") and game.play_mode != "coop":
         text = t("story_swarm_left").format(n=game.formation.swarm_remaining())
-        if adv.get("swarm_kinds") and len(adv.get("waves") or []) > 1:     # a swarm in several waves (TEST - Sacha)
+        if adv.get("swarm_kinds") and len(adv.get("waves") or []) > 1:     # a swarm in several waves (Défense de Phobos)
             text = t("story_wave_n").format(n=int(adv.get("wave_i", 0)) + 1, m=len(adv["waves"])) + "   " + text
         left = tc.get(game.font, text, announce.INFO)
         game.game_surface.blit(left, (BASE_WIDTH - 16 - left.get_width(), 44))

@@ -1,4 +1,4 @@
-"""Sacha, the wingman (TEST - Sacha, story_state.py; the final version will take place in Act 2, he comes back in Act 3).
+"""Sacha, the wingman (Défense de Phobos I, II and III, story_state.py; BONUS FINAL - Nuée, src/swarm_bonus.py).
 
 A young pilot of Phobos station joins the ship for the fight, at the controls of his own ship: an EDF-17 C, an
 interceptor of the generation before the Shield that old Wallems put back in flight (straight wings, tip tanks, twin
@@ -84,7 +84,13 @@ ACCEL = 2600.0                   # px / s / s: how fast his ship speeds up and s
 EASE = 7.0                       # 1 / s: he eases in as he nears his place (speed = distance x EASE, at most his speed)
 PILOT_ROOM = 170.0               # px: he does not fly under (or over) the pilot
 SHOOT_COLUMN = 24                # px: a bird this close to his column is shot at
-# BONUS FINAL - Nuée (src/swarm_bonus.py): the ace (a sharper eye than in the story missions) and the way back
+# his skill grows from one mission to the next (story_state.MISSIONS "wingman_skill"): Défense de Phobos I, II, III;
+# still a pilot who is hit now and then. BONUS FINAL - Nuée (src/swarm_bonus.py): the ace, sharper still.
+SKILLS = {
+    1: {"reaction": REACTION, "horizon": HORIZON, "safe": SAFE, "aim": AIM},
+    2: {"reaction": 0.76, "horizon": 0.76, "safe": 1.0, "aim": 1.32},
+    3: {"reaction": 0.61, "horizon": 0.86, "safe": 2.5, "aim": 1.2},
+}
 ACE = {"reaction": 0.55, "horizon": 0.9, "safe": 3.0, "aim": 1.15}
 COMEBACK = 20.0                  # s after his retreat to Phobos, he comes back repaired (BONUS FINAL - Nuée, the computer)
 
@@ -128,12 +134,13 @@ def dress_edf17(s, game=None):
 
 class Wingman:
     def __init__(self, game, name="sacha", control="ai", look="edf17", ace=False, comeback=False, ship=None,
-                 loadout=None, binding=None, tag=None):
+                 loadout=None, binding=None, tag=None, skill=1):
         """`control`: "ai" (the computer), "human" (a second player, `binding` = (scheme, pad)) or "skin" (`ship` is the
         pilot's own ship, flown by the player: only its damage, its pictures and its smoke are handled here). `look`:
         "edf17" (Sacha's EDF-17 C, three hits) or "hull" (the pilot's own hull from the workshop, `loadout`, flown by the
         computer: its lives are its hits). `ace`: the sharper computer of BONUS FINAL - Nuée; `comeback`: after his retreat
-        he comes back repaired (COMEBACK s). `tag`: the name under the ship (default his)."""
+        he comes back repaired (COMEBACK s). `tag`: the name under the ship (default his). `skill`: his level in the story
+        missions (SKILLS, 1 to 3)."""
         self.name = name
         self.control = control
         self.look = look
@@ -141,7 +148,8 @@ class Wingman:
         self.back_in = COMEBACK
         self.binding = binding or ("kb2", None)
         self.tag_text = tag
-        params = ACE if ace else {"reaction": REACTION, "horizon": HORIZON, "safe": SAFE, "aim": AIM}
+        params = ACE if ace else SKILLS.get(int(skill or 1), SKILLS[1])
+        self.skill = "ace" if ace else int(skill or 1) if int(skill or 1) in SKILLS else 1
         self.reaction, self.horizon, self.safe, self.aim = (params["reaction"], params["horizon"], params["safe"],
                                                              params["aim"])
         self.max_hits = HITS
@@ -909,7 +917,7 @@ def start(game, spec):
     if not (spec or {}).get("wingman") or getattr(game, "play_mode", "solo") == "coop":
         return
     try:
-        game.wingman = Wingman(game, spec.get("wingman"))
+        game.wingman = Wingman(game, spec.get("wingman"), skill=spec.get("wingman_skill") or 1)
     except Exception:
         log_exc("wingman.start")
         game.wingman = None

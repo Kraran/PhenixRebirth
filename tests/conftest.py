@@ -96,7 +96,7 @@ def _spacewar_test_missions(request, monkeypatch):
 
 @pytest.fixture(autouse=True)
 def _test_missions_apart(request, monkeypatch):
-    """The TEST missions of the Adventure (story_state.MISSIONS, "test": TEST - Sacha...) are tried out on their own: the
+    """The TEST missions of the Adventure (story_state.MISSIONS, "test") are tried out on their own: the
     other tests see the map of the Adventure without them (its lists, its order, the mission the map suggests). A module
     that flies one says so (NEEDS_TEST_MISSIONS = True)."""
     if not getattr(request.module, "NEEDS_TEST_MISSIONS", False):
