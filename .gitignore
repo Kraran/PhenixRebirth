@@ -14,6 +14,8 @@ build/
 *.zip
 
 story.json
+# the Adventure saves (story_state.story_path: story_1.json ... story_4.json, next to the game)
+story_*.json
 addon/mame/*.exe
 addon/mame/*.dll
 addon/mame/roms/*.zip
