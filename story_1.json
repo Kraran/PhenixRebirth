@@ -1,10 +1,10 @@
 {
   "version": 4,
   "act": 1,
-  "name": "NOVA",
+  "name": "N",
   "mode": "normal",
   "fallen": false,
-  "saved_at": "2026-11-07T21:07:49",
+  "saved_at": "2026-11-14T15:25:45",
   "credits": 0,
   "flags": {
     "bestiary_s1": true

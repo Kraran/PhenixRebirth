@@ -619,6 +619,38 @@ MISSIONS = [
         "speed": 1.0, "waves": [21, 21, 21, 21], "swarm_kinds": [[1], [1, 2], [1, 2, 3], [1, 2, 3, 4]], "guardians_wave": {4: 3},
         "once": True, "unlock": ["phobos_s3"], "log": "story_log_phobos3",
     },
+    # (listed before la Riposte: the map suggests Neptune before Triton, as the story tells it — the sentinels find the
+    # nest; they stay optional)
+    # EDF - Opération Sentinelles silencieuses (I-IV): a stealth spy satellite to put in orbit round each gas giant, built on the
+    # SpaceWar level (src/spacewar.py) but for real: the birds and the saucers pay their normal points and a failure costs what
+    # it always costs. Flown in order (I once the first Bestiary sortie is won, II and III in Act 2, IV in Act 3), once
+    # each, until the last one is won (flag SENTINELLE_DONE): then they can all be flown again, for the same points and the
+    # same penalties. `sw_levels`: (blue birds, green birds, boss saucers) of each level; a level with a saucer is won
+    # when it is destroyed.
+    {
+        "id": "sentinelle_1", "acts": (1, 2, 3), "once": True, "spacewar": True, "planet": "jupiter", "replay": SENTINELLE_DONE,
+        "sw_levels": [(1, 0, 0), (0, 0, 1)],
+        "title": "story_m_sent1", "hud_title": "story_m_sent_hud", "blurb": "story_m_sent1_b",
+        "need": CH1_SIDES, "content": 1, "speed": 1.0, "unlock": ["sentinelle_1"],
+    },
+    {
+        "id": "sentinelle_2", "acts": (2, 3), "once": True, "spacewar": True, "planet": "saturn", "replay": SENTINELLE_DONE,
+        "sw_levels": [(1, 0, 0), (0, 1, 0), (0, 0, 1)],
+        "title": "story_m_sent2", "hud_title": "story_m_sent_hud", "blurb": "story_m_sent2_b",
+        "need": "sentinelle_1", "content": 1, "speed": 1.0, "unlock": ["sentinelle_2"],
+    },
+    {
+        "id": "sentinelle_3", "acts": (2, 3), "once": True, "spacewar": True, "planet": "uranus", "replay": SENTINELLE_DONE,
+        "sw_levels": [(1, 0, 0), (1, 1, 0), (0, 1, 1)],
+        "title": "story_m_sent3", "hud_title": "story_m_sent_hud", "blurb": "story_m_sent3_b",
+        "need": "sentinelle_2", "content": 1, "speed": 1.0, "unlock": ["sentinelle_3"],
+    },
+    {
+        "id": "sentinelle_4", "acts": (3,), "once": True, "spacewar": True, "planet": "neptune", "replay": SENTINELLE_DONE,
+        "sw_levels": [(1, 0, 0), (1, 1, 0), (0, 2, 1)],
+        "title": "story_m_sent4", "hud_title": "story_m_sent_hud", "blurb": "story_m_sent4_b",
+        "need": "sentinelle_3", "content": 1, "speed": 1.0, "unlock": ["sentinelle_4", SENTINELLE_DONE, ANTIMATTER_FLAG],
+    },
     {
         "id": "final_1", "acts": (3,), "title": "story_m_fin1", "blurb": "story_m_fin1_b", "need": "phobos_s3",
         "content": 1, "waves": [21, 22], "guardians_at": {22: 1}, "speed": 1.0, "once": True, "unlock": ["final_s1"],
@@ -781,36 +813,6 @@ MISSIONS = [
         "swarm_crowd": 1.3,
         "title": "story_m_swarm_bonus", "hud_title": "story_m_swarm_bonus_hud", "blurb": "story_m_swarm_bonus_b",
         "need": ENDING_DONE, "content": 1,
-    },
-    # EDF - Opération Sentinelles silencieuses (I-IV): a stealth spy satellite to put in orbit round each gas giant, built on the
-    # SpaceWar level (src/spacewar.py) but for real: the birds and the saucers pay their normal points and a failure costs what
-    # it always costs. Flown in order (I once the first Bestiary sortie is won, II and III in Act 2, IV in Act 3), once
-    # each, until the last one is won (flag SENTINELLE_DONE): then they can all be flown again, for the same points and the
-    # same penalties. `sw_levels`: (blue birds, green birds, boss saucers) of each level; a level with a saucer is won
-    # when it is destroyed.
-    {
-        "id": "sentinelle_1", "acts": (1, 2, 3), "once": True, "spacewar": True, "planet": "jupiter", "replay": SENTINELLE_DONE,
-        "sw_levels": [(1, 0, 0), (0, 0, 1)],
-        "title": "story_m_sent1", "hud_title": "story_m_sent_hud", "blurb": "story_m_sent1_b",
-        "need": CH1_SIDES, "content": 1, "speed": 1.0, "unlock": ["sentinelle_1"],
-    },
-    {
-        "id": "sentinelle_2", "acts": (2, 3), "once": True, "spacewar": True, "planet": "saturn", "replay": SENTINELLE_DONE,
-        "sw_levels": [(1, 0, 0), (0, 1, 0), (0, 0, 1)],
-        "title": "story_m_sent2", "hud_title": "story_m_sent_hud", "blurb": "story_m_sent2_b",
-        "need": "sentinelle_1", "content": 1, "speed": 1.0, "unlock": ["sentinelle_2"],
-    },
-    {
-        "id": "sentinelle_3", "acts": (2, 3), "once": True, "spacewar": True, "planet": "uranus", "replay": SENTINELLE_DONE,
-        "sw_levels": [(1, 0, 0), (1, 1, 0), (0, 1, 1)],
-        "title": "story_m_sent3", "hud_title": "story_m_sent_hud", "blurb": "story_m_sent3_b",
-        "need": "sentinelle_2", "content": 1, "speed": 1.0, "unlock": ["sentinelle_3"],
-    },
-    {
-        "id": "sentinelle_4", "acts": (3,), "once": True, "spacewar": True, "planet": "neptune", "replay": SENTINELLE_DONE,
-        "sw_levels": [(1, 0, 0), (1, 1, 0), (0, 2, 1)],
-        "title": "story_m_sent4", "hud_title": "story_m_sent_hud", "blurb": "story_m_sent4_b",
-        "need": "sentinelle_3", "content": 1, "speed": 1.0, "unlock": ["sentinelle_4", SENTINELLE_DONE, ANTIMATTER_FLAG],
     },
 ]
 
@@ -2235,8 +2237,8 @@ def next_mission(state, missions):
     """The mission the map suggests: the first one of the list that can be flown and is not won yet. None when there is
     none."""
     for m in missions:
-        if m.get("extra") or m.get("training"):
-            continue                       # (a BONUS or a TEST is never what the map suggests)
+        if m.get("extra") or m.get("training") or mission_group(m) not in (GROUP_STORY, GROUP_HUNT):
+            continue                       # (a BONUS, a TEST or the optional paint series is never what the map suggests)
         if not mission_playable(state, m):
             continue
         if not mission_done(state, m):

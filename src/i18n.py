@@ -4925,7 +4925,7 @@ _INTRO_FR["story_scene_best4"] = (
 )
 _INTRO_FR["story_scene_bestboss"] = (
     'Il reste une page du Bestiaire que je n’ai pas osé ouvrir. Tout au bout de l’espace connu, en orbite de Neptune, au-dessus de tempêtes bleues qui s’enroulent sur elles-mêmes depuis des millions d’années, les relevés ne signalent plus des meutes mais un seul écho, immense et immobile. Une soucoupe noire, craquelée comme une vieille cuirasse, ceinte de feux rouges qui pulsent lentement. Au sommet de son dôme, derrière une baie obscure, on devine une créature tentaculaire que personne n’a pu approcher sans y laisser la vie.\n\n'
-    'C’est lui qui commande : le cerveau télépathique, le centre de l’intelligence collective des Avioïdes. Des gargouilles, vertes et sombres, tournent autour de la soucoupe sans jamais s’en éloigner. Terré en son cœur, derrière le blindage, il n’apparaît que lorsque la voie est dégagée, et il suffit alors d’un seul tir. Un seul. Encore faut-il l’atteindre. Nous en avons déjà abattu un. Un autre a pris sa place, plus coriace, puis un autre après lui.\n\n'
+    'C’est lui qui commande : le cerveau télépathique, le centre de l’intelligence collective des Avioïdes. Les Bleus et les Kakis surgissent sans cesse autour de la soucoupe et plongent sur quiconque s’en approche. Terré en son cœur, derrière le blindage, il n’apparaît que lorsque la voie est dégagée, et il suffit alors d’un seul tir. Un seul. Encore faut-il l’atteindre. Nous en avons déjà abattu un. Un autre a pris sa place, plus coriace, puis un autre après lui.\n\n'
     'Je ne sais pas si l’on peut vraiment vaincre une chose pareille. Mais chaque fois qu’il tombera, je pourrai écrire une ligne de plus, et chaque ligne rendra la suivante moins incertaine. Alors j’y vais. Si l’ancrage quantique tient bon, je lui dirai ce que je pense de son élevage. Sinon, ce sera au prochain pilote de remplir la dernière page.'
 )
 def _veteran_text(key, old, new):
@@ -4955,7 +4955,7 @@ _INTRO_FR["story_scene_paint_1"] = (
     'L’atelier clandestin du vieux Wallems, creusé dans le flanc de l’astéroïde 434-Hungaria, tourne encore. Malgré l’invasion. Malgré les patrouilles. On y voit toujours des coques posées sur tréteaux, des bidons ouverts, des masques penchés sur le métal…\n\n'
     'Je ne suis pas assez fou pour tenter de franchir les hordes d’Avioïdes qui quadrillent le secteur, rang après rang, rien que pour faire repeindre mon vaisseau. Non. Je ne le suis pas.\n\n'
     'Et pourtant la rumeur tient. Wallems prend encore les commandes, choisit ses teintes uniques à l’œil, et livre des coques magnifiques, le tout avec en fond sonore des trompettes flamboyantes…\n'
-    'Non, je n\'irai pas, ce serait du délire…'
+    'Non, je n’irai pas, ce serait du délire…'
 )
 _INTRO_FR["story_scene_bar"] = (
     'La porte du sas siffle en s’ouvrant, libérant une bouffée d’air recyclé qui sent le café et le métal rouillé. '
@@ -6674,22 +6674,22 @@ _ACT4_TEXTS = {
     "story_cheat_fine": ("Code FINE : la fin de l'Aventure. Plus aucune sauvegarde.",
                          "Code FINE: the ending of the Adventure. Nothing is saved any more."),
     "story_scene_act4": (
-        "Le nid de Triton s'est effondré dans un silence de glace. Quand la poussière d'azote est retombée, les équipes "
-        "de récupération ont trouvé dans les ruines ce que personne n'espérait plus : leurs archives. Des semaines de "
-        "déchiffrage plus tard, une carte du ciel est apparue sur les écrans du Commandement. Elle ne désignait qu'un "
-        "seul point, Alcyone, l'étoile la plus brillante des Pléiades, à 440 années-lumière de la Terre. C'est de là "
+        "Le nid de Triton s’est effondré dans un silence de glace. Quand la poussière d’azote est retombée, les équipes "
+        "de récupération ont trouvé dans les ruines ce que personne n’espérait plus : leurs archives. Des semaines de "
+        "déchiffrage plus tard, une carte du ciel est apparue sur les écrans du Commandement. Elle ne désignait qu’un "
+        "seul point, Alcyone, l’étoile la plus brillante des Pléiades, à 440 années-lumière de la Terre. C’est de là "
         "que les Avioïdes étaient venus.\n\n"
         "Pendant toute la guerre, nous avions ramassé leurs épaves, démonté leurs réacteurs, disséqué les corps "
         "hybrides de leurs Gardiens. Pièce après pièce, leur technologie était devenue la nôtre. Dans un hangar "
-        "spatial en orbite de la Terre, un énorme vaisseau porte aéronefs qu'aucun humain n'aurait su concevoir seul "
-        "prenait forme. Le jour où ses moteurs ont plié l'espace pour la première fois, il n'y a eu ni applaudissements "
+        "spatial en orbite de la Terre, un énorme vaisseau porte-aéronefs qu’aucun humain n’aurait su concevoir seul "
+        "prenait forme. Le jour où ses moteurs ont plié l’espace pour la première fois, il n’y a eu ni applaudissements "
         "ni discours. Seulement un long silence, puis une décision.\n\n"
-        "Nous n'attendrions pas qu'ils reviennent. Nous irions à eux.\n\n"
-        "Les pilotes survivants ont été réunis une dernière fois. Ils savaient tous qu'il n'y aurait pas de retour "
+        "Nous n’attendrions pas qu’ils reviennent. Nous irions à eux.\n\n"
+        "Les pilotes survivants ont été réunis une dernière fois. Ils savaient tous qu’il n’y aurait pas de retour "
         "garanti, ni de renfort, ni de seconde chance. Ils pensaient aux villes brûlées, aux cendres de nos bases, aux "
-        "camarades disparus. Les Avioïdes n'avaient jamais montré la moindre pitié, et ils n'en trouveraient aucune au "
+        "camarades disparus. Les Avioïdes n’avaient jamais montré la moindre pitié, et ils n’en trouveraient aucune au "
         "bout du voyage.\n\n"
-        "{name} est monté à bord le premier. Derrière la verrière, la Terre n'était plus qu'un point bleu. Devant, les "
+        "{name} est monté à bord le premier. Derrière la verrière, la Terre n’était plus qu’un point bleu. Devant, les "
         "Pléiades scintillaient, froides et lointaines, comme si elles attendaient.\n\n"
         "Le saut a commencé…",
         "The nest on Triton collapsed in a silence of ice. When the nitrogen dust settled, the recovery teams found in "
@@ -6810,8 +6810,8 @@ _SENT_TEXTS = {
     "story_scene_sent4": (
         "Commandement EDF, transmission prioritaire depuis la Terre.\n\n"
         "Le signal est triangulé : il vient de Neptune. C’est le dernier monde du système, et peut-être le cœur de tout. "
-        "La dernière sentinelle doit y être placée coûte que coûte. Avec elle, nous saurons enfin d’où viennent les "
-        "Avioïdes.\n\n"
+        "La dernière sentinelle doit y être placée coûte que coûte. Avec elle, plus aucun mouvement des Avioïdes autour "
+        "de Neptune ne nous échappera.\n\n"
         "Là-bas, le champ magnétique est aussi chaotique que celui d’Uranus, et les vents sont les plus violents du "
         "système solaire. Le plasma y est inutile. Une fois encore, tu n’emportes que 20 torpilles à antimatière.\n\n"
         "Tu seras plus loin de la Terre que n’importe quel humain avant toi depuis la guerre. Nous ne savons pas ce qui "
@@ -6821,8 +6821,8 @@ _SENT_TEXTS = {
         "Bonne chance, {name}.",
         "EDF Command, priority transmission from Earth.\n\n"
         "The signal is triangulated: it comes from Neptune. It is the last world of the system, and perhaps the heart of "
-        "it all. The last sentinel must be placed there at all costs. With it, we will finally know where the Avioids "
-        "come from.\n\n"
+        "it all. The last sentinel must be placed there at all costs. With it, no movement of the Avioids around Neptune "
+        "will escape us any more.\n\n"
         "There, the magnetic field is as chaotic as Uranus’s, and the winds are the most violent in the solar system. "
         "Plasma is useless. Once again, you carry only 20 antimatter torpedoes.\n\n"
         "You will be farther from Earth than any human since the war. We do not know what awaits you, but everything "
