@@ -7718,9 +7718,9 @@ _SCRAMBLE_TEXTS = {
     "story_log_phobos2": ("Défense de Phobos II — le siège est levé, avec Sacha.",
                           "Defence of Phobos II — the siege is lifted, with Sacha."),
     "story_m_phobos3": ("Défense de Phobos III : la marée", "Defence of Phobos III: the tide"),
-    "story_m_phobos3_b": ("La marée : 4 vagues au niveau 21, deux fois plus d’ennemis, 3 Gardiens dans la dernière vague. "
+    "story_m_phobos3_b": ("La marée : 4 vagues au niveau 21, encore plus d’ennemis, 3 Gardiens dans la dernière vague. "
                           "Sacha vole avec toi. Une seule fois.",
-                          "The tide: 4 waves at level 21, twice as many enemies, 3 Guardians in the last wave. Sacha "
+                          "The tide: 4 waves at level 21, even more enemies, 3 Guardians in the last wave. Sacha "
                           "flies with you. Once only."),
     "story_log_phobos3": ("Défense de Phobos III — Phobos tient. La Riposte peut partir.",
                           "Defence of Phobos III — Phobos holds. The Riposte can leave."),

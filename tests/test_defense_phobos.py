@@ -43,7 +43,7 @@ def test_no_guardians_in_act_1_more_dark_gargoyles_instead():
 
 def test_more_enemies_at_once_and_in_all():
     test = {"swarm_screens": 1.0}
-    for mission_id, at_once, in_all in (("phobos_2", 1.3, 1.5), ("phobos_3", 1.5, 2.0)):
+    for mission_id, at_once, in_all in (("phobos_2", 1.3, 1.3), ("phobos_3", 1.5, 1.5)):
         m = ss.mission_by_id(mission_id)
         screen, total = _counts(m, 4)
         base_screen, base_total = _counts(test, 4)
@@ -119,9 +119,9 @@ def _launch(run, mission_id, act, **flags):
 
 def test_defence_ii_flies_with_sacha_and_a_bigger_swarm(run):
     g, spec = _launch(run, "phobos_2", 2, phenix_s1=True, phenix_s2=True)
-    assert spec["wingman"] == "sacha" and spec["swarm_crowd"] == 1.3 and spec["swarm_screens"] == 1.5
+    assert spec["wingman"] == "sacha" and spec["swarm_crowd"] == 1.3 and spec["swarm_screens"] == 1.3
     assert spec["guardians_wave"] == {4: 3} and g.wingman is not None
-    assert g.formation.swarm["screen"] == EnemyFormation.swarm_counts((1,), 1.5, 1.3)[0]
+    assert g.formation.swarm["screen"] == EnemyFormation.swarm_counts((1,), 1.3, 1.3)[0]
 
 
 def test_defence_i_has_more_dark_gargoyles_in_its_last_wave(run):
