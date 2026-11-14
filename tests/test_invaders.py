@@ -483,6 +483,46 @@ def test_an_enemy_reaching_the_line_of_the_ship_ends_the_run(run):
     assert g.player.lives == 0 and (g.player.dying or not g.player.alive)
 
 
+def test_with_infinite_lives_the_invasion_is_pushed_back_not_endless(run):
+    """The LIVE cheat: the ship is hit but not lost, so the grid goes back up to its start (else it marched on below
+    the screen, the mission never over, the explosion and the shake again every frame)."""
+    g, f = _playing(run)
+    g.player.infinite_lives = True
+    lives = g.player.lives
+    rows = {e.row: e.y for e in f.enemies}
+    for e in f.enemies:
+        e.y += 330
+    f.step_timer = 999.0
+    run.frames(2)
+    assert not f.invaded and g.player.alive and not g.player.dying and g.player.lives == lives
+    assert {e.row: e.y for e in f.enemies} == rows                       # the grid at its starting height
+    assert f.delay > 0 and g.player.invulnerable > 0
+    run.frames(30)
+    assert not f.invaded and max(e.y for e in f.enemies) < inv.INVASION_Y
+
+
+def test_with_infinite_lives_the_boss_saucer_goes_back_up(run):
+    """The same for the boss saucer whose armor touches the bottom of the screen."""
+    import update_play
+    g = run.game
+    g.play_mode = "solo"
+    g._begin_run()
+    run.frames(5)
+    g.stage_transition = None
+    g.stage = 5
+    g._setup_stage(5)
+    g.stage_transition = None
+    boss = g.boss_saucer
+    assert boss is not None
+    g.player.infinite_lives = True
+    boss.offset_y = 2000.0
+    boss._sync_positions()
+    assert boss.touches_floor(720)
+    update_play.boss_floor_check(g)
+    assert boss.offset_y == 0.0 and not boss.touches_floor(720)
+    assert g.player.alive and not g.player.dying
+
+
 def test_the_line_is_above_the_ship_and_far_below_the_start(run):
     f = _formation(run)
     assert inv.INVASION_Y < 625 - 40
