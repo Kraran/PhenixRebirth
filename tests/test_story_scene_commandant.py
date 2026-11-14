@@ -48,7 +48,7 @@ def test_the_fifth_hunt_has_a_scene_with_a_picture_a_clip_and_a_text():
     assert text.endswith("de remplir la dernière page.")
     assert text.count("\n\n") == 2                                 # three paragraphs, with a pause between
     for word in ("Neptune", "soucoupe noire", "feux rouges", "créature tentaculaire que", "cerveau télépathique",
-                 "Avioïdes", "gargouilles", "d’un seul tir", "ancrage quantique"):
+                 "Avioïdes", "Les Bleus et les Kakis", "d’un seul tir", "ancrage quantique"):
         assert word in text
     assert "..." not in text                                        # the sign is « … », never three dots
 

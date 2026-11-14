@@ -42,7 +42,7 @@ def test_the_first_paint_mission_has_a_scene_with_its_picture_and_text():
     assert pic == "atelier_wallems" and os.path.exists(asset_path("story", pic + ".jpg"))
     text = t(key)
     assert text.startswith("L’atelier clandestin du vieux Wallems, creusé dans le flanc de l’astéroïde 434-Hungaria, tourne encore.")
-    assert text.endswith("Non, je n'irai pas, ce serait du délire…")
+    assert text.endswith("Non, je n’irai pas, ce serait du délire…")
     assert text.count("\n\n") == 2                                 # three paragraphs, with a pause between
     assert "Wallems" in text and "Avioïdes" in text and "trompettes flamboyantes…" in text
     assert ss.scene_of("paint_2") is None and ss.scene_of("paint_3") is None
