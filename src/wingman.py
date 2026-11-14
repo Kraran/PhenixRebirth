@@ -694,9 +694,10 @@ class Wingman:
             if abs(err) < 1.0:
                 want = 0.0
             step = ACCEL * max(dt, 1e-3) * (1.6 if self.danger else 1.0)   # (a bit sharper when he must dodge)
+            before = self.vel
             self.vel += max(-step, min(step, want - self.vel))
-            if abs(err) < 1.0 and abs(self.vel) < 25.0:
-                self.vel = 0.0
+            if abs(err) < 1.0 and abs(self.vel) < 25.0 and abs(before) <= step:
+                self.vel = 0.0                  # (stopped: but never more than one step of slowing down in a frame)
             move = max(-1.0, min(1.0, self.vel / v))
         else:
             self.vel = 0.0
