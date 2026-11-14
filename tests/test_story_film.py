@@ -258,8 +258,8 @@ def test_the_screen_is_the_video_and_nothing_over_it_but_the_title_for_a_moment(
     assert hub.help_items()[0] == []                                       # the bar would hide the words of the song
     from story_feats import _news
     _news.append(("adv_pilot", None))
-    g._feat_queue = []
+    g._ach_queue = []
     run.frames(3)
-    assert g._feat_queue                                                   # the banners wait for the end of the film
+    assert g._ach_queue                                                    # the banners wait for the end of the film
     _news.clear()
     run.frames(2)

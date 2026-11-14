@@ -824,10 +824,50 @@ class Game:
             extra = " — " + t("ach_tier_silver")
         elif tier == "gold":
             extra = " — " + t("ach_tier_gold")
-        self.cheat_msg = f"{t('ach_unlocked')} — {title}{extra}"
-        self.cheat_kind = "ach"
-        self.cheat_msg_timer = 3.2
+        self._show_ach(f"{t('ach_unlocked')} — {title}{extra}", 3.2)
         self._say_achievement()
+
+    # --- the achievement banners: one at a time, in a queue ---
+    def _show_ach(self, msg, seconds, say=False):
+        """An achievement banner: shown now when the banner is free, else it waits its turn. Two banners never cover
+        each other and none is lost. `say`: the announcer speaks when it shows (the Adventure ones)."""
+        queue = self.__dict__.setdefault("_ach_queue", [])
+        if msg == self.cheat_msg and self.cheat_msg_timer > 0 or any(q[0] == msg for q in queue):
+            return
+        if (self.cheat_msg_timer > 0 and self.cheat_msg) or queue or not self._ach_may_show():
+            queue.append((msg, float(seconds), bool(say)))
+            return
+        self._put_ach(msg, seconds, say)
+
+    def _put_ach(self, msg, seconds, say=False):
+        self.cheat_msg, self.cheat_kind, self.cheat_msg_timer = msg, "ach", float(seconds)
+        self._ach_on = (msg, float(seconds), False)
+        self._ach_left = float(seconds)
+        if say:
+            self._say_achievement()
+
+    def _ach_may_show(self):
+        """Not over a scene of the story, nor over the choice of the hull."""
+        story = getattr(self, "story", None)
+        return not (getattr(self, "menu_screen", "") == "story_hub" and story is not None
+                    and getattr(story, "screen", "") in ("intro", "choice", "film", "vn"))
+
+    def _tick_banners(self):
+        """Every frame: an achievement taken over by another banner (1UP, a code, the pad) comes back after it; the
+        next one of the queue shows once the banner is free."""
+        queue = self.__dict__.setdefault("_ach_queue", [])
+        cur = getattr(self, "_ach_on", None)
+        if cur is not None:
+            if getattr(self, "cheat_kind", "") != "ach" or self.cheat_msg != cur[0]:
+                if float(getattr(self, "_ach_left", 0.0)) > 1.0:
+                    queue.insert(0, cur)                     # (shown again, whole, once the other one is over)
+                self._ach_on = None
+            elif self.cheat_msg_timer <= 0:
+                self._ach_on = None
+            else:
+                self._ach_left = self.cheat_msg_timer
+        if queue and (self.cheat_msg_timer <= 0 or not self.cheat_msg) and self._ach_may_show():
+            self._put_ach(*queue.pop(0))
 
     def _say_achievement(self):
         """The announcer says "Achievement!" each time a haut-fait is unlocked (arcade, menus, Adventure page)."""
@@ -859,11 +899,7 @@ class Game:
         data = getattr(self, "ach_data", None)
         if unlock_achievement(aid, data):
             self.ach_data = load_achievements()
-            if getattr(self, "cheat_kind", "") != "1up" or self.cheat_msg_timer <= 0:
-                title = t("ach_" + aid)
-                self.cheat_msg = f"{t('ach_unlocked')} — {title}"
-                self.cheat_kind = "ach"
-                self.cheat_msg_timer = 3.0
+            self._show_ach(f"{t('ach_unlocked')} — {t('ach_' + aid)}", 3.0)
             self._say_achievement()
             return True
         return False
@@ -875,33 +911,19 @@ class Game:
         data = getattr(self, "ach_data", None)
         if unlock_achievement(aid, data):
             self.ach_data = load_achievements()
-            if getattr(self, "cheat_kind", "") != "1up" or self.cheat_msg_timer <= 0:
-                title = t("ach_" + aid)
-                self.cheat_msg = f"{t('ach_unlocked')} — {title}"
-                self.cheat_kind = "ach"
-                self.cheat_msg_timer = 4.0
+            self._show_ach(f"{t('ach_unlocked')} — {t('ach_' + aid)}", 4.0)
             self._say_achievement()
             return True
         return False
 
     def _tick_story_feats(self):
-        """The achievements of the Adventure page (src/story_feats.py): one banner after the other, in the menus."""
-        if getattr(self, "started", False) or getattr(self, "attract_mode", False):
-            return
-        queue = self.__dict__.setdefault("_feat_queue", [])
-        queue.extend(story_feats.take_news())
-        story = getattr(self, "story", None)
-        if (getattr(self, "menu_screen", "") == "story_hub" and story is not None
-                and getattr(story, "screen", "") in ("intro", "choice", "film", "vn")):
-            return                                        # not over a scene of the story, nor over the choice of the hull
-        if not queue or self.cheat_msg_timer > 0:
-            return
-        aid, tier = queue.pop(0)
-        extra = " — " + t("ach_tier_" + tier) if tier in ("bronze", "silver", "gold") else ""
-        self.cheat_msg = f"{t('ach_unlocked')} — {t('ach_' + aid)}{extra}"
-        self.cheat_kind = "ach"
-        self.cheat_msg_timer = 3.2
-        self._say_achievement()
+        """The achievements of the Adventure page (src/story_feats.py), in the menus: into the queue of the banners
+        (one after the other, see _show_ach). Runs every frame, the queue too."""
+        if not (getattr(self, "started", False) or getattr(self, "attract_mode", False)):
+            for aid, tier in story_feats.take_news():
+                extra = " — " + t("ach_tier_" + tier) if tier in ("bronze", "silver", "gold") else ""
+                self._show_ach(f"{t('ach_unlocked')} — {t('ach_' + aid)}{extra}", 3.2, say=True)
+        self._tick_banners()
 
     def _tick_listen_achs(self):
         """Unlock when the current theme finishes a full play (loop wrap).

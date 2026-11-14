@@ -505,7 +505,8 @@ def test_a_haut_fait_of_the_adventure_page_is_announced_once_per_banner(run, mon
     g.started, g.attract_mode = False, False
     g.menu_screen = "main"
     g.cheat_msg_timer = 0
-    g.__dict__["_feat_queue"] = [("adv_pilot", "gold"), ("adv_raid", None)]
+    import story_feats
+    story_feats._news[:] = [("adv_pilot", "gold"), ("adv_raid", None)]
     g._tick_story_feats()
     assert said == [1]
     g.cheat_msg_timer = 0
