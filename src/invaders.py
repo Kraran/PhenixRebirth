@@ -370,6 +370,21 @@ class InvaderFormation:
     def living(self):
         return [e for e in self.enemies if e.alive and not e.dying]
 
+    def push_back(self):
+        """The grid goes back up to its starting height, its columns where they are, after a short pause: an invasion
+        that did not end the game (a ship with infinite lives, the LIVE cheat) must not leave the grid marching on
+        below the screen, the mission never over."""
+        alive = [e for e in self.enemies if e.alive]
+        if alive:
+            e = alive[0]
+            drop = float(e.y) - (level_start_y(self.level) + e.row * SPACING_Y)
+            for e in self.enemies:
+                e.y -= drop
+        self.bullets = []
+        self.invaded = False
+        self.step_timer = 0.0
+        self.delay = START_DELAY
+
     def interval(self):
         """Time between two steps: the fewer enemies are left, the faster the march."""
         n = len(self.living())

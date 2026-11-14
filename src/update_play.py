@@ -14,7 +14,7 @@ import swarm_bonus
 
 import pygame
 
-from settings import (BASE_HEIGHT, BASE_WIDTH, SCREEN_SHAKE_DECAY, stage_speed_mult)
+from settings import (BASE_HEIGHT, BASE_WIDTH, PLAYER_INVULN_TIME, SCREEN_SHAKE_DECAY, stage_speed_mult)
 from achievements import BOLDLY_GO_STAGE
 from enemy import BigBird, Enemy
 import guardian
@@ -521,10 +521,14 @@ def boss_floor_check(game):
     if (((game.boss_saucer is not None and game.boss_saucer.alive
             and game.boss_saucer.touches_floor(BASE_HEIGHT)) or invaded)
             and game.stage_transition is None):
+        spared = False
         for ship in game._ships():
             if not ship.alive or ship.dying:
                 continue
             if getattr(ship, "infinite_lives", False):
+                spared = True                            # (infinite lives: hit, not lost; the enemy goes back up)
+                ship.invulnerable = max(float(ship.invulnerable), PLAYER_INVULN_TIME)
+                game._ship_boom(ship, "bullet")
                 continue
             if game.play_mode == "coop":
                 ship.hit()
@@ -541,6 +545,14 @@ def boss_floor_check(game):
             game._ship_boom(ship, "gameover")
         game.shake_amount = 24.0
         game.sounds.play("explosion_big", x=BASE_WIDTH // 2)
+        if spared:
+            # a ship flies on (infinite lives): the invasion is pushed back, else it would go on below the screen,
+            # the mission never over (and this every frame)
+            if invaded and hasattr(game.formation, "push_back"):
+                game.formation.push_back()
+            boss = game.boss_saucer
+            if boss is not None and boss.alive and boss.touches_floor(BASE_HEIGHT) and hasattr(boss, "push_back"):
+                boss.push_back()
 
 
 def enemy_attacks_vs_players(game):

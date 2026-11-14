@@ -342,6 +342,12 @@ def init_effects_state(game):
 
     game._load_ship_previews()
     game.ship_anim_t = 0.0
+    try:
+        import asteroids
+        asteroids.warm_glows()        # the ring map of the big lights of a blast (~0.1 s now, not at the first blast)
+    except Exception:
+        from errlog import log_exc
+        log_exc("game_init.warm_glows")
 
 
 def init_input_menu(game):

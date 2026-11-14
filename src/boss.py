@@ -873,6 +873,12 @@ class BossSaucer:
                         continue
                     hull.set_at((x, y), sample)
 
+    def push_back(self):
+        """Back up to its starting height: its armor touched the bottom but the ship was not lost (infinite lives, the
+        LIVE cheat); it must not go on sinking below the screen."""
+        self.offset_y = 0.0
+        self._sync_positions()
+
     def _sync_positions(self):
         for c in self.cells:
             if not c.alive and not getattr(c, "is_purple", False):

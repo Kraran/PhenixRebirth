@@ -450,14 +450,80 @@ class AsteroidFormation:
 
 _glows = {}
 
+# The big lights (the flash and the fireball of a ship's blast, src/ship_blast.py: up to 1200 px wide, a new size at every
+# frame while they swell, so never twice the same picture) are cut out of a map of rings drawn once (the same circles
+# drawn the same way: the same pixels), and only their part on the screen is made.
+_RING_FROM = 150          # radius from which a light is cut out of the ring map (below, drawing its circles is quicker)
+_RING_R = 0
+_RINGS = None             # [x, y] -> the radius of the smallest circle that covers the pixel (0: none)
+
+
+def warm_glows(radius=640):
+    """Draw the ring map once (about 0.1 s), at start-up rather than at the first blast."""
+    _ring_map(radius)
+
+
+def _ring_map(r):
+    """The ring map, at least `r` px in radius: the circles of radius R, R-1 ... 1 about (R, R), drawn the way
+    pygame.draw.circle draws them; a circle drawn about another centre covers the same pixels, moved."""
+    global _RINGS, _RING_R
+    if _RINGS is None or r > _RING_R:
+        import numpy as np
+        big = max(int(r), 256)
+        big = (big + 127) // 128 * 128
+        pic = pygame.Surface((2 * big + 2, 2 * big + 2))
+        pic.fill((0, 0, 0))
+        for i in range(big, 0, -1):
+            pygame.draw.circle(pic, (i & 255, i >> 8, 1), (big, big), i)
+        a = pygame.surfarray.array3d(pic).astype(np.uint16)
+        rings = a[:, :, 0] | (a[:, :, 1] << 8)
+        rings[a[:, :, 2] == 0] = 0
+        _RINGS, _RING_R = rings, big
+    return _RINGS, _RING_R
+
+
+def _glow_part(color, size, part):
+    """The pixels of the light (`color`, `size`) within `part` (a rect of the light's own picture): exactly those its
+    circles would have drawn there."""
+    import numpy as np
+    r = size // 2
+    rings, big = _ring_map(r)
+    x0, y0 = big - r + part.x, big - r + part.y
+    crop = rings[x0:x0 + part.w, y0:y0 + part.h]
+    lut = np.zeros((big + 1, 3), np.uint8)             # (the rings beyond r stay black: no circle drew them)
+    i = np.arange(1, r + 1, dtype=np.float64)
+    k = (1.0 - i / r) ** 2
+    lut[1:r + 1] = (np.array(color, np.float64)[None, :] * k[:, None]).astype(np.int64)
+    pic = pygame.Surface((part.w, part.h))
+    pygame.surfarray.blit_array(pic, lut[crop])
+    return pic
+
 
 def _add_glow(surface, color, pos, size):
     """A soft round light added to the picture (made once per colour and size)."""
     size = max(2, int(size))
     key = (color, size)
     g = _glows.get(key)
+    x, y = int(pos[0] - size // 2), int(pos[1] - size // 2)
     if g is None:
         r = size // 2
+        if r >= _RING_FROM:
+            try:
+                part = pygame.Rect(x, y, size, size).clip(surface.get_rect()).move(-x, -y)
+                if part.w <= 0 or part.h <= 0:
+                    return
+                whole = part.size == (size, size)
+                pkey = key if whole else key + (tuple(part),)        # (a light cut by the edge, kept as cut)
+                pic = _glows.get(pkey)
+                if pic is None:
+                    pic = _glow_part(color, size, part)
+                    if len(_glows) > 200:
+                        _glows.clear()
+                    _glows[pkey] = pic
+                surface.blit(pic, (x + part.x, y + part.y), special_flags=pygame.BLEND_RGB_ADD)
+                return
+            except Exception:
+                log_exc("asteroids._add_glow")
         g = pygame.Surface((size, size))
         for i in range(r, 0, -1):
             k = (1.0 - i / r) ** 2
@@ -465,7 +531,7 @@ def _add_glow(surface, color, pos, size):
         if len(_glows) > 200:
             _glows.clear()
         _glows[key] = g
-    surface.blit(g, (int(pos[0] - size // 2), int(pos[1] - size // 2)), special_flags=pygame.BLEND_RGB_ADD)
+    surface.blit(g, (x, y), special_flags=pygame.BLEND_RGB_ADD)
 
 
 def _blit_wrapped(surface, img, x, y, wrap=True):
