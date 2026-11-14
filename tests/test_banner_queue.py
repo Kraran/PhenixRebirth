@@ -81,8 +81,7 @@ def test_the_adventure_news_go_through_the_same_queue(g):
 def test_the_results_of_a_mission_use_a_middle_dot():
     for code in ("fr", "en"):
         i18n.set_lang(code)
-        for key in ("story_fail_none", "story_fail_pen", "story_clear", "story_test_clear", "story_test_retry",
-                    "story_ast_end"):
+        for key in ("story_fail_none", "story_fail_pen", "story_clear", "story_ast_end"):
             text = i18n.t(key)
             assert " · " in text and "  " not in text, (code, key)
     i18n.set_lang("fr")

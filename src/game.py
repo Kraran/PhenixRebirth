@@ -8,6 +8,8 @@ Play modes: solo, hot-seat (alternating), coop (simultaneous). Options cover
 controls, autofire, volumes, session audio mix, rumble, display, GPU present,
 VSync, refresh cap, bezels, FPS counter, CRT scanlines and language.
 Cheats on the high-score menu: LV02–LV99, LIVE, PHEN, VNOV.
+v1.7.2 — Défense de Phobos I-III with Sacha the wingman, FINAL BONUS - Nuée, the achievement banners in a queue,
+the Sentinels before la Riposte on the map, fixes (infinite lives against the invaders, the slow ship explosion).
 v1.7.1 — FINAL BONUS - Space War, the Guardians option of the Adventure style, Bestiary I opening the asteroid belt and
 Sentinelle I, tighter landing tanks, the intros of the asteroid belt, the boss dishes only halve the descent.
 v1.7.0 — escort modules, landings and raids, the Guardians series, the END BONUS missions, the Adventure style of the
@@ -2026,8 +2028,6 @@ class Game:
         self.player.sounds = self.sounds
         self.player.pid = 1
         self.player.lives = int(loadout.get("lives") or 1)
-        if spec.get("training"):
-            self.player.lives = max(3, self.player.lives)        # a TEST mission: three lives at least, nothing at stake
         self.player.infinite_lives = False
         pct = int(loadout.get("speed_pct") or 40)
         self.player.speed = PLAYER_SPEED * (pct / 100.0)
@@ -2077,7 +2077,7 @@ class Game:
         # and the one that may fall during it (rare, see story_items.plan_drop). The paint missions (Space Invaders)
         # never carry one, and do not count in the gap between two drops; the items bought still work in them.
         story = getattr(self, "story", None)
-        can_loot = (story is not None and not spec.get("invaders") and not spec.get("asteroids") and not spec.get("training")
+        can_loot = (story is not None and not spec.get("invaders") and not spec.get("asteroids")
                     and not spec.get("spacewar") and not spec.get("lander")
                     and not spec.get("scramble"))
         if can_loot and spec.get("reactor"):
@@ -2190,8 +2190,7 @@ class Game:
         story = getattr(self, "story", None)
         state = getattr(story, "state", None) or {}
         adv = getattr(self, "adventure", None) or {}
-        return (bool(adv) and not adv.get("endless") and not adv.get("training")
-                and state.get("mode") == "veteran")
+        return bool(adv) and not adv.get("endless") and state.get("mode") == "veteran"
 
     def _endless_over(self, cleared=True):
         """The end of an endless mission (the ship lost, the Lander out of fuel) or of a fallen Veteran: the result written

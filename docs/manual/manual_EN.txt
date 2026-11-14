@@ -1,9 +1,9 @@
-@pdf_title Phenix Rebirth — Player Manual v1.7.1
+@pdf_title Phenix Rebirth — Player Manual v1.7.2
 @cover_title PLAYER MANUAL
-@cover_version Version 1.7.1 · English
+@cover_version Version 1.7.2 · English
 @cover_tag Free to play · Open source · MIT
 @header PHENIX REBIRTH
-@footer Phenix Rebirth — Player Manual v1.7.1
+@footer Phenix Rebirth — Player Manual v1.7.2
 @closing No quarter given. No continue forever.
 
 # 1. Overview
@@ -29,7 +29,7 @@ python main.py
 
 Optional Windows build: build_exe.bat (PyInstaller).
 
-Downloads: github.com/Kraran/PhenixRebirth/releases/tag/v1.7.1 · kraran.itch.io/phenix-rebirth
+Downloads: github.com/Kraran/PhenixRebirth/releases/tag/v1.7.2 · kraran.itch.io/phenix-rebirth
 
 # 3. Main menu
 **PLAY** opens the ARCADE GAME screen: the mode (1 player, 2P Hot Seat, 2P Co-op), the difficulty, then the ship select. **ADVENTURE** opens the story mode. **EXTRAS** gathers High Scores, Achievements, Jukebox, Credits, Help and Add-On. **OPTIONS** and **QUIT** complete the menu.
@@ -105,14 +105,16 @@ The Adventure starts from ADVENTURE in the main menu. It opens with an illustrat
 | Dome I to V | Dome I after Asteroid belt I, then each one after the one before |
 | Landing on Deimos · Raid I: Deimos | after Dome II |
 | Landing on an asteroid · Raid II | after Dome IV |
-| Gateway to Act 2 | after Dome V |
+| Defence of Phobos I: the horde (with Sacha) | after Dome V |
+| Gateway to Act 2 | after Defence of Phobos I |
 
 ### Act 2: the Phenix
 @cols 44,56
 | Mission | Opens... |
 | Asteroid belt II (80 asteroids) | from the start of Act 2 |
 | Guardians I: the first fire | after Asteroid belt II |
-| Phenix I to V | Phenix I after Guardians I, then each one after the one before |
+| Phenix I to V | Phenix I after Guardians I, then each one after the one before (Phenix III after Defence of Phobos II) |
+| Defence of Phobos II: the siege (with Sacha) | after Phenix II |
 | Landing on Europa · Raid III | after Phenix I |
 | Landing on Titan · Raid IV | after Phenix III |
 | Bestiary V: the Avioid commander | from the start of Act 2 |
@@ -130,13 +132,15 @@ The Adventure starts from ADVENTURE in the main menu. It opens with an illustrat
 | Silent Sentinels IV: Neptune | after III |
 | Asteroid belt III (100 asteroids) | once the repairs are done |
 | Guardians III: the Alpha Guardian | after Asteroid belt III |
-| Counterstrike I to V (Jupiter, Saturn, Uranus, Neptune, Triton) | Counterstrike I after Guardians III, then each one after the one before |
+| Defence of Phobos III: the tide (with Sacha) | after Guardians III |
+| Counterstrike I to V (Jupiter, Saturn, Uranus, Neptune, Triton) | Counterstrike I after Defence of Phobos III, then each one after the one before |
 
 **BONUS** missions show up along the way. After Counterstrike V, one last mission closes the Adventure; then every mission can be flown again and the FINAL BONUS missions open (section 11).
 
 # 9. The series of the Adventure
 - **Bestiary:** each file opens when the enemy is met. The Bestiary hunts are replayable, one level harder after each win.
 - **Dome, Phenix, Counterstrike:** the main series, arcade waves faster and faster, each one once only.
+- **Defence of Phobos I to III:** one compulsory mission per act. The swarm rushes at Phobos in 4 waves (at level 11, then 16, then 21), each wave adding a kind: blue birds, khaki birds, gargoyles, dark gargoyles; 3 Guardians in the last wave of II and III. **Sacha**, a young pilot of Phobos, comes as reinforcement in his old EDF-17 C, flown by the computer, a little better from one mission to the next. He cannot die: after three hits (or a collision) he goes back to Phobos and you carry on alone. His points are his own.
 - **Guardians:** their laser goes through the dome and burns the birds. The plumage of the Alpha Guardian gives the reflective coating.
 - **Paint I to III:** a grid of enemies marches down on you, Space Invaders style; the saucer is worth 500 to 1000 PTS, aim for the middle. All three missions open the paint shop. The whole series can be flown again, harder.
 - **Escort modules:** two gyroscope satellites that fly beside the ship and fire with it (shots ×2, then ×3). Their pieces are found in the landings and the raids; they are assembled in the workshop, take the hits meant for the ship and, destroyed, are bought again at half price.
@@ -168,12 +172,13 @@ Place a stealth spy satellite in orbit around each gas giant: Jupiter, Saturn, U
 Winning Silent Sentinels IV unlocks the antimatter missile. The workshop sells the launcher (permanent) and the missiles (consumable: a missile that is not fired stays for the next mission). One missile per mission, fired straight ahead (M / E / LB): it destroys every enemy within a quarter of the screen of its impact (on the armour of the saucer: two bricks round the impact) and is lost if it touches nothing.
 
 # 11. FINAL BONUS
-Once the game is finished, five endless missions open at the end of Act IV, under END BONUS. Each one ends with the GAME OVER: its points pay in credits, without a penalty, and the record is kept at the top of the screen. **Leaving a run (from the pause) gains nothing.**
+Once the game is finished, six endless missions open at the end of Act IV, under END BONUS. Each one ends with the GAME OVER: its points pay in credits, without a penalty, and the record is kept at the top of the screen. **Leaving a run (from the pause) gains nothing.**
 
 - **FINAL BONUS - Scramble:** endless Scramble. Fly through the rock to the base and shoot down the red commander, then go again with more enemies, until your last life. You choose the setting at the start. One record for all the settings.
 - **FINAL BONUS - Lunar Lander:** to the last drop, 90 units at the start. After each landing, fly again with the fuel left (+50 for a perfect landing, +25 for a rough one), over a ground where the big zones get rarer and rarer. The run ends with a crash or an empty tank. You choose the setting at the start; one record per setting.
 - **FINAL BONUS - Asteroids:** level after level (4, 6, 8, 10 then 11 big asteroids, all there from the start); the saucer fires 10 % faster each level and, every 5 levels, the saucers come by two. Until the ship is lost.
 - **FINAL BONUS - Guardians:** the classic game, endless, with one more Guardian each level (five at most); at level 6 it starts again with one big Guardian more, at level 11 with two, and so on. Everything you have in the workshop flies with you.
+- **FINAL BONUS - Swarm:** the last wave of Defence of Phobos II, without an end: the four kinds at level 16, which always come back, and three Guardians, then three more each time the last one falls. Five versions to choose from: alone; with Sacha flown by the computer (he comes back repaired after each retreat); two players (Sacha flown by player 2); Sacha alone (you fly his EDF-17 C, three hits and it is over); Sacha leads (your ship as his wingman, flown by the computer). At the GAME OVER, **10 % of the score** in credits (5 % of the two scores at two); one record per version.
 - **FINAL BONUS - Space War:** see below.
 
 ### FINAL BONUS - Space War
