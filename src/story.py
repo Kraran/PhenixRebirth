@@ -1770,7 +1770,8 @@ class StoryHub:
         if mission.get("training"):
             spec.update(training=True, items=[])            # a TEST mission: nothing won, nothing lost, no item used
         if mission.get("wingman"):
-            spec["wingman"] = mission["wingman"]             # Sacha flies with the ship (src/wingman.py)
+            spec["wingman"] = mission["wingman"]             # Sacha flies with the ship (src/wingman.py)...
+            spec["wingman_skill"] = int(mission.get("wingman_skill") or 1)     # ... better and better (wingman.SKILLS)
         owned = ss.module_spec(self.state, mission)
         if owned:
             spec["modules"] = owned                  # the escort modules in working order fly with the ship (src/gyro.py)

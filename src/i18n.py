@@ -5826,14 +5826,6 @@ _VIP_TEXTS = {
     "story_vip_hud": ("VIP : {p} %", "VIP: {p} %"),
     "story_vip_lost": ("LE VAISSEAU VIP EST DÉTRUIT", "THE VIP SHIP IS DESTROYED"),
     "story_vip_safe": ("LE VAISSEAU VIP EST PASSÉ !", "THE VIP SHIP GOT THROUGH!"),
-    # TEST - Sacha (src/wingman.py): the swarm in four waves with Sacha, a young pilot of Phobos, at the controls of the
-    # other hull. A training mission: nothing won, nothing lost.
-    "story_m_sacha_test": ("TEST - Sacha", "TEST - Sacha"),
-    "story_m_sacha_hud": ("TEST - Sacha", "TEST - Sacha"),
-    "story_m_sacha_test_b": ("La nuée en 4 vagues au niveau 11, avec Sacha, jeune pilote de Phobos, aux commandes de "
-                             "l'autre vaisseau. Test : rien à gagner, rien à perdre.",
-                             "The swarm in 4 waves at level 11, with Sacha, a young pilot from Phobos, flying the other "
-                             "ship. Test: nothing to win, nothing to lose."),
     "story_test_clear": ("Test réussi  {pts} PTS (rien n'est gagné)", "Test clear  {pts} PTS (nothing won)"),
     "story_test_retry": ("Test échoué  rien n'est perdu", "Test failed  nothing lost"),
     "wingman_name": ("SACHA", "SACHA"),

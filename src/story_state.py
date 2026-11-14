@@ -280,10 +280,11 @@ MISSIONS = [
         "log": "story_log_dome5",
     },
     {
-        # Défense de Phobos I: the swarm of TEST - Sacha in 4 waves (level 11), Sacha comes as a surprise (src/wingman.py);
+        # Défense de Phobos I: a swarm in 4 waves (level 11), each wave adds a kind (the blue birds; + the khaki ones; + the
+        # grey gargoyles; + the dark ones); Sacha comes as a surprise (src/wingman.py, his skill: wingman.SKILLS);
         # no Guardians in Act 1 (they come in Gardiens I): more dark gargoyles in the last wave instead. His story is told
         # after the first victory (SACHA_SCENE).
-        "id": "phobos_1", "acts": (1,), "wingman": "sacha", "title": "story_m_phobos1", "blurb": "story_m_phobos1_b",
+        "id": "phobos_1", "acts": (1,), "wingman": "sacha", "wingman_skill": 1, "title": "story_m_phobos1", "blurb": "story_m_phobos1_b",
         "need": "dome_s5", "content": 1, "swarm": True, "swarm_screens": 1.0, "stage": 11, "speed": 1.0,
         "waves": [11, 11, 11, 11], "swarm_kinds": [[1], [1, 2], [1, 2, 3], [1, 2, 3, 4]], "swarm_boost": {4: {4: 1.5}},
         "once": True, "unlock": ["phobos_s1"], "log": "story_log_phobos1", "win_scene": SACHA_SCENE,
@@ -410,7 +411,7 @@ MISSIONS = [
     {
         # Défense de Phobos II: the same at level 16, 30 % more enemies on screen at once, 50 % more in all, 3 Guardians in
         # the last wave
-        "id": "phobos_2", "acts": (2,), "wingman": "sacha", "title": "story_m_phobos2", "blurb": "story_m_phobos2_b",
+        "id": "phobos_2", "acts": (2,), "wingman": "sacha", "wingman_skill": 2, "title": "story_m_phobos2", "blurb": "story_m_phobos2_b",
         "need": "phenix_s2", "content": 1, "swarm": True, "swarm_screens": 1.5, "swarm_crowd": 1.3, "stage": 16,
         "speed": 1.0, "waves": [16, 16, 16, 16], "swarm_kinds": [[1], [1, 2], [1, 2, 3], [1, 2, 3, 4]], "guardians_wave": {4: 3},
         "once": True, "unlock": ["phobos_s2"], "log": "story_log_phobos2",
@@ -613,7 +614,7 @@ MISSIONS = [
     {
         # Défense de Phobos III: level 21, 50 % more enemies on screen at once, twice as many in all, 3 Guardians in the
         # last wave
-        "id": "phobos_3", "acts": (3,), "wingman": "sacha", "title": "story_m_phobos3", "blurb": "story_m_phobos3_b",
+        "id": "phobos_3", "acts": (3,), "wingman": "sacha", "wingman_skill": 3, "title": "story_m_phobos3", "blurb": "story_m_phobos3_b",
         "need": "guardians_s3", "content": 1, "swarm": True, "swarm_screens": 2.0, "swarm_crowd": 1.5, "stage": 21,
         "speed": 1.0, "waves": [21, 21, 21, 21], "swarm_kinds": [[1], [1, 2], [1, 2, 3], [1, 2, 3, 4]], "guardians_wave": {4: 3},
         "once": True, "unlock": ["phobos_s3"], "log": "story_log_phobos3",
@@ -710,18 +711,6 @@ MISSIONS = [
         "id": "raid_triton", "acts": (3,), "extra": True, "once": True, "scramble": True, "body": "triton", "raid": 5,
         "title": "story_m_raid5", "hud_title": "story_m_raid_hud", "blurb": "story_m_raid5_b",
         "need": "act3", "content": 1, "speed": 1.0,
-    },
-    # TEST - Sacha (the final version will take place in Act 2): a swarm in four waves at level 11 (the start of the third
-    # cycle). Each wave adds a kind and keeps the others: the blue birds; + the khaki ones; + the grey gargoyles; + the
-    # dark gargoyles and three Guardians (`swarm_kinds`, `guardians_wave`: {wave: how many}). Sacha, a young pilot of
-    # Phobos, flies the other hull beside the ship, played by the computer (src/wingman.py): a fine defender, his ship
-    # takes three shots and never blows up, it smokes more and more and he goes back to Phobos after the third.
-    # A training mission: the score is shown, nothing won, nothing lost (nor any item used, nor the modules).
-    {
-        "id": "test_sacha", "acts": (1, 2, 3), "training": True, "test": True, "wingman": "sacha",
-        "title": "story_m_sacha_test", "hud_title": "story_m_sacha_hud", "blurb": "story_m_sacha_test_b",
-        "need": None, "content": 1, "swarm": True, "swarm_screens": 1.0, "stage": 11, "speed": 1.0,
-        "waves": [11, 11, 11, 11], "swarm_kinds": [[1], [1, 2], [1, 2, 3], [1, 2, 3, 4]], "guardians_wave": {4: 3},
     },
     # BONUS: Scramble (the menu of the five settings included), endless
     # (scramble.py `endless`): the base blown up, the course starts again with more enemies (20 % fewer than a raid at the

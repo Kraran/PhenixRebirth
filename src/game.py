@@ -1935,7 +1935,7 @@ class Game:
     @staticmethod
     def guardians_meet_gargoyles(spec):
         """Can the Guardians of this mission burn gargoyles (Guardians in a wave of gargoyles, levels 3 and 4 of a cycle,
-        or Guardians in a wave of a swarm with gargoyles in it: TEST - Sacha)?"""
+        or Guardians in a wave of a swarm with gargoyles in it: Défense de Phobos II and III)?"""
         if spec.get("endless_guardians") or spec.get("guardians_each") or spec.get("swarm_bonus"):
             return True
         if any(stage_content(int(k)) in (3, 4) for k in (spec.get("guardians_at") or {})):
@@ -2077,7 +2077,7 @@ class Game:
                 self.player.phenix_gauge = 0.0
                 self.player.phenix_cooldown = 9999.0
         gyro.start(self, spec)                    # the escort modules of the ship (src/gyro.py), when the mission has them
-        wingman.start(self, spec)                 # Sacha flies with the ship (TEST - Sacha, src/wingman.py)
+        wingman.start(self, spec)                 # Sacha flies with the ship (Défense de Phobos, src/wingman.py)
         swarm_bonus.start(self, spec)             # BONUS FINAL - Nuée: who flies (src/swarm_bonus.py)
         self._apply_adventure_cheats()
         self.input_grace = 0.35
@@ -2246,7 +2246,7 @@ class Game:
         plan = adv.get("guardians_at") or {}
         count = int(plan.get(int(self.stage), plan.get(str(int(self.stage)), 0)) or 0)
         count = count or int(adv.get("guardians_each") or 0)          # (Bestiaire VI: Guardians with every wave)
-        by_wave = adv.get("guardians_wave") or {}                      # (TEST - Sacha: {wave 1, 2...: how many})
+        by_wave = adv.get("guardians_wave") or {}                      # (Défense de Phobos: {wave 1, 2...: how many})
         if by_wave:
             n = int(adv.get("wave_i", 0) or 0) + 1
             count = count or int(by_wave.get(n, by_wave.get(str(n), 0)) or 0)
@@ -2285,7 +2285,7 @@ class Game:
         waves = (adv or {}).get("waves")
         kinds = boost = None
         if adv and waves and adv.get("swarm"):
-            # a swarm in several waves (TEST - Sacha): each one a swarm of the kinds of enemies of that wave
+            # a swarm in several waves (Défense de Phobos): each one a swarm of the kinds of enemies of that wave
             i = max(0, min(len(waves) - 1, int(adv.get("wave_i", 0) or 0)))
             number = int(waves[i])
             self.stage = number
@@ -4682,7 +4682,7 @@ class Game:
         
         antimatter.tick(self)                     # the antimatter missile in flight (nothing in a mission without one)
         gyro.tick(self)                           # the escort modules follow the ship (also while it flies up a stage)
-        wingman.tick(self)                        # Sacha, the wingman of TEST - Sacha (also while the ships fly up a stage)
+        wingman.tick(self)                        # Sacha, the wingman (also while the ships fly up a stage)
         swarm_bonus.tick(self)                    # BONUS FINAL - Nuée: the Guardians again and again, the EDF-17 C's smoke
 
         # Stage transition: ship flies off top

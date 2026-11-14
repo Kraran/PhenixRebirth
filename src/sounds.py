@@ -37,7 +37,7 @@ LYRA_MUSIC = {
 
 _PROBED = {}                 # (path, mtime, size) -> the length of a music file in seconds (or None)
 
-# Sacha's lines on the radio (TEST - Sacha): assets/sounds/sacha/<key>.ogg, the voice of ElevenLabs (Augustin) through a
+# Sacha's lines on the radio (Défense de Phobos): assets/sounds/sacha/<key>.ogg, the voice of ElevenLabs (Augustin) through a
 # small radio (narrow band, a little drive, hiss, the click of the mike and the squelch); one per text key of i18n.py
 RADIO_LINES = ("wingman_hello", "wingman_wave", "wingman_hit_1", "wingman_hit_2", "wingman_hit_3")
 RADIO_VOLUME = 0.90
@@ -163,7 +163,7 @@ class SoundManager:
             ]:
                 self._load(name, f"{name}.wav", vol)
                 loading.report()
-            for name in RADIO_LINES:                  # Sacha on the radio (TEST - Sacha, src/wingman.py)
+            for name in RADIO_LINES:                  # Sacha on the radio (src/wingman.py)
                 self._load(name, os.path.join("sacha", f"{name}.ogg"), RADIO_VOLUME)
             self.enabled = len(self.sounds) > 0
             self._apply_master()

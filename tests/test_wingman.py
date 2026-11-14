@@ -1,4 +1,5 @@
-"""TEST - Sacha: the swarm in four waves and Sacha, the wingman flown by the computer (src/wingman.py)."""
+"""Sacha, the wingman flown by the computer (src/wingman.py), in Défense de Phobos I, II and III: the swarm in four
+waves, his EDF-17 C, his damage, his retreat, his voice, his skill growing from one mission to the next."""
 import numpy as np
 import pygame
 import pytest
@@ -10,16 +11,19 @@ from enemy import EnemyBullet, EnemyFormation
 from settings import BASE_HEIGHT, BASE_WIDTH
 from test_smoke import run  # noqa: F401  (fixture)
 
-ID = "test_sacha"
-NEEDS_TEST_MISSIONS = True        # (conftest: the TEST missions are kept for this module)
+ID = "phobos_1"                   # Défense de Phobos I (Act 1); II in Act 2
 
 
 def _launch(run, phenix=False, act=1, mode="normal"):
     g = run.game
     st = ss.create_slot(1, "NOVA", mode)
     ss.mark_intro_seen(st)
+    st["flags"]["dome_s5"] = True                # (Défense de Phobos I is open)
+    mission = ID
     if act >= 2:
         ss.jump_to_act2(st)
+        st["flags"].update(phenix_s1=True, phenix_s2=True)      # (Défense de Phobos II is open)
+        mission = "phobos_2"
     if phenix:
         st["flags"]["phenix_owned"] = True
         st["slots"][1]["owned"] = True
@@ -27,10 +31,12 @@ def _launch(run, phenix=False, act=1, mode="normal"):
     ss.save_state(ss.story_path(1), st)
     g.story.open_slot(1)
     g.story.pane = "map"
-    g.story.map_index = [m["id"] for m in g.story.missions()].index(ID)
+    g.story.map_index = [m["id"] for m in g.story.missions()].index(mission)
     spec = g.story._launch_selected()
     g._begin_adventure(spec)
     g.input_grace = 0.0
+    g.player.infinite_lives = True              # (these tests watch Sacha: the pilot is never lost)
+    g.player.lives = 99
     return spec
 
 
@@ -66,36 +72,41 @@ def _kinds(form):
 
 
 # ------------------------------------------------------------------ the mission
-def test_a_training_mission_on_the_map_of_every_act_from_the_start():
-    m = ss.mission_by_id(ID)
-    assert m["training"] and m["test"] and m["wingman"] == "sacha"
-    assert m["acts"] == (1, 2, 3) and m["need"] is None
-    assert ss.mission_group(m) == ss.GROUP_EXTRA
-    st = ss.create_slot(1, "NOVA", "normal")
-    ss.mark_intro_seen(st)
-    assert ID in [x["id"] for x in ss.visible_missions(st)]
-    assert (ss.next_mission(st, ss.visible_missions(st)) or {}).get("id") != ID      # never suggested
+def test_the_test_mission_is_gone():
+    """TEST - Sacha has served: Sacha flies in the three Défense de Phobos missions (and BONUS FINAL - Nuée)."""
+    assert ss.mission_by_id("test_sacha") is None
+    import i18n
+    assert "story_m_sacha_test" not in i18n.T
+    assert [m["id"] for m in ss.MISSIONS if m.get("wingman")] == ["phobos_1", "phobos_2", "phobos_3"]
 
 
-def test_nothing_won_nothing_lost():
-    st = ss.create_slot(1, "NOVA", "veteran")
-    credits = st.get("credits")
-    res = ss.record_result(st, ID, 12345, False, {"bird1": 3})
-    assert res["training"] and not res["fallen"] and not res["lost"]
-    assert not st.get("fallen") and st.get("credits") == credits
-    res = ss.record_result(st, ID, 12345, True)
-    assert res["training"] and res["score"] == 0 and ID not in (st.get("cleared") or [])
+def test_his_skill_grows_from_one_mission_to_the_next():
+    skills = [ss.mission_by_id("phobos_%d" % n)["wingman_skill"] for n in (1, 2, 3)]
+    assert skills == [1, 2, 3]
+    lv = [wingman.SKILLS[n] for n in skills] + [wingman.ACE]
+    for a, b in zip(lv, lv[1:]):          # each one sees sooner, further, keeps more room, chases the birds less
+        assert b["reaction"] < a["reaction"] and b["horizon"] > a["horizon"]
+        assert b["safe"] > a["safe"] and b["aim"] < a["aim"]
+    assert wingman.SKILLS[1] == {"reaction": wingman.REACTION, "horizon": wingman.HORIZON, "safe": wingman.SAFE,
+                                 "aim": wingman.AIM}
+
+
+def test_the_mission_gives_him_his_skill(run):
+    spec = _launch(run, act=2)
+    w = run.game.wingman
+    assert spec["wingman_skill"] == 2 and w.skill == 2
+    assert (w.reaction, w.horizon, w.safe, w.aim) == tuple(wingman.SKILLS[2][k] for k in ("reaction", "horizon",
+                                                                                          "safe", "aim"))
 
 
 def test_the_launch(run):
     spec = _launch(run)
-    assert spec["training"] and spec["items"] == [] and spec["wingman"] == "sacha"
+    assert not spec.get("training") and spec["wingman"] == "sacha" and spec["wingman_skill"] == 1
     assert spec["swarm"] and spec["stage"] == 11 and spec["waves"] == [11, 11, 11, 11]
     assert spec["swarm_kinds"] == [[1], [1, 2], [1, 2, 3], [1, 2, 3, 4]]
-    assert spec["guardians_wave"] == {4: 3}
+    assert not spec.get("guardians_wave")                     # (no Guardians in Act 1)
     g = run.game
-    assert g.player.lives >= 3
-    assert isinstance(g.wingman, wingman.Wingman)
+    assert isinstance(g.wingman, wingman.Wingman) and g.wingman.skill == 1
     assert g.wingman.ship.image is wingman.pictures()[0]       # his own ship: the EDF-17 C
 
 
@@ -157,7 +168,7 @@ def test_a_damaged_engine_coughs(run, monkeypatch):
 
 
 # ------------------------------------------------------------------ the four waves
-def test_each_wave_adds_a_kind_and_the_last_one_brings_three_guardians(run):
+def test_each_wave_adds_a_kind_and_act_1_has_no_guardians(run):
     _launch(run)
     g = run.game
     seen = []
@@ -167,7 +178,7 @@ def test_each_wave_adds_a_kind_and_the_last_one_brings_three_guardians(run):
         assert g.stage == 11
         seen.append(_kinds(g.formation))
         sq = guardian.squad(g)
-        assert (len(sq.guardians) if sq is not None else 0) == (3 if wave == 3 else 0)
+        assert sq is None                                        # (Défense de Phobos I: more dark gargoyles instead)
         if wave < 3:
             for e in g.formation.enemies:
                 e.alive = e.dying = False
@@ -481,7 +492,7 @@ def test_the_ash_of_the_mission_is_made_behind_the_loading_bar(run):
     """The Guardians of the last wave burn gargoyles: their ash (both wings, or one) and the ash of the small birds are made
     before the mission, so that a burning bird never holds the game."""
     from game import Game
-    spec = _launch(run)
+    spec = _launch(run, act=2)                                  # (Défense de Phobos II: Guardians in the last wave)
     assert Game.guardians_meet_gargoyles(spec)
     assert not Game.guardians_meet_gargoyles({"swarm": True, "waves": [11, 11], "swarm_kinds": [[1], [1, 2]],
                                               "guardians_wave": {2: 3}})
