@@ -91,15 +91,3 @@ def _spacewar_test_missions(request, monkeypatch):
         from sw_missions import TEST_MISSIONS
         monkeypatch.setattr(story_state, "MISSIONS", story_state.MISSIONS + TEST_MISSIONS)
     yield
-
-
-
-@pytest.fixture(autouse=True)
-def _test_missions_apart(request, monkeypatch):
-    """The TEST missions of the Adventure (story_state.MISSIONS, "test") are tried out on their own: the
-    other tests see the map of the Adventure without them (its lists, its order, the mission the map suggests). A module
-    that flies one says so (NEEDS_TEST_MISSIONS = True)."""
-    if not getattr(request.module, "NEEDS_TEST_MISSIONS", False):
-        import story_state
-        monkeypatch.setattr(story_state, "MISSIONS", [m for m in story_state.MISSIONS if not m.get("test")])
-    yield

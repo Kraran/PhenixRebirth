@@ -1767,8 +1767,6 @@ class StoryHub:
                 spec["body"] = body                   # the setting chosen in the menu (else drawn at random)
             if mission.get("endless"):
                 spec.update(endless=True, level=1)    # BONUS FINAL - Scramble: course after course until the last life
-        if mission.get("training"):
-            spec.update(training=True, items=[])            # a TEST mission: nothing won, nothing lost, no item used
         if mission.get("wingman"):
             spec["wingman"] = mission["wingman"]             # Sacha flies with the ship (src/wingman.py)...
             spec["wingman_skill"] = int(mission.get("wingman_skill") or 1)     # ... better and better (wingman.SKILLS)
@@ -1777,8 +1775,8 @@ class StoryHub:
             spec["modules"] = owned                  # the escort modules in working order fly with the ship (src/gyro.py)
         if ss.flag(self.state, ss.REFLECT_FLAG):
             spec["reflect"] = True                    # Gardiens III is won: the dome and the Phenix form stop the lasers
-        if (ss.missile_ready(self.state) and not mission.get("scramble") and not mission.get("training")
-                and not mission.get("lander")):            # (nothing to shoot in a landing: no missile, no reminder)
+        if ss.missile_ready(self.state) and not mission.get("scramble") and not mission.get("lander"):
+            # (nothing to shoot in a landing: no missile, no reminder)
             spec["antimatter"] = True                 # the launcher is bought and a missile is held: one in this mission
         if ship:
             spec["ship"] = ship                       # a mission that imposes its hull
@@ -1842,11 +1840,6 @@ class StoryHub:
         had_missile = ss.has_antimatter(self.state)
         res = ss.record_result(self.state, mission_id, score, cleared, kills, loot=loot, used=used, best_key=best_key,
                                records=records, pay=pay)
-        if res.get("training"):
-            self.toast = t("story_test_clear" if cleared else "story_test_retry").format(pts=int(score or 0))
-            self.toast_kind = "success" if cleared else "info"
-            self.pane = "map"
-            return
         if res["cleared"] and flawless and not self.cheating:
             story_feats.note_flawless()
             if mission_id == "final_5":

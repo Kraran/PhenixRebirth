@@ -29,7 +29,7 @@ import pygame
 
 from errlog import log_exc
 from i18n import t
-from settings import BASE_HEIGHT, BASE_WIDTH
+from settings import BASE_WIDTH
 
 MISSION = "bonus_swarm"
 VARIANTS = ("solo", "sacha_ai", "duo", "sacha", "sacha_lead")

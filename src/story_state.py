@@ -1638,8 +1638,8 @@ def module_spec(state, mission):
     """The modules a mission launches with ({"count", "armour", "owned"}), or None: those in working order, in every
     mission that counts (src/gyro.py leaves them out of the Lander, Scramble, SpaceWar, the asteroids and the coop)."""
     n = modules_alive(state)
-    if n <= 0 or not mission or mission.get("training"):
-        return None                  # (a TEST mission never puts the pilot's modules at risk)
+    if n <= 0 or not mission:
+        return None
     return {"count": n, "armour": module_armour(state), "owned": True}
 
 
@@ -2150,7 +2150,7 @@ def mission_group(mission):
         return GROUP_FINAL
     if m.get("hunt"):
         return GROUP_HUNT
-    if (m.get("training") or m.get("extra") or m.get("reactor") or m.get("drop") or m.get("needs_reactor") or m.get("reward")
+    if (m.get("extra") or m.get("reactor") or m.get("drop") or m.get("needs_reactor") or m.get("reward")
             or m.get("paint") or m.get("carry")):
         return GROUP_EXTRA
     return GROUP_STORY
@@ -2237,8 +2237,8 @@ def next_mission(state, missions):
     """The mission the map suggests: the first one of the list that can be flown and is not won yet. None when there is
     none."""
     for m in missions:
-        if m.get("extra") or m.get("training") or mission_group(m) not in (GROUP_STORY, GROUP_HUNT):
-            continue                       # (a BONUS, a TEST or the optional paint series is never what the map suggests)
+        if mission_group(m) not in (GROUP_STORY, GROUP_HUNT):
+            continue                       # (a BONUS or the optional paint series is never what the map suggests)
         if not mission_playable(state, m):
             continue
         if not mission_done(state, m):
@@ -2781,9 +2781,6 @@ def record_result(state, mission_id, score, cleared, kills=None, loot=None, used
     score = max(0, int(score or 0))
     res = {"score": score, "cleared": bool(cleared), "first": False, "lost": 0, "fallen": False, "act": 0,
            "loot": None, "used": [], "opened": [], "reactor_lost": None, "no_item": None}
-    if (mission_by_id(mission_id) or {}).get("training"):
-        res.update(score=0, training=True)
-        return res                        # a TEST mission never changes the progression, the credits nor a Veteran save
     record_kills(state, kills)            # the enemies met count whatever the outcome
     record_mission_kills(state, mission_id, kills)
     if is_endless(mission_by_id(mission_id)):

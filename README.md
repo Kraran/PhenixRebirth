@@ -1,6 +1,6 @@
 # Phenix Rebirth
 
-**Version 1.7.1**
+**Version 1.7.2**
 
 A modern, ultra-responsive PC remake of the classic arcade shooter **Phoenix** (1978 / 1980).
 
@@ -46,11 +46,12 @@ Free to play · Open source · MIT License
 - **Landings and raids** (Adventure, optional) — five landings (Deimos, an asteroid, Europa, Titan, Triton; their tanks hold 90, 80, 70, 70 and 60 units of fuel) and five raids on the Avioid bases of the same places, from the gentlest to the full Scramble; their points pay in credits, and those of Deimos, Europa and the asteroid hold the pieces and the bonuses of the escort modules
 - **Escort modules** (Adventure) — two gyroscope satellites that fly beside the ship and fire with it (shots ×2, then ×3); assembled at the workshop from the pieces found in the landings and raids (3000 and 5000 PTS), they stand in the way of what would hit the ship and, destroyed, are bought again at half price (`src/gyro.py`)
 - **The Guardians** (Adventure: the series *Guardians I-III* and *Bestiary VI*, then as reinforcements in later waves) — their laser goes through the dome and burns the birds below; once *Guardians III* is won, a reflective coating lets the dome and the Phenix form split it in two halves that slide around the ship (`src/guardian.py`, `src/laser_split.py`)
-- **END BONUS** (Adventure, once the game is finished) — FINAL BONUS - Asteroids, - Guardians, - Lunar Lander, - Scramble and - Space War: endless runs that pay their points in credits without a penalty, until the ship is lost, with a record kept for each (Space War: one record per planet, Jupiter, Saturn, Uranus or Neptune, chosen in a menu like Lunar Lander; 20 torpedoes renewed at each level)
+- **Defence of Phobos I-III and Sacha** (Adventure, one compulsory mission per act) — the swarm rushes at Phobos in four waves (levels 11, 16, 21), each wave adding a kind, 3 Guardians in the last wave of II and III; Sacha, a young pilot of Phobos, flies beside you in his old EDF-17 C, flown by the computer and a little better each time (`src/wingman.py`): he cannot die, three hits or a collision send him home, his jets smoke more with each hit, and he talks on the radio
+- **END BONUS** (Adventure, once the game is finished) — FINAL BONUS - Asteroids, - Guardians, - Lunar Lander, - Scramble, - Space War and - Swarm (Nuée): endless runs that pay their points in credits without a penalty, until the ship is lost, with a record kept for each (Space War: one record per planet, Jupiter, Saturn, Uranus or Neptune, chosen in a menu like Lunar Lander; 20 torpedoes renewed at each level. Swarm: the last wave of Defence of Phobos II without an end, in five versions, alone, with Sacha flown by the computer or by a second player, or at the controls of his EDF-17 C; 10 % of the score in credits, one record per version, `src/swarm_bonus.py`)
 - **EDF - Opération Sentinelles silencieuses I-IV** (Adventure) — the SpaceWar level as four real missions, one per gas giant (Jupiter, Saturn, Uranus, Neptune): a briefing over a looping video of the planet, 20 antimatter torpedoes (the plasma is useless in their magnetic fields), one life, 2 or 3 levels each. The birds and the saucers pay their normal points and a failure costs the normal penalty. I opens once Bestiary I - First sortie is won, II and III in Act 2 (each once the one before is won), IV in Act 3; they are flown once each until IV is won, then all four can be played again. Winning IV unlocks the **antimatter missile**: one in every mission of the Adventure (in the arcade game only in the Adventure style, see *Options*), fired straight ahead with M / LB (rebindable); it destroys every enemy within a quarter of the screen of its impact (on the armour of a boss saucer: two bricks round the impact) and is lost if it touches nothing. The workshop sells the **launcher** (5000 PTS, permanent) and the **missiles** (1000 PTS each, consumable; one that is not fired stays for the next mission).
 - **Shield ship** — second craft: freeze + explosive barrier (2 s, 5 s cooldown)
 - Ship select at start (and P2 in hot-seat); blue tint only when both pick the same hull
-- Achievements in two pages, ARCADE (32) and ADVENTURE (32, Acts 1 to 3): a grid of illustrated cards (the frame's metal is the tier: steel, bronze, silver, gold; grey when locked) and a panel that tells how to get the one under the cursor, its tiers and the date; some are secret until found. The cursor turns the page at the edges of the grid (Tab / LB / RB: High Scores, Jukebox). The pictures are made by `tools/make_achievement_art.py`
+- Achievements in two pages, ARCADE (32) and ADVENTURE (32, Acts 1 to 3): a grid of illustrated cards (the frame's metal is the tier: steel, bronze, silver, gold; grey when locked) and a panel that tells how to get the one under the cursor, its tiers and the date; some are secret until found. The cursor turns the page at the edges of the grid (Tab / LB / RB: High Scores, Jukebox). The pictures are made by `tools/make_achievement_art.py`. The banners of the achievements just unlocked come one after the other
 - Jukebox: the whole list in groups (Phenix, Lyra Voss - Eternal Dawn, the intro video), the card of the track playing (cover, LED rack from the PHEQ1 files, seek bar) and the lyrics of the six songs of Lyra Voss, synced on her voice and translated in the 13 languages; in the style of the station of Phobos when opened from the Adventure
 - In-game music picker (Off, the soundtrack themes, the songs of Lyra Voss, and your own tracks dropped in the `musique_perso` folder next to the game)
 - Announcer up to level 31
@@ -61,7 +62,7 @@ Free to play · Open source · MIT License
 
 ## Manuals
 
-Player manuals (PDF, v1.7.1): [Manuel FR](docs/PhenixRebirth-Manuel-FR.pdf) · [Manual EN](docs/PhenixRebirth-Manual-EN.pdf).
+Player manuals (PDF, v1.7.2): [Manuel FR](docs/PhenixRebirth-Manuel-FR.pdf) · [Manual EN](docs/PhenixRebirth-Manual-EN.pdf).
 They are built from `docs/manual/manual_FR.txt` and `manual_EN.txt` by `python docs/manual/build_manual.py` (needs
 `reportlab`, for this tool only). The list of the Adventure missions, [docs/STORY_MISSIONS.md](docs/STORY_MISSIONS.md), is
 written from the code by `python docs/manual/make_story_missions.py`.

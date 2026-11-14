@@ -1,5 +1,43 @@
 # Roadmap — Phenix Rebirth
-Current release: **v1.7.1**
+Current release: **v1.7.2**
+
+## Done in 1.7.2
+
+**Adventure** — Defence of Phobos with Sacha the wingman, FINAL BONUS - Swarm, and the fixes of a full playthrough.
+
+- Defence of Phobos I, II and III: one compulsory mission per act (after Dome V, after Phenix II, after Guardians III).
+  The swarm rushes at Phobos in four waves, each adding a kind (blue, khaki, gargoyles, dark gargoyles), at level 11,
+  16 then 21; 3 Guardians in the last wave of II and III, more enemies in II and more again in III. Each has its
+  scene; a save already further on is not held back
+- Sacha, a young pilot of Phobos, flies beside the ship in his old EDF-17 C, flown by the computer: he comes in from
+  below a few seconds into the first wave, dodges like a good pilot (not a perfect one), shoots the birds above him
+  (his points are his own), and gets a little better from one Defence to the next. He cannot die: three hits or a
+  collision and he flies home to Phobos; his ship shows its damage and its jets smoke more and more. He talks on the
+  radio, with his voice. His story is told after the first victory
+- FINAL BONUS - Swarm (Nuée), once the game is finished: the last wave of Defence of Phobos II without an end, then
+  Guardians again and again. Five versions: alone, with Sacha flown by the computer (sharper, he comes back repaired),
+  two players (Sacha flown by player 2), Sacha alone (you fly the EDF-17 C) or Sacha leading (the computer flies your
+  ship). 10 % of the score in credits at the GAME OVER (5 % of the two scores at two), one record per version
+- The map suggests the Silent Sentinels before la Riposte (Neptune before Triton, as the story tells it; they stay
+  optional), and never suggests an optional mission (the paint series, a BONUS)
+
+**Game**
+
+- The achievement banners wait their turn in a queue: never two at once, none lost; one cut by a 1UP, a code or the pad
+  comes back after it
+- The results of a mission read "Failed · nothing lost", "Failed · -X PTS", "Mission clear · +X PTS" (13 languages)
+
+**Fixes**
+
+- With infinite lives (the LIVE code), invaders reaching the ship or the boss saucer reaching the floor no longer
+  freeze the mission: the ship blows up once and the grid (or the saucer) goes back up
+- The explosion of the ship no longer slows the game: its big glows are drawn from rings prepared at the start, the
+  same pixels as before
+- The arrival of the Guardians and the ash of the gargoyles no longer freeze the game for a moment (prepared behind
+  the loading bar); the fire of a burnt enemy is drawn about twice as fast
+- Texts: the Avioid commander scene (Bestiary V) names the birds that really come, Silent Sentinels IV still makes
+  sense after the victory, typographic apostrophes in the Act IV text
+- Details: [docs/DEV_LOG_1.7.2.md](docs/DEV_LOG_1.7.2.md)
 
 ## Done in 1.7.1
 
