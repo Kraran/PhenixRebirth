@@ -7775,16 +7775,16 @@ _SCRAMBLE_TEXTS = {
         "He is young, too young for this war. But he has seen Hungaria fall once already, and he never wants to watch "
         "from afar again."),
     "story_scene_phobos3": (
-        "La Riposte doit partir dans quelques jours, et la horde le sait. Elle jette tout ce qu’elle a sur Phobos : deux "
-        "fois plus d’oiseaux que lors du siège, des vagues qui ne laissent plus le temps de recharger. Si Phobos tombe "
+        "La Riposte doit partir dans quelques jours, et la horde le sait. Elle jette tout ce qu’elle a sur Phobos : plus "
+        "d’oiseaux encore que lors du siège, des vagues qui ne laissent plus le temps de recharger. Si Phobos tombe "
         "maintenant, la route de Triton se refermera pour toujours.\n\n"
         "Wallems a encore rafistolé l’EDF-17 C : une plaque de blindage de plus, des réacteurs qui toussent un peu moins. "
         "Sacha a fait repeindre son numéro, le 17, en blanc éclatant. « Pour qu’ils sachent à qui ils ont affaire », "
         "dit-il.\n\n"
         "Quand je partirai pour Triton, c’est lui qui gardera Phobos. Mais d’abord, il faut qu’il reste quelque chose à "
         "garder.",
-        "The Riposte is to leave in a few days, and the horde knows it. It throws everything it has at Phobos: twice as "
-        "many birds as during the siege, waves that leave no time to reload. If Phobos falls now, the road to Triton "
+        "The Riposte is to leave in a few days, and the horde knows it. It throws everything it has at Phobos: even "
+        "more birds than during the siege, waves that leave no time to reload. If Phobos falls now, the road to Triton "
         "will close for good.\n\n"
         "Wallems has patched up the EDF-17 C once more: one more armour plate, engines that cough a little less. Sacha "
         "has had his number, the 17, repainted in brilliant white. “So they know who they are dealing with,” he says.\n\n"
