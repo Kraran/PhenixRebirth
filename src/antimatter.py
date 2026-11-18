@@ -6,7 +6,8 @@ mission spec says `antimatter`); in an arcade game in Adventure style, the numbe
 whole game. A key / a pad button (bindings action "missile") fires it straight ahead of the ship:
 up in the missions that scroll, along the heading of the ship in the Asteroids and SpaceWar missions. It is the torpedo
 of SpaceWar, a little bigger. It flies in a straight line until it touches an enemy: then a blast destroys every enemy
-within BLAST_RADIUS (a quarter of the height of the screen), the usual points paid. On the armour of the boss saucer the
+within BLAST_RADIUS (a quarter of the height of the screen), the usual points paid; the Guardians of the wave too (the
+Alpha loses half its health). On the armour of the boss saucer the
 blast is a smaller one (SAUCER_BLAST: two bricks round the impact). A missile that touches nothing and leaves the
 screen is lost (and so is the one the star of SpaceWar stops): there is no second one.
 
@@ -21,6 +22,7 @@ import pygame
 
 import asteroids
 import bindings
+import guardian
 import spacewar
 from errlog import log_exc
 from i18n import t
@@ -28,6 +30,7 @@ from settings import BASE_HEIGHT, BASE_WIDTH
 
 BLAST_RADIUS = 180.0              # px: a quarter of the screen (720): what is within this distance of the impact is destroyed
 SAUCER_BLAST = 52.0               # px: two bricks of the boss saucer (26 px each) round the impact
+ALPHA_BLAST_DAMAGE = 3            # the Alpha Guardian (6 HP) loses half its health to the blast; a Guardian falls at once
 SPEED = 560.0                     # px/s, plus the speed of the ship in the free missions
 SIZE = 1.35                       # the drawing of the SpaceWar torpedo, this much bigger
 START_AHEAD = 34.0                # px from the middle of a ship that turns (the nose)
@@ -187,6 +190,12 @@ def _touch(game, m):
     for e in form.get_hittable_enemies():
         if rect.colliderect(e.get_hitbox()):
             return "hit"
+    sq = guardian.squad(game)
+    if sq is not None:
+        for g in sq.targets():                   # the Guardians of the wave: the body or a wing
+            if (rect.colliderect(g.get_hitbox()) or rect.colliderect(g.get_left_wing_hitbox())
+                    or rect.colliderect(g.get_right_wing_hitbox())):
+                return "hit"
     mother = getattr(form, "mothership", None)
     if mother is not None and mother.alive and not mother.dying and rect.colliderect(mother.get_hitbox()):
         return "hit"
@@ -234,6 +243,9 @@ def _blast_waves(game, x, y):
     for e in list(form.get_hittable_enemies()):
         if _near_rect(e.get_hitbox(), x, y, BLAST_RADIUS):
             _kill_enemy(game, e)
+    sq = guardian.squad(game)
+    if sq is not None:
+        _blast_guardians(game, sq, x, y)
     mother = getattr(form, "mothership", None)
     if mother is not None and mother.alive and not mother.dying and _near_rect(mother.get_hitbox(), x, y, BLAST_RADIUS):
         game._add_score(game.player, form.mothership_hit(mother.x))              # (Space Invaders: the miniature saucer)
@@ -241,6 +253,24 @@ def _blast_waves(game, x, y):
     boss = getattr(game, "boss_saucer", None)
     if boss is not None and boss.alive:
         _blast_saucer(game, boss, x, y)
+
+
+def _blast_guardians(game, sq, x, y):
+    """The Guardians of the wave within BLAST_RADIUS (body or wings): a Guardian falls at once; the Alpha loses
+    ALPHA_BLAST_DAMAGE of its health (it falls if it had no more), like a boss."""
+    ship = game.player
+    for g in list(sq.targets()):
+        boxes = (g.get_hitbox(), g.get_left_wing_hitbox(), g.get_right_wing_hitbox())
+        if not any(b.width and _near_rect(b, x, y, BLAST_RADIUS) for b in boxes):
+            continue
+        damage = ALPHA_BLAST_DAMAGE if isinstance(g, guardian.AlphaGuardian) else g.hp
+        if g.hit(damage):
+            game._add_score(ship, game._enemy_kill_points(g))
+            game._note_bird_kill()
+            game.explosions.append(game._boom(g.x, g.y, kind="enemy", delay_frames=1))
+            game.sounds.play("enemy_explosion", x=g.x)
+        else:
+            game.explosions.append(game._boom(g.x, g.y, kind="enemy"))
 
 
 def _blast_saucer(game, boss, x, y):
