@@ -280,6 +280,61 @@ def test_it_blows_on_the_first_bird_and_destroys_what_is_within_the_radius(run):
     g._end_adventure(False)
 
 
+def _guardians_at(g, *places, alpha=False):
+    """A squad of Guardians already in place (no flight in from the top), standing still."""
+    import guardian as gd
+    sq = gd.GuardianSquad(len(places) - (1 if alpha else 0), g.sounds, alpha=alpha)
+    for gu, (x, y) in zip(sq.guardians, places):
+        gu.entry = 0.0
+        gu.x, gu.y = float(x), float(y)
+        gu.home_x, gu.home_y = gu.x, gu.y
+        gu.update = lambda *a, **k: None
+    g.guardian_squad = sq
+    return sq.guardians
+
+
+def test_the_missile_touches_a_guardian_and_the_blast_takes_the_guardians_in_reach(run):
+    g, spec = _launch(run, "ch1_sortie")
+    _still(g)
+    p = g.player
+    first, near, far = _guardians_at(g, (p.x, 300), (p.x + 130, 280), (p.x + 340, 300))
+    g.score = 0
+    assert am.fire(g, p)
+    _fly(g)
+    assert not g.antimatter.missiles
+    assert len([e for e in g.explosions if isinstance(e, am.Blast)]) == 1       # it blew on the Guardian
+    assert not first.alive and not near.alive                                  # three HP: all gone at once
+    assert far.alive and far.hp == far.max_hp
+    assert g.score > 0
+    g._end_adventure(False)
+
+
+def test_the_missile_touches_a_guardian_by_its_wing(run):
+    g, spec = _launch(run, "ch1_sortie")
+    _still(g)
+    p = g.player
+    (gu,) = _guardians_at(g, (p.x + 50, 300))                                  # (the ship is under its left wing)
+    assert am.fire(g, p)
+    _fly(g)
+    assert not gu.alive
+    g._end_adventure(False)
+
+
+def test_the_alpha_guardian_loses_half_its_health_to_the_blast(run):
+    import guardian as gd
+    g, spec = _launch(run, "ch1_sortie")
+    _still(g)
+    left, alpha, right = _guardians_at(g, (300, 300), (420, 300), (900, 300), alpha=True)
+    assert isinstance(alpha, gd.AlphaGuardian)
+    am.blast(g, 360.0, 300.0)
+    assert not left.alive
+    assert alpha.alive and alpha.hp == gd.ALPHA_HP - am.ALPHA_BLAST_DAMAGE
+    assert right.alive and right.hp == right.max_hp
+    am.blast(g, 420.0, 300.0)                                                  # (a second missile: it falls)
+    assert not alpha.alive
+    g._end_adventure(False)
+
+
 def test_the_radius_is_a_quarter_of_the_screen_height():
     assert am.BLAST_RADIUS == BASE_HEIGHT / 4
     assert am.SAUCER_BLAST == 52.0 and am.SIZE > 1.0
