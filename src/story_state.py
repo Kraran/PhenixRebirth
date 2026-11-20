@@ -1743,7 +1743,7 @@ SCENES = {
     # the prelude of each act: the road through the asteroid belt
     "ast_1": {"title": "story_scene_ast1_t", "slides": [("ceinture_asteroides_1", "story_scene_ast1")]},
     "ast_2": {"title": "story_scene_ast2_t", "slides": [("ceinture_asteroides_2", "story_scene_ast2")]},
-    # Act 3 (the pictures will come later: until then the slide is a dark sky behind the text)
+    # Act 3
     "up_shield_1": {"title": "story_scene_ups_t", "slides": [("remise_en_etat", "story_scene_ups")]},
     "up_phenix_1": {"title": "story_scene_upp_t", "slides": [("remise_en_etat", "story_scene_upp")]},
     "bonus_wreck_phenix": {"title": "story_scene_wreckp_t", "slides": [("epave_phenix", "story_scene_wreckp")]},
