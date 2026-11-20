@@ -7972,7 +7972,7 @@ def set_lang(code):
     if code in LANG_CODES:
         _lang = code
     else:
-        _lang = "fr"
+        _lang = "en"
 
 def get_lang():
     return _lang

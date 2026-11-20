@@ -28,6 +28,7 @@ import lander_view
 import scramble
 import scramble_view
 import antimatter
+import lang_flags
 import story_state
 import loot
 from i18n import t, t_help
@@ -443,22 +444,33 @@ def _title(game, key, y=40):
     game.game_surface.blit(hdr, (BASE_WIDTH // 2 - hdr.get_width() // 2, y))
 
 
-def _value_with_arrows(game, surf, font, text, right, cy, chosen, col):
-    """A value right-aligned on `right`; on the chosen row it sits between ‹ and › (Left / Right change it)."""
+def _value_with_arrows(game, surf, font, text, right, cy, chosen, col, icon=None):
+    """A value right-aligned on `right`; on the chosen row it sits between ‹ and › (Left / Right change it). `icon`: a
+    little picture just before the value (the flag of the language)."""
     img = game._txt(font, text, col)
+    lead = icon.get_width() + ICON_GAP if icon is not None else 0
     x = right - img.get_width()
     if chosen:
         arrow_r = game._txt(font, "›", menu_ui.SEL_EDGE)
         arrow_l = game._txt(font, "‹", menu_ui.SEL_EDGE)
         surf.blit(arrow_r, (right - arrow_r.get_width(), cy - arrow_r.get_height() // 2))
         x = right - arrow_r.get_width() - 12 - img.get_width()
-        surf.blit(arrow_l, (x - 12 - arrow_l.get_width(), cy - arrow_l.get_height() // 2))
         surf.blit(img, (x, cy - img.get_height() // 2))
+        if icon is not None:
+            x -= lead
+            surf.blit(icon, (x, cy - icon.get_height() // 2 + ICON_DROP))
+        surf.blit(arrow_l, (x - 12 - arrow_l.get_width(), cy - arrow_l.get_height() // 2))
         return x - 12 - arrow_l.get_width()                 # the left edge of what was drawn
     surf.blit(img, (x, cy - img.get_height() // 2))
+    if icon is not None:
+        x -= lead
+        surf.blit(icon, (x, cy - icon.get_height() // 2 + ICON_DROP))
     return x
 
 
+ICON_GAP = 10             # between the flag of the language and its name
+ICON_DROP = 2             # the flag sits this much lower: on the letters, not on their ascenders
+FLAG_H = 22               # the height of the flag of the language (src/lang_flags.py)
 ARROW_ROOM = 72           # what the arrows of the chosen row take on both sides of a value (‹ ... ›)
 
 
@@ -566,7 +578,10 @@ def draw_options(game, top):
             _gauge(surf, x - 16, cy, fill, steps, chosen)
         else:
             # the two coop rows have a long value ("Auto (Touches ZQSD/WASD)"): the smaller font keeps it in the box
-            _value_with_arrows(game, surf, vfont, value, right, cy, chosen, vcol)
+            if key == "language":                       # (its flag before the name of the language)
+                _value_with_arrows(game, surf, vfont, value, right, cy, chosen, vcol, lang_flags.flag(game.language, FLAG_H))
+            else:
+                _value_with_arrows(game, surf, vfont, value, right, cy, chosen, vcol)
     if 0 <= game.menu_index < len(keys):
         game._draw_option_help(keys[game.menu_index], box=(700, box.y, 520, box.h))
 

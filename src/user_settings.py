@@ -11,6 +11,7 @@ import os
 from safe_io import atomic_write_json, backup_unreadable
 from settings import user_data_dir
 from i18n import LANG_CODES
+import sys_lang
 
 SETTINGS_FILE = os.path.join(user_data_dir(), "settings.json")
 
@@ -26,7 +27,7 @@ def clean_user_settings(data):
         "music_volume": 0.4,
         "rumble_level": 3,  # 0=off … 3=normal … 5=max
         "autofire": True,  # hold fire key to shoot again when the shot leaves
-        "language": "fr",
+        "language": None,  # (None: the very first start, the language of the system: sys_lang.detect)
         "show_fps": False,
         "scanlines": 0,  # 0=off, 1/2/3 intensity
         "bezel_style": "phoenix",  # off | phoenix | (future styles)
@@ -43,6 +44,7 @@ def clean_user_settings(data):
         "gp_guardians": False,  # Adventure style: the Guardians of BONUS FINAL - Gardiens come with every level
     }
     if not isinstance(data, dict):
+        defaults["language"] = sys_lang.detect()
         return defaults
     enums = {
         "control_pref": ("auto", "keyboard", "gamepad"),
@@ -94,6 +96,8 @@ def clean_user_settings(data):
                 value.startswith("pad") and value[3:].isascii() and value[3:].isdigit()
                 and len(value[3:]) <= 9 and int(value[3:]) >= 1):
             defaults[key] = "auto"
+    if defaults["language"] not in LANG_CODES:
+        defaults["language"] = sys_lang.detect()       # no language chosen yet: the system's, or English
     return defaults
 
 

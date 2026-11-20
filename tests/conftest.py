@@ -33,6 +33,11 @@ import scramble_view  # noqa: E402
 
 scramble_view.BACKGROUND = False     # (the rock of the Scramble ahead of the screen would be made in a thread: not in the tests)
 
+import sys_lang  # noqa: E402
+
+sys_lang.real_detect = sys_lang.detect
+sys_lang.detect = lambda: "fr"       # (a first start: the tests play on a French system, whatever the machine's language)
+
 import spacewar  # noqa: E402
 
 spacewar.WARM_UP = False             # (the menu of BONUS FINAL - Space War would make its pictures in a thread: not in the tests)
