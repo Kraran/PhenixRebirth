@@ -35,10 +35,10 @@ import fonts
 def early_language():
     """The language of the player before the settings are read (the loading bar at the start speaks it)."""
     try:
-        lang = (load_user_settings() or {}).get("language", "fr")
-        return lang if lang in LANG_CODES else "fr"
+        lang = (load_user_settings() or {}).get("language")
+        return lang if lang in LANG_CODES else "en"
     except Exception:
-        return "fr"
+        return "en"
 
 
 def init_display(game):
@@ -437,9 +437,9 @@ def init_settings(game, soft):
     game.shield_slide_from = "red"
     game._rebuild_life_icon()
     if not hasattr(game, "language"):
-        game.language = user.get("language", "fr")
+        game.language = user.get("language")
         if game.language not in LANG_CODES:
-            game.language = "fr"
+            game.language = "en"
         set_lang(game.language)
     if not hasattr(game, "show_fps"):
         game.show_fps = bool(user.get("show_fps", False))  # default off

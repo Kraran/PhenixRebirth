@@ -47,9 +47,9 @@ def test_texts_used_in_code_exist():
     assert not unknown, f"unknown translation keys: {unknown}"
 
 
-def test_set_lang_falls_back_to_french():
+def test_set_lang_falls_back_to_english():
     i18n.set_lang("xx")
-    assert i18n.get_lang() == "fr"
+    assert i18n.get_lang() == "en"
     i18n.set_lang("en")
     assert i18n.get_lang() == "en"
 
