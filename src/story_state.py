@@ -1755,7 +1755,7 @@ SCENES = {
     "best_guardians": {"title": "story_m_bestgd", "slides": [("gardiens_bestiaire", "story_scene_bestgd")]},
     "guardians_2": {"title": "story_m_gd2", "slides": [("gardiens_hybrides", "story_scene_gd2")]},
     "guardians_3": {"title": "story_m_gd3", "slides": [("gardien_alpha", "story_scene_gd3")]},
-    # Défense de Phobos (the pictures will come later: until then the slide is a dark sky behind the text)
+    # Défense de Phobos
     "phobos_1": {"title": "story_m_phobos1", "slides": [("defense_phobos_1", "story_scene_phobos1")]},
     "phobos_2": {"title": "story_m_phobos2", "slides": [("defense_phobos_2", "story_scene_phobos2")]},
     "phobos_3": {"title": "story_m_phobos3", "slides": [("defense_phobos_3", "story_scene_phobos3")]},
