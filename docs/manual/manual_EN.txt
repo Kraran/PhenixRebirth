@@ -1,9 +1,9 @@
-@pdf_title Phenix Rebirth — Player Manual v1.7.2
+@pdf_title Phenix Rebirth — Player Manual v1.8.0
 @cover_title PLAYER MANUAL
-@cover_version Version 1.7.2 · English
+@cover_version Version 1.8.0 · English
 @cover_tag Free to play · Open source · MIT
 @header PHENIX REBIRTH
-@footer Phenix Rebirth — Player Manual v1.7.2
+@footer Phenix Rebirth — Player Manual v1.8.0
 @closing No quarter given. No continue forever.
 
 # 1. Overview
@@ -29,7 +29,7 @@ python main.py
 
 Optional Windows build: build_exe.bat (PyInstaller).
 
-Downloads: github.com/Kraran/PhenixRebirth/releases/tag/v1.7.2 · kraran.itch.io/phenix-rebirth
+Downloads: github.com/Kraran/PhenixRebirth/releases/tag/v1.8.0 · kraran.itch.io/phenix-rebirth
 
 # 3. Main menu
 **PLAY** opens the ARCADE GAME screen: the mode (1 player, 2P Hot Seat, 2P Co-op), the difficulty, then the ship select. **ADVENTURE** opens the story mode. **EXTRAS** gathers High Scores, Achievements, Jukebox, Credits, Help and Add-On. **OPTIONS** and **QUIT** complete the menu.
@@ -169,7 +169,7 @@ Optional. A side-scrolling shoot'em up in the way of Konami's Scramble: fly betw
 Place a stealth spy satellite in orbit around each gas giant: Jupiter, Saturn, Uranus, Neptune. The planet in the middle pulls the ship (not the torpedoes), momentum is total and the screen wraps on its four sides. Plasma is useless: 20 antimatter torpedoes, 1 life, 2 or 3 levels. The rings of Saturn are harmless. Each mission is flown once until IV is won; then all four can be played again.
 
 ### The antimatter missile
-Winning Silent Sentinels IV unlocks the antimatter missile. The workshop sells the launcher (permanent) and the missiles (consumable: a missile that is not fired stays for the next mission). One missile per mission, fired straight ahead (M / E / LB): it destroys every enemy within a quarter of the screen of its impact (on the armour of the saucer: two bricks round the impact) and is lost if it touches nothing.
+Winning Silent Sentinels IV unlocks the antimatter missile. The workshop sells the launcher (permanent) and the missiles (consumable: a missile that is not fired stays for the next mission). One missile per mission, fired straight ahead (M / E / LB): it destroys every enemy within a quarter of the screen of its impact, the Guardians too (the Alpha Guardian loses half its health; on the armour of the saucer: two bricks round the impact) and is lost if it touches nothing.
 
 # 11. FINAL BONUS
 Once the game is finished, six endless missions open at the end of Act IV, under END BONUS. Each one ends with the GAME OVER: its points pay in credits, without a penalty, and the record is kept at the top of the screen. **Leaving a run (from the pause) gains nothing.**
@@ -200,7 +200,7 @@ Endless Space War around the gas giant you choose at the start, with its gravity
 # 12. Options
 Five tabs: GAME, GAMEPLAY, AUDIO, DISPLAY, ADVANCED (Tab / Page Up / Page Down on the keyboard, LB / RB on the gamepad). A help panel describes the option under the cursor. The settings are kept in settings.json.
 
-- **Game:** Controls (Auto, keyboard or gamepad), Co-op 1 and Co-op 2 (the control of each player), Keys and buttons, Auto fire (On: hold fire to shoot again; Off: one press per shot), Rumble (0 to 5), Language (13 languages).
+- **Game:** Controls (Auto, keyboard or gamepad), Co-op 1 and Co-op 2 (the control of each player), Keys and buttons, Auto fire (On: hold fire to shoot again; Off: one press per shot), Rumble (0 to 5), Language (13 languages, each with its flag; at the very first start the game takes the language of the system, otherwise English).
 - **Gameplay:** the Play style of a solo arcade game, *Classic* or *Adventure*. The Adventure style gives some of the equipment of the Adventure, with no high score: Escort modules (shots ×3), Antimatter missiles (1 to 20, or none), 2D reactor (the ship also flies up and down, in the lower third of the screen) and **Guardians**: as in FINAL BONUS - Guardians, Guardians come with the birds on every level, the boss levels too, 1 to 5 of them, one more each level, then from level 6 one more Alpha Guardian every five levels (off by default). The game always starts in Classic; the choice does not count in hot seat or coop.
 - **Audio:** SFX Volume, Music Volume, In-game audio (SFX only, SFX + theme, music only or mute; not saved), In-game music (none, a jukebox track, Lyra Voss's songs included, or your own mp3, wav, ogg... files put in the game's musique_perso folder).
 - **Display:** window, fullscreen or borderless; Bezel for screens wider than 16:9 (Phoenix, Tesla, Blue Phenix, Flame Phenix, off; fullscreen only); CRT Scanlines (0 to 3); FPS Counter.

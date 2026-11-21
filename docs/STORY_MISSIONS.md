@@ -1,4 +1,4 @@
-# Phenix Rebirth - Missions de l'Aventure (v1.7.2)
+# Phenix Rebirth - Missions de l'Aventure (v1.8.0)
 
 Liste des 70 missions de `src/story_state.py` (`MISSIONS`), écrite par `python docs/manual/make_story_missions.py` : ne pas la modifier à la main.
 
