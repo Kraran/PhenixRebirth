@@ -1,9 +1,9 @@
-@pdf_title Phenix Rebirth — Manuel du joueur v1.7.2
+@pdf_title Phenix Rebirth — Manuel du joueur v1.8.0
 @cover_title MANUEL DU JOUEUR
-@cover_version Version 1.7.2 · Français
+@cover_version Version 1.8.0 · Français
 @cover_tag Free to play · Open source · MIT
 @header PHENIX REBIRTH
-@footer Phenix Rebirth — Manuel du joueur v1.7.2
+@footer Phenix Rebirth — Manuel du joueur v1.8.0
 @closing No quarter given. No continue forever.
 
 # 1. Présentation
@@ -29,7 +29,7 @@ python main.py
 
 Build Windows optionnel : build_exe.bat (PyInstaller).
 
-Téléchargements : github.com/Kraran/PhenixRebirth/releases/tag/v1.7.2 · kraran.itch.io/phenix-rebirth
+Téléchargements : github.com/Kraran/PhenixRebirth/releases/tag/v1.8.0 · kraran.itch.io/phenix-rebirth
 
 # 3. Menu principal
 **JOUER** ouvre l'écran PARTIE ARCADE : le mode (1 joueur, 2 joueurs Hot Seat, 2 joueurs Coop), la difficulté, puis le choix du vaisseau. **AVENTURE** ouvre le mode histoire. **EXTRAS** regroupe High scores, Hauts faits, Jukebox, Crédits, Aide et Add-On. **OPTIONS** et **QUITTER** complètent le menu.
@@ -169,7 +169,7 @@ Facultatifs. Un shoot'em up à défilement horizontal, façon Scramble de Konami
 Placer un satellite espion furtif en orbite autour de chaque géante gazeuse : Jupiter, Saturne, Uranus, Neptune. La planète au centre attire le vaisseau (pas les torpilles), l'élan est total et l'écran se referme sur ses quatre côtés. Plasma inutile : 20 torpilles à antimatière, 1 vie, 2 ou 3 niveaux. Les anneaux de Saturne sont inoffensifs. Chaque mission se joue une fois jusqu'à la victoire de la IV ; ensuite, les quatre sont rejouables.
 
 ### Le missile antimatière
-Réussir Sentinelles silencieuses IV débloque le missile antimatière. L'atelier vend le lance-missiles (permanent) et les missiles (consommables : un missile non tiré reste pour la mission suivante). Un missile par mission, tiré droit devant (M / E / LB) : il détruit tous les ennemis à un quart d'écran de son impact (sur le blindage de la soucoupe : deux briques autour de l'impact) et se perd s'il ne touche rien.
+Réussir Sentinelles silencieuses IV débloque le missile antimatière. L'atelier vend le lance-missiles (permanent) et les missiles (consommables : un missile non tiré reste pour la mission suivante). Un missile par mission, tiré droit devant (M / E / LB) : il détruit tous les ennemis à un quart d'écran de son impact, les Gardiens compris (le Gardien Alpha perd la moitié de sa vie ; sur le blindage de la soucoupe : deux briques autour de l'impact) et se perd s'il ne touche rien.
 
 # 11. BONUS FINAL
 Une fois le jeu terminé, six missions sans fin s'ouvrent à la fin de l'acte IV, sous BONUS DE FIN. Chacune s'arrête sur le GAME OVER : ses points rapportent des crédits, sans pénalité, et le record est gardé en haut de l'écran. **Quitter en cours de partie (par la pause) ne rapporte rien.**
@@ -200,7 +200,7 @@ Space War à l'infini autour de la géante gazeuse que tu choisis au départ, av
 # 12. Options
 Cinq onglets : JEU, GAMEPLAY, AUDIO, AFFICHAGE, AVANCÉ (Tab / Page préc. / Page suiv. au clavier, LB / RB à la manette). Un panneau d'aide décrit l'option sous le curseur. Les réglages sont gardés dans settings.json.
 
-- **Jeu :** Contrôle (Auto, clavier ou manette), Coop 1 et Coop 2 (le contrôle de chaque joueur), Touches et boutons, Tir automatique (Oui : maintenir le tir suffit ; Non : un appui = un tir), Vibrations (0 à 5), Langue (13 langues).
+- **Jeu :** Contrôle (Auto, clavier ou manette), Coop 1 et Coop 2 (le contrôle de chaque joueur), Touches et boutons, Tir automatique (Oui : maintenir le tir suffit ; Non : un appui = un tir), Vibrations (0 à 5), Langue (13 langues, chacune avec son drapeau ; au tout premier démarrage, le jeu prend la langue du système, sinon l'anglais).
 - **Gameplay :** le Style de jeu d'une partie arcade solo, *Classique* ou *Aventure*. Le style Aventure donne une partie de l'équipement de l'Aventure, sans meilleur score : Modules d'escorte (tirs ×3), Missiles antimatière (de 1 à 20, ou aucun), Réacteur 2D (le vaisseau vole aussi vers le haut et vers le bas, dans le tiers inférieur de l'écran) et **Gardiens** : comme dans BONUS FINAL - Gardiens, des Gardiens viennent avec les oiseaux à chaque niveau, ceux du boss aussi, de 1 à 5, un de plus à chaque niveau, puis à partir du niveau 6 un Gardien Alpha de plus tous les cinq niveaux (désactivé par défaut). Le jeu démarre toujours en Classique ; le choix ne compte ni en hot seat ni en coop.
 - **Audio :** Volume SFX, Volume Musique, Audio en jeu (bruitages seuls, bruitages + thème, musique seule ou silence ; non sauvegardé), Musique en jeu (aucune, une piste du jukebox dont les chansons de Lyra Voss, ou tes propres fichiers mp3, wav, ogg... posés dans le dossier musique_perso du jeu).
 - **Affichage :** fenêtre, plein écran ou fenêtre sans bord ; Bezel pour les écrans plus larges que 16:9 (Phenix, Tesla, Phenix bleu, Phenix flamme, désactivé ; en plein écran seulement) ; Scanlines CRT (0 à 3) ; Compteur FPS.

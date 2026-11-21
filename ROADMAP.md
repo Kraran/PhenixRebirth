@@ -1,5 +1,27 @@
 # Roadmap — Phenix Rebirth
-Current release: **v1.7.2**
+Current release: **v1.8.0**
+
+## Done in 1.8.0
+
+**Adventure** — the last pictures of Act 3, the epilogue, Sacha and Défense de Phobos.
+
+- New pictures for the scenes that were still a dark sky: the wrecks of the Phenix and of the NX01, the overhaul of the
+  ships (Shield and Phenix), la Riposte, the two slides of the epilogue, the arrival of Sacha (his EDF-17 C in the
+  hangar of Phobos) and Défense de Phobos I, II and III (the swarm grows round Phobos from one to the next)
+
+**Game**
+
+- Options > Game > Language: a little flag before the name of each of the 13 languages
+- At the very first start (no settings yet), the game takes the language of the system (Windows: the language of the
+  interface, then of the region) when it is one of its 13, otherwise English. A language chosen in the options stays;
+  an unknown language code now falls back on English (no longer French)
+
+**Fixes**
+
+- The antimatter missile now touches the Guardians (body or wing) and its blast destroys those within reach, with
+  their points and the Bestiary; the Alpha Guardian loses half its health (as the boss saucer, which takes a smaller
+  blast). In the Adventure and in the Adventure style of the arcade game
+- Details: [docs/DEV_LOG_1.8.0.md](docs/DEV_LOG_1.8.0.md)
 
 ## Done in 1.7.2
 

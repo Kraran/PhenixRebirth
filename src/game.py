@@ -8,6 +8,8 @@ Play modes: solo, hot-seat (alternating), coop (simultaneous). Options cover
 controls, autofire, volumes, session audio mix, rumble, display, GPU present,
 VSync, refresh cap, bezels, FPS counter, CRT scanlines and language.
 Cheats on the high-score menu: LV02–LV99, LIVE, PHEN, VNOV.
+v1.8.0 — the antimatter missile against the Guardians, the flags of the languages, the language of the
+system at the first start, the pictures of the Act 3 scenes, the epilogue, Sacha and Défense de Phobos.
 v1.7.2 — Défense de Phobos I-III with Sacha the wingman, FINAL BONUS - Nuée, the achievement banners in a queue,
 the Sentinels before la Riposte on the map, fixes (infinite lives against the invaders, the slow ship explosion).
 v1.7.1 — FINAL BONUS - Space War, the Guardians option of the Adventure style, Bestiary I opening the asteroid belt and
