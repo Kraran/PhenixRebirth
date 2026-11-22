@@ -1,6 +1,6 @@
 # Phenix Rebirth
 
-**Version 1.8.0**
+**Version 1.8.1**
 
 A modern, ultra-responsive PC remake of the classic arcade shooter **Phoenix** (1978 / 1980).
 
@@ -62,7 +62,7 @@ Free to play · Open source · MIT License
 
 ## Manuals
 
-Player manuals (PDF, v1.8.0): [Manuel FR](docs/PhenixRebirth-Manuel-FR.pdf) · [Manual EN](docs/PhenixRebirth-Manual-EN.pdf).
+Player manuals (PDF, v1.8.1): [Manuel FR](docs/PhenixRebirth-Manuel-FR.pdf) · [Manual EN](docs/PhenixRebirth-Manual-EN.pdf).
 They are built from `docs/manual/manual_FR.txt` and `manual_EN.txt` by `python docs/manual/build_manual.py` (needs
 `reportlab`, for this tool only). The list of the Adventure missions, [docs/STORY_MISSIONS.md](docs/STORY_MISSIONS.md), is
 written from the code by `python docs/manual/make_story_missions.py`.

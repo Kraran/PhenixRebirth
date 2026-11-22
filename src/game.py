@@ -8,6 +8,8 @@ Play modes: solo, hot-seat (alternating), coop (simultaneous). Options cover
 controls, autofire, volumes, session audio mix, rumble, display, GPU present,
 VSync, refresh cap, bezels, FPS counter, CRT scanlines and language.
 Cheats on the high-score menu: LV02–LV99, LIVE, PHEN, VNOV.
+v1.8.1 — PlayStation and Nintendo pads, the reflective coating bought at the workshop, the clips of the scenes
+started again when ffmpeg gives no picture.
 v1.8.0 — the antimatter missile against the Guardians, the flags of the languages, the language of the
 system at the first start, the pictures of the Act 3 scenes, the epilogue, Sacha and Défense de Phobos.
 v1.7.2 — Défense de Phobos I-III with Sacha the wingman, FINAL BONUS - Nuée, the achievement banners in a queue,
