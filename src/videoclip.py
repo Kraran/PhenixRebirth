@@ -10,22 +10,28 @@ at each loop point. Every clip is encoded at CLIP_FPS by tools/encode_clip.py.
 ffmpeg comes from, in this order: the `bin` folder of the game (or of the user data), the `imageio-ffmpeg`
 package (listed in requirements.txt and packed into the exe by build_exe.bat), then the PATH.
 Without ffmpeg, or if it fails, `ClipPlayer.surface` stays None and the screens show their still picture.
+
+A decoder that does not start, or stops before its first picture (on a Windows that was just installed, the antivirus
+holds a new ffmpeg.exe for a few seconds while it scans it), is started again a few times (RETRY_WAITS) before the
+still takes over for good; what ffmpeg said is written to errors.log.
 """
 import atexit
 import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from collections import deque
 
 import pygame
 
-from errlog import log_exc
+from errlog import log_exc, log_note
 
 CLIP_FPS = 24.0         # pace of every clip (the encoder tool converts to it)
 QUEUE_FRAMES = 6        # decoded frames kept ahead: a quarter of a second
+RETRY_WAITS = (0.5, 1.5, 3.0)   # a decoder that gave no picture is started again after these waits (then: the still)
 
 _exe_cache = []          # [path or None] once looked up
 
@@ -179,6 +185,23 @@ def make_shade(size, boxes):
     return shade
 
 
+def _tail(err, limit=300):
+    """The last words ffmpeg wrote on its error output (a temporary file), closed after reading."""
+    if err is None:
+        return ""
+    try:
+        err.seek(0)
+        text = err.read().decode("utf-8", "replace").strip()
+        return " ".join(text.split())[-limit:]
+    except Exception:
+        return ""
+    finally:
+        try:
+            err.close()
+        except Exception:
+            pass
+
+
 _players = []
 
 
@@ -222,6 +245,7 @@ class ClipPlayer:
         self._shown = 0                            # frames shown so far
         self._t0 = None                            # when frame 0 was due
         self._proc = None
+        self._err_file = None
         self._alive = True
         self._thread = None
         if not self.failed:
@@ -230,39 +254,65 @@ class ClipPlayer:
             _players.append(self)
 
     def _spawn(self):
+        err = self._err_file                       # (a temporary file for what ffmpeg says, or None)
         flags = 0
         if sys.platform.startswith("win"):
             flags = getattr(subprocess, "CREATE_NO_WINDOW", 0) | getattr(subprocess, "BELOW_NORMAL_PRIORITY_CLASS", 0)
         return subprocess.Popen(command(self.exe, self.path, self.size, self.loop, self.mode), stdout=subprocess.PIPE,
-                                stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL, creationflags=flags)
+                                stderr=err if err is not None else subprocess.DEVNULL, stdin=subprocess.DEVNULL,
+                                creationflags=flags)
 
     def _read(self):
+        """Read the frames of ffmpeg. A run that gives no picture (it could not start, or stopped at once) is tried again
+        after RETRY_WAITS; a looping clip whose decoder stops later is started again the same way."""
+        tries = 0
+        while self._alive:
+            outcome, why = self._run_once()
+            if not self._alive or outcome == "done":
+                return
+            if tries >= len(RETRY_WAITS):
+                log_note("videoclip: %s gave up after %d tries (%s)" % (os.path.basename(self.path), tries + 1, why))
+                self.failed = True                  # the still takes over for good
+                return
+            log_note("videoclip: %s: %s, trying again" % (os.path.basename(self.path), why))
+            end = time.monotonic() + RETRY_WAITS[tries]
+            tries += 1
+            while self._alive and time.monotonic() < end:
+                time.sleep(0.05)
+
+    def _run_once(self):
+        """One run of ffmpeg: ("done", "") when it ended as it should (a clip played once to its end), else ("retry",
+        what went wrong)."""
         proc = None
+        err = None
+        got = False
+        why = "no picture"
         try:
+            err = tempfile.TemporaryFile()
+        except Exception:
+            err = None
+        try:
+            self._err_file = err
             proc = self._proc = self._spawn()
             if not self._alive:
-                return                              # closed while the process was starting (finally kills it)
+                return "done", ""                   # closed while the process was starting (finally kills it)
             out = proc.stdout
             while self._alive:
                 data = out.read(self._bytes)
                 if len(data) < self._bytes:
                     break                           # ffmpeg stopped (unreadable file, killed...)
-                self._got = True
+                got = self._got = True
                 with self._cond:
                     while self._alive and len(self._queue) >= QUEUE_FRAMES:
                         self._cond.wait(0.1)        # ffmpeg waits for the game to catch up
                     if not self._alive:
                         break
                     self._queue.append(data)
-        except Exception:
+        except Exception as exc:
+            why = "%s: %s" % (type(exc).__name__, exc)
             if self._alive:
                 log_exc("videoclip._read")
         finally:
-            if self._alive:
-                if not self.loop and self._got:
-                    self.finished = True            # the end of a clip that plays once
-                else:
-                    self.failed = True
             if proc is not None:
                 try:
                     proc.kill()
@@ -272,6 +322,17 @@ class ClipPlayer:
                     proc.wait(timeout=2)
                 except Exception:
                     pass
+            said = _tail(err)
+            if said:
+                why += " — ffmpeg: " + said
+        if not self._alive:
+            return "done", ""
+        if got and not self.loop:
+            self.finished = True                    # the end of a clip that plays once
+            return "done", ""
+        if got:
+            why = "the decoder stopped"
+        return "retry", why
 
     def pump(self, now=None):
         """Show the frame whose time has come. True when `surface` changed. Frames that came due together

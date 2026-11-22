@@ -17,6 +17,12 @@ needs_ffmpeg = pytest.mark.skipif(FFMPEG is None, reason="no ffmpeg on this mach
 
 
 @pytest.fixture(autouse=True)
+def _no_retry(monkeypatch):
+    """These tests look at one run of the decoder: no second try (tests/test_videoclip_retry.py tests the tries)."""
+    monkeypatch.setattr(vc, "RETRY_WAITS", ())
+
+
+@pytest.fixture(autouse=True)
 def _forget_the_lookup():
     """Tests that change where ffmpeg is looked for must not leave their answer behind."""
     yield
