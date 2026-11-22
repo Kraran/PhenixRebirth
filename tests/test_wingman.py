@@ -407,8 +407,11 @@ def test_the_dust_when_he_arrives_like_the_ships(run):
     assert all(abs(e.x - w.ship.x) <= 20 and e.y > w.ship.y for e in feet)
 
 
-def test_he_flies_smoothly_like_a_person(run):
-    """No jerks nor little hops: few changes of direction, his speed changes gradually."""
+def _flight(run, seed):
+    """Sacha's x and his clock over a fight of wave 3 (at most 20 s), the dice of the game set by `seed`."""
+    import random
+    random.seed(seed)
+    np.random.seed(seed)
     _launch(run)
     g = run.game
     g.adventure["wave_i"] = 2
@@ -426,13 +429,23 @@ def test_he_flies_smoothly_like_a_person(run):
             continue                                       # (a frame the game froze: the hit stop of a kill)
         xs.append(w.ship.x)
         ts.append(w.clock)
-    v = np.diff(np.array(xs)) / np.diff(np.array(ts))
-    moving = np.abs(v) > 5
-    sgn = np.sign(v[moving])
-    reversals = int(np.sum(sgn[1:] != sgn[:-1]))
-    assert reversals / (len(xs) / 60) < 0.7
-    dt = 1 / 60
-    assert np.max(np.abs(np.diff(v))) <= wingman.ACCEL * 1.6 * dt * 1.05 + 1.0     # (never a jump in speed)
+    return xs, ts
+
+
+def test_he_flies_smoothly_like_a_person(run):
+    """No jerks nor little hops: few changes of direction, his speed changes gradually. (Three flights with their dice
+    set: one flight alone goes from 0.05 to 0.8 changes of direction a second with the draw, around 0.4.)"""
+    rates = []
+    for seed in range(3):
+        xs, ts = _flight(run, seed)
+        v = np.diff(np.array(xs)) / np.diff(np.array(ts))
+        moving = np.abs(v) > 5
+        sgn = np.sign(v[moving])
+        reversals = int(np.sum(sgn[1:] != sgn[:-1]))
+        rates.append(reversals / (len(xs) / 60))
+        dt = 1 / 60
+        assert np.max(np.abs(np.diff(v))) <= wingman.ACCEL * 1.6 * dt * 1.05 + 1.0     # (never a jump in speed)
+    assert sum(rates) / len(rates) < 0.7
 
 
 # ------------------------------------------------------------------ his voice on the radio
