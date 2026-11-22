@@ -31,6 +31,8 @@ ORIGIN = (400, 250)                      # where the drawn pad starts on the scr
 # where each button of an Xbox-like pad is, in the coordinates of the drawing (480 x 300)
 BTN_POS = {0: (330, 132), 1: (352, 110), 2: (308, 110), 3: (330, 88), 4: (140, 37), 5: (340, 37), 6: (235, 105),
            7: (265, 105), 8: (150, 110), 9: (290, 175)}
+# the left stick and the cross: stick above, cross below on an Xbox pad; the other way round on a PlayStation pad
+STICK_XBOX, CROSS_XBOX = (150, 110), (190, 175)
 FACE = {0: (70, 175, 95), 1: (205, 75, 75), 2: (74, 127, 208), 3: (217, 180, 65)}
 CARDS = {"fire": pygame.Rect(890, 232, 300, 100), "phenix": pygame.Rect(890, 470, 300, 100),
          "missile": pygame.Rect(890, 351, 300, 100),
@@ -213,11 +215,14 @@ def _pad_surface():
     for x in (100, 300):
         pygame.draw.rect(surf, fill, (x, 28, 80, 18), border_radius=9)
         pygame.draw.rect(surf, edge, (x, 28, 80, 18), 2, border_radius=9)
-    pygame.draw.circle(surf, (16, 18, 28), (150, 110), 28)
-    pygame.draw.circle(surf, edge, (150, 110), 28, 2)
-    pygame.draw.circle(surf, fill, (150, 110), 16)
-    pygame.draw.polygon(surf, fill, _DPAD)
-    pygame.draw.polygon(surf, edge, _DPAD, 2)
+    stick, cross = _stick_and_cross(family)
+    pygame.draw.circle(surf, (16, 18, 28), stick, 28)
+    pygame.draw.circle(surf, edge, stick, 28, 2)
+    pygame.draw.circle(surf, fill, stick, 16)
+    dx, dy = cross[0] - CROSS_XBOX[0], cross[1] - CROSS_XBOX[1]
+    dpad = [(x + dx, y + dy) for x, y in _DPAD]
+    pygame.draw.polygon(surf, fill, dpad)
+    pygame.draw.polygon(surf, edge, dpad, 2)
     pygame.draw.circle(surf, (16, 18, 28), (290, 175), 24)
     pygame.draw.circle(surf, (60, 60, 85), (290, 175), 24, 2)
     pygame.draw.circle(surf, (26, 27, 44), (290, 175), 13)
@@ -237,9 +242,17 @@ def _pad_surface():
     return surf
 
 
+def _stick_and_cross(family=None):
+    """Where the left stick and the cross are drawn: the cross takes the stick's place on a PlayStation pad (as on
+    the real one; only the drawing changes, not the controls)."""
+    if pad_style.is_playstation(family or pad_style.current):
+        return CROSS_XBOX, STICK_XBOX
+    return STICK_XBOX, CROSS_XBOX
+
+
 def _spot(b):
     """Where a button is on the screen (None when the drawing has no such button)."""
-    pos = BTN_POS.get(int(b))
+    pos = _stick_and_cross()[0] if int(b) == 8 else BTN_POS.get(int(b))     # L3: the left stick, wherever it is
     return None if pos is None else (ORIGIN[0] + pos[0], ORIGIN[1] + pos[1])
 
 
@@ -370,7 +383,8 @@ def _lines(game, surf, focus):
             if p is not None:
                 pygame.draw.line(surf, col, anchors[name], p, 2 if sel else 1)
                 pygame.draw.circle(surf, col, p, 4 if sel else 3)
-    for p in ((550, 360), (590, 425)):
+    for x, y in _stick_and_cross():                  # the "Move" card: to the left stick and to the cross
+        p = (ORIGIN[0] + x, ORIGIN[1] + y)
         pygame.draw.line(surf, (60, 66, 100), (390, 282), p, 1)
         pygame.draw.circle(surf, (60, 66, 100), p, 3)
 
