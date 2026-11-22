@@ -1,9 +1,9 @@
-@pdf_title Phenix Rebirth — Player Manual v1.8.0
+@pdf_title Phenix Rebirth — Player Manual v1.8.1
 @cover_title PLAYER MANUAL
-@cover_version Version 1.8.0 · English
+@cover_version Version 1.8.1 · English
 @cover_tag Free to play · Open source · MIT
 @header PHENIX REBIRTH
-@footer Phenix Rebirth — Player Manual v1.8.0
+@footer Phenix Rebirth — Player Manual v1.8.1
 @closing No quarter given. No continue forever.
 
 # 1. Overview
@@ -29,7 +29,7 @@ python main.py
 
 Optional Windows build: build_exe.bat (PyInstaller).
 
-Downloads: github.com/Kraran/PhenixRebirth/releases/tag/v1.8.0 · kraran.itch.io/phenix-rebirth
+Downloads: github.com/Kraran/PhenixRebirth/releases/tag/v1.8.1 · kraran.itch.io/phenix-rebirth
 
 # 3. Main menu
 **PLAY** opens the ARCADE GAME screen: the mode (1 player, 2P Hot Seat, 2P Co-op), the difficulty, then the ship select. **ADVENTURE** opens the story mode. **EXTRAS** gathers High Scores, Achievements, Jukebox, Credits, Help and Add-On. **OPTIONS** and **QUIT** complete the menu.
@@ -48,7 +48,7 @@ In a game, Esc / Start opens the pause: RESUME, OPTIONS, HELP / CONTROLS and QUI
 | Veteran | 3 lives, faster enemies, +10 points per enemy and the Commander at 1000. |
 
 # 5. Controls
-These are the defaults. In *Options > Game > Keys and buttons* every key (two per action, on two keyboards) and every gamepad button can be changed. In solo the last device used flies the ship; in coop each player is given a keyboard half or a gamepad.
+These are the defaults. In *Options > Game > Keys and buttons* every key (two per action, on two keyboards) and every gamepad button can be changed. In solo the last device used flies the ship; in coop each player is given a keyboard half or a gamepad. Xbox, PlayStation and Nintendo pads work the same way: the buttons go by their place (the bottom one confirms and fires: A, Cross, or B on a Nintendo pad; LB = L1 = L; Start = Options = +), and the screen shows the symbols of the pad in use.
 
 @cols 25,26,26,23
 | Action | Keyboard 2 (solo / coop P2) | Keyboard 1 (coop P1) | Gamepad |

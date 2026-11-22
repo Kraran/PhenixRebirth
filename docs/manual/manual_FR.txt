@@ -1,9 +1,9 @@
-@pdf_title Phenix Rebirth — Manuel du joueur v1.8.0
+@pdf_title Phenix Rebirth — Manuel du joueur v1.8.1
 @cover_title MANUEL DU JOUEUR
-@cover_version Version 1.8.0 · Français
+@cover_version Version 1.8.1 · Français
 @cover_tag Free to play · Open source · MIT
 @header PHENIX REBIRTH
-@footer Phenix Rebirth — Manuel du joueur v1.8.0
+@footer Phenix Rebirth — Manuel du joueur v1.8.1
 @closing No quarter given. No continue forever.
 
 # 1. Présentation
@@ -29,7 +29,7 @@ python main.py
 
 Build Windows optionnel : build_exe.bat (PyInstaller).
 
-Téléchargements : github.com/Kraran/PhenixRebirth/releases/tag/v1.8.0 · kraran.itch.io/phenix-rebirth
+Téléchargements : github.com/Kraran/PhenixRebirth/releases/tag/v1.8.1 · kraran.itch.io/phenix-rebirth
 
 # 3. Menu principal
 **JOUER** ouvre l'écran PARTIE ARCADE : le mode (1 joueur, 2 joueurs Hot Seat, 2 joueurs Coop), la difficulté, puis le choix du vaisseau. **AVENTURE** ouvre le mode histoire. **EXTRAS** regroupe High scores, Hauts faits, Jukebox, Crédits, Aide et Add-On. **OPTIONS** et **QUITTER** complètent le menu.
@@ -48,7 +48,7 @@ En partie, Échap / Start ouvre la pause : REPRENDRE, OPTIONS, AIDE / COMMANDES 
 | Vétéran | 3 vies, ennemis plus rapides, +10 points par ennemi et le Commandant à 1000. |
 
 # 5. Commandes
-Ce sont les touches par défaut. Dans *Options > Jeu > Touches et boutons*, chaque touche (deux par action, sur deux claviers) et chaque bouton de manette peut être changé. En solo, le dernier périphérique utilisé pilote le vaisseau ; en coop, chaque joueur reçoit une moitié de clavier ou une manette.
+Ce sont les touches par défaut. Dans *Options > Jeu > Touches et boutons*, chaque touche (deux par action, sur deux claviers) et chaque bouton de manette peut être changé. En solo, le dernier périphérique utilisé pilote le vaisseau ; en coop, chaque joueur reçoit une moitié de clavier ou une manette. Les manettes Xbox, PlayStation et Nintendo fonctionnent de la même façon : les boutons comptent par leur place (le bouton du bas valide et tire : A, Croix, ou B sur une manette Nintendo ; LB = L1 = L ; Start = Options = +), et l'écran montre les symboles de la manette utilisée.
 
 @cols 25,26,26,23
 | Action | Clavier 2 (solo / P2 coop) | Clavier 1 (P1 coop) | Manette |

@@ -1,5 +1,30 @@
 # Roadmap — Phenix Rebirth
-Current release: **v1.8.0**
+Current release: **v1.8.1**
+
+## Done in 1.8.1
+
+**Pads**
+
+- PlayStation (DualShock 3/4, DualSense) and Nintendo (Switch Pro, Joy-Con) pads work like an Xbox pad: every pad is
+  read in the Xbox order from its SDL game controller mapping (Cross = A, L1 = LB, Options = Start, the D-pad in the
+  menus too), the buttons going by their place (the bottom one confirms and fires on every pad)
+- The buttons of the pad in use on screen: the cross, circle, square and triangle of a PlayStation pad in their
+  colours, L1 R1, Share / Options (Create on a DualSense); the B A Y X, L R, − + of a Nintendo pad. In the help bar,
+  the help texts and the *Keys and buttons* screen, where a PlayStation pad is drawn with its D-pad above its stick
+
+**Adventure**
+
+- The reflective coating is bought at the workshop: winning *Guardians III* (the Alpha down) opens its row, 2000 PTS,
+  bought once for both ships; until then the lasers go through the dome and the Phenix form. The coated hull gleams
+  gold in the hangar, and the scene after *Guardians III* says the film waits at the workshop. A save that had already
+  won *Guardians III* finds the row there and buys it
+
+**Fixes**
+
+- The videos of the scenes: a decoder (ffmpeg) that gives no picture is started again three times before the still
+  picture takes over (on a Windows just installed, the antivirus can hold the new ffmpeg.exe for a few seconds; some
+  scenes, such as Bestiary II and III, then stayed still), and what ffmpeg said goes to errors.log
+- Details: [docs/DEV_LOG_1.8.1.md](docs/DEV_LOG_1.8.1.md)
 
 ## Done in 1.8.0
 
