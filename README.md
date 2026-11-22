@@ -132,6 +132,11 @@ These are the defaults. In *Options > Game > Touches et boutons* every key (two 
 every pad button can be changed; in solo the last device used flies the ship, and in coop each player can be given
 a keyboard half or a pad.
 
+Xbox, PlayStation (DualShock, DualSense) and Nintendo (Switch Pro, Joy-Con) pads all work the same way: the buttons
+go by their place (the bottom face button confirms and fires: A, Cross, or B on a Nintendo pad; LB = L1 = L;
+Start = Options = +), and the menus, the help bar and the *Keys and buttons* screen show the symbols of the pad in use
+(`src/pad_map.py`, `src/pad_style.py`).
+
 - One player shot on screen at a time (classic Phoenix rule); dual shots only in PHENIX form.
 - PHENIX gauge: **+1** per valid kill, **−1** per miss; activate from **3**. Cancel early with B / Shift to keep remaining gauge.
 

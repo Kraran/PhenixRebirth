@@ -21,6 +21,8 @@ import copy
 
 import pygame
 
+import pad_style
+
 KB1, KB2, PAD = "kb1", "kb2", "pad"
 KEY_PROFILES = (KB1, KB2)
 KEY_ACTIONS = ("left", "right", "up", "down", "fire", "phenix", "missile")
@@ -300,12 +302,10 @@ def key_label(code, t):
     return name.upper() if len(name) > 1 or name.isalnum() else name
 
 
-_PAD_NAMES = {0: "A", 1: "B", 2: "X", 3: "Y", 4: "LB", 5: "RB", 6: "Back", 7: "Start", 8: "L3", 9: "R3"}
-
-
-def pad_label(button):
-    """A pad button as the Xbox pads write it (the numbers the pad gives are those of an Xbox pad)."""
-    return _PAD_NAMES.get(int(button), "#%d" % int(button))
+def pad_label(button, family=None):
+    """A pad button as the pad in use writes it: A / LB on an Xbox pad, Cross / L1 on a PlayStation pad, B / L on a
+    Nintendo pad (src/pad_style.py; the numbers are those of an Xbox pad for every pad, src/pad_map.py)."""
+    return pad_style.label(button, family)
 
 
 # ------------------------------------------------------------------------------------- the help screen's texts

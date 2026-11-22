@@ -3,7 +3,8 @@ The help bar at the bottom of the menus: the same place, the same look on every 
 
 Each screen gives a short list of (button, label) pairs and the bar draws them centred on a translucent band:
 the keys of the keyboard as small keycaps (ENTRÉE, ÉCHAP, arrows), or the buttons of the pad (a green A, a red B,
-a D-pad with the arms that count lit), depending on the device that was used last (Game.last_input_pad, set by
+a D-pad with the arms that count lit; the cross and the circle of a PlayStation pad, the B and A of a Nintendo pad:
+src/pad_style.py), depending on the device that was used last (Game.last_input_pad, set by
 Game.handle_events). Nothing to set in the options.
 
 Buttons:  "ud" up / down   "lr" left / right   "l" left   "r" right   "all" the four arrows
@@ -21,6 +22,7 @@ from i18n import t
 import i18n
 import fonts
 import main_menu
+import pad_style
 import phobos_ui
 from settings import BASE_WIDTH, BASE_HEIGHT
 
@@ -34,8 +36,6 @@ LIT_COLOR = (255, 220, 120)
 CAP_FILL = (36, 36, 56)
 CAP_EDGE = (130, 130, 175)
 CAP_TEXT = (240, 240, 250)
-PAD_A = (70, 175, 95)
-PAD_B = (205, 75, 75)
 DPAD_OFF = (52, 52, 74)
 DPAD_ON = (235, 235, 250)
 GAP_GLYPH = 8                     # between a button and its label
@@ -86,14 +86,9 @@ def _keycap(text, size=15, steel=False):
     return s
 
 
-def _round_button(letter, color):
-    d = 26
-    s = pygame.Surface((d, d), pygame.SRCALPHA)
-    pygame.draw.circle(s, color, (d // 2, d // 2), d // 2)
-    pygame.draw.circle(s, (255, 255, 255, 90), (d // 2, d // 2), d // 2, 2)
-    img = _font(16).render(letter, True, (255, 255, 255))
-    s.blit(img, ((d - img.get_width()) // 2, (d - img.get_height()) // 2))
-    return s
+def _round_button(button, family=None):
+    """A face button of the pad in use (0 bottom, 1 right, 3 top): its letter on its colour, or a PlayStation symbol."""
+    return pad_style.face_surface(button, 26, family, _font(16))
 
 
 def _dpad(lit):
@@ -109,10 +104,10 @@ def _dpad(lit):
     return s
 
 
-def _shoulders():
-    """LB and RB, the two shoulder buttons of the pad."""
+def _shoulders(family=None):
+    """LB and RB (L1 R1, L R), the two shoulder buttons of the pad."""
     f = _font(13)
-    caps = [f.render(x, True, CAP_TEXT) for x in ("LB", "RB")]
+    caps = [f.render(pad_style.label(b, family), True, CAP_TEXT) for b in (4, 5)]
     w = sum(c.get_width() + 12 for c in caps) + 4
     s = pygame.Surface((w, 26), pygame.SRCALPHA)
     x = 0
@@ -125,19 +120,20 @@ def _shoulders():
     return s
 
 
-def glyph(kind, pad, steel=False):
-    """The picture of one button, for the keyboard or the pad (None for a plain label)."""
+def glyph(kind, pad, steel=False, family=None):
+    """The picture of one button, for the keyboard or the pad (None for a plain label). `family`: the pad's look
+    (pad_style: Xbox, PlayStation, Nintendo; None: the pad in use)."""
     if kind is None:
         return None
     if kind == "sh":
-        return _shoulders() if pad else _keycap("TAB", steel=steel)
+        return _shoulders(family) if pad else _keycap("TAB", steel=steel)
     if kind == "del":                                   # clear (the screen "Keys and buttons")
-        return _round_button("Y", (200, 165, 60)) if pad else _keycap(t("hint_key_del"), steel=steel)
+        return _round_button(3, family) if pad else _keycap(t("hint_key_del"), steel=steel)
     if pad:
         if kind == "ok":
-            return _round_button("A", PAD_A)
+            return _round_button(0, family)
         if kind == "back":
-            return _round_button("B", PAD_B)
+            return _round_button(1, family)
         return _dpad({"ud": "ud", "lr": "lr", "l": "l", "r": "r", "all": "udlr"}.get(kind, "udlr"))
     if kind == "ok":
         return _keycap(t("hint_key_enter"), steel=steel)
@@ -150,13 +146,14 @@ def glyph(kind, pad, steel=False):
 def render(items, pad, lit=None, steel=False):
     """The bar's content (without the band), cached by its pairs, the device and the language.
     `lit`: index of a pair whose label is drawn gold (the Adventure's "the text is over, press A")."""
-    key = (tuple(items), bool(pad), getattr(i18n, "_lang", ""), lit, bool(steel))
+    family = pad_style.current if pad else None
+    key = (tuple(items), bool(pad), family, getattr(i18n, "_lang", ""), lit, bool(steel))
     img = _cache.get(key)
     if img is not None:
         return img
     parts = []
     for i, (kind, label) in enumerate(items):
-        g = glyph(kind, pad, steel)
+        g = glyph(kind, pad, steel, family)
         txt = _font(20).render(t(label), True, LIT_COLOR if i == lit else LABEL_COLOR)
         parts.append((g, txt))
     widths = [(g.get_width() + GAP_GLYPH if g is not None else 0) + txt.get_width() for g, txt in parts]

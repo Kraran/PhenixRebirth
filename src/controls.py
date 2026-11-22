@@ -14,6 +14,7 @@ first player's, the second one is the second player's (coop).
 import pygame
 
 from errlog import log_exc
+import pad_map
 
 
 def pad_id(joy):
@@ -85,7 +86,8 @@ class PadRegistry:
             if pid in by_id:
                 kept.append(old)
                 by_id.pop(pid)
-        added = list(by_id.values())                # the new ones come after, in the order SDL lists them
+        # the new ones come after, in the order SDL lists them, in the Xbox order (a PlayStation or Switch pad too)
+        added = [pad_map.wrap(j) for j in by_id.values()]
         removed = [p for p in self.pads if not any(pad_id(p) == pad_id(k) for k in kept)]
         self.pads = kept + added
         return added, removed
