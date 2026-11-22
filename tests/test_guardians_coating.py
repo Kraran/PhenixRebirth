@@ -34,6 +34,7 @@ def _fly(game, mission_id, coated):
         st["flags"][m["need"]] = True
     if coated:
         st["flags"][ss.REFLECT_FLAG] = True
+        st["flags"][ss.COATING_FLAG] = True               # (laid at the workshop)
     ss.mark_scene_seen(st, mission_id)
     game.story.state = st
     game.story.map_index = next(i for i, x in enumerate(game.story.missions()) if x["id"] == mission_id)

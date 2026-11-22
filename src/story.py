@@ -1773,8 +1773,8 @@ class StoryHub:
         owned = ss.module_spec(self.state, mission)
         if owned:
             spec["modules"] = owned                  # the escort modules in working order fly with the ship (src/gyro.py)
-        if ss.flag(self.state, ss.REFLECT_FLAG):
-            spec["reflect"] = True                    # Gardiens III is won: the dome and the Phenix form stop the lasers
+        if ss.has_coating(self.state):
+            spec["reflect"] = True                    # the coating is laid (workshop): the dome and the Phenix form stop the lasers
         if ss.missile_ready(self.state) and not mission.get("scramble") and not mission.get("lander"):
             # (nothing to shoot in a landing: no missile, no reminder)
             spec["antimatter"] = True                 # the launcher is bought and a missile is held: one in this mission
@@ -1965,6 +1965,8 @@ class StoryHub:
         k = ss.module_of(sid)
         if k is not None and ss.module_status(self.state, k) == "parts":
             return t("story_module_parts").format(n=ss.module_pieces_held(self.state, k), of=2)
+        if sid == ss.COATING_ROW and ss.has_coating(self.state):
+            return t("story_item_installed")                 # (laid on the ships, not "MAX")
         if sid == "paint":
             if not ss.paint_state(self.state)["token"]:
                 return t("story_locked")
@@ -3003,6 +3005,8 @@ class StoryHub:
             if owned and img is not None:
                 bob = int(math.sin(self.anim_t * 3.2) * 4) if chosen else 0
                 surface.blit(img, (r.centerx - img.get_width() // 2, r.y + 10 + bob))
+                if chosen and ss.has_coating(self.state):
+                    self._draw_coating_sheen(surface, key, img, r.centerx - img.get_width() // 2, r.y + 10 + bob)
                 if chosen:
                     self._draw_hangar_modules(surface, sl, r.centerx, r.y + 10 + bob + img.get_height() / 2)
                 label = t("ship_shield") if sl.get("id") == "shield" else t("ship_phoenix")
@@ -3059,6 +3063,55 @@ class StoryHub:
         lander, raid = ss.MODULE_PIECES[k]                    # (the landing gives the ring, the raid the core)
         pieces = tuple(p for p, got in (("ring", lander in parts), ("core", raid in parts)) if got)
         gyro.draw_icon(surface, hull, x, cy, size, self.anim_t, pieces=pieces, split=20 if len(pieces) == 2 else 0)
+
+    COATING_GOLD = (255, 214, 120)
+
+    def _coating_masks(self, key, img):
+        """The outline of a hull portrait and its silhouette as white (kept by portrait)."""
+        cache = self.__dict__.setdefault("_coat_cache", {})
+        got = cache.get(key)
+        if got is None or got[0] is not img:
+            mask = pygame.mask.from_surface(img, 40)
+            sil = mask.to_surface(setcolor=(255, 255, 255, 255), unsetcolor=(0, 0, 0, 0))
+            rim = pygame.Surface(img.get_size(), pygame.SRCALPHA)
+            pts = mask.outline(2)
+            if len(pts) > 2:
+                pygame.draw.lines(rim, self.COATING_GOLD + (70,), True, pts, 3)      # a soft glow...
+                pygame.draw.lines(rim, self.COATING_GOLD + (200,), True, pts, 1)     # ... and a thin golden edge
+            got = cache[key] = (img, sil, rim)
+        return got[1], got[2]
+
+    def _draw_coating_sheen(self, surface, key, img, x, y):
+        """The reflective coating on the hull in the hangar: a thin golden edge and a gleam that sweeps the hull every
+        few seconds (only on the screen: the ship of the missions does not change)."""
+        sil, rim = self._coating_masks(key, img)
+        surface.blit(rim, (x, y))
+        w, h = img.get_size()
+        period = 3.2
+        u = (self.anim_t % period) / 1.1                      # the gleam crosses in 1.1 s, then rests
+        if u >= 1.0:
+            return
+        band = pygame.Surface((w, h), pygame.SRCALPHA)
+        cx = -0.6 * w + u * 2.0 * w
+        half = max(4, w // 16)
+        for k in range(half, 0, -1):                          # brighter in the middle of the gleam, fading at its sides
+            a = int(165 * (1 - k / (half + 1)) ** 1.5)
+            pygame.draw.polygon(band, (255, 232, 170, a), [(cx - k, h), (cx + k, h), (cx + k + h * 0.45, 0),
+                                                           (cx - k + h * 0.45, 0)])
+        band.blit(sil, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)     # only on the hull
+        surface.blit(band, (x, y))
+
+    def _draw_coating_icon(self, surface, x, cy, dim=False):
+        """The picture at the left of the workshop row of the reflective coating: a golden scale that gleams."""
+        r = 14
+        pts = [(x, cy - r), (x + r * 0.85, cy - r * 0.45), (x + r * 0.85, cy + r * 0.45), (x, cy + r),
+               (x - r * 0.85, cy + r * 0.45), (x - r * 0.85, cy - r * 0.45)]
+        gold = (120, 104, 70) if dim else self.COATING_GOLD
+        pygame.draw.polygon(surface, (60, 44, 18) if dim else (150, 110, 40), pts)
+        pygame.draw.polygon(surface, gold, pts, 2)
+        if not dim:
+            k = 0.5 + 0.5 * math.sin(self.anim_t * 3.0)
+            pygame.draw.line(surface, (255, 245, 210), (x - r * 0.5, cy + r * 0.2 - k * 6), (x + r * 0.2, cy - r * 0.5 - k * 2), 2)
 
     def _draw_missile_icon(self, surface, x, cy):
         """The picture at the left of the workshop row of the antimatter missile: the missile of the missions, its nose in
@@ -3153,6 +3206,8 @@ class StoryHub:
                 locked = not ss.missile_buyable(self.state, sid)
             if sid in ss.MODULE_ROWS:
                 locked = not ss.module_buyable(self.state, sid)
+            if sid == ss.COATING_ROW:
+                locked = not ss.coating_buyable(self.state) and not ss.has_coating(self.state)
             focus = self.zone == "shop" and i == self.shop_index
             row = pygame.Rect(box.x + 16, y, box.w - 32, 38)
             if focus:
@@ -3181,9 +3236,12 @@ class StoryHub:
                 elif sid == "missile_ammo":
                     self._draw_missile_icon(surface, row.x + 50, row.centery)
                     left = row.x + 80
+                elif sid == ss.COATING_ROW:
+                    self._draw_coating_icon(surface, row.x + 50, row.centery, dim=locked)
+                    left = row.x + 80
                 _text(surface, small, name, col, row.centery, left=left)
-                if sid in ss.MISSILE_ROWS:
-                    perm = sid == "missile_launcher"
+                if sid in ss.MISSILE_ROWS or sid == ss.COATING_ROW:
+                    perm = sid != "missile_ammo"
                     _text(surface, small, t("story_item_permanent" if perm else "story_item_consumable"),
                           col if locked else ((130, 220, 150) if perm else (235, 175, 110)),
                           row.centery, right=row.right - 180)
@@ -3203,6 +3261,8 @@ class StoryHub:
                           box.x + 20, box.w - 40)
             elif rows[self.shop_index][0] in ss.MODULE_ROWS and self.zone == "shop":
                 _text_fit(surface, small, self._module_desc(), (190, 200, 220), box.bottom - 22, box.x + 20, box.w - 40)
+            elif rows[self.shop_index][0] == ss.COATING_ROW and self.zone == "shop":
+                _text_fit(surface, small, t("story_desc_coating"), (190, 200, 220), box.bottom - 22, box.x + 20, box.w - 40)
             elif rows[self.shop_index][0] in ss.MISSILE_ROWS and self.zone == "shop":
                 _text_fit(surface, small, t("story_desc_" + rows[self.shop_index][0]), (190, 200, 220), box.bottom - 22,
                           box.x + 20, box.w - 40)

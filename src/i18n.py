@@ -6906,6 +6906,11 @@ _MISSILE_TEXTS = {
     "story_missile_unlocked": ("Missile à antimatière débloqué : achète le lance-missiles à l'atelier (touche {key} en mission).",
                                "Antimatter missile unlocked: buy the launcher in the workshop (key {key} in a mission)."),
     "story_shop_launcher": ("Lance-missiles antimatière", "Antimatter missile launcher"),
+    "story_shop_coating": ("Revêtement réfléchissant", "Reflective coating"),
+    "story_desc_coating": ("La pellicule dorée tirée du plumage de l'Alpha, posée sur le dôme du Shield et la forme Phenix : "
+                           "le rayon d'un Gardien s'y brise. Achat définitif, pour les deux vaisseaux.",
+                           "The golden film drawn from the Alpha's plumage, laid on the Shield's dome and the Phenix form: "
+                           "a Guardian's beam breaks on it. Bought for good, for both ships."),
     "story_shop_missile": ("Missile antimatière", "Antimatter missile"),
     "story_item_consumable": ("CONSOMMABLE", "CONSUMABLE"),
     "story_need_launcher": ("Lance-missiles requis", "Launcher needed"),
