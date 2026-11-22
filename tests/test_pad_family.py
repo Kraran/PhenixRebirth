@@ -262,3 +262,15 @@ def test_the_pad_screen_draws_the_pad_in_use(run):
 
 
 from test_smoke import run  # noqa: E402,F401  (fixture)
+
+
+def test_the_playstation_pad_is_drawn_with_its_cross_above_its_stick():
+    pad_style.current = "playstation5"
+    stick, cross = keybind_pad._stick_and_cross()
+    assert (stick, cross) == (keybind_pad.CROSS_XBOX, keybind_pad.STICK_XBOX)
+    assert keybind_pad._spot(8) == (keybind_pad.ORIGIN[0] + stick[0], keybind_pad.ORIGIN[1] + stick[1])   # L3
+    surf = keybind_pad._pad_surface()
+    assert surf.get_at(keybind_pad.STICK_XBOX)[:3] == (36, 36, 56)          # the middle of the cross, up there
+    pad_style.current = "nintendo"
+    assert keybind_pad._stick_and_cross() == (keybind_pad.STICK_XBOX, keybind_pad.CROSS_XBOX)
+    assert keybind_pad._spot(8) == (keybind_pad.ORIGIN[0] + 150, keybind_pad.ORIGIN[1] + 110)
