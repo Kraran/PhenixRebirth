@@ -13,6 +13,7 @@ import loading
 
 import bindings
 import controls
+import pad_map
 from enemy import EnemyFormation
 from gpu_present import GpuPresenter
 from i18n import LANG_CODES, set_lang
@@ -43,6 +44,7 @@ def early_language():
 
 def init_display(game):
     """First start only: read display prefs, open the window, create the canvas."""
+    pad_map.setup_hints()                # (before SDL opens the pads: a Switch pad confirms with its bottom button too)
     pygame.init()
     # Load display prefs early so the FIRST (and only) window is correct
     try:

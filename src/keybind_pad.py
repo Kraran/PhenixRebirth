@@ -7,9 +7,12 @@ An action is set by Enter (or A on the pad) and then the buttons are pressed: ea
 or removes it when the action already has it. The D-pad (or Enter / Esc) ends it, so does a few seconds of silence.
 The settings themselves live in bindings.py.
 """
+import re
+
 import pygame
 
 import bindings
+import pad_style
 import fonts
 import menu_ui
 from i18n import t
@@ -93,13 +96,22 @@ def end_wait(st, grace):
     st.grace = grace
 
 
+def menu_buttons_text(text):
+    """« A, B, LB et RB ... » with the names of the pad in use (« Croix, Rond, L1 et R1 ... » on a PlayStation pad)."""
+    m = re.match(r"A, B, LB (\S+) RB", text)
+    if m is None:
+        return text
+    name = bindings.pad_label
+    return "%s, %s, %s %s %s%s" % (name(0), name(1), name(4), m.group(1), name(5), text[m.end():])
+
+
 def press(game, st, button):
     """A pad button pressed while an action is being set."""
     _p, action, _place = st.wait
     b = bindings.current
     st.wait_left = st.wait_total
     if action == "pause" and button in bindings.PAUSE_FORBIDDEN:
-        _flash(st, t("kb_flash_pad_pause"))
+        _flash(st, menu_buttons_text(t("kb_flash_pad_pause")))
         return
     owner = b.find_button(st.place, button, skip=action)
     res = b.toggle_button(st.place, action, button)
@@ -190,7 +202,8 @@ _cache = {}
 
 def _pad_surface():
     """The pad without any ring (drawn once)."""
-    surf = _cache.get("pad")
+    family = pad_style.current
+    surf = _cache.get(("pad", family))
     if surf is not None:
         return surf
     surf = pygame.Surface((480, 300), pygame.SRCALPHA)
@@ -212,12 +225,15 @@ def _pad_surface():
         pygame.draw.circle(surf, fill, pos, 7)
         pygame.draw.circle(surf, edge, pos, 7, 2)
     font = _f(15)
-    for b, col in FACE.items():
+    for b in FACE:                                   # the face buttons as the pad in use shows them (pad_style)
         pos = BTN_POS[b]
-        pygame.draw.circle(surf, col, pos, 13)
-        img = font.render(bindings.pad_label(b), True, (10, 10, 22))
-        surf.blit(img, (pos[0] - img.get_width() // 2, pos[1] - img.get_height() // 2))
-    _cache["pad"] = surf
+        img = pad_style.face_surface(b, 26, family, font, (10, 10, 22), ring=False)
+        surf.blit(img, (pos[0] - 13, pos[1] - 13))
+    for b in (4, 5):                                 # LB RB (L1 R1, L R) on the shoulders
+        img = _f(14).render(bindings.pad_label(b, family), True, (200, 200, 230))
+        x = 140 if b == 4 else 340
+        surf.blit(img, (x - img.get_width() // 2, 37 - img.get_height() // 2))
+    _cache[("pad", family)] = surf
     return surf
 
 
@@ -247,10 +263,7 @@ def _chip_images(game, buttons, h):
     for b in buttons:
         label = bindings.pad_label(b)
         if b in FACE:
-            s = pygame.Surface((h, h), pygame.SRCALPHA)
-            pygame.draw.circle(s, FACE[b], (h // 2, h // 2), h // 2)
-            img = font.render(label, True, (10, 10, 22))
-            s.blit(img, (h // 2 - img.get_width() // 2, h // 2 - img.get_height() // 2))
+            s = pad_style.face_surface(b, h, None, font, (10, 10, 22), ring=False)
         else:
             img = font.render(label, True, (240, 240, 250))
             s = pygame.Surface((img.get_width() + 24, h), pygame.SRCALPHA)
@@ -333,13 +346,13 @@ def _fixed_card(game, surf, rect, title, kind):
         if 26 + ok.get_width() + 26 + back.get_width() + 70 + 36 <= rect.w - 24:
             break
     x = rect.x + 16
-    for letter, col, label in (("A", (44, 90, 58), ok), ("B", (90, 44, 44), back)):
-        pygame.draw.circle(surf, col, (x + 13, y + 15), 13)
-        let = _f(14).render(letter, True, (200, 220, 205))
-        surf.blit(let, (x + 13 - let.get_width() // 2, y + 15 - let.get_height() // 2))
+    for b, label in ((0, ok), (1, back)):            # (dimmed: this card cannot be changed)
+        disc = pad_style.face_surface(b, 26, None, _f(14), (200, 220, 205), ring=False)
+        disc.set_alpha(150)
+        surf.blit(disc, (x, y + 2))
         surf.blit(label, (x + 32, y + 15 - label.get_height() // 2))
         x += 32 + label.get_width() + 12
-    txt = _f(13).render("LB RB", True, (160, 160, 190))
+    txt = _f(13).render(bindings.pad_label(4) + " " + bindings.pad_label(5), True, (160, 160, 190))
     r = pygame.Rect(x, y + 3, txt.get_width() + 18, 24)
     pygame.draw.rect(surf, (36, 36, 56), r, border_radius=12)
     surf.blit(txt, (r.centerx - txt.get_width() // 2, r.centery - txt.get_height() // 2))

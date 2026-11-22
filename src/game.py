@@ -55,6 +55,8 @@ import crt
 import announce
 import bindings
 import controls
+import pad_map
+import pad_style
 import asteroids
 import spacewar
 import lander
@@ -3283,6 +3285,7 @@ class Game:
         for pad in self.pads.pads:
             if controls.pad_id(pad) == inst:
                 self.joystick = pad
+                pad_style.note_game(self)            # the help shows the buttons of this pad (PlayStation, Nintendo...)
                 return
 
     def _poll_gamepad(self):
@@ -3293,6 +3296,7 @@ class Game:
         except Exception:
             log_exc("game._poll_gamepad")
             added, removed = [], []
+        pad_style.note_game(self)
         in_run = (
             bool(getattr(self, "started", False))
             and not getattr(self, "game_over", False)
@@ -4540,6 +4544,10 @@ class Game:
             except Exception:
                 log_exc("game.handle_events")
             events = []
+        try:
+            events = pad_map.translate(events, getattr(getattr(self, "pads", None), "pads", None))   # every pad as Xbox
+        except Exception:
+            log_exc("game.handle_events")
         for event in events:
             if event.type == pygame.QUIT:
                 self._quit_app()
