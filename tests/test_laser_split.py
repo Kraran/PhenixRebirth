@@ -26,6 +26,7 @@ def game(tmp_path, monkeypatch):
     st["act"] = 2
     st["flags"][m["need"]] = True
     st["flags"][ss.REFLECT_FLAG] = True
+    st["flags"][ss.COATING_FLAG] = True               # (laid at the workshop)
     ss.mark_scene_seen(st, "guardians_1")
     g.story.state = st
     g.story.map_index = next(i for i, x in enumerate(g.story.missions()) if x["id"] == "guardians_1")

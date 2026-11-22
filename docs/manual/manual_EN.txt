@@ -141,7 +141,7 @@ The Adventure starts from ADVENTURE in the main menu. It opens with an illustrat
 - **Bestiary:** each file opens when the enemy is met. The Bestiary hunts are replayable, one level harder after each win.
 - **Dome, Phenix, Counterstrike:** the main series, arcade waves faster and faster, each one once only.
 - **Defence of Phobos I to III:** one compulsory mission per act. The swarm rushes at Phobos in 4 waves (at level 11, then 16, then 21), each wave adding a kind: blue birds, khaki birds, gargoyles, dark gargoyles; 3 Guardians in the last wave of II and III. **Sacha**, a young pilot of Phobos, comes as reinforcement in his old EDF-17 C, flown by the computer, a little better from one mission to the next. He cannot die: after three hits (or a collision) he goes back to Phobos and you carry on alone. His points are his own.
-- **Guardians:** their laser goes through the dome and burns the birds. The plumage of the Alpha Guardian gives the reflective coating.
+- **Guardians:** their laser goes through the dome and burns the birds. The plumage of the Alpha Guardian gives the reflective coating, to be laid at the workshop (2000 PTS, once, for both ships): the dome and the Phenix form then split the laser in two.
 - **Paint I to III:** a grid of enemies marches down on you, Space Invaders style; the saucer is worth 500 to 1000 PTS, aim for the middle. All three missions open the paint shop. The whole series can be flown again, harder.
 - **Escort modules:** two gyroscope satellites that fly beside the ship and fire with it (shots ×2, then ×3). Their pieces are found in the landings and the raids; they are assembled in the workshop, take the hits meant for the ship and, destroyed, are bought again at half price.
 

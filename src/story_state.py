@@ -64,7 +64,11 @@ MISSILE_ROWS = ("missile_launcher", "missile_ammo")
 SENTINELLE_DONE = "sentinelles_done"   # the last Sentinelle mission is won: all four can be flown again
 # Winning the first Bestiary sortie opens the Act 1 asteroid belt and Sentinelle I (they are no longer open from the start).
 CH1_SIDES = "ch1_sides"
-REFLECT_FLAG = "reflective_coating"    # Gardiens III is won: the reflective coating (the dome and the Phenix stop the lasers)
+REFLECT_FLAG = "reflective_coating"    # Gardiens III is won: the film of the Alpha is ready, the workshop can lay it
+COATING_FLAG = "coating_applied"       # ... and the workshop laid it (bought once, for both hulls): the dome and the
+#                                        Phenix form stop the lasers of the Guardians (src/laser_split.py)
+COATING_ROW = "reflective_coating"     # its workshop row
+COATING_PRICE = 2000
 COAT_SCENE = "guardians_coat"          # ... told after that first victory (STORY_SCENES)
 SACHA_SCENE = "sacha_reveal"           # Défense de Phobos I is won: who was the pilot who came to help (STORY_SCENES)
 GAME_WON = "game_won"                  # the last mission of Act 3 is won: the Adventure is over (it can still be played)
@@ -1527,6 +1531,24 @@ def missile_buyable(state, sid):
     return False
 
 
+def has_coating(state):
+    """The reflective coating is on the ships: the film of the Alpha (Gardiens III won) was laid at the workshop."""
+    return flag(state, REFLECT_FLAG) and flag(state, COATING_FLAG)
+
+
+def coating_buyable(state):
+    """Can the workshop lay the reflective coating now (the film is ready, not laid yet, the credits are there)?"""
+    return (flag(state, REFLECT_FLAG) and not has_coating(state)
+            and int(_num(state.get("credits"), 0)) >= story_vn.sale_price(state, COATING_PRICE))
+
+
+def coating_rows(state):
+    """The workshop row of the reflective coating, once Gardiens III is won (nothing to show before: no spoiler)."""
+    if not flag(state, REFLECT_FLAG):
+        return []
+    return [(COATING_ROW, "story_shop_coating", COATING_PRICE, None)]
+
+
 # ------------------------------------------------------------ escort modules
 # The escort modules (src/gyro.py): each one is assembled at the workshop from two pieces, one won by a landing and one by
 # a raid (the first victory of each); the two missions of the asteroid give a bonus each instead. A module assembled flies
@@ -2609,6 +2631,7 @@ def shop_for(state):
     # the loot items caught (a reactor only for the hull flown)
     rows = rows + [item_row(i) for i in story_items.shop(state, slot.get("id"))]
     rows = rows + missile_rows(state)
+    rows = rows + coating_rows(state)
     rows = rows + module_rows(state)
     # what is already at MAX goes last: the rows still to buy stay under the cursor, the finished ones are a footnote
     rows = [(sid, label, story_vn.sale_price(state, cost), need) for sid, label, cost, need in rows]   # (Romance: -10 %)
@@ -2670,6 +2693,8 @@ def upgrade_note(state, sid):
         return "story_item_installed" if story_items.status(state, item) == story_items.INSTALLED else None
     if sid == "missile_launcher":
         return "story_owned" if has_launcher(state) else None
+    if sid == COATING_ROW:
+        return "story_owned" if has_coating(state) else None
     k = module_of(sid)
     if k is not None:
         return {"ready": "story_module_ready", "need_prev": "story_need_prev",
@@ -2691,6 +2716,12 @@ def buy(state, sid):
     """Buy one upgrade for the selected hull. True when it was bought."""
     if sid in MODULE_ROWS:
         return buy_module(state, sid)
+    if sid == COATING_ROW:
+        if not coating_buyable(state):
+            return False
+        state["credits"] = int(_num(state.get("credits"), 0)) - story_vn.sale_price(state, COATING_PRICE)
+        state.setdefault("flags", {})[COATING_FLAG] = True
+        return True
     if sid in MISSILE_ROWS:
         if not missile_buyable(state, sid):
             return False
